@@ -56,7 +56,7 @@ function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
+      setScrolled(window.scrollY > 20)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -71,23 +71,26 @@ function Header() {
   ]
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled ? 'bg-white shadow-2xl py-3' : 'bg-transparent py-6'
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg py-3' : 'bg-transparent py-4'
     }`}>
-      <div className="container mx-auto px-4">
+      <div className="mx-auto px-4 w-full">
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-rose-400 to-amber-400 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">
+          
+          {/* LOGO: Más compacto y estilizado en móvil */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 bg-gradient-to-br from-rose-400 to-amber-400 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-md">
               S
             </div>
             <div>
-              <h1 className="text-xl font-light tracking-wider text-gray-800">
+              <h1 className="text-base font-light tracking-wider text-gray-800 leading-none">
                 SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-amber-400">PREMIUM</span>
               </h1>
-              <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase">Beauty & Aesthetics</p>
+              <p className="text-[8px] text-gray-400 tracking-[0.2em] uppercase mt-0.5">Beauty & Aesthetics</p>
             </div>
           </Link>
 
+          {/* NAV COMPUTADORA: Oculto en móvil por defecto, aparece en 'lg' */}
           <nav className="hidden lg:flex items-center gap-10">
             {navItems.map((item) => (
               <Link key={item.label} href={item.href} className="text-sm font-light text-gray-600 hover:text-rose-500 transition-colors relative group tracking-wider uppercase">
@@ -97,6 +100,7 @@ function Header() {
             ))}
           </nav>
 
+          {/* BOTONES COMPUTADORA: Ocultos en móvil */}
           <div className="hidden lg:flex items-center gap-4">
             <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
               <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
@@ -110,28 +114,39 @@ function Header() {
             </Link>
           </div>
 
-          <button className="lg:hidden text-2xl text-gray-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <FaTimes /> : <FaBars />}
+          {/* BOTÓN MENÚ MÓVIL: Más grande y fácil de tocar */}
+          <button 
+            className="lg:hidden text-2xl text-gray-700 w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl active:scale-90 transition-transform" 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
           </button>
         </div>
 
+        {/* MENÚ MÓVIL DESPLEGABLE: Diseño tipo App Nativa */}
         {isMenuOpen && (
-          <div className="lg:hidden mt-4 bg-white rounded-2xl shadow-2xl p-6 border border-gray-100">
-            <nav className="flex flex-col gap-4">
+          <div className="lg:hidden fixed inset-x-4 top-16 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-5 border border-gray-100 animate-in fade-in slide-in-from-top-4 duration-200">
+            <nav className="flex flex-col gap-3">
               {navItems.map((item) => (
-                <Link key={item.label} href={item.href} className="text-gray-700 hover:text-rose-500 transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+                <Link 
+                  key={item.label} 
+                  href={item.href} 
+                  className="text-gray-700 hover:text-rose-500 py-2 px-3 hover:bg-slate-50 rounded-xl transition-all font-medium text-base flex items-center justify-between" 
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   {item.label}
+                  <FaArrowRight className="text-xs text-gray-300" />
                 </Link>
               ))}
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-100">
+              <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
                 <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-                  <button className="w-full bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2">
-                    <FaWhatsapp /> WhatsApp
+                  <button className="w-full bg-emerald-500 active:scale-[0.98] text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 text-sm transition-transform shadow-md">
+                    <FaWhatsapp className="text-lg" /> Contactar por WhatsApp
                   </button>
                 </a>
-                <Link href="/reservas">
-                  <button className="w-full bg-gradient-to-r from-rose-400 to-amber-400 text-white px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2">
-                    <FaCalendarAlt /> Reservar ahora
+                <Link href="/reservas" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full bg-gradient-to-r from-rose-400 to-amber-400 active:scale-[0.98] text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 text-sm transition-transform shadow-md">
+                    <FaCalendarAlt /> Reservar una Cita
                   </button>
                 </Link>
               </div>
@@ -148,120 +163,110 @@ function Header() {
 // ============================================
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-50 via-white to-rose-50/30 overflow-hidden pt-20">
+    <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-50 via-white to-rose-50/20 overflow-hidden pt-24 pb-12">
+      {/* Fondos difuminados estéticos */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-rose-100/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-amber-100/20 to-transparent rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-72 h-72 bg-rose-200/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-2 gap-20 items-center">
-          <div>
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur border border-gray-200/50 px-5 py-2.5 rounded-full text-sm font-light mb-8 text-gray-600 shadow-sm">
+        {/* Cambiamos a flex-col en móvil y md:grid en pantallas grandes */}
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          
+          {/* TEXTOS Y BOTONES */}
+          <div className="text-center lg:text-left order-2 lg:order-1">
+            <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur border border-gray-200/60 px-4 py-2 rounded-full text-xs font-medium mb-6 text-gray-600 shadow-sm mx-auto lg:mx-0">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
               Especialistas en Estética Avanzada
             </div>
 
-            <h1 className="text-7xl font-light leading-[1.1] mb-6">
-              <span className="text-gray-800">Donde la</span>
-              <br />
+            {/* Ajuste de tamaño de fuente responsivo: text-4xl en móvil, text-7xl en pc */}
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-light leading-tight mb-4 tracking-tight">
+              <span className="text-gray-800">Donde la</span>{' '}
               <span className="font-bold bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400 text-transparent bg-clip-text">
                 Belleza
               </span>
               <br />
-              <span className="text-gray-700">encuentra el</span>
-              <br />
+              <span className="text-gray-700">encuentra el</span>{' '}
               <span className="font-bold text-gray-800">Arte</span>
             </h1>
 
-            <p className="text-lg text-gray-500 mb-10 max-w-lg leading-relaxed font-light">
+            <p className="text-base sm:text-lg text-gray-500 mb-8 max-w-md mx-auto lg:mx-0 leading-relaxed font-light">
               Expertos en micropigmentación, microblading y uñas. 
               Resultados que hablan por sí mismos.
             </p>
 
-            <div className="flex flex-wrap gap-4">
-              <Link href="/reservas">
-                <button className="group bg-gradient-to-r from-rose-400 to-amber-400 text-white px-10 py-4 rounded-full font-medium hover:shadow-2xl transition-all duration-300 flex items-center gap-3 text-base shadow-xl shadow-rose-500/20">
+            {/* Botones de acción verticalizados/adaptados para el pulgar */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start max-w-sm mx-auto lg:max-w-none">
+              <Link href="/reservas" className="w-full sm:w-auto">
+                <button className="w-full group bg-gradient-to-r from-rose-400 to-amber-400 text-white px-8 py-3.5 rounded-xl font-medium shadow-lg shadow-rose-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm">
                   <FaCalendarAlt className="group-hover:rotate-12 transition-transform" />
                   Reservar ahora
-                  <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  <FaArrowRight className="group-hover:translate-x-1 transition-transform text-xs" />
                 </button>
               </Link>
-              <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-                <button className="bg-emerald-500 text-white px-8 py-4 rounded-full font-medium hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-base shadow-xl shadow-emerald-500/20 hover:scale-105">
-                  <FaWhatsapp /> Contactar
+              <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <button className="w-full bg-emerald-500 text-white px-8 py-3.5 rounded-xl font-medium shadow-lg shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm">
+                  <FaWhatsapp className="text-base" /> Contactar por WhatsApp
                 </button>
               </a>
             </div>
 
-            <div className="flex gap-16 mt-16">
+            {/* Estadísticas en fila horizontal deslizable en móvil */}
+            <div className="flex justify-between gap-4 mt-12 bg-white/60 backdrop-blur-sm border border-slate-100 p-4 rounded-2xl shadow-sm max-w-md mx-auto lg:mx-0">
               {[
-                { number: '1.200+', label: 'Clientes satisfechos' },
-                { number: '4.9', label: 'Calificación promedio' },
-                { number: '15+', label: 'Años de experiencia' }
+                { number: '1.2k+', label: 'Clientes' },
+                { number: '4.9★', label: 'Reseñas' },
+                { number: '15+', label: 'Años exp.' }
               ].map((stat, idx) => (
-                <div key={idx} className="relative">
-                  <p className="text-3xl font-bold text-gray-800 tracking-tight">{stat.number}</p>
-                  <p className="text-sm text-gray-400 font-light">{stat.label}</p>
-                  {idx < 2 && <div className="absolute -right-8 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-gray-200" />}
+                <div key={idx} className="text-center flex-1">
+                  <p className="text-xl font-bold text-gray-800 tracking-tight">{stat.number}</p>
+                  <p className="text-[11px] text-gray-400 font-light uppercase tracking-wider">{stat.label}</p>
                 </div>
               ))}
             </div>
-
-            <div className="flex gap-6 mt-8">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaShieldAlt className="text-rose-400" />
-                <span className="font-light">Certificados</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaGem className="text-amber-400" />
-                <span className="font-light">Productos Premium</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaUsers className="text-rose-400" />
-                <span className="font-light">Equipo Experto</span>
-              </div>
-            </div>
           </div>
 
-          <div className="relative">
-            <div className="rounded-2xl overflow-hidden shadow-2xl ring-1 ring-gray-200/50">
+          {/* IMAGEN Y TARJETAS FLOTANTES */}
+          <div className="relative order-1 lg:order-2 w-full max-w-sm mx-auto lg:max-w-none px-4 lg:px-0">
+            <div className="rounded-2xl overflow-hidden shadow-xl aspect-[4/3] lg:aspect-auto lg:h-[500px]">
               <img
                 src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"
                 alt="Salón"
-                className="w-full h-[600px] object-cover"
+                className="w-full h-full object-cover"
               />
             </div>
-            
-            <div className="absolute -top-6 -right-6 bg-white/90 backdrop-blur border border-gray-100 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-rose-100 to-amber-100 rounded-2xl flex items-center justify-center text-3xl">✦</div>
+
+            {/* Tarjeta flotante superior (Ajustada para no salirse en móvil) */}
+            <div className="absolute -top-4 -right-2 bg-white/95 backdrop-blur border border-gray-100 rounded-xl p-3 shadow-lg max-w-[160px] sm:max-w-none">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-rose-100 to-amber-100 rounded-lg flex items-center justify-center text-sm">✦</div>
                 <div>
-                  <p className="font-bold text-gray-800 tracking-tight">Especialistas</p>
-                  <p className="text-sm text-gray-400 font-light">Micropigmentación</p>
+                  <p className="font-bold text-xs text-gray-800 tracking-tight">Micropigmentación</p>
+                  <p className="text-[10px] text-gray-400 font-light">Especialistas</p>
                 </div>
               </div>
             </div>
 
-            <div className="absolute -bottom-6 -left-6 bg-white/90 backdrop-blur border border-gray-100 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-rose-100 rounded-2xl flex items-center justify-center text-3xl">★</div>
+            {/* Tarjeta flotante inferior */}
+            <div className="absolute -bottom-4 -left-2 bg-white/95 backdrop-blur border border-gray-100 rounded-xl p-3 shadow-lg max-w-[160px] sm:max-w-none">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-100 to-rose-100 rounded-lg flex items-center justify-center text-sm">★</div>
                 <div>
-                  <p className="font-bold text-gray-800 tracking-tight">4.9 / 5.0</p>
-                  <p className="text-sm text-gray-400 font-light">156 reseñas reales</p>
+                  <p className="font-bold text-xs text-gray-800 tracking-tight">4.9 / 5.0</p>
+                  <p className="text-[10px] text-gray-400 font-light">156 opiniones reales</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-300 text-2xl animate-bounce">
-        <FaArrowRight className="rotate-90" />
+        </div>
       </div>
     </section>
   )
 }
+
 
 // ============================================
 // SERVICES SECTION
