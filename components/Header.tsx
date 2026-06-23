@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   FaWhatsapp, 
   FaCalendarAlt, 
@@ -16,18 +18,19 @@ import {
 } from 'react-icons/fa'
 
 export default function Header() {
+  const { user, role, signOut } = useAuth()
+  const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  
-  // Simulador de Estado de Autenticación: 'guest', 'client', 'staff', 'admin'
-  const [userRole, setUserRole] = useState<'guest' | 'client' | 'staff' | 'admin'>('guest')
-  const [showLoginModal, setShowLoginModal] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Determinar el rol del usuario
+  const userRole = role || 'guest'
 
   const navItems = [
     { label: 'Inicio', href: '/' },
@@ -38,167 +41,136 @@ export default function Header() {
     { label: 'Staff', href: '/staff' },
   ]
 
-  const handleFakeLogin = (role: 'client' | 'staff' | 'admin') => {
-    setUserRole(role)
-    setShowLoginModal(false)
+  // Si es admin, añadir panel de admin a la navegación
+  if (userRole === 'admin') {
+    navItems.push({ label: 'Admin', href: '/admin' })
+  }
+
+  const handleLogout = async () => {
+    await signOut()
+    // Opcional: redirigir a home
+    window.location.href = '/'
   }
 
   return (
-    <>
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-3' : 'bg-transparent py-4'
-      }`}>
-        <div className="w-full max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-sm">
-              S
-            </div>
-            <div>
-              <h1 className="text-base font-light tracking-wider text-slate-100 leading-none">
-                SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400">PREMIUM</span>
-              </h1>
-              <p className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mt-0.5">Beauty & Aesthetics</p>
-            </div>
-          </Link>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled ? 'bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-3' : 'bg-transparent py-4'
+    }`}>
+      <div className="w-full max-w-7xl mx-auto px-4 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-9 h-9 bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-sm">
+            S
+          </div>
+          <div>
+            <h1 className="text-base font-light tracking-wider text-slate-100 leading-none">
+              SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400">PREMIUM</span>
+            </h1>
+            <p className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mt-0.5">Beauty & Aesthetics</p>
+          </div>
+        </Link>
 
-          <nav className="hidden lg:flex items-center gap-6">
-            {navItems.map((item) => (
-              <Link key={item.label} href={item.href} className="text-[11px] font-semibold text-slate-300 hover:text-rose-400 transition-colors tracking-wider uppercase">
-                {item.label}
-              </Link>
-            ))}
-            {userRole === 'admin' && (
-              <span className="text-[9px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded font-extrabold tracking-widest uppercase">
-                ⚙️ Admin Panel
-              </span>
-            )}
-            {userRole === 'staff' && (
-              <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded font-extrabold tracking-widest uppercase">
-                🗓️ Staff Mode
-              </span>
-            )}
-          </nav>
+        <nav className="hidden lg:flex items-center gap-6">
+          {navItems.map((item) => (
+            <Link 
+              key={item.label} 
+              href={item.href} 
+              className={`text-[11px] font-semibold tracking-wider uppercase transition-colors ${
+                pathname === item.href 
+                  ? 'text-rose-400' 
+                  : 'text-slate-300 hover:text-rose-400'
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+          {userRole === 'admin' && (
+            <span className="text-[9px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded font-extrabold tracking-widest uppercase">
+              ⚙️ Admin
+            </span>
+          )}
+          {userRole === 'staff' && (
+            <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded font-extrabold tracking-widest uppercase">
+              🗓️ Staff
+            </span>
+          )}
+        </nav>
 
-          <div className="hidden lg:flex items-center gap-3">
-            {userRole === 'guest' ? (
-              <button 
-                onClick={() => setShowLoginModal(true)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-full text-xs font-medium flex items-center gap-1.5 hover:bg-slate-900 active:scale-95 transition-all"
-              >
+        <div className="hidden lg:flex items-center gap-3">
+          {userRole === 'guest' ? (
+            <Link href="/login">
+              <button className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-full text-xs font-medium flex items-center gap-1.5 hover:bg-slate-900 active:scale-95 transition-all">
                 <FaUserCircle className="text-slate-400 text-sm" /> Acceder
               </button>
-            ) : (
-              <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-850">
-                <span className="text-[10px] uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1">
-                  {userRole === 'admin' && <FaShieldAlt className="text-red-400" />}
-                  {userRole === 'staff' && <FaUserTie className="text-indigo-400" />}
-                  {userRole === 'client' && <FaUserCircle className="text-rose-400" />}
-                  {userRole}
-                </span>
-                <button 
-                  onClick={() => setUserRole('guest')}
-                  className="text-slate-500 hover:text-rose-400 text-xs pl-1 ml-1 border-l border-slate-800 transition-colors"
-                  title="Cerrar Sesión"
-                >
-                  <FaSignOutAlt />
-                </button>
-              </div>
-            )}
-
-            <Link href="/reservas" className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
-              <FaCalendarAlt /> Reservar
             </Link>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-850">
+              <span className="text-[10px] uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1">
+                {userRole === 'admin' && <FaShieldAlt className="text-red-400" />}
+                {userRole === 'staff' && <FaUserTie className="text-indigo-400" />}
+                {userRole === 'client' && <FaUserCircle className="text-rose-400" />}
+                {user?.full_name || userRole}
+              </span>
+              <button 
+                onClick={handleLogout}
+                className="text-slate-500 hover:text-rose-400 text-xs pl-1 ml-1 border-l border-slate-800 transition-colors"
+                title="Cerrar Sesión"
+              >
+                <FaSignOutAlt />
+              </button>
+            </div>
+          )}
 
-          <button className="lg:hidden text-xl text-slate-300 w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-xl active:scale-90 transition-transform" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <FaTimes /> : <FaBars />}
-          </button>
+          <Link href="/reservas" className="bg-gradient-to-r from-rose-500 to-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
+            <FaCalendarAlt /> Reservar
+          </Link>
         </div>
 
-        {/* Menú Desplegable Móvil Oscuro */}
-        {isMenuOpen && (
-          <div className="lg:hidden fixed inset-x-4 top-16 bg-slate-900/95 backdrop-blur-lg rounded-2xl shadow-2xl p-5 border border-slate-800 animate-in fade-in slide-in-from-top-4 duration-200 z-50">
-            <nav className="flex flex-col gap-1.5">
-              {navItems.map((item) => (
-                <Link key={item.label} href={item.href} className="text-slate-300 hover:text-rose-400 py-2 px-3 hover:bg-slate-950/50 rounded-xl font-medium text-xs flex items-center justify-between transition-colors" onClick={() => setIsMenuOpen(false)}>
-                  {item.label} <FaArrowRight className="text-[9px] text-slate-600" />
-                </Link>
-              ))}
-              
-              <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-850">
-                {userRole === 'guest' ? (
-                  <button 
-                    onClick={() => { setIsMenuOpen(false); setShowLoginModal(true); }}
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 text-xs"
-                  >
+        <button className="lg:hidden text-xl text-slate-300 w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-xl active:scale-90 transition-transform" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          {isMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
+      </div>
+
+      {/* Menú Móvil */}
+      {isMenuOpen && (
+        <div className="lg:hidden fixed inset-x-4 top-16 bg-slate-900/95 backdrop-blur-lg rounded-2xl shadow-2xl p-5 border border-slate-800 animate-in fade-in slide-in-from-top-4 duration-200 z-50">
+          <nav className="flex flex-col gap-1.5">
+            {navItems.map((item) => (
+              <Link 
+                key={item.label} 
+                href={item.href} 
+                className={`text-slate-300 hover:text-rose-400 py-2 px-3 hover:bg-slate-950/50 rounded-xl font-medium text-xs flex items-center justify-between transition-colors ${
+                  pathname === item.href ? 'text-rose-400' : ''
+                }`} 
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label} <FaArrowRight className="text-[9px] text-slate-600" />
+              </Link>
+            ))}
+
+            <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-850">
+              {userRole === 'guest' ? (
+                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                  <button className="w-full bg-slate-950 border border-slate-800 text-slate-200 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 text-xs">
                     <FaUserCircle /> Iniciar Sesión
                   </button>
-                ) : (
-                  <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-850 text-xs">
-                    <span className="font-bold uppercase text-slate-400 tracking-wider pl-2">Rol: {userRole}</span>
-                    <button onClick={() => setUserRole('guest')} className="text-rose-400 font-bold flex items-center gap-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg shadow-inner">
-                      Salir <FaSignOutAlt />
-                    </button>
-                  </div>
-                )}
-                <Link href="/reservas" onClick={() => setIsMenuOpen(false)} className="w-full bg-gradient-to-r from-rose-500 to-amber-500 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs text-center shadow-lg">
-                  <FaCalendarAlt /> Reservar ahora
                 </Link>
-              </div>
-            </nav>
-          </div>
-        )}
-      </header>
-
-      {/* MODAL INTERACTIVO DE LOGIN (DISEÑO PREMIUM OSCURO) */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-55 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl p-6 w-full max-w-xs shadow-2xl border border-slate-800 text-center relative animate-in zoom-in-95 duration-200">
-            
-            <button 
-              onClick={() => setShowLoginModal(false)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-slate-300 text-sm p-1 transition-colors"
-            >
-              <FaTimes />
-            </button>
-
-            <div className="w-12 h-12 bg-gradient-to-br from-rose-500/10 to-amber-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center text-rose-400 text-xl mx-auto mb-3">
-              <FaCrown />
+              ) : (
+                <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-850 text-xs">
+                  <span className="font-bold uppercase text-slate-400 tracking-wider pl-2">
+                    {user?.full_name || userRole}
+                  </span>
+                  <button onClick={handleLogout} className="text-rose-400 font-bold flex items-center gap-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg shadow-inner">
+                    Salir <FaSignOutAlt />
+                  </button>
+                </div>
+              )}
+              <Link href="/reservas" onClick={() => setIsMenuOpen(false)} className="w-full bg-gradient-to-r from-rose-500 to-amber-500 text-white py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs text-center shadow-lg">
+                <FaCalendarAlt /> Reservar ahora
+              </Link>
             </div>
-
-            <h3 className="text-base font-bold text-slate-100 tracking-tight">Portal del Ecosistema</h3>
-            <p className="text-[11px] text-slate-400 font-light mb-4">Selecciona tu perfil de privilegios</p>
-
-            <div className="space-y-2">
-              <button 
-                onClick={() => handleFakeLogin('client')}
-                className="w-full bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-rose-500/30 text-slate-300 text-xs py-2.5 px-4 rounded-xl font-medium transition-all text-left flex items-center justify-between group"
-              >
-                <span>👤 Portal Clientes</span>
-                <FaArrowRight className="text-[9px] text-slate-600 group-hover:text-rose-400 transition-colors" />
-              </button>
-
-              <button 
-                onClick={() => handleFakeLogin('staff')}
-                className="w-full bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-indigo-500/30 text-slate-300 text-xs py-2.5 px-4 rounded-xl font-medium transition-all text-left flex items-center justify-between group"
-              >
-                <span>💼 Staff Operativo</span>
-                <FaArrowRight className="text-[9px] text-slate-600 group-hover:text-indigo-400 transition-colors" />
-              </button>
-
-              <button 
-                onClick={() => handleFakeLogin('admin')}
-                className="w-full bg-gradient-to-r from-rose-500/20 to-amber-500/20 hover:from-rose-500/30 hover:to-amber-500/30 border border-rose-500/30 text-slate-200 text-xs py-2.5 px-4 rounded-xl font-bold transition-all text-left flex items-center justify-between group shadow-lg"
-              >
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-300">⚡ Administrador Máster</span>
-                <FaArrowRight className="text-[9px] text-rose-400/70" />
-              </button>
-            </div>
-            
-            <p className="text-[9px] text-slate-500 mt-4 font-mono uppercase tracking-wider">Secure Access Protocol</p>
-          </div>
+          </nav>
         </div>
       )}
-    </>
+    </header>
   )
 }
