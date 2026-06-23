@@ -25,7 +25,7 @@ import { useServices, useStaff, useTestimonials } from '@/hooks/useData'
 function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center bg-stone-50 pt-28 pb-16 overflow-hidden">
-      {/* Toques sutiles de color de fondo, suaves y limpios */}
+      {/* Toques sutiles de color de fondo */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-rose-100/50 rounded-full blur-[100px]" />
         <div className="absolute bottom-10 left-10 w-96 h-96 bg-amber-100/40 rounded-full blur-[100px]" />
