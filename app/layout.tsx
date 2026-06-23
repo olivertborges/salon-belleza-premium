@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import DevNav from '@/components/DevNav'
 
 export const metadata: Metadata = {
-  title: 'Salón de Belleza Premium',
-  description: 'Plataforma completa para Salón de Belleza',
+  title: 'Atelier de Estética',
+  description: 'Plataforma completa para Estética Avanzada y Academia',
 }
 
 export default function RootLayout({
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Acceso rápido temporal para desarrollo */}
+        <DevNav />
+      </body>
     </html>
   )
 }

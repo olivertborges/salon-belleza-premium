@@ -1,538 +1,290 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { 
-  FaWhatsapp, 
   FaCalendarAlt, 
-  FaCut, 
-  FaMagic, 
   FaGem, 
-  FaStar,
-  FaArrowRight, 
-  FaBars, 
-  FaTimes, 
-  FaInstagram, 
-  FaFacebook, 
-  FaYoutube, 
-  FaEnvelope, 
-  FaPhone, 
-  FaMapMarkerAlt, 
-  FaClock, 
-  FaUsers, 
-  FaRobot,
-  FaQuoteLeft, 
-  FaChevronLeft, 
-  FaChevronRight,
-  FaShieldAlt, 
-  FaAward, 
-  FaCrown, 
-  FaDiamond,
-  FaMedal, 
-  FaRegGem, 
-  FaRegStar, 
-  FaCheck, 
-  FaGift, 
-  FaTrophy,
-  FaRocket, 
-  FaEye, 
+  FaMagic, 
+  FaPalette, 
   FaBrush, 
-  FaPalette
+  FaEye, 
+  FaCut, 
+  FaArrowRight, 
+  FaQuoteLeft,
+  FaGraduationCap,
+  FaCheckCircle,
+  FaChevronDown,
+  FaStar
 } from 'react-icons/fa'
 
-import { 
-  useServices, 
-  useStaff, 
-  useTestimonials, 
-  useGallery
-} from '@/hooks/useData'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
+import { useServices, useStaff, useTestimonials } from '@/hooks/useData'
 
-// ============================================
-// HEADER
-// ============================================
-function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center bg-stone-50 pt-28 pb-16 overflow-hidden">
+      {/* Toques sutiles de color de fondo, suaves y limpios */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-rose-100/50 rounded-full blur-[100px]" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-amber-100/40 rounded-full blur-[100px]" />
+      </div>
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="text-center lg:text-left w-full max-w-md mx-auto lg:max-w-none">
+            <div className="inline-flex items-center gap-2 bg-white border border-stone-200 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase mb-5 text-stone-600 shadow-sm">
+              Estética Avanzada & Academia de Belleza
+            </div>
 
-  const navItems = [
-    { label: 'Inicio', href: '/' },
-    { label: 'Servicios', href: '/servicios' },
-    { label: 'Staff', href: '/staff' },
-    { label: 'Clientes', href: '/clientes' },
-    { label: 'Contacto', href: '/contacto' }
+            <h1 className="text-4xl sm:text-6xl font-serif text-stone-900 mb-6 leading-tight tracking-tight">
+              La simetría perfecta <br />
+              <span className="italic font-light text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-amber-600">
+                elevada a arte
+              </span>
+            </h1>
+
+            <p className="text-xs sm:text-sm text-stone-600 mb-8 leading-relaxed font-light max-w-sm mx-auto lg:mx-0">
+              Especialistas certificados en Microblading, Micropigmentación, Microshading e interiorismo de uñas.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <Link href="/reservas" className="w-full sm:w-auto">
+                <button className="w-full bg-stone-900 text-white hover:bg-stone-800 px-6 py-3.5 rounded-xl font-bold shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                  <FaCalendarAlt /> Agendar Cita <FaArrowRight className="text-[10px]" />
+                </button>
+              </Link>
+              <Link href="/academy" className="w-full sm:w-auto">
+                <button className="w-full bg-white border border-stone-200 text-stone-800 hover:bg-stone-50 px-6 py-3.5 rounded-xl font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-xs shadow-sm">
+                  <FaGraduationCap /> Ver Cursos
+                </button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-10 bg-white border border-stone-200 p-4 rounded-2xl shadow-sm">
+              {[
+                { number: '2.5k+', label: 'Procedimientos' },
+                { number: '5.0★', label: 'Calificación' },
+                { number: 'Master', label: 'Certificación' }
+              ].map((stat, idx) => (
+                <div key={idx} className="text-center">
+                  <p className="text-base font-black text-stone-900 tracking-tight">{stat.number}</p>
+                  <p className="text-[9px] text-stone-400 font-mono uppercase tracking-wider mt-0.5">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative w-full max-w-xs sm:max-w-sm mx-auto lg:max-w-none">
+            <div className="rounded-2xl overflow-hidden border border-stone-200 shadow-xl aspect-[4/3] lg:h-[450px] bg-white">
+              <img
+                src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&auto=format&fit=crop&q=80" 
+                alt="Procedimiento de Arquitectura de Miradas"
+                className="w-full h-full object-cover transition-all duration-700 transform hover:scale-105"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ServicesSection() {
+  const { data: services, loading } = useServices()
+
+  const iconMap: Record<string, JSX.Element> = {
+    FaMagic: <FaMagic className="text-lg" />,
+    FaGem: <FaGem className="text-lg" />,
+    FaPalette: <FaPalette className="text-lg" />,
+    FaBrush: <FaBrush className="text-lg" />,
+    FaEye: <FaEye className="text-lg" />,
+    FaCut: <FaCut className="text-lg" />,
+  }
+
+  const serviceImages: Record<number, string> = {
+    0: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&auto=format&fit=crop&q=80",
+    1: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&auto=format&fit=crop&q=80",
+    2: "https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&auto=format&fit=crop&q=80",
+  }
+
+  if (loading) return <section className="py-16 bg-white text-center"><div className="animate-pulse text-stone-400 text-xs font-mono">CARGANDO SERVICIOS...</div></section>
+
+  return (
+    <section id="servicios" className="py-20 bg-white border-t border-stone-100">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <span className="inline-block text-[9px] font-bold tracking-[0.2em] uppercase text-rose-600 bg-rose-50 px-3 py-1 rounded-md mb-3">
+            Servicios
+          </span>
+          <h2 className="text-3xl font-serif text-stone-900 mb-2 tracking-tight">
+            Tratamientos Disponibles
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {services?.map((service: any, idx: number) => (
+            <div key={idx} className="bg-stone-50 rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex flex-col justify-between group hover:border-stone-300 transition-colors">
+              <div className="h-48 w-full overflow-hidden relative bg-stone-100">
+                <img src={serviceImages[idx % 3]} alt={service.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-rose-500 border border-stone-200 shadow-sm">
+                      {iconMap[service.icon] || <FaStar className="text-base" />}
+                    </div>
+                    <span className="text-[10px] font-mono text-stone-500 bg-white px-2.5 py-0.5 rounded-full border border-stone-200">
+                      {service.duration} min
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-stone-900 tracking-tight mb-2">{service.name}</h3>
+                  <p className="text-stone-600 text-xs font-light leading-relaxed mb-4">{service.description}</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-stone-200 mt-4">
+                  <div>
+                    <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest leading-none">Inversión</p>
+                    <p className="text-lg font-black text-stone-900 mt-1">${service.price}</p>
+                  </div>
+                  <Link href="/reservas" className="bg-white border border-stone-200 text-stone-800 font-bold text-[10px] uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-stone-50 active:scale-95 transition-all flex items-center gap-1 shadow-sm">
+                    Agendar <FaArrowRight className="text-[8px]" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function AcademySection() {
+  return (
+    <section className="py-24 bg-stone-50 border-t border-stone-100 relative">
+      <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+        <div className="relative">
+          <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&auto=format&fit=crop&q=80" alt="Academy Training" className="rounded-2xl border border-stone-200 shadow-lg relative z-10 w-full h-[400px] object-cover" />
+        </div>
+        <div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-amber-700 bg-amber-50 px-3 py-1 rounded-md border border-amber-200 inline-block mb-4">
+            Formación profesional
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-serif text-stone-900 mb-6 leading-tight">
+            Aprende las técnicas que están <br />
+            <span className="italic font-light text-stone-600">revolucionando el mercado</span>
+          </h2>
+          <p className="text-stone-600 text-xs sm:text-sm font-light leading-relaxed mb-6">
+            Nuestra academia ofrece capacitación intensiva con prácticas reales sobre modelos, kits de materiales incluidos y certificaciones homologadas. Conviértete en especialista en diseño de miradas y estructuras de uñas.
+          </p>
+          <ul className="space-y-3 mb-8">
+            {['Cursos Iniciales y Avanzados de Microblading', 'Masterclass Práctica en Uñas', 'Mentoría de Negocio para Estilistas'].map((item, index) => (
+              <li key={index} className="flex items-center gap-3 text-xs text-stone-700 font-light">
+                <FaCheckCircle className="text-emerald-600 flex-shrink-0" /> {item}
+              </li>
+            ))}
+          </ul>
+          <Link href="/academy" className="inline-flex items-center gap-2 bg-stone-900 text-white hover:bg-stone-800 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md">
+            Ver Calendario de Cursos <FaArrowRight className="text-[10px]" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function StaffSection() {
+  const { data: staff, loading } = useStaff()
+  if (loading || !staff || staff.length === 0) return null
+
+  return (
+    <section id="staff" className="py-20 bg-white border-t border-stone-100">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <span className="inline-block text-[9px] font-bold tracking-[0.2em] uppercase text-stone-500 bg-stone-50 border border-stone-200 px-3 py-1 rounded-md mb-3">
+            Equipo
+          </span>
+          <h2 className="text-3xl font-serif text-stone-900 mb-2 tracking-tight">
+            Especialistas del Centro
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {staff?.map((member: any, idx: number) => (
+            <div key={idx} className="bg-stone-50 rounded-2xl p-6 text-center border border-stone-200 shadow-sm">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <img src={member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=f5f5f4&color=1c1917`} alt={member.name} className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md" />
+              </div>
+              <h4 className="font-bold text-sm text-stone-900 tracking-tight">{member.name}</h4>
+              <p className="text-[10px] text-rose-600 font-mono uppercase tracking-wider mt-1">{member.role || 'Dermo-Especialista'}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TestimonialsSection() {
+  const { data: testimonials, loading } = useTestimonials()
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  if (loading || !testimonials || testimonials.length === 0) return null
+  const current = testimonials[currentIndex]
+
+  return (
+    <section className="py-20 bg-stone-50 border-t border-stone-100">
+      <div className="w-full max-w-2xl mx-auto px-4">
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-stone-200 relative text-center">
+          <div className="w-10 h-10 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-500 mx-auto mb-6">
+            <FaQuoteLeft className="text-xs" />
+          </div>
+          <p className="text-stone-700 text-sm font-light leading-relaxed italic mb-6">
+            "{current?.comment}"
+          </p>
+          <div className="inline-flex items-center gap-3 pt-4 border-t border-stone-100 w-full justify-center">
+            <div className="text-center">
+              <h4 className="font-bold text-xs text-stone-900">{current?.name}</h4>
+              <p className="text-[10px] text-stone-400 font-mono uppercase tracking-wider mt-0.5">{current?.service}</p>
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-6">
+            <button onClick={() => setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)} className="px-4 py-2 bg-stone-50 border border-stone-200 text-[10px] font-mono text-stone-600 rounded-xl hover:bg-stone-100 transition-colors">← Anterior</button>
+            <button onClick={() => setCurrentIndex((prev) => (prev + 1) % testimonials.length)} className="px-4 py-2 bg-stone-50 border border-stone-200 text-[10px] font-mono text-stone-600 rounded-xl hover:bg-stone-100 transition-colors">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function GallerySection() {
+  const galleryImages = [
+    "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=500&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=500&auto=format&fit=crop&q=80"
   ]
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled ? 'bg-white shadow-2xl py-3' : 'bg-transparent py-6'
-    }`}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-rose-400 to-amber-400 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">
-              S
-            </div>
-            <div>
-              <h1 className="text-xl font-light tracking-wider text-gray-800">
-                SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-amber-400">PREMIUM</span>
-              </h1>
-              <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase">Beauty & Aesthetics</p>
-            </div>
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-10">
-            {navItems.map((item) => (
-              <Link key={item.label} href={item.href} className="text-sm font-light text-gray-600 hover:text-rose-500 transition-colors relative group tracking-wider uppercase">
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-gradient-to-r from-rose-400 to-amber-400 transition-all group-hover:w-full" />
-              </Link>
-            ))}
-          </nav>
-
-          <div className="hidden lg:flex items-center gap-4">
-            <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-              <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-                <FaWhatsapp /> WhatsApp
-              </button>
-            </a>
-            <Link href="/reservas">
-              <button className="bg-gradient-to-r from-rose-400 to-amber-400 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2">
-                <FaCalendarAlt /> Reservar
-              </button>
-            </Link>
-          </div>
-
-          <button className="lg:hidden text-2xl text-gray-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        </div>
-
-        {isMenuOpen && (
-          <div className="lg:hidden mt-4 bg-white rounded-2xl shadow-2xl p-6 border border-gray-100">
-            <nav className="flex flex-col gap-4">
-              {navItems.map((item) => (
-                <Link key={item.label} href={item.href} className="text-gray-700 hover:text-rose-500 transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
-                  {item.label}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-100">
-                <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-                  <button className="w-full bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2">
-                    <FaWhatsapp /> WhatsApp
-                  </button>
-                </a>
-                <Link href="/reservas">
-                  <button className="w-full bg-gradient-to-r from-rose-400 to-amber-400 text-white px-4 py-3 rounded-xl font-medium flex items-center justify-center gap-2">
-                    <FaCalendarAlt /> Reservar ahora
-                  </button>
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
-      </div>
-    </header>
-  )
-}
-
-// ============================================
-// HERO SECTION
-// ============================================
-function HeroSection() {
-  return (
-    <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-50 via-white to-rose-50/30 overflow-hidden pt-20">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-rose-100/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-amber-100/20 to-transparent rounded-full blur-3xl" />
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-2 gap-20 items-center">
+    <section className="py-20 bg-white border-t border-stone-100">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between mb-10">
           <div>
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur border border-gray-200/50 px-5 py-2.5 rounded-full text-sm font-light mb-8 text-gray-600 shadow-sm">
-              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              Especialistas en Estética Avanzada
-            </div>
-
-            <h1 className="text-7xl font-light leading-[1.1] mb-6">
-              <span className="text-gray-800">Donde la</span>
-              <br />
-              <span className="font-bold bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400 text-transparent bg-clip-text">
-                Belleza
-              </span>
-              <br />
-              <span className="text-gray-700">encuentra el</span>
-              <br />
-              <span className="font-bold text-gray-800">Arte</span>
-            </h1>
-
-            <p className="text-lg text-gray-500 mb-10 max-w-lg leading-relaxed font-light">
-              Expertos en micropigmentación, microblading y uñas. 
-              Resultados que hablan por sí mismos.
-            </p>
-
-            <div className="flex flex-wrap gap-4">
-              <Link href="/reservas">
-                <button className="group bg-gradient-to-r from-rose-400 to-amber-400 text-white px-10 py-4 rounded-full font-medium hover:shadow-2xl transition-all duration-300 flex items-center gap-3 text-base shadow-xl shadow-rose-500/20">
-                  <FaCalendarAlt className="group-hover:rotate-12 transition-transform" />
-                  Reservar ahora
-                  <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-                </button>
-              </Link>
-              <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-                <button className="bg-emerald-500 text-white px-8 py-4 rounded-full font-medium hover:shadow-xl transition-all duration-300 flex items-center gap-3 text-base shadow-xl shadow-emerald-500/20 hover:scale-105">
-                  <FaWhatsapp /> Contactar
-                </button>
-              </a>
-            </div>
-
-            <div className="flex gap-16 mt-16">
-              {[
-                { number: '1.200+', label: 'Clientes satisfechos' },
-                { number: '4.9', label: 'Calificación promedio' },
-                { number: '15+', label: 'Años de experiencia' }
-              ].map((stat, idx) => (
-                <div key={idx} className="relative">
-                  <p className="text-3xl font-bold text-gray-800 tracking-tight">{stat.number}</p>
-                  <p className="text-sm text-gray-400 font-light">{stat.label}</p>
-                  {idx < 2 && <div className="absolute -right-8 top-1/2 -translate-y-1/2 w-[1px] h-8 bg-gray-200" />}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-6 mt-8">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaShieldAlt className="text-rose-400" />
-                <span className="font-light">Certificados</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaGem className="text-amber-400" />
-                <span className="font-light">Productos Premium</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <FaUsers className="text-rose-400" />
-                <span className="font-light">Equipo Experto</span>
-              </div>
-            </div>
+            <span className="text-[9px] font-mono text-stone-400 uppercase tracking-widest block mb-1">Galería</span>
+            <h3 className="text-xl font-bold text-stone-900 tracking-tight">📸 Resultados reales</h3>
           </div>
-
-          <div className="relative">
-            <div className="rounded-2xl overflow-hidden shadow-2xl ring-1 ring-gray-200/50">
-              <img
-                src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"
-                alt="Salón"
-                className="w-full h-[600px] object-cover"
-              />
-            </div>
-            
-            <div className="absolute -top-6 -right-6 bg-white/90 backdrop-blur border border-gray-100 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-rose-100 to-amber-100 rounded-2xl flex items-center justify-center text-3xl">✦</div>
-                <div>
-                  <p className="font-bold text-gray-800 tracking-tight">Especialistas</p>
-                  <p className="text-sm text-gray-400 font-light">Micropigmentación</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-6 -left-6 bg-white/90 backdrop-blur border border-gray-100 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-rose-100 rounded-2xl flex items-center justify-center text-3xl">★</div>
-                <div>
-                  <p className="font-bold text-gray-800 tracking-tight">4.9 / 5.0</p>
-                  <p className="text-sm text-gray-400 font-light">156 reseñas reales</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-300 text-2xl animate-bounce">
-        <FaArrowRight className="rotate-90" />
-      </div>
-    </section>
-  )
-}
-
-// ============================================
-// SERVICES SECTION
-// ============================================
-function ServicesSection() {
-  const { data: services, loading, error } = useServices()
-
-  const iconMap: Record<string, JSX.Element> = {
-    FaMagic: <FaMagic className="text-2xl" />,
-    FaGem: <FaGem className="text-2xl" />,
-    FaPalette: <FaPalette className="text-2xl" />,
-    FaBrush: <FaBrush className="text-2xl" />,
-    FaEye: <FaEye className="text-2xl" />,
-    FaCut: <FaCut className="text-2xl" />,
-  }
-
-  if (loading) {
-    return (
-      <section className="py-28 bg-slate-50">
-        <div className="container mx-auto px-4 text-center">
-          <div className="animate-pulse text-gray-400">Cargando servicios...</div>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section id="servicios" className="py-28 bg-slate-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
-          <span className="inline-block text-xs font-light tracking-[0.2em] uppercase text-rose-400 border border-rose-200 px-4 py-1.5 rounded-full mb-4">
-            Servicios
-          </span>
-          <h2 className="text-4xl font-light text-gray-800 mb-3">
-            Tratamientos <span className="font-bold bg-gradient-to-r from-rose-400 to-amber-400 text-transparent bg-clip-text">Premium</span>
-          </h2>
-          <p className="text-gray-400 font-light max-w-xl mx-auto">
-            Selecciona el servicio que mejor se adapte a tus necesidades.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          {services?.map((service: any, idx: number) => (
-            <div key={idx} className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100/50">
-              <div className="flex justify-between items-start mb-5">
-                <div className="w-14 h-14 bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
-                  {iconMap[service.icon] || <FaGem className="text-2xl" />}
-                </div>
-                {service.badge && (
-                  <span className="text-[10px] font-bold tracking-widest text-rose-400 bg-rose-50 px-3 py-1 rounded-full">
-                    {service.badge}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{service.name}</h3>
-              <p className="text-gray-400 text-sm font-light leading-relaxed mb-5">{service.description}</p>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                <div>
-                  <p className="text-2xl font-bold text-gray-800">${service.price}</p>
-                  <p className="text-xs text-gray-400 font-light">{service.duration} min</p>
-                </div>
-                <Link href="/reservas">
-                  <button className="text-rose-400 hover:text-rose-500 transition-colors flex items-center gap-2 text-sm font-medium">
-                    Reservar <FaArrowRight className="text-xs" />
-                  </button>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================
-// STAFF SECTION
-// ============================================
-function StaffSection() {
-  const { data: staff, loading, error } = useStaff()
-
-  if (loading) {
-    return (
-      <section className="py-28 bg-white">
-        <div className="container mx-auto px-4 text-center">
-          <div className="animate-pulse text-gray-400">Cargando equipo...</div>
-        </div>
-      </section>
-    )
-  }
-
-  if (!staff || staff.length === 0) {
-    return (
-      <section className="py-28 bg-white">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">No hay profesionales disponibles</p>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section id="staff" className="py-28 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
-          <span className="inline-block text-xs font-light tracking-[0.2em] uppercase text-rose-400 border border-rose-200 px-4 py-1.5 rounded-full mb-4">
-            Staff
-          </span>
-          <h2 className="text-4xl font-light text-gray-800 mb-3">
-            Equipo <span className="font-bold bg-gradient-to-r from-rose-400 to-amber-400 text-transparent bg-clip-text">Profesional</span>
-          </h2>
-          <p className="text-gray-400 font-light max-w-xl mx-auto">
-            Expertos apasionados por la belleza y la excelencia.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-6">
-          {staff?.map((member: any, idx: number) => (
-            <div key={idx} className="group bg-gray-50/50 rounded-2xl p-6 text-center hover:shadow-xl transition-all duration-500 hover:-translate-y-2 border border-gray-100/50">
-              <div className="relative w-28 h-28 mx-auto mb-4">
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-200 to-amber-200 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                <img 
-                  src={member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`} 
-                  alt={member.name} 
-                  className="w-28 h-28 rounded-full object-cover ring-4 ring-rose-100/50 group-hover:ring-rose-200 transition-all" 
-                />
-              </div>
-              <h4 className="font-semibold text-gray-800">{member.name}</h4>
-              <p className="text-sm text-rose-400 font-light">{member.role || member.specialty || 'Especialista'}</p>
-              {member.experience && (
-                <p className="text-xs text-gray-400 mt-1 font-light">{member.experience}</p>
-              )}
-              <Link href="/reservas">
-                <button className="mt-4 text-sm text-rose-400 hover:text-rose-500 transition-colors font-medium">
-                  Reservar con {member.name.split(' ')[0]}
-                </button>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================
-// TESTIMONIALS SECTION
-// ============================================
-function TestimonialsSection() {
-  const { data: testimonials, loading, error } = useTestimonials()
-  const [currentIndex, setCurrentIndex] = useState(0)
-
-  if (loading) {
-    return (
-      <section className="py-28 bg-slate-50">
-        <div className="container mx-auto px-4 text-center">
-          <div className="animate-pulse text-gray-400">Cargando testimonios...</div>
-        </div>
-      </section>
-    )
-  }
-
-  if (!testimonials || testimonials.length === 0) {
-    return null
-  }
-
-  const next = () => setCurrentIndex((prev) => (prev + 1) % testimonials.length)
-  const prev = () => setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
-
-  return (
-    <section id="testimonios" className="py-28 bg-slate-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
-          <span className="inline-block text-xs font-light tracking-[0.2em] uppercase text-rose-400 border border-rose-200 px-4 py-1.5 rounded-full mb-4">
-            Testimonios
-          </span>
-          <h2 className="text-4xl font-light text-gray-800 mb-3">
-            Lo que <span className="font-bold bg-gradient-to-r from-rose-400 to-amber-400 text-transparent bg-clip-text">dicen</span> nuestros clientes
-          </h2>
-          <p className="text-gray-400 font-light max-w-xl mx-auto">
-            La satisfacción de nuestros clientes es nuestro mejor reconocimiento.
-          </p>
-        </div>
-
-        <div className="max-w-4xl mx-auto relative">
-          <div className="overflow-hidden">
-            <div className="flex transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
-              {testimonials.map((testimonial: any) => (
-                <div key={testimonial.id} className="w-full flex-shrink-0 px-6">
-                  <div className="bg-white rounded-3xl p-12 shadow-xl border border-gray-100/50">
-                    <div className="flex items-center gap-6 mb-8">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-200 to-amber-200 rounded-full blur-xl opacity-20" />
-                        <img 
-                          src={testimonial.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(testimonial.name)}&background=random`} 
-                          alt={testimonial.name} 
-                          className="w-20 h-20 rounded-full object-cover ring-4 ring-rose-100/50" 
-                        />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 text-xl">{testimonial.name}</h4>
-                        <p className="text-sm text-gray-400 font-light">{testimonial.location} · {testimonial.service}</p>
-                        <div className="flex gap-1 mt-1">
-                          {[...Array(5)].map((_, i) => (
-                            <FaStar key={i} className={i < testimonial.rating ? 'text-amber-400 text-sm' : 'text-gray-200 text-sm'} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <FaQuoteLeft className="text-4xl text-rose-200 mb-4" />
-                    <p className="text-gray-600 text-lg leading-relaxed font-light">"{testimonial.comment}"</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button onClick={prev} className="absolute -left-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-4 shadow-xl hover:shadow-2xl transition-all border border-gray-100">
-            <FaChevronLeft className="text-gray-400" />
-          </button>
-          <button onClick={next} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white rounded-full p-4 shadow-xl hover:shadow-2xl transition-all border border-gray-100">
-            <FaChevronRight className="text-gray-400" />
-          </button>
-
-          <div className="flex justify-center gap-3 mt-10">
-            {testimonials.map((_: any, idx: number) => (
-              <button
-                key={idx}
-                className={`transition-all duration-300 ${idx === currentIndex ? 'w-8 h-1.5 bg-rose-400 rounded-full' : 'w-1.5 h-1.5 bg-gray-300 rounded-full hover:bg-gray-400'}`}
-                onClick={() => setCurrentIndex(idx)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================
-// GALLERY SECTION
-// ============================================
-function GallerySection() {
-  const { data: gallery, loading, error } = useGallery()
-
-  if (loading || !gallery || gallery.length === 0) {
-    return null
-  }
-
-  return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-2xl font-light text-gray-800">
-            📸 <span className="font-bold bg-gradient-to-r from-rose-400 to-amber-400 text-transparent bg-clip-text">Galería</span>
-          </h3>
-          <Link href="/galeria">
-            <button className="text-sm text-rose-400 hover:text-rose-500 transition-colors font-medium">
-              Ver todas →
-            </button>
+          <Link href="/galeria" className="text-xs text-rose-600 font-bold hover:underline flex items-center gap-1">
+            Ver Todo <FaArrowRight className="text-[9px]" />
           </Link>
         </div>
-        <div className="grid grid-cols-4 gap-4">
-          {gallery.slice(0, 4).map((item: any, idx: number) => (
-            <div key={idx} className="relative overflow-hidden rounded-xl group cursor-pointer">
-              <img src={item.image_url} alt={item.title || 'Galería'} className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-white text-sm">{item.title || 'Transformación'}</p>
-                </div>
-              </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {galleryImages.map((src, idx) => (
+            <div key={idx} className="relative overflow-hidden rounded-2xl aspect-square bg-stone-50 border border-stone-200 group shadow-sm">
+              <img src={src} alt="Resultado de estética" className="w-full h-full object-cover transition-all duration-500 transform group-hover:scale-102" />
             </div>
           ))}
         </div>
@@ -541,197 +293,65 @@ function GallerySection() {
   )
 }
 
-// ============================================
-// CTA SECTION
-// ============================================
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const faqs = [
+    { q: "¿Cuánto dura el procedimiento de Microblading?", a: "Suele tardar entre 2 y 2.5 horas, incluyendo el diseño de visajismo previo." },
+    { q: "¿Es dolorosa la micropigmentación?", a: "Utilizamos geles calmantes tópicos para que la molestia sea mínima." },
+    { q: "¿Con cuánta anticipación debo agendar?", a: "Recomendamos reservar con un mínimo de 7 a 14 días de anticipación." }
+  ]
+
+  return (
+    <section className="py-24 bg-stone-50 border-t border-stone-100">
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-rose-600 mb-2">Preguntas frecuentes</p>
+          <h2 className="text-3xl font-serif text-stone-900 italic">Dudas comunes</h2>
+        </div>
+        <div className="space-y-4">
+          {faqs.map((faq, i) => (
+            <div key={i} className="border border-stone-200 bg-white rounded-xl overflow-hidden shadow-sm">
+              <button onClick={() => setOpenIndex(openIndex === i ? null : i)} className="w-full p-5 text-left flex justify-between items-center text-stone-800 text-xs sm:text-sm hover:bg-stone-50 transition-colors">
+                <span>{faq.q}</span>
+                <FaChevronDown className={`text-xs text-stone-400 transition-transform ${openIndex === i ? 'rotate-180 text-rose-600' : ''}`} />
+              </button>
+              {openIndex === i && <div className="p-5 pt-0 text-xs text-stone-600 font-light border-t border-stone-100 bg-stone-50/50">{faq.a}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function CTASection() {
   return (
-    <section className="py-20 bg-gradient-to-r from-rose-500 via-rose-400 to-amber-400 relative overflow-hidden">
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center text-white max-w-3xl mx-auto">
-          <div className="text-6xl mb-6 font-light opacity-80">✦</div>
-          <h2 className="text-4xl font-light mb-4">
-            ¿Listo para <span className="font-bold">transformar</span> tu belleza?
-          </h2>
-          <p className="text-lg opacity-90 mb-10 font-light leading-relaxed">
-            Reserva tu cita ahora y descubre la experiencia de belleza premium.
-          </p>
-
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/reservas">
-              <button className="bg-white text-rose-500 px-12 py-5 rounded-full font-medium hover:shadow-2xl transition-all flex items-center gap-3 text-lg">
-                <FaCalendarAlt /> Reservar ahora
-              </button>
-            </Link>
-            <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer">
-              <button className="bg-emerald-500 text-white px-10 py-5 rounded-full font-medium hover:shadow-2xl transition-all flex items-center gap-3 text-lg">
-                <FaWhatsapp /> WhatsApp
-              </button>
-            </a>
-          </div>
+    <section className="py-20 bg-white text-center border-t border-stone-100">
+      <div className="w-full max-w-xl mx-auto px-4">
+        <h2 className="text-2xl font-light text-stone-900 mb-2 tracking-tight">¿Deseas agendar un turno?</h2>
+        <div className="flex justify-center mt-6">
+          <Link href="/reservas" className="bg-stone-900 text-white hover:bg-stone-800 py-3.5 px-8 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md text-center transition-colors">
+            Reservar turno
+          </Link>
         </div>
       </div>
     </section>
   )
 }
 
-// ============================================
-// FOOTER
-// ============================================
-function Footer() {
-  return (
-    <footer className="bg-slate-900 text-white py-20">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-4 gap-16">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-rose-400 to-amber-400 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                S
-              </div>
-              <h3 className="text-xl font-light tracking-wider">
-                SALON <span className="font-bold">PREMIUM</span>
-              </h3>
-            </div>
-            <p className="text-gray-400 text-sm font-light leading-relaxed">
-              Transformando tu belleza con los mejores profesionales y técnicas de vanguardia.
-            </p>
-            <div className="flex gap-4 mt-8">
-              <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-rose-500 transition-colors">
-                <FaInstagram className="text-gray-400 hover:text-white transition-colors" />
-              </a>
-              <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-rose-500 transition-colors">
-                <FaFacebook className="text-gray-400 hover:text-white transition-colors" />
-              </a>
-              <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-rose-500 transition-colors">
-                <FaYoutube className="text-gray-400 hover:text-white transition-colors" />
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-6">Enlaces</h4>
-            <ul className="space-y-3 text-sm text-gray-400 font-light">
-              <li><Link href="/" className="hover:text-white transition-colors">Inicio</Link></li>
-              <li><Link href="/servicios" className="hover:text-white transition-colors">Servicios</Link></li>
-              <li><Link href="/staff" className="hover:text-white transition-colors">Staff</Link></li>
-              <li><Link href="/contacto" className="hover:text-white transition-colors">Contacto</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-6">Servicios</h4>
-            <ul className="space-y-3 text-sm text-gray-400 font-light">
-              <li><Link href="/servicios" className="hover:text-white transition-colors">Microblading</Link></li>
-              <li><Link href="/servicios" className="hover:text-white transition-colors">Powder Brows</Link></li>
-              <li><Link href="/servicios" className="hover:text-white transition-colors">Uñas Acrílicas</Link></li>
-              <li><Link href="/servicios" className="hover:text-white transition-colors">Uñas de Gel</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold tracking-widest uppercase text-gray-400 mb-6">Contacto</h4>
-            <ul className="space-y-3 text-sm text-gray-400 font-light">
-              <li className="flex items-center gap-3"><FaPhone className="text-rose-400" /> +34 123 456 789</li>
-              <li className="flex items-center gap-3"><FaEnvelope className="text-rose-400" /> info@salonpremium.com</li>
-              <li className="flex items-center gap-3"><FaMapMarkerAlt className="text-rose-400" /> Calle Principal 123</li>
-              <li className="flex items-center gap-3"><FaClock className="text-rose-400" /> Lun-Sáb: 9:00 - 21:00</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-800 mt-16 pt-8 text-center text-sm text-gray-500 font-light">
-          © 2024 SALON PREMIUM · Todos los derechos reservados
-        </div>
-      </div>
-    </footer>
-  )
-}
-
-// ============================================
-// AI ASSISTANT
-// ============================================
-function AIAssistant() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: '👋 ¡Hola! Soy tu asistente de belleza. ¿En qué puedo ayudarte?' }
-  ])
-  const [input, setInput] = useState('')
-
-  const handleSend = () => {
-    if (!input.trim()) return
-    setMessages([...messages, { role: 'user', content: input }])
-    setInput('')
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Gracias por tu mensaje. ¿Te gustaría reservar una cita o conocer más sobre nuestros servicios?' 
-      }])
-    }, 1000)
-  }
-
-  return (
-    <>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-gradient-to-r from-rose-400 to-amber-400 rounded-full shadow-2xl shadow-rose-500/30 flex items-center justify-center text-white text-2xl hover:scale-110 transition-transform"
-      >
-        <FaRobot />
-      </button>
-
-      {isOpen && (
-        <div className="fixed bottom-24 right-8 z-50 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-rose-400 to-amber-400 p-4 text-white flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <FaRobot className="text-xl" />
-              <span className="font-medium">Asistente IA</span>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white">
-              <FaTimes />
-            </button>
-          </div>
-          <div className="h-80 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-gradient-to-r from-rose-400 to-amber-400 text-white' : 'bg-white border border-gray-100 text-gray-700'}`}>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-4 border-t border-gray-100 flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Escribe tu mensaje..."
-              className="flex-1 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm"
-            />
-            <button onClick={handleSend} className="px-4 py-2 bg-gradient-to-r from-rose-400 to-amber-400 text-white rounded-xl hover:shadow-lg transition-all text-sm">
-              <FaArrowRight />
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-// ============================================
-// PÁGINA PRINCIPAL
-// ============================================
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="bg-white text-stone-900 min-h-screen overflow-x-hidden">
       <Header />
       <HeroSection />
       <ServicesSection />
+      <AcademySection />
       <StaffSection />
       <TestimonialsSection />
       <GallerySection />
+      <FAQSection />
       <CTASection />
       <Footer />
-      <AIAssistant />
     </main>
   )
 }

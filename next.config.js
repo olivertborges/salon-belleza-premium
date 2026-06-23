@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  swcMinify: false,
   reactStrictMode: true,
   swcMinify: true,
   images: {
@@ -13,10 +14,10 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   experimental: {
-    serverActions: true,
+    
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+   
   },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
