@@ -1,245 +1,84 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Target, Gift, Star, CheckCircle, X, Sparkles, Coins } from 'lucide-react'
-
-interface Mision {
-  id: number
-  texto: string
-  puntos: number
-  accion: string
-  completada: boolean
-}
+import React, { useState } from 'react'
+import { CheckCircle2, Circle, Flame, Sparkles, Trophy } from 'lucide-react'
 
 export default function MisionesDiarias() {
-  const [misiones, setMisiones] = useState<Mision[]>([])
-  const [puntos, setPuntos] = useState(0)
-  const [showRewardModal, setShowRewardModal] = useState(false)
-  const [recompensaMision, setRecompensaMision] = useState<Mision | null>(null)
-  const [puntosGanados, setPuntosGanados] = useState(0)
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const [misiones] = useState([
+    { id: 1, texto: 'Revisar tus puntos acumulados', puntos: 10, completada: true },
+    { id: 2, texto: 'Compartir tu código de referido QR', puntos: 25, completada: false },
+    { id: 3, texto: 'Agendar o verificar tu próxima sesión de belleza', puntos: 15, completada: false },
+  ])
 
-  const misionesTemplate: Mision[] = [
-    { id: 1, texto: "Agenda tu próxima cita", puntos: 200, accion: "agendar", completada: false },
-    { id: 2, texto: "Descubre las tendencias de la temporada", puntos: 50, accion: "verTutorial", completada: false },
-    { id: 3, texto: "Califica tu última experiencia", puntos: 100, accion: "calificar", completada: false },
-    { id: 4, texto: "Comparte tu enlace de invitación", puntos: 150, accion: "compartir", completada: false },
-  ]
-
-  useEffect(() => {
-    const hoy = new Date().toDateString()
-    const misionesGuardadas = localStorage.getItem(`misiones_${hoy}`)
-    const puntosGuardados = localStorage.getItem("freshNails_puntos") || "0"
-    setPuntos(parseInt(puntosGuardados))
-
-    if (misionesGuardadas) {
-      setMisiones(JSON.parse(misionesGuardadas))
-    } else {
-      setMisiones([...misionesTemplate])
-    }
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId)
-    }
-  }, [timeoutId])
-
-  useEffect(() => {
-    const handleCompletarMision = (event: any) => {
-      const { accion } = event.detail
-      const mision = misiones.find(m => m.accion === accion && !m.completada)
-      if (mision) {
-        reclamarPuntos(mision.id)
-      }
-    }
-
-    window.addEventListener('completarMision', handleCompletarMision)
-    return () => window.removeEventListener('completarMision', handleCompletarMision)
-  }, [misiones])
-
-  useEffect(() => {
-    const handlePuntosActualizados = (event: any) => {
-      setPuntos(event.detail.puntos)
-    }
-
-    window.addEventListener('puntosActualizados', handlePuntosActualizados)
-    return () => window.removeEventListener('puntosActualizados', handlePuntosActualizados)
-  }, [])
-
-  const cerrarModal = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-      setTimeoutId(null)
-    }
-    setShowRewardModal(false)
-    setRecompensaMision(null)
-    setPuntosGanados(0)
-  }
-
-  const reclamarPuntos = (idMision: number) => {
-    if (showRewardModal) return
-
-    const mision = misiones.find(m => m.id === idMision)
-    if (!mision || mision.completada) return
-
-    const nuevasMisiones = misiones.map(m =>
-      m.id === idMision ? { ...m, completada: true } : m
-    )
-    setMisiones(nuevasMisiones)
-    const hoy = new Date().toDateString()
-    localStorage.setItem(`misiones_${hoy}`, JSON.stringify(nuevasMisiones))
-
-    const nuevosPuntos = puntos + mision.puntos
-    setPuntos(nuevosPuntos)
-    setPuntosGanados(mision.puntos)
-    setRecompensaMision(mision)
-    localStorage.setItem("freshNails_puntos", nuevosPuntos.toString())
-
-    setShowRewardModal(true)
-
-    const id = setTimeout(() => {
-      cerrarModal()
-    }, 3500)
-    setTimeoutId(id)
-
-    window.dispatchEvent(new CustomEvent('puntosActualizados', { 
-      detail: { puntos: nuevosPuntos }
-    }))
-  }
-
-  const misionesCompletadas = misiones.filter(m => m.completada).length
+  const completadas = misiones.filter(m => m.completada).length
+  const porcentaje = Math.round((completadas / misiones.length) * 100)
 
   return (
-    <>
-      <div className="bg-white border border-stone-200 p-6 rounded-2xl shadow-sm space-y-5">
-        
-        {/* Encabezado */}
-        <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-stone-50 rounded-xl flex items-center justify-center border border-stone-200">
-              <Target className="w-4 h-4 text-stone-700" />
-            </div>
-            <div>
-              <h3 className="font-serif text-base text-stone-800 tracking-tight">Misiones de Hoy</h3>
-              <p className="text-[11px] text-stone-400 font-light">Completa acciones para acumular beneficios.</p>
-            </div>
+    <div className="bg-[#141211] border border-stone-850 p-8 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.85)] space-y-6">
+      
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-900 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-orange-500/10 to-rose-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center">
+            <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
           </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="px-2.5 py-0.5 bg-stone-100 border border-stone-200 rounded-full text-[10px] font-mono uppercase font-bold text-stone-600">
-              {misionesCompletadas}/{misiones.length}
-            </div>
-            <div className="flex items-center gap-1 bg-stone-900 px-2.5 py-0.5 rounded-full text-white text-[10px] font-mono uppercase tracking-wider font-bold">
-              <Star className="w-2.5 h-2.5 fill-white" />
-              <span>{puntos} PTS</span>
-            </div>
+          <div>
+            <h2 className="text-xl font-extralight tracking-tight text-stone-100">
+              Misiones <span className="font-serif italic font-normal text-rose-300">Diarias</span>
+            </h2>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-medium mt-1">Suma puntos Fresh cada día</p>
           </div>
         </div>
 
-        {/* Lista de Misiones */}
-        <div className="space-y-2.5">
-          {misiones.map(mision => (
-            <div
-              key={mision.id}
-              className={`flex items-center justify-between p-3.5 rounded-xl transition-all duration-300 border ${
-                mision.completada 
-                  ? 'bg-stone-50/50 border-stone-200/40 opacity-70' 
-                  : 'bg-white border-stone-100 hover:border-stone-200 hover:bg-stone-50/30'
-              }`}
-            >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border ${
-                  mision.completada ? 'bg-stone-100 border-stone-200 text-stone-400' : 'bg-stone-50 border-stone-200/60 text-stone-700'
-                }`}>
-                  {mision.completada ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <Coins className="w-4 h-4" />
-                  )}
-                </div>
-                <div className="truncate">
-                  <p className={`text-xs font-medium text-stone-800 ${mision.completada ? 'line-through text-stone-400 font-light' : ''}`}>
-                    {mision.texto}
-                  </p>
-                  <p className="text-[10px] font-mono text-stone-400">+{mision.puntos} PUNTOS</p>
-                </div>
-              </div>
-
-              {!mision.completada ? (
-                <button
-                  onClick={() => reclamarPuntos(mision.id)}
-                  className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 rounded-lg text-white text-[10px] font-mono uppercase tracking-wider font-bold transition-all"
-                >
-                  Obtener
-                </button>
-              ) : (
-                <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 px-2">
-                  Listo
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Barra de Progreso */}
-        <div className="pt-2">
-          <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider text-stone-400 mb-1.5">
-            <span>Progreso diario</span>
-            <span>{misiones.length > 0 ? Math.round((misionesCompletadas / misiones.length) * 100) : 0}%</span>
-          </div>
-          <div className="w-full bg-stone-100 rounded-full h-1">
-            <div 
-              className="bg-stone-900 h-1 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${misiones.length > 0 ? (misionesCompletadas / misiones.length) * 100 : 0}%` }}
-            />
-          </div>
+        <div className="inline-flex items-center gap-2 bg-orange-500/5 border border-orange-500/20 px-4 py-2 rounded-xl self-start sm:self-center">
+          <span className="text-xs text-stone-400 font-light">Racha Actual:</span>
+          <span className="text-sm font-mono font-bold text-orange-400 flex items-center gap-1">
+            3 Días <Flame className="w-3.5 h-3.5 fill-orange-500/20" />
+          </span>
         </div>
       </div>
 
-      {/* Modal Recompensa */}
-      {showRewardModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div 
-            className="bg-white rounded-3xl w-full max-w-xs overflow-hidden border border-stone-200 shadow-2xl relative p-6 text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={cerrarModal}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="mb-4 mt-2">
-              <div className="w-12 h-12 mx-auto bg-stone-50 border border-stone-200 rounded-2xl flex items-center justify-center mb-3 text-stone-800">
-                <Gift className="w-5 h-5" />
-              </div>
-              <h3 className="font-serif text-lg text-stone-900">¡Misión Lograda!</h3>
-              <p className="text-[11px] font-mono uppercase tracking-widest text-stone-400 mt-0.5">Recompensa Otorgada</p>
-            </div>
-
-            <div className="bg-stone-50 border border-stone-200/60 rounded-2xl p-4 mb-5">
-              {recompensaMision && (
-                <>
-                  <h4 className="text-xs font-light text-stone-600 mb-2 italic">“{recompensaMision.texto}”</h4>
-                  <div className="flex items-center justify-center gap-1.5 text-stone-900 font-mono font-bold text-xl">
-                    <Sparkles className="w-4 h-4 text-stone-800 fill-stone-800" />
-                    +{puntosGanados} PTS
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={cerrarModal}
-              className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-mono text-xs uppercase tracking-wider font-bold transition-all"
-            >
-              Confirmar
-            </button>
-          </div>
+      <div className="space-y-2">
+        <div className="flex justify-between text-[11px] font-mono tracking-wider text-stone-400">
+          <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> Progreso de hoy</span>
+          <span className="text-stone-200 font-bold">{porcentaje}%</span>
         </div>
-      )}
-    </>
+        <div className="h-2 w-full bg-stone-950 rounded-full overflow-hidden border border-stone-900 relative">
+          <div 
+            className="h-full bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${porcentaje}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-2">
+        {misiones.map((mision) => (
+          <div 
+            key={mision.id}
+            className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+              mision.completada 
+                ? 'bg-stone-900/20 border-stone-850/60 opacity-60' 
+                : 'bg-stone-900/50 border-stone-800/80 hover:border-stone-700'
+            }`}
+          >
+            <div className="flex items-center gap-3.5 max-w-[80%]">
+              {mision.completada ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              ) : (
+                <Circle className="w-5 h-5 text-stone-600 shrink-0" />
+              )}
+              <p className={`text-xs md:text-sm font-light tracking-wide ${mision.completada ? 'line-through text-stone-500' : 'text-stone-300'}`}>
+                {mision.texto}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1 bg-stone-950 px-2.5 py-1 rounded-lg border border-stone-900">
+              <span className="text-[10px] font-mono text-amber-400 font-bold">+{mision.puntos}</span>
+              <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
   )
 }

@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Camera, Upload, X } from 'lucide-react'
+import { Camera, Upload, X, ArrowRight } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 
 interface AntesDespuesProps {
   user: any
@@ -34,127 +34,97 @@ export default function AntesDespues({ user, onFotoSubida }: AntesDespuesProps) 
       toast.error('Por favor, selecciona ambas imágenes')
       return
     }
-
     setSubiendo(true)
-    // Simulación de subida controlada
     await new Promise(resolve => setTimeout(resolve, 1200))
-
     const nuevaFoto: FotoResultado = {
       id: Date.now(),
       antes: URL.createObjectURL(antes),
       despues: URL.createObjectURL(despues),
       fecha: new Date()
     }
-
     setFotos([nuevaFoto, ...fotos])
     setMostrarModal(false)
     setAntes(null)
     setDespues(null)
     setSubiendo(false)
-    
-    toast.success('Galería actualizada con éxito')
+    toast.success('Registro añadido a tu bitácora')
     if (onFotoSubida) onFotoSubida(100)
   }
 
-  // Contenido estructurado del Modal
   const modalContent = mostrarModal && (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs" onClick={() => setMostrarModal(false)} />
-      <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center mb-5 border-b border-stone-100 pb-3">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+      <div className="relative bg-[#141211] border border-stone-850 rounded-2xl max-w-md w-full p-8 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="font-serif text-base text-stone-800 tracking-tight">Añadir Registro Visual</h3>
-            <p className="text-[10px] font-mono text-stone-400 uppercase tracking-wider mt-0.5">Evolución de tratamiento</p>
+            <h3 className="font-serif text-xl text-stone-100">Nuevo Registro Visual</h3>
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Evolución de tratamiento</p>
           </div>
-          <button onClick={() => setMostrarModal(false)} className="text-stone-400 hover:text-stone-700 transition-colors">
-            <X className="w-4 h-4" />
+          <button onClick={() => setMostrarModal(false)} className="text-stone-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <span className="block text-[11px] font-mono uppercase tracking-wider text-stone-500 mb-2">Estado Inicial</span>
-            <label className="block aspect-square bg-stone-50 rounded-xl border border-stone-200 cursor-pointer hover:border-stone-400 transition-all overflow-hidden relative group">
-              {antes ? (
-                <img src={URL.createObjectURL(antes)} className="w-full h-full object-cover" alt="Preview antes" />
+          {[ { label: 'Estado Inicial', file: antes, setFile: setAntes }, { label: 'Resultado Final', file: despues, setFile: setDespues } ].map((item, i) => (
+            <label key={i} className="block aspect-square bg-stone-950 border border-stone-900 rounded-xl cursor-pointer hover:border-rose-500/40 transition-all overflow-hidden relative group">
+              {item.file ? (
+                <img src={URL.createObjectURL(item.file)} className="w-full h-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full p-4">
-                  <Upload className="w-4 h-4 text-stone-400 mb-1 group-hover:text-stone-600 transition-colors" />
-                  <span className="text-[10px] font-mono uppercase text-stone-400 group-hover:text-stone-600">Subir</span>
+                <div className="flex flex-col items-center justify-center h-full p-4 text-stone-500 group-hover:text-stone-400">
+                  <Upload className="w-5 h-5 mb-1.5 transition-colors" />
+                  <span className="text-[10px] font-mono uppercase tracking-wider">{item.label}</span>
                 </div>
               )}
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => setAntes(e.target.files?.[0] || null)} />
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => item.setFile(e.target.files?.[0] || null)} />
             </label>
-          </div>
-          <div>
-            <span className="block text-[11px] font-mono uppercase tracking-wider text-stone-500 mb-2">Resultado Final</span>
-            <label className="block aspect-square bg-stone-50 rounded-xl border border-stone-200 cursor-pointer hover:border-stone-400 transition-all overflow-hidden relative group">
-              {despues ? (
-                <img src={URL.createObjectURL(despues)} className="w-full h-full object-cover" alt="Preview despues" />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full p-4">
-                  <Upload className="w-4 h-4 text-stone-400 mb-1 group-hover:text-stone-600 transition-colors" />
-                  <span className="text-[10px] font-mono uppercase text-stone-400 group-hover:text-stone-600">Subir</span>
-                </div>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => setDespues(e.target.files?.[0] || null)} />
-            </label>
-          </div>
+          ))}
         </div>
 
         <button
           onClick={handleSubirFoto}
           disabled={subiendo}
-          className="w-full py-3 bg-stone-900 text-white font-mono text-[11px] uppercase tracking-wider rounded-xl font-bold transition-all hover:bg-stone-800 disabled:opacity-40"
+          className="w-full py-4 bg-stone-100 hover:bg-rose-600 text-stone-950 hover:text-white transition-colors font-medium text-xs uppercase tracking-wider rounded-xl font-bold"
         >
-          {subiendo ? 'Procesando...' : 'Guardar en Bitácora'}
+          {subiendo ? 'Procesando Archivos...' : 'Añadir a Galería'}
         </button>
       </div>
     </div>
   )
 
   return (
-    <div className="bg-white border border-stone-200 p-6 rounded-2xl shadow-sm space-y-5">
-      <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-stone-100 rounded-xl flex items-center justify-center border border-stone-200">
-            <Camera className="w-4 h-4 text-stone-700" />
+    <div className="bg-[#141211] border border-stone-850 p-8 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] space-y-6">
+      <div className="flex items-center justify-between border-b border-stone-900 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-amber-500/10 to-rose-500/10 border border-amber-500/30 rounded-xl flex items-center justify-center">
+            <Camera className="w-5 h-5 text-amber-300" />
           </div>
           <div>
-            <h3 className="font-serif text-base text-stone-800 tracking-tight">Antes y Después</h3>
-            <p className="text-[11px] text-stone-400 font-light">Historial clínico y estético de tus uñas.</p>
+            <h3 className="text-xl font-extralight tracking-tight text-stone-100">
+              Antes y <span className="font-serif italic font-normal text-rose-300">Después</span>
+            </h3>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 font-medium mt-1">Historial estético de tus diseños</p>
           </div>
         </div>
         <button
           onClick={() => setMostrarModal(true)}
-          className="text-[10px] font-mono uppercase tracking-wider bg-stone-50 border border-stone-200 text-stone-700 px-3 py-2 rounded-xl font-bold hover:bg-stone-100 transition-all shadow-xs"
+          className="text-[10px] font-bold uppercase tracking-wider bg-stone-900 border border-stone-800 text-stone-300 px-4 py-2.5 rounded-xl hover:border-stone-600 transition-all shadow-xs"
         >
-          + Agregar registro
+          + Registro
         </button>
       </div>
 
       {fotos.length === 0 ? (
-        <div className="text-center py-10 bg-stone-50/50 rounded-xl border border-stone-200/60 border-dashed">
-          <Camera className="w-6 h-6 mx-auto mb-2 text-stone-300" />
-          <p className="text-stone-700 text-xs font-medium">Sin registros guardados</p>
-          <p className="text-stone-400 text-[11px] font-light mt-0.5">Sube tus fotos comparativas para ver la evolución.</p>
+        <div className="text-center py-12 bg-stone-950/30 rounded-xl border border-stone-900/60 border-dashed">
+          <Camera className="w-8 h-8 mx-auto mb-3 text-stone-700" />
+          <p className="text-stone-400 text-xs font-light">Sin registros de evolución visual guardados.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5">
+        <div className="grid grid-cols-1 gap-4">
           {fotos.map(foto => (
-            <div key={foto.id} className="p-3 bg-stone-50 rounded-xl border border-stone-200/60 flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-stone-400 mb-1.5 text-center sm:text-left">Antes</p>
-                <div className="aspect-video sm:h-32 w-full overflow-hidden rounded-lg border border-stone-200">
-                  <img src={foto.antes} className="w-full h-full object-cover" alt="Antes" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-stone-400 mb-1.5 text-center sm:text-left">Después</p>
-                <div className="aspect-video sm:h-32 w-full overflow-hidden rounded-lg border border-stone-200">
-                  <img src={foto.despues} className="w-full h-full object-cover" alt="Después" />
-                </div>
-              </div>
+            <div key={foto.id} className="p-4 bg-[#1a1715] rounded-xl border border-stone-850/60 flex items-center gap-4">
+              <div className="flex-1 rounded-lg overflow-hidden border border-stone-900 aspect-video"><img src={foto.antes} className="w-full h-full object-cover" /></div>
+              <ArrowRight className="text-stone-600 flex-shrink-0" />
+              <div className="flex-1 rounded-lg overflow-hidden border border-stone-900 aspect-video"><img src={foto.despues} className="w-full h-full object-cover" /></div>
             </div>
           ))}
         </div>
