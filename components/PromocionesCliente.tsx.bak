@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'next/navigation'
 import { ChevronRight, X, ShoppingBag, Copy, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -18,7 +18,7 @@ interface Promocion {
 }
 
 export default function PromocionesCliente() {
-  const navigate = useRouter()
+  const navigate = useNavigate()
   const [promociones, setPromociones] = useState<Promocion[]>([])
   const [promocionActiva, setPromocionActiva] = useState<Promocion | null>(null)
   const [showModal, setShowModal] = useState(false)

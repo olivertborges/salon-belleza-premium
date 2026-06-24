@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import DevNav from '@/components/DevNav'
 
 export const metadata: Metadata = {
   title: 'Fresh Nails - Estética Avanzada',
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           {children}
+          <DevNav />
         </AuthProvider>
       </body>
     </html>

@@ -1,13 +1,44 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+
 export default function AdminDashboard() {
+  const { user, role, loading: authLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login')
+      } else if (role !== 'admin') {
+        router.push('/dashboard/client')
+      }
+    }
+  }, [user, role, authLoading, router])
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-pulse text-stone-400 text-xs font-mono">VERIFICANDO SESIÓN...</div>
+      </div>
+    )
+  }
+
+  if (!user || role !== 'admin') {
+    return null
+  }
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-2xl font-light text-stone-900 tracking-tight">
-          Dashboard
+          Dashboard de Administración
         </h1>
-        <span className="text-sm text-stone-400 font-light">Admin</span>
+        <p className="text-sm text-stone-400 font-light">
+          Bienvenido, {user?.full_name || user?.email || 'Admin'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -17,59 +48,14 @@ export default function AdminDashboard() {
           { label: 'Ingresos', value: '$450', change: '+12%' },
           { label: 'Tasa ocupación', value: '78%', change: '-3%' },
         ].map((stat, idx) => (
-          <div key={idx} className="border border-stone-200 rounded-xl p-5 bg-white/50">
+          <div key={idx} className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
             <p className="text-sm text-stone-400 font-light">{stat.label}</p>
-            <p className="text-2xl font-light text-stone-900 mt-1">{stat.value}</p>
-            <p className={`text-sm font-light ${stat.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-400'}`}>
+            <p className="text-2xl font-bold text-stone-900 mt-1">{stat.value}</p>
+            <p className={`text-xs font-light ${stat.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-400'}`}>
               {stat.change} vs ayer
             </p>
           </div>
         ))}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border border-stone-200 rounded-xl p-6 bg-white/50">
-          <h2 className="text-lg font-light text-stone-900 mb-4">Próximas citas</h2>
-          <div className="space-y-3">
-            {[
-              { client: 'Marta F.', time: '10:00', service: 'Microblading' },
-              { client: 'Carlos R.', time: '11:30', service: 'Uñas Acrílicas' },
-              { client: 'Ana T.', time: '13:00', service: 'Powder Brows' },
-            ].map((appt, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
-                <div>
-                  <p className="text-sm font-light text-stone-900">{appt.client}</p>
-                  <p className="text-xs text-stone-400 font-light">{appt.service}</p>
-                </div>
-                <span className="text-sm font-light text-stone-500">{appt.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="border border-stone-200 rounded-xl p-6 bg-white/50">
-          <h2 className="text-lg font-light text-stone-900 mb-4">Servicios más populares</h2>
-          <div className="space-y-3">
-            {[
-              { name: 'Microblading', count: 45, percentage: 80 },
-              { name: 'Uñas Acrílicas', count: 32, percentage: 57 },
-              { name: 'Powder Brows', count: 28, percentage: 50 },
-            ].map((svc, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="font-light text-stone-700">{svc.name}</span>
-                  <span className="text-stone-400 font-light">{svc.count}</span>
-                </div>
-                <div className="w-full h-1 bg-stone-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-stone-300 rounded-full"
-                    style={{ width: `${svc.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   )

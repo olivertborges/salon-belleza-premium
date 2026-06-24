@@ -23,8 +23,16 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
+  // Efecto de scroll - se activa cuando se baja más de 20px
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true)
+      } else {
+        setScrolled(false)
+      }
+    }
+
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -41,34 +49,43 @@ export default function Header() {
     { label: 'Staff', href: '/staff' },
   ]
 
-  // Si es admin, añadir panel de admin a la navegación
+  // Si es admin, añadir panel de admin
   if (userRole === 'admin') {
     navItems.push({ label: 'Admin', href: '/admin' })
   }
 
   const handleLogout = async () => {
     await signOut()
-    // Opcional: redirigir a home
     window.location.href = '/'
   }
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-3' : 'bg-transparent py-4'
+      scrolled 
+        ? 'bg-stone-900/95 backdrop-blur-md border-b border-stone-800 py-3 shadow-lg' 
+        : 'bg-transparent py-4'
     }`}>
       <div className="w-full max-w-7xl mx-auto px-4 flex items-center justify-between">
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="w-9 h-9 bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-sm">
             S
           </div>
           <div>
-            <h1 className="text-base font-light tracking-wider text-slate-100 leading-none">
+            <h1 className={`text-base font-light tracking-wider leading-none transition-colors ${
+              scrolled ? 'text-slate-100' : 'text-slate-100'
+            }`}>
               SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400">PREMIUM</span>
             </h1>
-            <p className="text-[8px] text-slate-400 tracking-[0.2em] uppercase mt-0.5">Beauty & Aesthetics</p>
+            <p className={`text-[8px] tracking-[0.2em] uppercase mt-0.5 transition-colors ${
+              scrolled ? 'text-slate-400' : 'text-slate-400'
+            }`}>
+              Beauty & Aesthetics
+            </p>
           </div>
         </Link>
 
+        {/* Navegación Desktop */}
         <nav className="hidden lg:flex items-center gap-6">
           {navItems.map((item) => (
             <Link 
@@ -77,7 +94,7 @@ export default function Header() {
               className={`text-[11px] font-semibold tracking-wider uppercase transition-colors ${
                 pathname === item.href 
                   ? 'text-rose-400' 
-                  : 'text-slate-300 hover:text-rose-400'
+                  : scrolled ? 'text-slate-300 hover:text-rose-400' : 'text-slate-300 hover:text-rose-400'
               }`}
             >
               {item.label}
@@ -95,15 +112,22 @@ export default function Header() {
           )}
         </nav>
 
+        {/* Acciones Desktop */}
         <div className="hidden lg:flex items-center gap-3">
           {userRole === 'guest' ? (
             <Link href="/login">
-              <button className="bg-slate-950 border border-slate-800 text-slate-300 px-4 py-2 rounded-full text-xs font-medium flex items-center gap-1.5 hover:bg-slate-900 active:scale-95 transition-all">
-                <FaUserCircle className="text-slate-400 text-sm" /> Acceder
+              <button className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all ${
+                scrolled 
+                  ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700' 
+                  : 'bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-900'
+              }`}>
+                <FaUserCircle className="text-sm" /> Acceder
               </button>
             </Link>
           ) : (
-            <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-850">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+              scrolled ? 'bg-slate-800 border-slate-700' : 'bg-slate-950 border-slate-800'
+            }`}>
               <span className="text-[10px] uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1">
                 {userRole === 'admin' && <FaShieldAlt className="text-red-400" />}
                 {userRole === 'staff' && <FaUserTie className="text-indigo-400" />}
@@ -125,7 +149,10 @@ export default function Header() {
           </Link>
         </div>
 
-        <button className="lg:hidden text-xl text-slate-300 w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-xl active:scale-90 transition-transform" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        {/* Botón menú móvil */}
+        <button className={`lg:hidden text-xl w-10 h-10 flex items-center justify-center rounded-xl active:scale-90 transition-transform ${
+          scrolled ? 'bg-slate-800 border border-slate-700 text-slate-300' : 'bg-slate-900 border border-slate-800 text-slate-300'
+        }`} onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
@@ -138,16 +165,14 @@ export default function Header() {
               <Link 
                 key={item.label} 
                 href={item.href} 
-                className={`text-slate-300 hover:text-rose-400 py-2 px-3 hover:bg-slate-950/50 rounded-xl font-medium text-xs flex items-center justify-between transition-colors ${
-                  pathname === item.href ? 'text-rose-400' : ''
-                }`} 
+                className="text-slate-300 hover:text-rose-400 py-2 px-3 hover:bg-slate-950/50 rounded-xl font-medium text-xs flex items-center justify-between transition-colors" 
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.label} <FaArrowRight className="text-[9px] text-slate-600" />
               </Link>
             ))}
 
-            <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-850">
+            <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-800">
               {userRole === 'guest' ? (
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <button className="w-full bg-slate-950 border border-slate-800 text-slate-200 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 text-xs">
@@ -155,7 +180,7 @@ export default function Header() {
                   </button>
                 </Link>
               ) : (
-                <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-850 text-xs">
+                <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-800 text-xs">
                   <span className="font-bold uppercase text-slate-400 tracking-wider pl-2">
                     {user?.full_name || userRole}
                   </span>
