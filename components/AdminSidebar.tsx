@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, GraduationCap, Sliders, UsersRound, 
@@ -21,7 +20,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const { logout, role, user } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClientComponentClient() // Cliente de respaldo seguro
 
   const [darkMode, setDarkMode] = useState(true)
 
@@ -41,29 +39,16 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const userRole = role || 'admin'
   const visibleMenu = menuItems.filter(item => item.roles.includes(userRole))
 
-  // Función de cierre de sesión ultra segura (Con doble verificación)
+  // Función asíncrona optimizada para el cierre de sesión
   const handleLogoutClick = async () => {
     try {
-      console.log('Iniciando proceso de cierre de sesión...')
-      
-      // 1. Intentar el logout del contexto global
       if (logout) {
-        await logout()
+        await logout() // Ejecuta el cierre de sesión nativo de tu AuthContext
       }
-      
-      // 2. Bypass/Respaldo: Forzar la destrucción de cookies y tokens en Supabase de forma local
-      await supabase.auth.signOut()
-      
-      console.log('Sesión destruida con éxito. Redirigiendo...')
-      
-      // 3. Forzar refresco drástico para limpiar el middleware y saltar al login
-      router.refresh()
-      window.location.href = '/login' // Reemplaza router.push si el router está bloqueado por el middleware
-      
+      router.refresh() // Limpia los estados cacheados de Next.js
+      router.push('/login') // Te manda directo al login elegante
     } catch (error) {
-      console.error('Error crítico al cerrar sesión:', error)
-      // Si todo falla, igual pateamos al usuario al login
-      window.location.href = '/login'
+      console.error('Error al cerrar sesión:', error)
     }
   }
 
@@ -148,6 +133,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           {!collapsed && <span>{darkMode ? 'Modo claro' : 'Modo oscuro'}</span>}
         </button>
 
+        {/* BOTÓN DE LOGOUT ACTUALIZADO CON CONEXIÓN TOTAL */}
         <button
           onClick={handleLogoutClick}
           className={`w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-xs text-stone-400 hover:text-rose-400 hover:bg-rose-950/20 border border-transparent hover:border-rose-500/20 transition-all group ${collapsed ? 'justify-center px-2' : ''}`}

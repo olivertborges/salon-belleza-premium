@@ -36,22 +36,17 @@ export default function AdminAgendaPage() {
     notes: '',
   })
 
-  // Generamos las horas en formato estándar "HH:MM"
   const horasDelDia = Array.from({ length: 12 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`)
 
-
   const mostrarToastLlamativo = (nuevaCita: any) => {
-    // Evitar duplicados si entran varias cosas
     const ID_TOAST = 'toast-nueva-cita';
     let toastExistente = document.getElementById(ID_TOAST);
     if (toastExistente) toastExistente.remove();
 
-    // Crear el contenedor
     const toast = document.createElement('div');
     toast.id = ID_TOAST;
-    // Estilos premium flotantes en la esquina superior derecha con Tailwind
     toast.className = "fixed top-5 right-5 z-[9999] bg-[#0e0c0b] border-2 border-amber-500 text-white p-4 rounded-2xl shadow-2xl shadow-amber-500/20 max-w-sm animate-[bounce_1s_ease-in-out_2] transition-all duration-300";
-    
+
     toast.innerHTML = `
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
@@ -71,10 +66,7 @@ export default function AdminAgendaPage() {
 
     document.body.appendChild(toast);
 
-    // Acción del botón "Cerrar"
     document.getElementById('btn-cerrar-toast')?.addEventListener('click', () => toast.remove());
-
-    // Acción del botón "Revisar Ahora" (viaja a la fecha exacta de la cita)
     document.getElementById('btn-ir-toast')?.addEventListener('click', () => {
       if (nuevaCita.date) {
         const fechaCita = new Date(nuevaCita.date.replace(/-/g, '\/'));
@@ -85,19 +77,16 @@ export default function AdminAgendaPage() {
       toast.remove();
     });
 
-    // Se autodestruye a los 10 segundos si no haces clic
     setTimeout(() => {
       if (document.body.contains(toast)) toast.remove();
     }, 10000);
   };
-// ============================================
-  // CARGAR DATOS DESDE SUPABASE + TIEMPO REAL
-  // ============================================
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       setError(null)
-      
+
       try {
         let query = supabase
           .from('appointments')
@@ -141,7 +130,7 @@ export default function AdminAgendaPage() {
         setClients(clientsRes.data || [])
 
       } catch (err: any) {
-        console.error('❌ Error general de carga:', err)
+        console.error('Error general de carga:', err)
         setError(err.message || 'Error al cargar los datos')
       } finally {
         setLoading(false)
@@ -150,25 +139,19 @@ export default function AdminAgendaPage() {
 
     fetchData()
 
-    // ESCUCHAR EN TIEMPO REAL INSERCIONES Y CAMBIOS
-
-const canalCitas = supabase
+    const canalCitas = supabase
       .channel('cambios-agenda-admin')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
         (payload) => {
-          // 👇 PEGA ESTA LÍNEA DEBAJO PARA ASOMARNOS A VER QUÉ ENVIÓ SUPABASE
-          console.log("👉 ¡EL REALTIME DETECTÓ ALGO! Aquí está el paquete:", payload);
-
+          console.log("Realtime detectó cambio:", payload);
           if (payload.eventType === 'INSERT') {
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav')
             audio.volume = 0.4
             audio.play().catch(e => console.log("Audio bloqueado"))
-            
             mostrarToastLlamativo(payload.new)
           }
-
           fetchData()
         }
       )
@@ -189,7 +172,7 @@ const canalCitas = supabase
       if (error) throw error
       setCitas(prev => prev.map(c => c.id === id ? { ...c, status: nuevoEstado } : c))
     } catch (err) {
-      console.error('Error actualizando estado de la cita:', err)
+      console.error('Error actualizando estado:', err)
     }
   }
 
@@ -210,7 +193,7 @@ const canalCitas = supabase
 
   const handleAgendarCita = async () => {
     if (!newCita.clientId || !newCita.serviceId || !newCita.date || !newCita.time) {
-      alert('Por favor completa todos los campos obligatorios')
+      alert('Completa todos los campos obligatorios')
       return
     }
 
@@ -229,19 +212,14 @@ const canalCitas = supabase
             notes: newCita.notes
           }
         ])
-        .select(`
-          *,
-          clients:client_id (id, name, email, phone),
-          services:service_id (id, name, price, duration),
-          staff:professional_id (id, name)
-        `)
+        .select()
 
       if (error) throw error
 
       if (data && data.length > 0) {
         setCitas(prev => [...prev, data[0]])
       }
-      
+
       setShowNewAppointment(false)
       setNewCita({ clientId: '', serviceId: '', staffId: '', date: '', time: '', notes: '' })
     } catch (err) {
@@ -250,10 +228,9 @@ const canalCitas = supabase
     }
   }
 
-  // 👇 PEGA LA NUEVA FUNCIÓN AQUÍ ABAJO
   const bloquearHorarioProfesional = async () => {
     if (!newCita.date || !newCita.time || !newCita.staffId) {
-      alert('Por favor selecciona Fecha, Hora y el Profesional a bloquear')
+      alert('Selecciona Fecha, Hora y el Profesional a bloquear')
       return
     }
 
@@ -268,25 +245,20 @@ const canalCitas = supabase
             date: newCita.date,
             time: newCita.time.includes(':00') ? newCita.time : `${newCita.time}:00`,
             status: 'blocked',
-            notes: newCita.notes || 'Bloqueo administrativo (Descanso/Médico)',
+            notes: newCita.notes || 'Bloqueo administrativo',
             total_price: 0
           }
         ])
-        .select(`
-          *,
-          clients:client_id (id, name, email, phone),
-          services:service_id (id, name, price, duration),
-          staff:professional_id (id, name)
-        `)
+        .select()
 
       if (error) throw error
 
       if (data && data.length > 0) {
         setCitas(prev => [...prev, data[0]])
       }
-      
+
       setShowNewAppointment(false)
-      setEsBloqueo(false) // Reseteamos el modo
+      setEsBloqueo(false)
       setNewCita({ clientId: '', serviceId: '', staffId: '', date: '', time: '', notes: '' })
       alert("Horario bloqueado correctamente.")
     } catch (err) {
@@ -324,7 +296,7 @@ const canalCitas = supabase
     .filter(c => c.status === 'completed')
     .reduce((sum, c) => sum + Number(c.services?.price || 0), 0)
 
-    const citasPendientes = citas.filter(c => c.status === 'pending').length
+  const citasPendientes = citas.filter(c => c.status === 'pending').length
 
   const formatFechaTitulo = () => {
     if (viewMode === 'day') return format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })
@@ -336,447 +308,340 @@ const canalCitas = supabase
     return format(fechaSeleccionada, 'MMMM yyyy', { locale: es })
   }
 
-// ============================================
-// VISTA DÍA CORREGIDA (REEMPLAZAR EN TU ARCHIVO)
-// ============================================
-const renderVistaDia = () => {
-  const citasDelDia = citas.filter(c => c.date === format(fechaSeleccionada, 'yyyy-MM-dd'))
+  const renderVistaDia = () => {
+    const citasDelDia = citas.filter(c => c.date === format(fechaSeleccionada, 'yyyy-MM-dd'))
 
-  if (citasDelDia.length === 0) {
+    if (citasDelDia.length === 0) {
+      return (
+        <div className="text-center py-12 border border-dashed border-stone-900 rounded-xl space-y-2">
+          <Sparkles className="w-6 h-6 text-stone-600 mx-auto" />
+          <p className="text-xs text-stone-400 font-mono">No hay citas para este día</p>
+          <button 
+            onClick={() => setShowNewAppointment(true)}
+            className="text-cyan-400 hover:text-cyan-300 text-xs font-medium transition-colors"
+          >
+            Agendar nueva cita →
+          </button>
+        </div>
+      )
+    }
+
     return (
-      <div className="text-center py-12 border border-dashed border-stone-900 rounded-xl space-y-2">
-        <Sparkles className="w-6 h-6 text-stone-600 mx-auto" />
-        <p className="text-xs text-stone-400 font-mono">No hay citas para este día</p>
-        <button 
-          onClick={() => setShowNewAppointment(true)}
-          className="text-cyan-400 hover:text-cyan-300 text-xs font-medium transition-colors"
-        >
-          Agendar nueva cita →
-        </button>
-      </div>
-    )
-  }
+      <div className="space-y-3">
+        <p className="text-[10px] font-mono text-stone-500 mb-2 uppercase tracking-wider">
+          Cronograma de citas para hoy ({citasDelDia.length})
+        </p>
 
-  return (
-    <div className="space-y-3">
-      <p className="text-[10px] font-mono text-stone-500 mb-2 uppercase tracking-wider">
-        Cronograma de citas para hoy ({citasDelDia.length})
-      </p>
-      
-      {citasDelDia.map((cita) => {
-        const statusInfo = getStatusBadge(cita.status)
-        const isPending = cita.status === 'pending'
-        const isProcessing = cita.status === 'in_progress'
-        const isCompleted = cita.status === 'completed'
+        {citasDelDia.map((cita) => {
+          const statusInfo = getStatusBadge(cita.status)
+          const isPending = cita.status === 'pending'
+          const isProcessing = cita.status === 'in_progress'
+          const isCompleted = cita.status === 'completed'
 
-        let cardBg = 'bg-stone-900/30 border-stone-800/60'
-        if (isProcessing) cardBg = 'bg-amber-950/20 border-amber-500/30'
-        if (isCompleted) cardBg = 'bg-emerald-950/10 border-emerald-500/20 opacity-70'
+          let cardBg = 'bg-stone-900/30 border-stone-800/60'
+          if (isProcessing) cardBg = 'bg-amber-950/20 border-amber-500/30'
+          if (isCompleted) cardBg = 'bg-emerald-950/10 border-emerald-500/20 opacity-70'
 
-        // Formatear la hora de forma segura para mostrarla visualmente
-        const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
+          const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
 
-        return (
-          <div key={cita.id} className="flex items-start gap-3 md:gap-4">
-            {/* Eje del tiempo / Hora al lado izquierdo */}
-            <div className="w-14 md:w-16 flex-shrink-0 pt-3 text-right">
-              <span className="text-xs font-mono font-bold text-cyan-400 tracking-wider">
-                {horaMostrar}
-              </span>
-            </div>
-            
-            {/* Línea divisoria vertical */}
-            <div className="w-px bg-stone-800 self-stretch flex-shrink-0 relative">
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-stone-700 border border-stone-950" />
-            </div>
-
-            {/* Tarjeta de la Cita */}
-            <div className={`flex-1 border rounded-xl p-3 md:p-4 transition-all ${cardBg}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-stone-800 border border-stone-700/50 flex items-center justify-center text-cyan-400 font-mono text-[10px] flex-shrink-0">
-                    {horaMostrar}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-medium text-white truncate">{cita.clients?.name || 'Cliente'}</h4>
-                    <p className="text-[11px] text-stone-400 truncate">{cita.services?.name || 'Servicio'}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-[10px] text-stone-500 flex items-center gap-1">
-                        <User className="w-3 h-3" /> {cita.staff?.name || 'Sin asignar'}
-                      </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
+          return (
+            <div key={cita.id} className="flex items-start gap-3 md:gap-4">
+              <div className="w-14 md:w-16 flex-shrink-0 pt-3 text-right">
+                <span className="text-xs font-mono font-bold text-cyan-400 tracking-wider">
+                  {horaMostrar}
+                </span>
+              </div>
+              <div className="w-px bg-stone-800 self-stretch flex-shrink-0 relative">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-stone-700 border border-stone-950" />
+              </div>
+              <div className={`flex-1 border rounded-xl p-3 md:p-4 transition-all ${cardBg}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-stone-800 border border-stone-700/50 flex items-center justify-center text-cyan-400 font-mono text-[10px] flex-shrink-0">
+                      {horaMostrar}
                     </div>
-                    {cita.notes && (
-                      <p className="text-[10px] text-stone-500 italic mt-1.5 border-l border-stone-800 pl-2">
-                        "{cita.notes}"
-                      </p>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-medium text-white truncate">{cita.clients?.name || 'Cliente'}</h4>
+                      <p className="text-[11px] text-stone-400 truncate">{cita.services?.name || 'Servicio'}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-[10px] text-stone-500 flex items-center gap-1">
+                          <User className="w-3 h-3" /> {cita.staff?.name || 'Sin asignar'}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                      {cita.notes && (
+                        <p className="text-[10px] text-stone-500 italic mt-1.5 border-l border-stone-800 pl-2">
+                          "{cita.notes}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 self-end sm:self-center">
+                    <span className="text-xs font-mono font-bold text-emerald-400 mr-2">
+                      ${Number(cita.services?.price || 0).toLocaleString()}
+                    </span>
+                    {isPending && (
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'confirmed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
+                        Confirmar
+                      </button>
+                    )}
+                    {(isPending || cita.status === 'confirmed') && (
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'in_progress')} className="text-[9px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all whitespace-nowrap">
+                        Iniciar
+                      </button>
+                    )}
+                    {isProcessing && (
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'completed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
+                        Completar
+                      </button>
+                    )}
+                    {!isCompleted && cita.status !== 'cancelled' && (
+                      <button onClick={() => eliminarCita(cita.id)} className="text-[9px] p-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
                   </div>
                 </div>
-                
-                {/* Botones de acción rápidos */}
-                <div className="flex flex-wrap items-center gap-1 self-end sm:self-center">
-                  <span className="text-xs font-mono font-bold text-emerald-400 mr-2">
-                    ${Number(cita.services?.price || 0).toLocaleString()}
-                  </span>
-                  {isPending && (
-                    <button onClick={() => cambiarEstadoCita(cita.id, 'confirmed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
-                      Confirmar
-                    </button>
-                  )}
-                  {(isPending || cita.status === 'confirmed') && (
-                    <button onClick={() => cambiarEstadoCita(cita.id, 'in_progress')} className="text-[9px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all whitespace-nowrap">
-                      Iniciar
-                    </button>
-                  )}
-                  {isProcessing && (
-                    <button onClick={() => cambiarEstadoCita(cita.id, 'completed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
-                      Completar
-                    </button>
-                  )}
-                  {!isCompleted && cita.status !== 'cancelled' && (
-                    <button onClick={() => eliminarCita(cita.id)} className="text-[9px] p-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all">
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ============================================
-// VISTA SEMANA TIPO GOOGLE CALENDAR (24 HORAS)
-// ============================================
-const renderVistaSemana = () => {
-  const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
-  const weekDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(fechaSeleccionada, { weekStartsOn: 1 }) })
-
-  // Definimos el rango visible de horas en la cuadrícula (Formato 24h estricto: de 09:00 a 20:00)
-  const horaInicioNum = 9
-  const horaFinNum = 20
-  const totalHoras = horaFinNum - horaInicioNum + 1
-  const horasCuadricula = Array.from({ length: totalHoras }, (_, i) => i + horaInicioNum)
-
-  // Altura fija en píxeles por cada hora de la cuadrícula
-  const HORA_HEIGHT_PX = 65 
-
-  // Helper para normalizar cualquier string de hora de la BD a formato "HH:MM" de 24h
-  const limpiarHora24h = (timeStr: string | null) => {
-    if (!timeStr) return '--:--'
-    const parts = timeStr.split(':')
-    if (parts.length < 2) return '--:--'
-    return `${parts[0].padStart(2, '0')}:${parts[1].substring(0, 2)}`
-  }
-
-  return (
-    <div className="overflow-x-auto select-none border border-stone-900 rounded-xl">
-      {/* Contenedor principal con un ancho mínimo para habilitar scroll lateral suave en móviles */}
-      <div className="min-w-[850px] flex flex-col font-sans bg-[#0e0c0b]">
-        
-        {/* ENCABEZADO SUPERIOR: DÍAS DE LA SEMANA */}
-        <div className="flex border-b border-stone-900 bg-stone-950/80 sticky top-0 z-20 backdrop-blur-md">
-          {/* Espacio para alinear con la columna vertical de horas */}
-          <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950/40" />
-          
-          {/* Grid de 7 columnas para los días */}
-          <div className="flex-1 grid grid-cols-7">
-            {weekDays.map((day) => {
-              const isTodayDate = isToday(day)
-              return (
-                <div 
-                  key={day.toString()} 
-                  className={`text-center py-2.5 border-r border-stone-900/60 last:border-r-0 flex flex-col items-center justify-center ${
-                    isTodayDate ? 'bg-cyan-500/[0.04]' : ''
-                  }`}
-                >
-                  <span className={`text-[10px] font-mono uppercase tracking-wider ${isTodayDate ? 'text-cyan-400 font-bold' : 'text-stone-500'}`}>
-                    {format(day, 'EEE', { locale: es })}
-                  </span>
-                  <p className={`text-base font-mono font-bold mt-0.5 rounded-full w-7 h-7 flex items-center justify-center ${
-                    isTodayDate ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' : 'text-stone-200'
-                  }`}>
-                    {format(day, 'd')}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* CUADRÍCULA CUERPO: RELOJ HORIZONTAL Y COLUMNAS RECTANGULARES */}
-        <div className="flex relative">
-          
-          {/* COLUMNA VERTICAL IZQUIERDA: HORAS DE GUÍA (EJE Y) */}
-          <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950/30 text-right pr-2.5">
-            {horasCuadricula.map((hora) => (
-              <div 
-                key={hora} 
-                className="text-[10px] font-mono text-stone-500 font-medium flex items-start justify-end pt-1"
-                style={{ height: `${HORA_HEIGHT_PX}px` }}
-              >
-                {String(hora).padStart(2, '0')}:00
-              </div>
-            ))}
-          </div>
-
-          {/* ÁREA DE CONTENIDO: REJILLA DE FONDO + TARJETAS DE CITAS */}
-          <div className="flex-1 grid grid-cols-7 relative">
-            
-            {/* Líneas sutiles horizontales de fondo (Líneas de las horas) */}
-            <div className="absolute inset-0 pointer-events-none flex flex-col z-0">
-              {horasCuadricula.map((hora) => (
-                <div 
-                  key={`line-${hora}`} 
-                  className="border-b border-stone-900/40 w-full" 
-                  style={{ height: `${HORA_HEIGHT_PX}px` }}
-                />
-              ))}
-            </div>
-
-            {/* COLUMNAS INTERNAS (UNA POR CADA DÍA DE LA SEMANA) */}
-            {weekDays.map((day) => {
-              const citasDelDia = getCitasDelDia(day)
-              const isTodayDate = isToday(day)
-
-              return (
-                <div 
-                  key={`col-${day}`} 
-                  className={`relative border-r border-stone-900/60 last:border-r-0 min-h-full z-10 ${
-                    isTodayDate ? 'bg-cyan-500/[0.01]' : ''
-                  }`}
-                  style={{ height: `${totalHoras * HORA_HEIGHT_PX}px` }}
-                >
-                  {citasDelDia.map((cita) => {
-                    if (!cita.time) return null
-
-                    // Forzar limpieza y lectura en base 24h
-                    const horaFormateada = limpiarHora24h(cita.time)
-                    const [hStr, mStr] = horaFormateada.split(':')
-                    const horaCita = parseInt(hStr, 10)
-                    const minCita = parseInt(mStr, 10) || 0
-                    
-                    // Si cae fuera de las horas visibles de la cuadrícula, la descartamos de la vista
-                    if (horaCita < horaInicioNum || horaCita > horaFinNum) return null
-
-                    // Duración por defecto (en minutos): Si no viene de la BD se asume 1 hora (60 mins)
-                    const duracionMinutos = cita.services?.duration || 60
-
-                    // Calcular la posición 'top' píxel por píxel basados en la hora y minutos
-                    const minutosDesdeInicio = ((horaCita - horaInicioNum) * 60) + minCita
-                    const topPx = (minutosDesdeInicio / 60) * HORA_HEIGHT_PX
-
-                    // Calcular la altura proporcional a la duración del servicio
-                    const heightPx = (duracionMinutos / 60) * HORA_HEIGHT_PX
-
-                    const statusInfo = getStatusBadge(cita.status)
-                    const isProcessing = cita.status === 'in_progress'
-                    const isCompleted = cita.status === 'completed'
-
-                    // Estilos visuales dinámicos de la tarjeta según el estado actual
-                    let cardBgColor = 'bg-stone-900/90 border-stone-800 text-stone-200'
-                    if (isProcessing) cardBgColor = 'bg-amber-950/85 border-amber-500/40 text-amber-200 shadow-md shadow-amber-500/5'
-                    if (isCompleted) cardBgColor = 'bg-emerald-950/30 border-emerald-500/20 text-stone-500 opacity-60'
-                    if (cita.status === 'blocked') cardBgColor = 'bg-stone-950/90 border-dashed border-stone-800 text-stone-500 opacity-70 strip-bg'
-                    return (
-                      <div
-                        key={cita.id}
-                        className={`absolute left-1 right-1 rounded-xl border p-1.5 overflow-hidden transition-all hover:z-30 hover:scale-[1.01] hover:shadow-xl shadow-lg flex flex-col justify-between group ${cardBgColor}`}
-                        style={{ 
-                          top: `${topPx + 2}px`, // Separación sutil arriba
-                          height: `${Math.max(heightPx - 4, 32)}px` // Previene colapso completo en turnos muy cortos
-                        }}
-                        title={`${horaFormateada} - ${cita.clients?.name}: ${cita.services?.name}`}
-                      >
-                        <div className="min-w-0">
-                          {/* Fila superior: Hora en 24h e Indicador de Estado */}
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[9px] font-mono font-bold text-cyan-400">
-                              {horaFormateada}
-                            </span>
-                            {heightPx >= 45 && (
-                              <span className={`text-[6px] px-1 py-0.2 rounded border uppercase font-mono tracking-wider bg-black/30 border-current ${statusInfo.color.split(' ')[2]}`}>
-                                {statusInfo.label}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Nombre del Cliente */}
-                          <p className="text-[10px] font-bold truncate text-white mt-0.5 tracking-wide">
-                            {cita.clients?.name || 'Cliente'}
-                          </p>
-
-                          {/* Nombre del Servicio (Sólo si hay suficiente espacio vertical) */}
-                          {heightPx > 50 && (
-                            <p className="text-[9px] text-stone-400 font-medium truncate mt-0.5">
-                              {cita.services?.name || 'Servicio'}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Fila Inferior: Profesional y Precio (Sólo si hay suficiente espacio vertical) */}
-                        {heightPx >= 65 && (
-                          <div className="flex items-center justify-between text-[8px] border-t border-stone-800/80 pt-1 mt-1 font-mono">
-                            <span className="text-stone-400 font-sans truncate max-w-[65%]">
-                              {cita.staff?.name || 'Sin asignar'}
-                            </span>
-                            <span className="font-bold text-emerald-400">
-                              ${Number(cita.services?.price || 0).toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })}
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  )
-}
-
-// ============================================
-// VISTA MES TIPO GOOGLE CALENDAR (24 HORAS)
-// ============================================
-const renderVistaMes = () => {
-  const monthStart = startOfMonth(fechaSeleccionada)
-  const daysInMonth = getDaysInMonth(fechaSeleccionada)
-  
-  // El día de la semana en que empieza el mes (0: Domingo, 1: Lunes, etc.)
-  let startDay = monthStart.getDay()
-  // Ajuste para que la semana empiece en Lunes (si es Domingo(0), pasa a ser el 7º día)
-  const ajusteStartDay = startDay === 0 ? 6 : startDay - 1
-
-  const days = []
-  
-  // Rellenar los días vacíos del mes anterior
-  for (let i = 0; i < ajusteStartDay; i++) {
-    days.push(null)
-  }
-  
-  // Registrar los días reales del mes actual
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), i)
-    days.push(date)
-  }
-
-  // Helper para forzar la hora al formato estricto de 24h "HH:MM"
-  const format24h = (timeStr: string | null) => {
-    if (!timeStr) return '--:--'
-    // Si viene "14:30:00" o "09:15", tomamos solo los primeros 5 caracteres
-    const [horas, minutos] = timeStr.split(':')
-    if (!horas || !minutos) return '--:--'
-    return `${horas.padStart(2, '0')}:${minutos.substring(0, 2)}`
-  }
-
-  return (
-    <div className="flex flex-col h-full font-sans select-none">
-      
-      {/* CABECERA: DÍAS DE LA SEMANA */}
-      <div className="grid grid-cols-7 border-b border-stone-900 bg-stone-950/20 text-center font-mono text-[10px] text-stone-500 py-2">
-        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((d) => (
-          <span key={d} className="hidden sm:block uppercase tracking-wider">{d}</span>
-        ))}
-        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, idx) => (
-          <span key={`short-${idx}`} className="sm:hidden uppercase tracking-wider">{d}</span>
-        ))}
-      </div>
-
-      {/* CUADRÍCULA DE DÍAS */}
-      <div className="grid grid-cols-7 gap-px bg-stone-900 border-b border-r border-l border-stone-900 rounded-b-xl overflow-hidden">
-        {days.map((day, idx) => {
-          if (!day) {
-            return <div key={`empty-${idx}`} className="bg-stone-950/10 min-h-[90px] sm:min-h-[120px]" />
-          }
-
-          const citasDelDia = getCitasDelDia(day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
-          const isTodayDate = isToday(day)
-
-          return (
-            <div 
-              key={idx} 
-              onClick={() => { setFechaSeleccionada(day); setViewMode('day') }}
-              className={`bg-[#0e0c0b] p-1.5 min-h-[95px] sm:min-h-[130px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-900/40 relative group ${
-                isTodayDate ? 'ring-1 ring-inset ring-cyan-500/30 bg-cyan-500/[0.02]' : ''
-              }`}
-            >
-              {/* NÚMERO DEL DÍA */}
-              <div className="flex justify-between items-center mb-1">
-                <span 
-                  className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-6 h-6 ${
-                    isTodayDate 
-                      ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' 
-                      : 'text-stone-400 group-hover:text-white'
-                  }`}
-                >
-                  {format(day, 'd')}
-                </span>
-                
-                {/* Indicador discreto si hay muchas citas */}
-                {citasDelDia.length > 0 && (
-                  <span className="text-[9px] font-mono font-medium text-stone-500 sm:hidden">
-                    {citasDelDia.length}u
-                  </span>
-                )}
-              </div>
-
-              {/* LISTA DE CITAS DENTRO DE LA CELDA (ESTILO GOOGLE CALENDAR) */}
-              <div className="flex-1 space-y-1 overflow-y-hidden max-h-[65px] sm:max-h-[95px]">
-                {citasDelDia.slice(0, 3).map((cita) => {
-                  const statusInfo = getStatusBadge(cita.status)
-                  const hora24 = format24h(cita.time)
-                  
-                  const isProcessing = cita.status === 'in_progress'
-                  const isCompleted = cita.status === 'completed'
-
-                  let badgeStyle = 'bg-stone-900 border-stone-800 text-stone-200'
-                  if (isProcessing) badgeStyle = 'bg-amber-950/50 border-amber-500/30 text-amber-300'
-                  if (isCompleted) badgeStyle = 'bg-emerald-950/20 border-emerald-500/20 text-stone-500 opacity-60'
-
-                  return (
-                    <div 
-                      key={cita.id}
-                      className={`group/item flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded border truncate transition-colors ${badgeStyle}`}
-                      title={`${hora24} - ${cita.clients?.name}`}
-                    >
-                      {/* Hora fija en 24h */}
-                      <span className="font-mono font-bold text-cyan-400 flex-shrink-0">
-                        {hora24}
-                      </span>
-                      {/* Nombre del cliente */}
-                      <span className="truncate font-medium flex-1">
-                        {cita.clients?.name || 'Cliente'}
-                      </span>
-                    </div>
-                  )
-                })}
-
-                {/* BOTÓN DE "MÁS CITAS" */}
-                {citasDelDia.length > 3 && (
-                  <div className="text-[8px] sm:text-[10px] text-cyan-500/70 font-mono font-medium pl-1 bg-cyan-500/5 rounded py-0.5 border border-cyan-500/10 text-center">
-                    + {citasDelDia.length - 3} más
-                  </div>
-                )}
               </div>
             </div>
           )
         })}
       </div>
+    )
+  }
 
-    </div>
-  )
-}
+  const renderVistaSemana = () => {
+    const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
+    const weekDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(fechaSeleccionada, { weekStartsOn: 1 }) })
+
+    const horaInicioNum = 9
+    const horaFinNum = 20
+    const totalHoras = horaFinNum - horaInicioNum + 1
+    const horasCuadricula = Array.from({ length: totalHoras }, (_, i) => i + horaInicioNum)
+    const HORA_HEIGHT_PX = 65
+
+    const limpiarHora24h = (timeStr: string | null) => {
+      if (!timeStr) return '--:--'
+      const parts = timeStr.split(':')
+      if (parts.length < 2) return '--:--'
+      return `${parts[0].padStart(2, '0')}:${parts[1].substring(0, 2)}`
+    }
+
+    return (
+      <div className="overflow-x-auto select-none border border-stone-900 rounded-xl">
+        <div className="min-w-[850px] flex flex-col font-sans bg-[#0e0c0b]">
+
+          <div className="flex border-b border-stone-900 bg-stone-950/80 sticky top-0 z-20 backdrop-blur-md">
+            <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950 sticky left-0 z-30" />
+            <div className="flex-1 grid grid-cols-7">
+              {weekDays.map((day) => {
+                const isTodayDate = isToday(day)
+                return (
+                  <div key={day.toString()} className={`text-center py-2.5 border-r border-stone-900/60 last:border-r-0 flex flex-col items-center justify-center ${isTodayDate ? 'bg-cyan-500/[0.04]' : ''}`}>
+                    <span className={`text-[10px] font-mono uppercase tracking-wider ${isTodayDate ? 'text-cyan-400 font-bold' : 'text-stone-500'}`}>
+                      {format(day, 'EEE', { locale: es })}
+                    </span>
+                    <p className={`text-base font-mono font-bold mt-0.5 rounded-full w-7 h-7 flex items-center justify-center ${isTodayDate ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' : 'text-stone-200'}`}>
+                      {format(day, 'd')}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex relative">
+
+            <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950 text-right pr-2.5 sticky left-0 z-50">
+              {horasCuadricula.map((hora) => (
+                <div key={hora} className="text-[10px] font-mono text-stone-500 font-medium flex items-start justify-end pt-1" style={{ height: `${HORA_HEIGHT_PX}px` }}>
+                  {String(hora).padStart(2, '0')}:00
+                </div>
+              ))}
+            </div>
+
+            <div className="flex-1 grid grid-cols-7 relative">
+
+              <div className="absolute inset-0 pointer-events-none flex flex-col z-0">
+                {horasCuadricula.map((hora) => (
+                  <div key={`line-${hora}`} className="border-b border-stone-900/40 w-full" style={{ height: `${HORA_HEIGHT_PX}px` }} />
+                ))}
+              </div>
+
+              {weekDays.map((day) => {
+                const citasDelDia = getCitasDelDia(day)
+                const isTodayDate = isToday(day)
+
+                return (
+                  <div key={`col-${day}`} className={`relative border-r border-stone-900/60 last:border-r-0 min-h-full z-10 ${isTodayDate ? 'bg-cyan-500/[0.01]' : ''}`} style={{ height: `${totalHoras * HORA_HEIGHT_PX}px` }}>
+                    {citasDelDia.map((cita) => {
+                      if (!cita.time) return null
+
+                      const horaFormateada = limpiarHora24h(cita.time)
+                      const [hStr, mStr] = horaFormateada.split(':')
+                      const horaCita = parseInt(hStr, 10)
+                      const minCita = parseInt(mStr, 10) || 0
+
+                      if (horaCita < horaInicioNum || horaCita > horaFinNum) return null
+
+                      const duracionMinutos = cita.services?.duration || 60
+                      const minutosDesdeInicio = ((horaCita - horaInicioNum) * 60) + minCita
+                      const topPx = (minutosDesdeInicio / 60) * HORA_HEIGHT_PX
+                      const heightPx = (duracionMinutos / 60) * HORA_HEIGHT_PX
+
+                      const statusInfo = getStatusBadge(cita.status)
+                      const isProcessing = cita.status === 'in_progress'
+                      const isCompleted = cita.status === 'completed'
+
+                      let cardBgColor = 'bg-stone-900/90 border-stone-800 text-stone-200'
+                      if (isProcessing) cardBgColor = 'bg-amber-950/85 border-amber-500/40 text-amber-200 shadow-md shadow-amber-500/5'
+                      if (isCompleted) cardBgColor = 'bg-emerald-950/30 border-emerald-500/20 text-stone-500 opacity-60'
+                      if (cita.status === 'blocked') cardBgColor = 'bg-stone-950/90 border-dashed border-stone-800 text-stone-500 opacity-70'
+
+                      return (
+                        <div
+                          key={cita.id}
+                          className={`absolute left-1 right-1 rounded-xl border p-1.5 overflow-hidden transition-all hover:z-30 hover:scale-[1.01] hover:shadow-xl shadow-lg flex flex-col justify-between group ${cardBgColor}`}
+                          style={{ top: `${topPx + 2}px`, height: `${Math.max(heightPx - 4, 32)}px` }}
+                          title={`${horaFormateada} - ${cita.clients?.name}: ${cita.services?.name}`}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[9px] font-mono font-bold text-cyan-400">{horaFormateada}</span>
+                              {heightPx >= 45 && (
+                                <span className={`text-[6px] px-1 py-0.2 rounded border uppercase font-mono tracking-wider bg-black/30 border-current ${statusInfo.color.split(' ')[2]}`}>
+                                  {statusInfo.label}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] font-bold truncate text-white mt-0.5 tracking-wide">
+                              {cita.clients?.name || 'Cliente'}
+                            </p>
+                            {heightPx > 50 && (
+                              <p className="text-[9px] text-stone-400 font-medium truncate mt-0.5">
+                                {cita.services?.name || 'Servicio'}
+                              </p>
+                            )}
+                          </div>
+                          {heightPx >= 65 && (
+                            <div className="flex items-center justify-between text-[8px] border-t border-stone-800/80 pt-1 mt-1 font-mono">
+                              <span className="text-stone-400 font-sans truncate max-w-[65%]">
+                                {cita.staff?.name || 'Sin asignar'}
+                              </span>
+                              <span className="font-bold text-emerald-400">
+                                ${Number(cita.services?.price || 0).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderVistaMes = () => {
+    const monthStart = startOfMonth(fechaSeleccionada)
+    const daysInMonth = getDaysInMonth(fechaSeleccionada)
+
+    let startDay = monthStart.getDay()
+    const ajusteStartDay = startDay === 0 ? 6 : startDay - 1
+
+    const days = []
+    for (let i = 0; i < ajusteStartDay; i++) { days.push(null) }
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), i)
+      days.push(date)
+    }
+
+    const format24h = (timeStr: string | null) => {
+      if (!timeStr) return '--:--'
+      const [horas, minutos] = timeStr.split(':')
+      if (!horas || !minutos) return '--:--'
+      return `${horas.padStart(2, '0')}:${minutos.substring(0, 2)}`
+    }
+
+    return (
+      <div className="flex flex-col h-full font-sans select-none">
+        <div className="grid grid-cols-7 border-b border-stone-900 bg-stone-950/20 text-center font-mono text-[10px] text-stone-500 py-2">
+          {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((d) => (
+            <span key={d} className="hidden sm:block uppercase tracking-wider">{d}</span>
+          ))}
+          {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, idx) => (
+            <span key={`short-${idx}`} className="sm:hidden uppercase tracking-wider">{d}</span>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-px bg-stone-900 border-b border-r border-l border-stone-900 rounded-b-xl overflow-hidden">
+          {days.map((day, idx) => {
+            if (!day) {
+              return <div key={`empty-${idx}`} className="bg-stone-950/10 min-h-[90px] sm:min-h-[120px]" />
+            }
+
+            const citasDelDia = getCitasDelDia(day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+            const isTodayDate = isToday(day)
+
+            return (
+              <div 
+                key={idx} 
+                onClick={() => { setFechaSeleccionada(day); setViewMode('day') }}
+                className={`bg-[#0e0c0b] p-1.5 min-h-[95px] sm:min-h-[130px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-900/40 relative group ${
+                  isTodayDate ? 'ring-1 ring-inset ring-cyan-500/30 bg-cyan-500/[0.02]' : ''
+                }`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-6 h-6 ${
+                    isTodayDate ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' : 'text-stone-400 group-hover:text-white'
+                  }`}>
+                    {format(day, 'd')}
+                  </span>
+                  {citasDelDia.length > 0 && (
+                    <span className="text-[9px] font-mono font-medium text-stone-500 sm:hidden">
+                      {citasDelDia.length}u
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1 overflow-y-hidden max-h-[65px] sm:max-h-[95px]">
+                  {citasDelDia.slice(0, 3).map((cita) => {
+                    const statusInfo = getStatusBadge(cita.status)
+                    const hora24 = format24h(cita.time)
+                    const isProcessing = cita.status === 'in_progress'
+                    const isCompleted = cita.status === 'completed'
+
+                    let badgeStyle = 'bg-stone-900 border-stone-800 text-stone-200'
+                    if (isProcessing) badgeStyle = 'bg-amber-950/50 border-amber-500/30 text-amber-300'
+                    if (isCompleted) badgeStyle = 'bg-emerald-950/20 border-emerald-500/20 text-stone-500 opacity-60'
+
+                    return (
+                      <div key={cita.id} className={`group/item flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded border truncate transition-colors ${badgeStyle}`} title={`${hora24} - ${cita.clients?.name}`}>
+                        <span className="font-mono font-bold text-cyan-400 flex-shrink-0">{hora24}</span>
+                        <span className="truncate font-medium flex-1">{cita.clients?.name || 'Cliente'}</span>
+                      </div>
+                    )
+                  })}
+
+                  {citasDelDia.length > 3 && (
+                    <div className="text-[8px] sm:text-[10px] text-cyan-500/70 font-mono font-medium pl-1 bg-cyan-500/5 rounded py-0.5 border border-cyan-500/10 text-center">
+                      + {citasDelDia.length - 3} más
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
@@ -901,37 +766,30 @@ const renderVistaMes = () => {
         </div>
       </div>
 
-      {/* Pega esto debajo de donde se muestra el título "Agenda Admin" y los ingresos */}
-        {citasPendientes > 0 && (
+      {citasPendientes > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between mb-4 animate-pulse">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
             <p className="text-xs font-mono text-amber-400">
-                Tienes <span className="font-bold">{citasPendientes}</span> {citasPendientes === 1 ? 'cita pendiente' : 'citas pendientes'} por confirmar
+              Tienes <span className="font-bold">{citasPendientes}</span> {citasPendientes === 1 ? 'cita pendiente' : 'citas pendientes'} por confirmar
             </p>
-            </div>
-            <button 
+          </div>
+          <button 
             onClick={() => {
-            // Buscamos la primera cita pendiente que tengamos en la lista
-            const primeraPendiente = citas.find(c => c.status === 'pending');
-            
-            if (primeraPendiente && primeraPendiente.date) {
-                // Convertimos el string "YYYY-MM-DD" a un objeto Date real
-                // Usamos el reemplazo de guiones por barras para evitar problemas de zona horaria local
+              const primeraPendiente = citas.find(c => c.status === 'pending');
+              if (primeraPendiente && primeraPendiente.date) {
                 const fechaCita = new Date(primeraPendiente.date.replace(/-/g, '\/'));
                 setFechaSeleccionada(fechaCita);
-            }
-            
-            // Cambiamos a la vista de día y limpiamos los filtros para asegurarnos de que se vea
-            setViewMode('day');
-            setFiltroStaff('todos');
+              }
+              setViewMode('day');
+              setFiltroStaff('todos');
             }}
             className="text-[10px] font-mono uppercase bg-amber-500 text-black px-2 py-0.5 rounded font-bold hover:bg-amber-400 transition-colors"
-            >
+          >
             Ver citas
-            </button>
+          </button>
         </div>
-        )}
+      )}
 
       {/* METRICAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">

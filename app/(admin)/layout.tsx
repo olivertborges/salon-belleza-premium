@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import AdminSidebar from '../../components/layout/AdminSidebar'
+import AdminSidebar from '@/components/layout/AdminSidebar'
 import { Bell, Menu, User } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -10,25 +10,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="h-screen w-full bg-[#090807] text-stone-200 flex overflow-hidden">
-      
-      {/* Sidebar: Posicionamiento corregido */}
+
+      {/* Sidebar */}
       <div className={`fixed lg:relative z-[60] h-full transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} isOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
+        <AdminSidebar 
+          collapsed={collapsed} 
+          setCollapsed={setCollapsed} 
+          isOpen={isMobileOpen} 
+          onClose={() => setIsMobileOpen(false)} 
+        />
       </div>
 
       {/* Overlay móvil */}
       {isMobileOpen && <div className="lg:hidden fixed inset-0 bg-black/60 z-[55]" onClick={() => setIsMobileOpen(false)} />}
 
-      {/* Columna derecha: Barra Superior + Contenido */}
+      {/* Columna derecha: Header + Contenido */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        
-        {/* BARRA SUPERIOR (Navbar) */}
+
+        {/* HEADER */}
         <header className="h-16 border-b border-stone-900 flex items-center justify-between px-4 lg:px-8 bg-[#090807] shrink-0">
           <button className="lg:hidden p-2 text-stone-400" onClick={() => setIsMobileOpen(true)}>
             <Menu className="w-6 h-6" />
           </button>
-          
-          <div className="flex-1" /> {/* Espaciador */}
+
+          <div className="flex-1" />
 
           <div className="flex items-center gap-4">
             <button className="p-2 text-stone-400 hover:text-white transition-colors relative">
@@ -41,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Contenido Principal */}
+        {/* CONTENIDO */}
         <main className="flex-1 w-full p-4 lg:p-8 overflow-y-auto">
           {children}
         </main>
