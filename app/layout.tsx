@@ -1,18 +1,24 @@
-import React from 'react'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 export const metadata = {
-  title: 'Fresh Nails - Salón de Belleza Premium',
-  description: 'Experiencia VIP en Estética Integral',
+  title: 'Mi App Premium',
+  description: 'Creado con Next.js, Supabase y Modo Claro/Oscuro',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="es" className="h-full">
-      <body className="h-full antialiased m-0 p-0 bg-[#090807]">
+    <html lang="es" className="dark" suppressHydrationWarning>
+      <body className="bg-stone-50 text-stone-900 dark:bg-[#0a0908] dark:text-white min-h-screen transition-colors duration-300">
         <AuthProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
