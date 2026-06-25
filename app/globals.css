@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* Ocultar barra de scroll horrible y estilizarla estilo premium */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0e0c0b; 
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: #2e2a28; 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e11d48; /* El tono rose-500 del salón al pasar el mouse */
+}
+
+/* Para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2e2a28 #0e0c0b;
+}

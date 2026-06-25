@@ -163,6 +163,20 @@ export type Database = {
           created_at: string
         }
       }
+      appointments: {
+        Row: {
+          id: string
+          client_id: string
+          staff_id: string
+          service_id: string
+          date: string
+          time: string
+          status: string // 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'
+          price: number
+          notes: string | null
+          created_at: string
+        }
+      }
     }
   }
 }
