@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Session, User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -17,9 +17,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = createClientComponentClient()
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  // ⚡ CORRECCIÓN: Permitir 'staff' en el estado inicial del State
   const [role, setRole] = useState<'client' | 'admin' | 'staff' | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -47,15 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        console.warn('AuthContext: Supabase tardó demasiado. Forzando desbloqueo.')
-        setLoading(false)
-      }
-    }, 2500)
-
     const initializeAuth = async () => {
       try {
+        // ✅ OBTENER SESIÓN GUARDADA
         const { data: { session } } = await supabase.auth.getSession()
 
         if (isMounted) {
@@ -74,18 +68,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (isMounted) {
           setLoading(false)
-          clearTimeout(safetyTimeout)
         }
       }
     }
 
     initializeAuth()
 
+    // ✅ ESCUCHAR CAMBIOS DE AUTENTICACIÓN
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (!isMounted) return
 
-      // Pone el cargando en true para congelar layouts mientras cambiamos de sesión
-      setLoading(true)
+      console.log('🔄 Auth state changed:', event)
 
       if (event === 'SIGNED_OUT') {
         setSession(null)
@@ -96,36 +89,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      setSession(currentSession)
-      setUser(currentSession?.user ?? null)
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_UP') {
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
 
-      if (currentSession?.user) {
-        // ⚡ ASINCRONÍA REPARADA: Esperamos a que la base de datos traiga el rol
-        await fetchUserRole(currentSession.user.id)
-      } else {
-        setRole('client')
+        if (currentSession?.user) {
+          await fetchUserRole(currentSession.user.id)
+        } else {
+          setRole('client')
+        }
+        setLoading(false)
       }
-      
-      // Apagamos el loading solo cuando el rol ya esté inyectado en el estado
-      setLoading(false)
     })
 
     return () => {
       isMounted = false
-      clearTimeout(safetyTimeout)
       listener?.subscription.unsubscribe()
     }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password 
+    })
     if (error) throw error
+    
+    if (data.user) {
+      await fetchUserRole(data.user.id)
+      setUser(data.user)
+      setSession(data.session)
+    }
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
     setRole(null)
     setTenantId(null)
+    setUser(null)
+    setSession(null)
   }
 
   return (
