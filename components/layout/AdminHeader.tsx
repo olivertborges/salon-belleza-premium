@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Bell, Menu, User, LogOut, Settings, Sun, Moon } from 'lucide-react'
+import { Bell, Menu, User, Sun, Moon } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 interface AdminHeaderProps {
+  collapsed: boolean
   onMenuClick: () => void
 }
 
@@ -15,7 +16,6 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [showNotifications, setShowNotifications] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const isDark = theme === 'dark'
 
@@ -26,8 +26,10 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   ]
 
   const unreadCount = notifications.filter(n => !n.read).length
-  const userName = user?.name || user?.full_name || 'Admin'
-  const firstName = userName.split(' ')[0]
+
+  // ⚡ CONTROL DE ERRORES BLINDADO: Extraemos el nombre de forma 100% segura
+  const userName = user?.email || 'Administrador'
+  const firstName = userName.split('@')[0] || 'Admin'
 
   return (
     <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 py-3 md:py-4 flex items-center justify-between transition-colors duration-300 ${
@@ -53,7 +55,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <h1 className={`text-sm md:text-lg font-light tracking-tight transition-colors ${
             isDark ? 'text-white' : 'text-stone-900'
           }`}>
-            Bienvenido{user?.name?.endsWith('a') ? 'a' : 'o'}, <span className="font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">{firstName}</span>
+            Bienvenido, <span className="font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">{firstName}</span>
           </h1>
           <p className={`text-[10px] md:text-xs font-light hidden sm:block transition-colors ${
             isDark ? 'text-stone-500' : 'text-stone-400'
@@ -135,15 +137,6 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                   </div>
                 ))}
               </div>
-              <div className={`p-2 border-t text-center ${
-                isDark ? 'border-stone-900' : 'border-stone-200'
-              }`}>
-                <button className={`text-[10px] transition-colors ${
-                  isDark ? 'text-cyan-400 hover:text-cyan-300' : 'text-cyan-600 hover:text-cyan-700'
-                }`}>
-                  Ver todas
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -169,7 +162,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           </div>
         </div>
 
-        {/* Perfil móvil (solo icono) */}
+        {/* Perfil móvil */}
         <button className={`md:hidden p-2 rounded-xl border transition-all ${
           isDark
             ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import ThemeToggle from '@/components/ThemeToggle'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()

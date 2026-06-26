@@ -7,7 +7,8 @@ import { Session, User } from '@supabase/supabase-js'
 interface AuthContextType {
   session: Session | null
   user: User | null
-  role: 'client' | 'admin' | null
+  // ⚡ CORRECCIÓN: Agregamos 'staff' a la unión de tipos permitidos
+  role: 'client' | 'admin' | 'staff' | null 
   tenantId: string | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
@@ -22,33 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<'client' | 'admin' | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Obtener sesión inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchUserRole(session.user.id)
-      }
-      setLoading(false)
-    })
-
-    // Escuchar cambios en autenticación
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchUserRole(session.user.id)
-      } else {
-        setRole(null)
-        setTenantId(null)
-      }
-      setLoading(false)
-    })
-
-    return () => listener?.subscription.unsubscribe()
-  }, [])
 
   const fetchUserRole = async (userId: string) => {
     try {
@@ -65,9 +39,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRole('client')
       }
     } catch (error) {
+      console.error('Error fetching role:', error)
       setRole('client')
     }
   }
+
+  useEffect(() => {
+    let isMounted = true
+
+    // ⚡ CONTROL DE SEGURIDAD INTERNO:
+    // Si Supabase tarda más de 2.5 segundos en responder por problemas de red o sesión,
+    // forzamos el apagado del esqueleto para no congelar la pantalla del usuario.
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn('AuthContext: Supabase tardó demasiado. Forzando desbloqueo.');
+        setLoading(false);
+      }
+    }, 2500);
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (isMounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            await fetchUserRole(session.user.id)
+          } else {
+            setRole('client') // Si no hay sesión, asignamos rol básico de inmediato
+          }
+        }
+      } catch (error) {
+        console.error('Error inicializando auth:', error)
+        if (isMounted) setRole('client')
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+          clearTimeout(safetyTimeout) // Limpiamos el temporizador si todo salió bien
+        }
+      }
+    }
+
+    initializeAuth()
+
+    // Escuchar cambios en autenticación de Supabase
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      if (!isMounted) return
+      
+      if (event === 'SIGNED_OUT') {
+        setSession(null)
+        setUser(null)
+        setRole(null)
+        setTenantId(null)
+        setLoading(false)
+        return
+      }
+
+      setSession(currentSession)
+      setUser(currentSession?.user ?? null)
+      
+      if (currentSession?.user) {
+        await fetchUserRole(currentSession.user.id)
+      } else {
+        setRole('client')
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      isMounted = false
+      clearTimeout(safetyTimeout)
+      listener?.subscription.unsubscribe()
+    }
+  }, [])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })

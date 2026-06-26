@@ -1,41 +1,72 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import AdminHeader from '@/components/layout/AdminHeader'
-import { useTheme } from '@/contexts/ThemeContext'
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { theme } = useTheme()
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { role, loading, session } = useAuth()
+  const router = useRouter()
+  
   const [collapsed, setCollapsed] = useState(false)
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const isDark = theme === 'dark'
+  useEffect(() => {
+    // 🔒 Control estricto de expulsión sincronizada
+    if (!loading && role !== null) {
+      if (role !== 'admin' && role !== 'staff') {
+        console.warn('Acceso denegado: Rol no administrativo.', role)
+        router.replace('/login')
+      }
+    }
+    
+    if (!loading && !session) {
+      router.replace('/login')
+    }
+  }, [role, loading, session, router])
 
-  return (
-    <div className={`h-screen w-full flex overflow-hidden transition-colors duration-300 ${
-      isDark ? 'bg-[#090807] text-stone-200' : 'bg-[#faf8f6] text-stone-900'
-    }`}>
+  // Espera pacientemente la carga sin rebotarte
+  if (loading || (session && role === null)) {
+    return (
+      <div className="h-screen w-screen bg-[#0a0908] flex items-center justify-center text-white font-mono text-xs">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <span>Verificando permisos en Dashboard...</span>
+        </div>
+      </div>
+    )
+  }
 
-      <div className={`fixed lg:relative z-[60] h-full transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+  // Si eres admin o staff, abrimos las puertas del diseño
+  if (role === 'admin' || role === 'staff') {
+    return (
+      <div className="flex min-h-screen bg-stone-50 dark:bg-[#0a0908]">
         <AdminSidebar 
           collapsed={collapsed} 
           setCollapsed={setCollapsed} 
-          isOpen={isMobileOpen} 
-          onClose={() => setIsMobileOpen(false)} 
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
-      </div>
 
-      {isMobileOpen && <div className="lg:hidden fixed inset-0 bg-black/60 z-[55]" onClick={() => setIsMobileOpen(false)} />}
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminHeader 
+            collapsed={collapsed} 
+            onMenuClick={() => setSidebarOpen(true)} 
+          />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <AdminHeader onMenuClick={() => setIsMobileOpen(true)} />
-        <main className={`flex-1 w-full p-4 lg:p-8 overflow-y-auto transition-colors duration-300 ${
-          isDark ? 'bg-[#090807]' : 'bg-[#faf8f6]'
-        }`}>
-          {children}
-        </main>
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  return null
 }

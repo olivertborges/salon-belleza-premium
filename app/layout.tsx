@@ -15,11 +15,12 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark" suppressHydrationWarning>
       <body className="bg-stone-50 text-stone-900 dark:bg-[#0a0908] dark:text-white min-h-screen transition-colors duration-300">
-        <AuthProvider>
-          <ThemeProvider>
+        {/* ⚡ CORRECCIÓN: El ThemeProvider envuelve globalmente a la lógica de Auth */}
+        <ThemeProvider>
+          <AuthProvider>
             {children}
-          </ThemeProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
