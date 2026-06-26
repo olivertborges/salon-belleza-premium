@@ -18,32 +18,38 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    // 🔒 Control estricto de expulsión sincronizada
-    if (!loading && role !== null) {
-      if (role !== 'admin' && role !== 'staff') {
+    // Si la autenticación ya terminó de hacer su carga inicial
+    if (!loading) {
+      
+      // 1. Si NO hay sesión activa bajo ningún concepto, al login directo
+      if (!session) {
+        router.replace('/login')
+        return
+      }
+
+      // 2. Si SÍ hay sesión, pero el rol ya cargó y NO es admin ni staff, para afuera.
+      // ⚡ Si 'role' es null (mientras Supabase responde en el teléfono), 
+      // este bloque se ignora y te deja esperando de forma segura.
+      if (role !== null && role !== 'admin' && role !== 'staff') {
         console.warn('Acceso denegado: Rol no administrativo.', role)
         router.replace('/login')
       }
     }
-    
-    if (!loading && !session) {
-      router.replace('/login')
-    }
   }, [role, loading, session, router])
 
-  // Espera pacientemente la carga sin rebotarte
+  // ⏳ Pantalla de espera tolerante al lag (Crucial para Termux)
   if (loading || (session && role === null)) {
     return (
       <div className="h-screen w-screen bg-[#0a0908] flex items-center justify-center text-white font-mono text-xs">
         <div className="flex flex-col items-center gap-2">
           <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
-          <span>Verificando permisos en Dashboard...</span>
+          <span>Cargando credenciales seguras...</span>
         </div>
       </div>
     )
   }
 
-  // Si eres admin o staff, abrimos las puertas del diseño
+  // 🔒 Si el rol es el correcto, renderizamos la estructura completa
   if (role === 'admin' || role === 'staff') {
     return (
       <div className="flex min-h-screen bg-stone-50 dark:bg-[#0a0908]">

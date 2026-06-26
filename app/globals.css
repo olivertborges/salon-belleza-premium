@@ -2,28 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* MODO CLARO (POR DEFECTO) */
+  :root {
+    --background: #fcfbfa;       /* Hueso claro premium */
+    --foreground: #1c1917;       /* Stone oscuro para letras */
+    --card: #ffffff;             /* Tarjetas blancas impecables */
+    --card-foreground: #1c1917;
+    --border: #e7e5e4;           /* Bordes sutiles stone-200 */
+    --muted: #f5f5f4;            /* Gris muy suave para inputs */
+    --muted-foreground: #78716c; /* Stone-500 para textos secundarios */
+  }
 
-/* Ocultar barra de scroll horrible y estilizarla estilo premium */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  /* MODO OSCURO */
+  .dark {
+    --background: #0a0908;       /* Negro azabache */
+    --foreground: #f5f5f4;       /* Blanco roto para letras */
+    --card: #141211;             /* Tarjeta gris oscuro refinado */
+    --card-foreground: #f5f5f4;
+    --border: #292524;           /* Bordes oscuros stone-800 */
+    --muted: #1c1917;            /* Inputs oscuros */
+    --muted-foreground: #a8a29e; /* Stone-400 */
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #0e0c0b; 
-}
- 
-::-webkit-scrollbar-thumb {
-  background: #2e2a28; 
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #e11d48; /* El tono rose-500 del salón al pasar el mouse */
-}
-
-/* Para Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #2e2a28 #0e0c0b;
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

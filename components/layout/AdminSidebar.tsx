@@ -18,7 +18,7 @@ interface AdminSidebarProps {
 }
 
 const ALL_MENU_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/admin', color: 'border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20' },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20' },
   { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/admin/agenda', color: 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/20' },
   { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' },
   { id: 'clientes', name: 'Clientas VIP', icon: Users, path: '/admin/clientes', color: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' },
@@ -35,7 +35,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const { theme, toggleTheme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
-  
+
   const [mounted, setMounted] = useState(false)
   const [currentPath, setCurrentPath] = useState(pathname)
 
@@ -62,6 +62,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
     onClose()
   }
 
+  const activePath = currentPath || pathname || '/dashboard'
+
+  const isItemActive = (itemPath: string) => {
+    if (itemPath === '/dashboard') return activePath === '/dashboard'
+    return activePath?.startsWith(itemPath + '/') || activePath === itemPath
+  }
+
   const handleLogoutClick = async () => {
     try {
       if (signOut) await signOut()
@@ -70,13 +77,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
       console.error('Error al cerrar sesión:', error)
       router.push('/login')
     }
-  }
-
-  const activePath = currentPath || pathname || '/admin'
-
-  const isItemActive = (itemPath: string) => {
-    if (itemPath === '/admin') return activePath === '/admin'
-    return activePath?.startsWith(itemPath + '/') || activePath === itemPath
   }
 
   return (

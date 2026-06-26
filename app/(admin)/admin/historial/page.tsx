@@ -61,7 +61,7 @@ export default function HistorialPage() {
             amount: c.total_price || 0,
             status: 'Completada',
             icon: <CheckCircle2 className="w-4 h-4" />,
-            color: 'text-emerald-400'
+            color: 'text-emerald-600 dark:text-emerald-400'
           })
         })
       }
@@ -85,7 +85,7 @@ export default function HistorialPage() {
             amount: v.total || 0,
             status: 'Completada',
             icon: <ShoppingBag className="w-4 h-4" />,
-            color: 'text-violet-400'
+            color: 'text-violet-600 dark:text-violet-400'
           })
         })
       }
@@ -109,7 +109,7 @@ export default function HistorialPage() {
             amount: c.price || 0,
             status: 'Finalizado',
             icon: <GraduationCap className="w-4 h-4" />,
-            color: 'text-fuchsia-400'
+            color: 'text-fuchsia-600 dark:text-fuchsia-400'
           })
         })
       }
@@ -132,7 +132,7 @@ export default function HistorialPage() {
             amount: 0,
             status: 'Registrado',
             icon: <User className="w-4 h-4" />,
-            color: 'text-cyan-400'
+            color: 'text-cyan-600 dark:text-cyan-400'
           })
         })
       }
@@ -169,30 +169,35 @@ export default function HistorialPage() {
 
   const getTypeBadge = (type: string) => {
     const config: Record<string, { color: string, bg: string }> = {
-      cita: { color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-      venta: { color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
-      curso: { color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10 border-fuchsia-500/20' },
-      cliente: { color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' },
-      pago: { color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' }
+      cita: { color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+      venta: { color: 'text-violet-700 dark:text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
+      curso: { color: 'text-fuchsia-700 dark:text-fuchsia-400', bg: 'bg-fuchsia-500/10 border-fuchsia-500/20' },
+      cliente: { color: 'text-cyan-700 dark:text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' },
+      pago: { color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' }
     }
     return config[type] || config.cita
   }
 
   if (loading) {
-    return <div className="flex h-96 items-center justify-center font-mono text-xs text-rose-400">Cargando historial...</div>
+    return (
+      <div className="flex h-96 items-center justify-center font-mono text-xs text-amber-500">
+        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mr-2" />
+        Cargando historial...
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
 
       {/* HEADER */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-950/40 via-stone-900/40 to-[#0e0c0b] border border-amber-500/20 p-6 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.05] via-card to-card border border-amber-500/20 p-6 shadow-xl">
         <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl"></div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400 font-mono">📜 Registro de Actividad</p>
-            <h2 className="text-2xl font-serif italic text-white mt-1">Historial</h2>
-            <p className="text-xs text-stone-400 mt-1">Todos los eventos importantes del salón en un solo lugar.</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 font-mono">📜 Registro de Actividad</p>
+            <h2 className="text-2xl font-serif italic text-foreground mt-1">Historial</h2>
+            <p className="text-xs text-mutedForeground mt-1">Todos los eventos importantes del salón en un solo lugar.</p>
           </div>
           <button 
             onClick={cargarHistorial}
@@ -206,25 +211,25 @@ export default function HistorialPage() {
 
       {/* MÉTRICAS RÁPIDAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl bg-stone-900/30 border border-stone-900 p-3 text-center">
-          <p className="text-[8px] text-stone-500 font-mono uppercase tracking-wider">Total Eventos</p>
-          <span className="text-xl font-mono font-bold text-stone-100 block">{historial.length}</span>
+        <div className="rounded-xl bg-card border border-border p-3 text-center">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Total Eventos</p>
+          <span className="text-xl font-mono font-bold text-foreground block">{historial.length}</span>
         </div>
-        <div className="rounded-xl bg-stone-900/30 border border-stone-900 p-3 text-center">
-          <p className="text-[8px] text-stone-500 font-mono uppercase tracking-wider">Citas</p>
-          <span className="text-xl font-mono font-bold text-emerald-400 block">
+        <div className="rounded-xl bg-card border border-border p-3 text-center">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Citas</p>
+          <span className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
             {historial.filter(i => i.type === 'cita').length}
           </span>
         </div>
-        <div className="rounded-xl bg-stone-900/30 border border-stone-900 p-3 text-center">
-          <p className="text-[8px] text-stone-500 font-mono uppercase tracking-wider">Ventas</p>
-          <span className="text-xl font-mono font-bold text-violet-400 block">
+        <div className="rounded-xl bg-card border border-border p-3 text-center">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Ventas</p>
+          <span className="text-xl font-mono font-bold text-violet-600 dark:text-violet-400 block">
             {historial.filter(i => i.type === 'venta').length}
           </span>
         </div>
-        <div className="rounded-xl bg-stone-900/30 border border-stone-900 p-3 text-center">
-          <p className="text-[8px] text-stone-500 font-mono uppercase tracking-wider">Clientes Nuevos</p>
-          <span className="text-xl font-mono font-bold text-cyan-400 block">
+        <div className="rounded-xl bg-card border border-border p-3 text-center">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Clientes Nuevos</p>
+          <span className="text-xl font-mono font-bold text-cyan-600 dark:text-cyan-400 block">
             {historial.filter(i => i.type === 'cliente').length}
           </span>
         </div>
@@ -232,14 +237,14 @@ export default function HistorialPage() {
 
       {/* FILTROS */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center bg-stone-900/40 border border-stone-900 rounded-xl px-3 py-2.5 flex-1">
-          <Search className="w-4 h-4 text-stone-500 shrink-0" />
+        <div className="flex items-center bg-muted border border-border rounded-xl px-3 py-2.5 flex-1">
+          <Search className="w-4 h-4 text-mutedForeground shrink-0" />
           <input 
             type="text" 
             placeholder="Buscar en el historial..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-stone-200 placeholder-stone-500 w-full ml-2"
+            className="bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground w-full ml-2"
           />
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -249,8 +254,8 @@ export default function HistorialPage() {
               onClick={() => setFilterType(type)}
               className={`px-3 py-1.5 rounded-lg text-[10px] font-medium border transition-all whitespace-nowrap ${
                 filterType === type
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-400'
-                  : 'bg-transparent border-stone-900 text-stone-400 hover:text-stone-200 hover:bg-stone-900/30'
+                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400'
+                  : 'bg-transparent border-border text-mutedForeground hover:text-foreground hover:bg-muted'
               }`}
             >
               {type === 'todos' ? 'Todos' : getTypeLabel(type)}
@@ -261,8 +266,14 @@ export default function HistorialPage() {
 
       {/* LISTA DE HISTORIAL */}
       <div className="space-y-2">
+        {error && (
+          <div className="text-center py-4 border border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400 rounded-xl font-mono text-xs">
+            {error}
+          </div>
+        )}
+        
         {filtrados.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-stone-900 rounded-xl font-mono text-stone-500 text-xs">
+          <div className="text-center py-12 border border-dashed border-border rounded-xl font-mono text-mutedForeground text-xs">
             No hay eventos en el historial
           </div>
         ) : (
@@ -271,27 +282,27 @@ export default function HistorialPage() {
             return (
               <div 
                 key={`${item.id}-${index}`} 
-                className="bg-[#0e0c0b] border border-stone-900 rounded-xl p-4 hover:border-amber-500/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="bg-card border border-border rounded-xl p-4 hover:border-amber-500/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`w-8 h-8 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center ${item.color} flex-shrink-0`}>
-                    {item.icon}
+                  <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center flex-shrink-0">
+                    <span className={item.color}>{item.icon}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-medium text-white truncate">{item.title}</h4>
+                      <h4 className="text-sm font-medium text-foreground truncate">{item.title}</h4>
                       <span className={`text-[8px] px-2 py-0.5 rounded-full border ${badge.bg} ${badge.color}`}>
                         {getTypeLabel(item.type)}
                       </span>
                     </div>
-                    <p className="text-xs text-stone-400 truncate">{item.description}</p>
-                    <div className="flex items-center gap-4 mt-1 text-[10px] text-stone-500">
+                    <p className="text-xs text-mutedForeground truncate">{item.description}</p>
+                    <div className="flex items-center gap-4 mt-1 text-[10px] text-mutedForeground">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
-                      {item.amount && item.amount > 0 && (
-                        <span className="font-mono font-bold text-emerald-400">
+                      {item.amount !== undefined && item.amount > 0 && (
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           ${item.amount.toLocaleString()}
                         </span>
                       )}
@@ -302,7 +313,7 @@ export default function HistorialPage() {
                   <span className={`text-[9px] px-2 py-1 rounded-full border ${badge.bg} ${badge.color}`}>
                     {item.status}
                   </span>
-                  <button className="p-1 rounded-lg hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-300">
+                  <button className="p-1 rounded-lg hover:bg-muted transition-all text-mutedForeground hover:text-foreground">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>

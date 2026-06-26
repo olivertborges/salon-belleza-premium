@@ -46,7 +46,7 @@ export default function StaffPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data, error } = await supabase
         .from('staff')
         .select('*')
@@ -155,7 +155,8 @@ export default function StaffPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-indigo-400">
+      <div className="flex h-96 items-center justify-center font-mono text-xs text-indigo-500">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2" />
         Cargando equipo...
       </div>
     )
@@ -165,13 +166,13 @@ export default function StaffPage() {
     <div className="space-y-6">
 
       {/* HEADER */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-950/40 via-stone-900/40 to-[#0e0c0b] border border-indigo-500/20 p-6 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/[0.05] via-card to-card border border-indigo-500/20 p-6 shadow-xl">
         <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-mono">👥 Equipo</p>
-            <h2 className="text-2xl font-serif italic text-white mt-1">Staff Fresh Nails</h2>
-            <p className="text-xs text-stone-400 mt-1">Gestiona los profesionales del salón.</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 font-mono">👥 Equipo</p>
+            <h2 className="text-2xl font-serif italic text-foreground mt-1">Staff Fresh Nails</h2>
+            <p className="text-xs text-mutedForeground mt-1">Gestiona los profesionales del salón.</p>
           </div>
           <button 
             onClick={() => { setEditingId(null); setFormData({ name: '', role: 'Especialista', email: '', phone: '', specialty: '', experience: '', avatar_url: '' }); setShowModal(true) }}
@@ -183,118 +184,118 @@ export default function StaffPage() {
         </div>
       </div>
 
-      {/* ERROR Y SUCCESS */}
+      {/* ALERTAS */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-600 dark:text-red-400 text-xs">
           <p className="font-mono">❌ {error}</p>
         </div>
       )}
       {success && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-400 text-xs">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-600 dark:text-emerald-400 text-xs">
           <p className="font-mono">✅ {success}</p>
         </div>
       )}
 
       {/* MÉTRICAS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Total Staff</p>
-            <span className="text-2xl font-mono font-bold text-stone-100 block mt-1">{staff.length}</span>
+            <p className="text-mutedForeground text-xs font-medium">Total Staff</p>
+            <span className="text-2xl font-mono font-bold text-foreground block mt-1">{staff.length}</span>
           </div>
-          <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
             <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Especialidades</p>
-            <span className="text-2xl font-mono font-bold text-stone-200 block mt-1">
+            <p className="text-mutedForeground text-xs font-medium">Especialidades</p>
+            <span className="text-2xl font-mono font-bold text-foreground block mt-1">
               {new Set(staff.map(m => m.specialty).filter(Boolean)).size}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-stone-500/10 border border-stone-500/20 text-stone-400">
+          <div className="p-3 rounded-xl bg-muted border border-border text-mutedForeground">
             <Sparkles className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Roles</p>
-            <span className="text-2xl font-mono font-bold text-stone-200 block mt-1">
+            <p className="text-mutedForeground text-xs font-medium">Roles</p>
+            <span className="text-2xl font-mono font-bold text-foreground block mt-1">
               {new Set(staff.map(m => m.role).filter(Boolean)).size}
             </span>
           </div>
-          <div className="p-3 rounded-xl bg-stone-500/10 border border-stone-500/20 text-stone-400">
+          <div className="p-3 rounded-xl bg-muted border border-border text-mutedForeground">
             <UserCog className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* BÚSQUEDA */}
-      <div className="flex items-center bg-stone-900/40 border border-stone-900 rounded-xl px-4 py-3 max-w-md">
-        <Search className="w-4 h-4 text-stone-500 shrink-0" />
+      <div className="flex items-center bg-muted border border-border rounded-xl px-4 py-3 max-w-md">
+        <Search className="w-4 h-4 text-mutedForeground shrink-0" />
         <input 
           type="text" 
           placeholder="Buscar por nombre, rol o especialidad..." 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-transparent border-none outline-none text-xs text-stone-200 placeholder-stone-500 w-full ml-3"
+          className="bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground w-full ml-3"
         />
       </div>
 
       {/* GRID DE STAFF */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtrados.map((member) => (
-          <div key={member.id} className="bg-[#0e0c0b] border border-stone-900 rounded-xl p-4 hover:border-indigo-500/20 transition-all group">
+          <div key={member.id} className="bg-card border border-border rounded-xl p-4 hover:border-indigo-500/20 transition-all group">
             <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-amber-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-lg font-bold flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-lg font-bold flex-shrink-0">
                 {member.name?.charAt(0).toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-stone-200 group-hover:text-indigo-400 transition-colors truncate">
+                <h3 className="text-sm font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
                   {member.name}
                 </h3>
-                <p className="text-xs text-indigo-400">{member.role || 'Especialista'}</p>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400">{member.role || 'Especialista'}</p>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {member.specialty && (
-                    <span className="text-[8px] px-2 py-0.5 rounded-full bg-stone-900 border border-stone-800 text-stone-400">
+                    <span className="text-[8px] px-2 py-0.5 rounded-full bg-background border border-border text-mutedForeground">
                       {member.specialty}
                     </span>
                   )}
                   {member.experience && (
-                    <span className="text-[8px] px-2 py-0.5 rounded-full bg-stone-900 border border-stone-800 text-stone-400">
+                    <span className="text-[8px] px-2 py-0.5 rounded-full bg-background border border-border text-mutedForeground">
                       {member.experience}
                     </span>
                   )}
                 </div>
-                <div className="flex flex-col gap-0.5 mt-1 text-[10px] text-stone-500">
+                <div className="flex flex-col gap-0.5 mt-2 text-[10px] text-mutedForeground">
                   {member.email && (
                     <span className="flex items-center gap-1 truncate">
-                      <Mail className="w-3 h-3" /> {member.email}
+                      <Mail className="w-3 h-3 text-mutedForeground/60" /> {member.email}
                     </span>
                   )}
                   {member.phone && (
                     <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> {member.phone}
+                      <Phone className="w-3 h-3 text-mutedForeground/60" /> {member.phone}
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 mt-3 pt-3 border-t border-stone-900/60">
+            <div className="flex gap-2 mt-3 pt-3 border-t border-border/60">
               <button 
                 onClick={() => handleEdit(member)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-stone-900 border border-stone-800 text-stone-300 hover:text-white hover:bg-stone-800 text-xs transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-background border border-border text-mutedForeground hover:text-foreground hover:bg-muted text-xs transition-all"
               >
                 <Edit className="w-3.5 h-3.5" />
                 Editar
               </button>
               <button 
                 onClick={() => handleDelete(member.id)}
-                className="px-3 py-1.5 rounded-xl bg-stone-900 border border-stone-800 text-stone-500 hover:text-red-400 hover:border-red-500/20 transition-all"
+                className="px-3 py-1.5 rounded-xl bg-background border border-border text-mutedForeground hover:text-rose-500 hover:border-rose-500/20 transition-all"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -303,7 +304,7 @@ export default function StaffPage() {
         ))}
 
         {filtrados.length === 0 && (
-          <div className="col-span-full py-12 text-center font-mono text-stone-500 text-xs border border-dashed border-stone-900 rounded-xl">
+          <div className="col-span-full py-12 text-center font-mono text-mutedForeground text-xs border border-dashed border-border rounded-xl">
             No se encontraron miembros del equipo
           </div>
         )}
@@ -312,85 +313,85 @@ export default function StaffPage() {
       {/* MODAL PARA AGREGAR/EDITAR STAFF */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0e0c0b] border border-stone-900 rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 {editingId ? 'Editar Miembro' : 'Agregar Miembro'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-stone-900 rounded-lg transition-colors">
-                <X className="w-4 h-4 text-stone-400" />
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-muted rounded-lg transition-colors">
+                <X className="w-4 h-4 text-mutedForeground" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-[10px] text-stone-400 font-medium mb-1">Nombre *</label>
+                <label className="block text-[10px] text-mutedForeground font-medium mb-1">Nombre *</label>
                 <input 
                   type="text" 
                   value={formData.name} 
                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30" 
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30" 
                   required 
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-stone-400 font-medium mb-1">Email *</label>
+                <label className="block text-[10px] text-mutedForeground font-medium mb-1">Email *</label>
                 <input 
                   type="email" 
                   value={formData.email} 
                   onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30" 
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30" 
                   required 
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-stone-400 font-medium mb-1">Teléfono</label>
+                <label className="block text-[10px] text-mutedForeground font-medium mb-1">Teléfono</label>
                 <input 
                   type="text" 
                   value={formData.phone} 
                   onChange={(e) => setFormData({...formData, phone: e.target.value})} 
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30" 
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30" 
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] text-stone-400 font-medium mb-1">Rol</label>
+                  <label className="block text-[10px] text-mutedForeground font-medium mb-1">Rol</label>
                   <select 
                     value={formData.role} 
                     onChange={(e) => setFormData({...formData, role: e.target.value})} 
-                    className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30"
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30"
                   >
-                    {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                    {roles.map(r => <option key={r} value={r} className="bg-card text-foreground">{r}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-stone-400 font-medium mb-1">Especialidad</label>
+                  <label className="block text-[10px] text-mutedForeground font-medium mb-1">Especialidad</label>
                   <input 
                     type="text" 
                     value={formData.specialty} 
                     onChange={(e) => setFormData({...formData, specialty: e.target.value})} 
-                    className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30" 
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30" 
                     placeholder="Ej: Microblading"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] text-stone-400 font-medium mb-1">Experiencia</label>
+                <label className="block text-[10px] text-mutedForeground font-medium mb-1">Experiencia</label>
                 <input 
                   type="text" 
                   value={formData.experience} 
                   onChange={(e) => setFormData({...formData, experience: e.target.value})} 
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30" 
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-indigo-500/30" 
                   placeholder="Ej: 5 años"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-stone-900">
+              <div className="flex gap-3 pt-3 border-t border-border">
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)} 
-                  className="flex-1 px-3 py-2 bg-stone-900/50 border border-stone-900 text-stone-400 rounded-xl text-xs font-medium hover:bg-stone-900 transition-colors"
+                  className="flex-1 px-3 py-2 bg-background border border-border text-mutedForeground rounded-xl text-xs font-medium hover:bg-muted transition-colors"
                 >
                   Cancelar
                 </button>

@@ -65,7 +65,7 @@ export default function ServiciosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const payload = {
       name: formData.name,
       description: formData.description || '',
@@ -139,18 +139,25 @@ export default function ServiciosPage() {
   const promedioPrecio = servicios.length > 0 ? servicios.reduce((sum, s) => sum + s.price, 0) / servicios.length : 0
 
   if (loading) {
-    return <div className="flex h-96 items-center justify-center font-mono text-xs text-rose-400">Cargando servicios...</div>
+    return (
+      <div className="flex h-96 items-center justify-center font-mono text-xs text-rose-500">
+        <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mr-2" />
+        Cargando servicios...
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-950/40 via-stone-900/40 to-[#0e0c0b] border border-rose-500/20 p-6 shadow-xl">
+      
+      {/* HEADER */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.05] via-card to-card border border-rose-500/20 p-6 shadow-xl">
         <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl"></div>
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-rose-400 font-mono">💅 Menu & Treatments</p>
-            <h2 className="text-2xl font-serif italic text-white mt-1">Catálogo de Servicios</h2>
-            <p className="text-xs text-stone-400 mt-1">Configura los tratamientos disponibles en el salón.</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400 font-mono">💅 Menu & Treatments</p>
+            <h2 className="text-2xl font-serif italic text-foreground mt-1">Catálogo de Servicios</h2>
+            <p className="text-xs text-mutedForeground mt-1">Configura los treatments disponibles en el salón.</p>
           </div>
           <button 
             onClick={() => { setEditingId(null); setFormData({ name: '', description: '', price: '', duration: '', badge: '', icon: 'Sparkles', category: 'Manicuría' }); setShowModal(true) }}
@@ -162,108 +169,112 @@ export default function ServiciosPage() {
         </div>
       </div>
 
+      {/* METRICAS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Tratamientos Ofrecidos</p>
-            <span className="text-2xl font-mono font-bold text-stone-100 block mt-1">{servicios.length}</span>
+            <p className="text-mutedForeground text-xs font-medium">Tratamientos Ofrecidos</p>
+            <span className="text-2xl font-mono font-bold text-foreground block mt-1">{servicios.length}</span>
           </div>
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400"><Sparkles className="w-5 h-5" /></div>
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"><Sparkles className="w-5 h-5" /></div>
         </div>
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Ticket Promedio</p>
-            <span className="text-2xl font-mono font-bold text-emerald-400 block mt-1">${Math.round(promedioPrecio).toLocaleString()}</span>
+            <p className="text-mutedForeground text-xs font-medium">Ticket Promedio</p>
+            <span className="text-2xl font-mono font-bold text-emerald-600 dark:text-emerald-400 block mt-1">${Math.round(promedioPrecio).toLocaleString()}</span>
           </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><DollarSign className="w-5 h-5" /></div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"><DollarSign className="w-5 h-5" /></div>
         </div>
-        <div className="rounded-2xl bg-stone-900/30 border border-stone-900 p-5 flex items-center justify-between">
+        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
           <div>
-            <p className="text-stone-400 text-xs font-medium">Estado</p>
-            <span className="text-xs font-mono text-emerald-400 block mt-2 font-bold">✅ Sincronizado</span>
+            <p className="text-mutedForeground text-xs font-medium">Estado</p>
+            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 block mt-2 font-bold">✅ Sincronizado</span>
           </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="w-5 h-5" /></div>
         </div>
       </div>
 
+      {/* FILTROS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
-        <div className="flex items-center bg-stone-900/40 border border-stone-900 rounded-xl px-4 py-3 max-w-md flex-1">
-          <Search className="w-4 h-4 text-stone-500 shrink-0" />
-          <input type="text" placeholder="Buscar tratamiento..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-transparent border-none outline-none text-xs text-stone-200 placeholder-stone-500 w-full ml-3 font-sans" />
+        <div className="flex items-center bg-muted border border-border rounded-xl px-4 py-3 max-w-md flex-1">
+          <Search className="w-4 h-4 text-mutedForeground shrink-0" />
+          <input type="text" placeholder="Buscar tratamiento..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground w-full ml-3 font-sans" />
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {['Todos', ...categorias].map((cat) => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-rose-950/40 border-rose-500/40 text-rose-400' : 'bg-transparent border-stone-900 text-stone-400 hover:text-stone-200 hover:bg-stone-900/30'}`}>
+            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-rose-500/10 border-rose-500/40 text-rose-700 dark:text-rose-400' : 'bg-transparent border-border text-mutedForeground hover:text-foreground hover:bg-muted'}`}>
               {cat}
             </button>
           ))}
         </div>
       </div>
 
+      {/* TARJETAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtrados.map((servicio: Servicio) => (
-          <div key={servicio.id} className="rounded-2xl bg-[#0e0c0b] border border-stone-900 p-5 space-y-4 flex flex-col justify-between hover:border-rose-500/20 transition-all group">
+          <div key={servicio.id} className="rounded-2xl bg-card border border-border p-5 space-y-4 flex flex-col justify-between hover:border-rose-500/20 transition-all group">
             <div className="space-y-2">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-stone-500 flex items-center gap-1"><Layers className="w-3 h-3" />{servicio.category || 'General'}</span>
-                {servicio.badge && <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-mono">{servicio.badge}</span>}
+                <span className="text-[10px] uppercase font-mono tracking-wider text-mutedForeground flex items-center gap-1"><Layers className="w-3 h-3" />{servicio.category || 'General'}</span>
+                {servicio.badge && <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 text-[9px] font-mono">{servicio.badge}</span>}
               </div>
-              <h3 className="text-sm font-bold text-stone-200 group-hover:text-rose-400 transition-colors">{servicio.name}</h3>
-              <p className="text-xs text-stone-400 line-clamp-2 leading-relaxed">{servicio.description || 'Sin descripción disponible.'}</p>
+              <h3 className="text-sm font-bold text-foreground group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">{servicio.name}</h3>
+              <p className="text-xs text-mutedForeground line-clamp-2 leading-relaxed">{servicio.description || 'Sin descripción disponible.'}</p>
             </div>
-            <div className="flex justify-between items-center pt-3 border-t border-stone-900/60 text-xs font-mono">
-              <div className="flex items-center gap-1.5 text-stone-400"><Clock className="w-3.5 h-3.5 text-stone-600" /><span>{servicio.duration || 60} min</span></div>
-              <div className="font-bold text-stone-200 text-sm">${servicio.price?.toLocaleString()}</div>
+            <div className="flex justify-between items-center pt-3 border-t border-border/60 text-xs font-mono">
+              <div className="flex items-center gap-1.5 text-mutedForeground"><Clock className="w-3.5 h-3.5 text-mutedForeground/60" /><span>{servicio.duration || 60} min</span></div>
+              <div className="font-bold text-foreground text-sm">${servicio.price?.toLocaleString()}</div>
             </div>
             <div className="flex gap-2 pt-1">
-              <button onClick={() => handleEdit(servicio)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-stone-900 border border-stone-800 text-stone-300 hover:text-white hover:bg-stone-800 text-xs transition-all"><Edit className="w-3.5 h-3.5" /> Editar</button>
-              <button onClick={() => handleDelete(servicio.id)} className="px-3 py-2 rounded-xl bg-stone-900 border border-stone-800 text-stone-500 hover:text-red-400 hover:border-red-500/20 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => handleEdit(servicio)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-background border border-border text-mutedForeground hover:text-foreground hover:bg-muted text-xs transition-all"><Edit className="w-3.5 h-3.5" /> Editar</button>
+              <button onClick={() => handleDelete(servicio.id)} className="px-3 py-2 rounded-xl bg-background border border-border text-mutedForeground hover:text-rose-500 hover:border-rose-500/20 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           </div>
         ))}
-        {filtrados.length === 0 && <div className="col-span-full py-16 text-center font-mono text-stone-600 text-xs">No se encontraron servicios en esta categoría.</div>}
+        {filtrados.length === 0 && <div className="col-span-full py-16 text-center font-mono text-mutedForeground text-xs">No se encontraron servicios en esta categoría.</div>}
       </div>
 
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0e0c0b] border border-stone-900 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Plus className="w-5 h-5 text-rose-400" /> {editingId ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-stone-900 rounded-lg transition-colors"><X className="w-5 h-5 text-stone-400" /></button>
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Plus className="w-5 h-5 text-rose-600 dark:text-rose-400" /> {editingId ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
+              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-muted rounded-lg transition-colors"><X className="w-5 h-5 text-mutedForeground" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Nombre del Servicio *</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30" required />
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Nombre del Servicio *</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30" required />
               </div>
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Descripción</label>
-                <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30 placeholder-stone-500" placeholder="Descripción del servicio" />
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Descripción</label>
+                <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30 placeholder-mutedForeground" placeholder="Descripción del servicio" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Precio ($) *</label>
-                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30" required />
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Precio ($) *</label>
+                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30" required />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Duración (min) *</label>
-                  <input type="number" value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30" required />
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Duración (min) *</label>
+                  <input type="number" value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Categoría</label>
-                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30">
-                    {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Categoría</label>
+                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30">
+                    {categorias.map(cat => <option key={cat} value={cat} className="bg-card text-foreground">{cat}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Badge (opcional)</label>
-                  <input type="text" value={formData.badge} onChange={(e) => setFormData({...formData, badge: e.target.value})} className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500/30" placeholder="Ej: TOP, POPULAR" />
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Badge (opcional)</label>
+                  <input type="text" value={formData.badge} onChange={(e) => setFormData({...formData, badge: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-rose-500/30" placeholder="Ej: TOP, POPULAR" />
                 </div>
               </div>
-              <div className="flex gap-3 pt-4 border-t border-stone-900">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 bg-stone-900/50 border border-stone-900 text-stone-400 rounded-xl text-sm font-medium hover:bg-stone-900 transition-colors">Cancelar</button>
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2.5 bg-background border border-border text-mutedForeground rounded-xl text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
                 <button type="submit" className="flex-1 px-4 py-2.5 bg-gradient-to-r from-rose-600 to-amber-500 text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"><Save className="w-4 h-4" /> {editingId ? 'Actualizar' : 'Guardar'}</button>
               </div>
             </form>

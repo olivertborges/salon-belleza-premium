@@ -1,32 +1,37 @@
 'use client'
 
 import React, { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { 
   Crown, Sparkles, Bell, ShoppingCart, 
   Scissors, Heart, Gift, Calendar, 
-  Menu, X, Store, LogOut
+  Menu, X, Store, LogOut, GraduationCap
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const { user } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notificaciones, setNotificaciones] = useState(3)
   const [carritoItems, setCarritoItems] = useState(1)
 
   const isDark = theme === 'dark'
 
+  // Rutas reales de la clienta mapeadas con estados activos dinámicos
   const menuItems = [
-    { icon: Crown, label: 'Inicio Premium', href: '/portal', active: true },
-    { icon: Calendar, label: 'Mis Citas / Reservar', href: '/reservas', active: false },
-    { icon: Sparkles, label: 'Uñas de Autor', href: '#uñas', active: false },
-    { icon: Scissors, label: 'Peluquería & Estilo', href: '#peluqueria', active: false },
-    { icon: Heart, label: 'Microblading & Cuidado', href: '#estetica', active: false },
-    { icon: Store, label: 'Tienda Fresh', href: '#tienda', active: false },
-    { icon: Gift, label: 'Club Fresh Puntos', href: '#puntos', active: false },
+    { icon: Crown, label: 'Inicio Premium', href: '/portal' },
+    { icon: Calendar, label: 'Mis Citas / Reservar', href: '/reservas' },
+    { icon: Sparkles, label: 'Catálogo Cursos', href: '/cursos' },
+    { icon: GraduationCap, label: 'Mi Aula Virtual', href: '/cursos/mis-cursos' },
+    { icon: Store, label: 'Boutique Fresh', href: '/productos' },
+    { icon: Scissors, label: 'Peluquería & Estilo', href: '#peluqueria' },
+    { icon: Heart, label: 'Microblading & Cuidado', href: '#estetica' },
+    { icon: Gift, label: 'Club Fresh Puntos', href: '#puntos' },
   ]
 
   const inicialNombre = user?.name ? user.name.charAt(0).toUpperCase() : 'C'
@@ -34,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className={`h-screen w-full antialiased font-sans flex relative overflow-hidden m-0 p-0 transition-colors duration-300 ${
-      isDark ? 'bg-[#090807] text-stone-200' : 'bg-[#faf8f6] text-stone-900'
+      isDark ? 'bg-[#090807]' : 'bg-[#faf8f6]'
     }`}>
 
       {/* SIDEBAR */}
@@ -72,18 +77,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           {menuItems.map((item, index) => {
             const Icon = item.icon
+            // Evalúa dinámicamente si el link está activo usando el pathname exacto
+            const isActive = pathname === item.href
+
             return (
-              <a key={index} href={item.href} onClick={() => setSidebarOpen(false)} className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-medium border transition-all ${
-                item.active 
-                  ? isDark 
-                    ? 'bg-gradient-to-r from-rose-950/40 via-stone-900/40 to-transparent border-rose-500/30 text-white'
-                    : 'bg-gradient-to-r from-rose-100/40 via-stone-100/40 to-transparent border-rose-300 text-stone-900'
-                  : isDark
-                    ? 'border-transparent text-stone-400 hover:text-stone-100 hover:bg-stone-900/30'
-                    : 'border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-100'
-              }`}>
+              <Link 
+                key={index} 
+                href={item.href} 
+                onClick={() => setSidebarOpen(false)} 
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-medium border transition-all ${
+                  isActive 
+                    ? isDark 
+                      ? 'bg-gradient-to-r from-rose-950/40 via-stone-900/40 to-transparent border-rose-500/30 text-white'
+                      : 'bg-gradient-to-r from-rose-100/40 via-stone-100/40 to-transparent border-rose-300 text-stone-900'
+                    : isDark
+                      ? 'border-transparent text-stone-400 hover:text-stone-100 hover:bg-stone-900/30'
+                      : 'border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
                 <div className={`p-1.5 rounded-lg border ${
-                  item.active 
+                  isActive 
                     ? isDark
                       ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                       : 'bg-rose-100 border-rose-300 text-rose-600'
@@ -94,7 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Icon className="w-4 h-4" />
                 </div>
                 <span>{item.label}</span>
-              </a>
+              </Link>
             )
           })}
         </nav>

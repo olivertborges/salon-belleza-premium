@@ -45,7 +45,8 @@ export default function AdminAgendaPage() {
 
     const toast = document.createElement('div');
     toast.id = ID_TOAST;
-    toast.className = "fixed top-5 right-5 z-[9999] bg-[#0e0c0b] border-2 border-amber-500 text-white p-4 rounded-2xl shadow-2xl shadow-amber-500/20 max-w-sm animate-[bounce_1s_ease-in-out_2] transition-all duration-300";
+    // Toast adaptativo usando las variables globales
+    toast.className = "fixed top-5 right-5 z-[9999] bg-card border-2 border-amber-500 text-foreground p-4 rounded-2xl shadow-2xl dark:shadow-amber-500/10 max-w-sm animate-[bounce_1s_ease-in-out_2] transition-all duration-300";
 
     toast.innerHTML = `
       <div class="flex flex-col gap-2">
@@ -54,11 +55,11 @@ export default function AdminAgendaPage() {
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
           </span>
-          <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-amber-400">¡Nueva Cita Recibida!</h4>
+          <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">¡Nueva Cita Recibida!</h4>
         </div>
-        <p class="text-xs text-stone-300">Una clienta se acaba de agendar para el día <span class="font-bold text-white">${nuevaCita.date}</span> a las <span class="font-bold text-white">${nuevaCita.time.slice(0,5)}</span>.</p>
+        <p class="text-xs text-mutedForeground">Una clienta se acaba de agendar para el día <span class="font-bold text-stone-900 dark:text-white">${nuevaCita.date}</span> a las <span class="font-bold text-stone-900 dark:text-white">${nuevaCita.time.slice(0,5)}</span>.</p>
         <div class="flex justify-end gap-2 mt-1">
-          <button id="btn-cerrar-toast" class="text-[10px] font-mono uppercase px-2 py-1 text-stone-400 hover:text-white transition-colors">Cerrar</button>
+          <button id="btn-cerrar-toast" class="text-[10px] font-mono uppercase px-2 py-1 text-mutedForeground hover:text-foreground transition-colors">Cerrar</button>
           <button id="btn-ir-toast" class="text-[10px] font-mono uppercase bg-amber-500 text-black px-2.5 py-1 rounded font-bold hover:bg-amber-400 transition-all shadow-md shadow-amber-500/10">Revisar Ahora</button>
         </div>
       </div>
@@ -277,12 +278,12 @@ export default function AdminAgendaPage() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string, color: string }> = {
-      pending: { label: 'Pendiente', color: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
-      confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
-      in_progress: { label: 'En proceso', color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
-      completed: { label: 'Completada', color: 'bg-stone-500/10 border-stone-500/20 text-stone-400' },
-      cancelled: { label: 'Cancelada', color: 'bg-rose-500/10 border-rose-500/20 text-rose-400' },
-      blocked: { label: 'Bloqueado', color: 'bg-stone-800/50 border-stone-700/40 text-amber-500/80' },
+      pending: { label: 'Pendiente', color: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400' },
+      confirmed: { label: 'Confirmada', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
+      in_progress: { label: 'En proceso', color: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400' },
+      completed: { label: 'Completada', color: 'bg-stone-500/10 border-stone-500/20 text-stone-600 dark:text-stone-400' },
+      cancelled: { label: 'Cancelada', color: 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400' },
+      blocked: { label: 'Bloqueado', color: 'bg-stone-200 dark:bg-stone-800/50 border-border text-stone-700 dark:text-amber-500/80' },
     }
     return config[status] || config.pending
   }
@@ -313,12 +314,12 @@ export default function AdminAgendaPage() {
 
     if (citasDelDia.length === 0) {
       return (
-        <div className="text-center py-12 border border-dashed border-stone-900 rounded-xl space-y-2">
-          <Sparkles className="w-6 h-6 text-stone-600 mx-auto" />
-          <p className="text-xs text-stone-400 font-mono">No hay citas para este día</p>
+        <div className="text-center py-12 border border-dashed border-border rounded-xl space-y-2 bg-card">
+          <Sparkles className="w-6 h-6 text-mutedForeground mx-auto" />
+          <p className="text-xs text-mutedForeground font-mono">No hay citas para este día</p>
           <button 
             onClick={() => setShowNewAppointment(true)}
-            className="text-cyan-400 hover:text-cyan-300 text-xs font-medium transition-colors"
+            className="text-rose-500 hover:text-rose-400 text-xs font-medium transition-colors"
           >
             Agendar nueva cita →
           </button>
@@ -328,43 +329,42 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-3">
-        <p className="text-[10px] font-mono text-stone-500 mb-2 uppercase tracking-wider">
+        <p className="text-[10px] font-mono text-mutedForeground mb-2 uppercase tracking-wider">
           Cronograma de citas para hoy ({citasDelDia.length})
         </p>
 
         {citasDelDia.map((cita) => {
           const statusInfo = getStatusBadge(cita.status)
-          const isPending = cita.status === 'pending'
           const isProcessing = cita.status === 'in_progress'
           const isCompleted = cita.status === 'completed'
 
-          let cardBg = 'bg-stone-900/30 border-stone-800/60'
-          if (isProcessing) cardBg = 'bg-amber-950/20 border-amber-500/30'
-          if (isCompleted) cardBg = 'bg-emerald-950/10 border-emerald-500/20 opacity-70'
+          let cardBg = 'bg-card border-border'
+          if (isProcessing) cardBg = 'bg-amber-500/[0.04] dark:bg-amber-950/20 border-amber-500/30'
+          if (isCompleted) cardBg = 'bg-emerald-500/[0.02] dark:bg-emerald-950/10 border-emerald-500/20 opacity-70'
 
           const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
 
           return (
             <div key={cita.id} className="flex items-start gap-3 md:gap-4">
               <div className="w-14 md:w-16 flex-shrink-0 pt-3 text-right">
-                <span className="text-xs font-mono font-bold text-cyan-400 tracking-wider">
-                  {horaMostrar}
+                <span className="text-xs font-mono font-bold text-rose-500 dark:text-rose-400 tracking-wider">
+{horaMostrar}
                 </span>
               </div>
-              <div className="w-px bg-stone-800 self-stretch flex-shrink-0 relative">
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-stone-700 border border-stone-950" />
+              <div className="w-px bg-border self-stretch flex-shrink-0 relative">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-muted border border-background" />
               </div>
               <div className={`flex-1 border rounded-xl p-3 md:p-4 transition-all ${cardBg}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-stone-800 border border-stone-700/50 flex items-center justify-center text-cyan-400 font-mono text-[10px] flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-muted border border-border/50 flex items-center justify-center text-cyan-500 dark:text-cyan-400 font-mono text-[10px] flex-shrink-0">
                       {horaMostrar}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-medium text-white truncate">{cita.clients?.name || 'Cliente'}</h4>
-                      <p className="text-[11px] text-stone-400 truncate">{cita.services?.name || 'Servicio'}</p>
+                      <h4 className="text-sm font-medium text-foreground truncate">{cita.clients?.name || 'Cliente'}</h4>
+                      <p className="text-[11px] text-mutedForeground truncate">{cita.services?.name || 'Servicio'}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className="text-[10px] text-stone-500 flex items-center gap-1">
+                        <span className="text-[10px] text-mutedForeground flex items-center gap-1">
                           <User className="w-3 h-3" /> {cita.staff?.name || 'Sin asignar'}
                         </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
@@ -372,33 +372,33 @@ export default function AdminAgendaPage() {
                         </span>
                       </div>
                       {cita.notes && (
-                        <p className="text-[10px] text-stone-500 italic mt-1.5 border-l border-stone-800 pl-2">
+                        <p className="text-[10px] text-mutedForeground italic mt-1.5 border-l border-border pl-2">
                           "{cita.notes}"
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 self-end sm:self-center">
-                    <span className="text-xs font-mono font-bold text-emerald-400 mr-2">
+                    <span className="text-xs font-mono font-bold text-emerald-500 dark:text-emerald-400 mr-2">
                       ${Number(cita.services?.price || 0).toLocaleString()}
                     </span>
-                    {isPending && (
-                      <button onClick={() => cambiarEstadoCita(cita.id, 'confirmed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
+                    {cita.status === 'pending' && (
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'confirmed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
                         Confirmar
                       </button>
                     )}
-                    {(isPending || cita.status === 'confirmed') && (
-                      <button onClick={() => cambiarEstadoCita(cita.id, 'in_progress')} className="text-[9px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all whitespace-nowrap">
+                    {(cita.status === 'pending' || cita.status === 'confirmed') && (
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'in_progress')} className="text-[9px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all whitespace-nowrap">
                         Iniciar
                       </button>
                     )}
                     {isProcessing && (
-                      <button onClick={() => cambiarEstadoCita(cita.id, 'completed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
+                      <button onClick={() => cambiarEstadoCita(cita.id, 'completed')} className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap">
                         Completar
                       </button>
                     )}
                     {!isCompleted && cita.status !== 'cancelled' && (
-                      <button onClick={() => eliminarCita(cita.id)} className="text-[9px] p-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all">
+                      <button onClick={() => eliminarCita(cita.id)} className="text-[9px] p-1.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     )}
@@ -430,20 +430,20 @@ export default function AdminAgendaPage() {
     }
 
     return (
-      <div className="overflow-x-auto select-none border border-stone-900 rounded-xl">
-        <div className="min-w-[850px] flex flex-col font-sans bg-[#0e0c0b]">
+      <div className="overflow-x-auto select-none border border-border rounded-xl">
+        <div className="min-w-[850px] flex flex-col font-sans bg-background">
 
-          <div className="flex border-b border-stone-900 bg-stone-950/80 sticky top-0 z-20 backdrop-blur-md">
-            <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950 sticky left-0 z-30" />
+          <div className="flex border-b border-border bg-card/80 sticky top-0 z-20 backdrop-blur-md">
+            <div className="w-16 flex-shrink-0 border-r border-border bg-card sticky left-0 z-30" />
             <div className="flex-1 grid grid-cols-7">
               {weekDays.map((day) => {
                 const isTodayDate = isToday(day)
                 return (
-                  <div key={day.toString()} className={`text-center py-2.5 border-r border-stone-900/60 last:border-r-0 flex flex-col items-center justify-center ${isTodayDate ? 'bg-cyan-500/[0.04]' : ''}`}>
-                    <span className={`text-[10px] font-mono uppercase tracking-wider ${isTodayDate ? 'text-cyan-400 font-bold' : 'text-stone-500'}`}>
+                  <div key={day.toString()} className={`text-center py-2.5 border-r border-border/60 last:border-r-0 flex flex-col items-center justify-center ${isTodayDate ? 'bg-cyan-500/[0.04]' : ''}`}>
+                    <span className={`text-[10px] font-mono uppercase tracking-wider ${isTodayDate ? 'text-cyan-600 dark:text-cyan-400 font-bold' : 'text-mutedForeground'}`}>
                       {format(day, 'EEE', { locale: es })}
                     </span>
-                    <p className={`text-base font-mono font-bold mt-0.5 rounded-full w-7 h-7 flex items-center justify-center ${isTodayDate ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' : 'text-stone-200'}`}>
+                    <p className={`text-base font-mono font-bold mt-0.5 rounded-full w-7 h-7 flex items-center justify-center ${isTodayDate ? 'bg-cyan-500 text-white dark:text-black shadow-md shadow-cyan-500/20' : 'text-foreground'}`}>
                       {format(day, 'd')}
                     </p>
                   </div>
@@ -454,9 +454,9 @@ export default function AdminAgendaPage() {
 
           <div className="flex relative">
 
-            <div className="w-16 flex-shrink-0 border-r border-stone-900 bg-stone-950 text-right pr-2.5 sticky left-0 z-50">
+            <div className="w-16 flex-shrink-0 border-r border-border bg-card text-right pr-2.5 sticky left-0 z-10">
               {horasCuadricula.map((hora) => (
-                <div key={hora} className="text-[10px] font-mono text-stone-500 font-medium flex items-start justify-end pt-1" style={{ height: `${HORA_HEIGHT_PX}px` }}>
+                <div key={hora} className="text-[10px] font-mono text-mutedForeground font-medium flex items-start justify-end pt-1" style={{ height: `${HORA_HEIGHT_PX}px` }}>
                   {String(hora).padStart(2, '0')}:00
                 </div>
               ))}
@@ -466,7 +466,7 @@ export default function AdminAgendaPage() {
 
               <div className="absolute inset-0 pointer-events-none flex flex-col z-0">
                 {horasCuadricula.map((hora) => (
-                  <div key={`line-${hora}`} className="border-b border-stone-900/40 w-full" style={{ height: `${HORA_HEIGHT_PX}px` }} />
+                  <div key={`line-${hora}`} className="border-b border-border/40 w-full" style={{ height: `${HORA_HEIGHT_PX}px` }} />
                 ))}
               </div>
 
@@ -475,7 +475,7 @@ export default function AdminAgendaPage() {
                 const isTodayDate = isToday(day)
 
                 return (
-                  <div key={`col-${day}`} className={`relative border-r border-stone-900/60 last:border-r-0 min-h-full z-10 ${isTodayDate ? 'bg-cyan-500/[0.01]' : ''}`} style={{ height: `${totalHoras * HORA_HEIGHT_PX}px` }}>
+                  <div key={`col-${day}`} className={`relative border-r border-border/60 last:border-r-0 min-h-full z-10 ${isTodayDate ? 'bg-cyan-500/[0.01]' : ''}`} style={{ height: `${totalHoras * HORA_HEIGHT_PX}px` }}>
                     {citasDelDia.map((cita) => {
                       if (!cita.time) return null
 
@@ -495,10 +495,10 @@ export default function AdminAgendaPage() {
                       const isProcessing = cita.status === 'in_progress'
                       const isCompleted = cita.status === 'completed'
 
-                      let cardBgColor = 'bg-stone-900/90 border-stone-800 text-stone-200'
-                      if (isProcessing) cardBgColor = 'bg-amber-950/85 border-amber-500/40 text-amber-200 shadow-md shadow-amber-500/5'
-                      if (isCompleted) cardBgColor = 'bg-emerald-950/30 border-emerald-500/20 text-stone-500 opacity-60'
-                      if (cita.status === 'blocked') cardBgColor = 'bg-stone-950/90 border-dashed border-stone-800 text-stone-500 opacity-70'
+                      let cardBgColor = 'bg-card/95 border-border text-foreground'
+                      if (isProcessing) cardBgColor = 'bg-amber-500/[0.08] dark:bg-amber-950/85 border-amber-500/40 text-amber-800 dark:text-amber-200 shadow-md shadow-amber-500/5'
+                      if (isCompleted) cardBgColor = 'bg-muted/40 border-emerald-500/20 text-mutedForeground opacity-60'
+                      if (cita.status === 'blocked') cardBgColor = 'bg-muted/80 border-dashed border-border text-mutedForeground opacity-70'
 
                       return (
                         <div
@@ -509,28 +509,28 @@ export default function AdminAgendaPage() {
                         >
                           <div className="min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="text-[9px] font-mono font-bold text-cyan-400">{horaFormateada}</span>
+                              <span className="text-[9px] font-mono font-bold text-cyan-600 dark:text-cyan-400">{horaFormateada}</span>
                               {heightPx >= 45 && (
-                                <span className={`text-[6px] px-1 py-0.2 rounded border uppercase font-mono tracking-wider bg-black/30 border-current ${statusInfo.color.split(' ')[2]}`}>
+                                <span className={`text-[6px] px-1 py-0.2 rounded border uppercase font-mono tracking-wider bg-background/50 border-current ${statusInfo.color.split(' ')[2]}`}>
                                   {statusInfo.label}
                                 </span>
                               )}
                             </div>
-                            <p className="text-[10px] font-bold truncate text-white mt-0.5 tracking-wide">
+                            <p className="text-[10px] font-bold truncate text-foreground mt-0.5 tracking-wide">
                               {cita.clients?.name || 'Cliente'}
                             </p>
                             {heightPx > 50 && (
-                              <p className="text-[9px] text-stone-400 font-medium truncate mt-0.5">
+                              <p className="text-[9px] text-mutedForeground font-medium truncate mt-0.5">
                                 {cita.services?.name || 'Servicio'}
                               </p>
                             )}
                           </div>
                           {heightPx >= 65 && (
-                            <div className="flex items-center justify-between text-[8px] border-t border-stone-800/80 pt-1 mt-1 font-mono">
-                              <span className="text-stone-400 font-sans truncate max-w-[65%]">
+                            <div className="flex items-center justify-between text-[8px] border-t border-border/80 pt-1 mt-1 font-mono">
+                              <span className="text-mutedForeground font-sans truncate max-w-[65%]">
                                 {cita.staff?.name || 'Sin asignar'}
                               </span>
-                              <span className="font-bold text-emerald-400">
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
                                 ${Number(cita.services?.price || 0).toLocaleString()}
                               </span>
                             </div>
@@ -571,7 +571,7 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="flex flex-col h-full font-sans select-none">
-        <div className="grid grid-cols-7 border-b border-stone-900 bg-stone-950/20 text-center font-mono text-[10px] text-stone-500 py-2">
+        <div className="grid grid-cols-7 border-b border-border bg-muted/20 text-center font-mono text-[10px] text-mutedForeground py-2">
           {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((d) => (
             <span key={d} className="hidden sm:block uppercase tracking-wider">{d}</span>
           ))}
@@ -580,10 +580,10 @@ export default function AdminAgendaPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-stone-900 border-b border-r border-l border-stone-900 rounded-b-xl overflow-hidden">
+        <div className="grid grid-cols-7 gap-px bg-border border-b border-r border-l border-border rounded-b-xl overflow-hidden">
           {days.map((day, idx) => {
             if (!day) {
-              return <div key={`empty-${idx}`} className="bg-stone-950/10 min-h-[90px] sm:min-h-[120px]" />
+              return <div key={`empty-${idx}`} className="bg-muted/10 min-h-[90px] sm:min-h-[120px]" />
             }
 
             const citasDelDia = getCitasDelDia(day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
@@ -593,18 +593,18 @@ export default function AdminAgendaPage() {
               <div 
                 key={idx} 
                 onClick={() => { setFechaSeleccionada(day); setViewMode('day') }}
-                className={`bg-[#0e0c0b] p-1.5 min-h-[95px] sm:min-h-[130px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-900/40 relative group ${
+                className={`bg-card p-1.5 min-h-[95px] sm:min-h-[130px] flex flex-col justify-between cursor-pointer transition-all hover:bg-muted/40 relative group ${
                   isTodayDate ? 'ring-1 ring-inset ring-cyan-500/30 bg-cyan-500/[0.02]' : ''
                 }`}
               >
                 <div className="flex justify-between items-center mb-1">
                   <span className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-6 h-6 ${
-                    isTodayDate ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20' : 'text-stone-400 group-hover:text-white'
+                    isTodayDate ? 'bg-cyan-500 text-white dark:text-black shadow-md shadow-cyan-500/20' : 'text-mutedForeground group-hover:text-foreground'
                   }`}>
                     {format(day, 'd')}
                   </span>
                   {citasDelDia.length > 0 && (
-                    <span className="text-[9px] font-mono font-medium text-stone-500 sm:hidden">
+                    <span className="text-[9px] font-mono font-medium text-mutedForeground sm:hidden">
                       {citasDelDia.length}u
                     </span>
                   )}
@@ -612,25 +612,24 @@ export default function AdminAgendaPage() {
 
                 <div className="flex-1 space-y-1 overflow-y-hidden max-h-[65px] sm:max-h-[95px]">
                   {citasDelDia.slice(0, 3).map((cita) => {
-                    const statusInfo = getStatusBadge(cita.status)
                     const hora24 = format24h(cita.time)
                     const isProcessing = cita.status === 'in_progress'
                     const isCompleted = cita.status === 'completed'
 
-                    let badgeStyle = 'bg-stone-900 border-stone-800 text-stone-200'
-                    if (isProcessing) badgeStyle = 'bg-amber-950/50 border-amber-500/30 text-amber-300'
-                    if (isCompleted) badgeStyle = 'bg-emerald-950/20 border-emerald-500/20 text-stone-500 opacity-60'
+                    let badgeStyle = 'bg-background border-border text-foreground'
+                    if (isProcessing) badgeStyle = 'bg-amber-500/[0.08] dark:bg-amber-950/50 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                    if (isCompleted) badgeStyle = 'bg-muted/20 border-emerald-500/20 text-mutedForeground opacity-60'
 
                     return (
                       <div key={cita.id} className={`group/item flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded border truncate transition-colors ${badgeStyle}`} title={`${hora24} - ${cita.clients?.name}`}>
-                        <span className="font-mono font-bold text-cyan-400 flex-shrink-0">{hora24}</span>
+                        <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400 flex-shrink-0">{hora24}</span>
                         <span className="truncate font-medium flex-1">{cita.clients?.name || 'Cliente'}</span>
                       </div>
                     )
                   })}
 
                   {citasDelDia.length > 3 && (
-                    <div className="text-[8px] sm:text-[10px] text-cyan-500/70 font-mono font-medium pl-1 bg-cyan-500/5 rounded py-0.5 border border-cyan-500/10 text-center">
+                    <div className="text-[8px] sm:text-[10px] text-cyan-600 dark:text-cyan-500/70 font-mono font-medium pl-1 bg-cyan-500/5 rounded py-0.5 border border-cyan-500/10 text-center">
                       + {citasDelDia.length - 3} más
                     </div>
                   )}
@@ -655,11 +654,11 @@ export default function AdminAgendaPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <p className="text-red-400 text-sm">Error al cargar los datos</p>
-          <p className="text-stone-400 text-xs mt-2">{error}</p>
+          <p className="text-rose-500 dark:text-red-400 text-sm">Error al cargar los datos</p>
+          <p className="text-mutedForeground text-xs mt-2">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl text-xs"
+            className="mt-4 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 rounded-xl text-xs"
           >
             Reintentar
           </button>
@@ -671,15 +670,15 @@ export default function AdminAgendaPage() {
   return (
     <div className="space-y-4 px-2 sm:px-4 pb-12">
       {/* HEADER */}
-      <div className="bg-[#0e0c0b] border border-stone-900 p-3 sm:p-5 rounded-2xl shadow-xl">
+      <div className="bg-card border border-border p-3 sm:p-5 rounded-2xl shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-3 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl">
+            <div className="p-2 sm:p-3 bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded-xl">
               <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-lg font-serif italic text-white">Agenda Admin</h2>
-              <p className="text-[9px] sm:text-[11px] text-stone-400 font-mono">
+              <h2 className="text-sm sm:text-lg font-serif italic text-foreground">Agenda Admin</h2>
+              <p className="text-[9px] sm:text-[11px] text-mutedForeground font-mono">
                 {citas.length} citas cargadas en esta vista
               </p>
             </div>
@@ -694,22 +693,22 @@ export default function AdminAgendaPage() {
               <span>Agendar</span>
             </button>
 
-            <div className="flex bg-stone-900/60 border border-stone-900 rounded-xl p-0.5">
+            <div className="flex bg-muted border border-border rounded-xl p-0.5">
               <button 
                 onClick={() => setViewMode('day')}
-                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'day' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' : 'text-stone-400 hover:text-white'}`}
+                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'day' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' : 'text-mutedForeground hover:text-foreground'}`}
               >
                 Día
               </button>
               <button 
                 onClick={() => setViewMode('week')}
-                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'week' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' : 'text-stone-400 hover:text-white'}`}
+                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'week' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' : 'text-mutedForeground hover:text-foreground'}`}
               >
                 Semana
               </button>
               <button 
                 onClick={() => setViewMode('month')}
-                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'month' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' : 'text-stone-400 hover:text-white'}`}
+                className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-mono transition-all ${viewMode === 'month' ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' : 'text-mutedForeground hover:text-foreground'}`}
               >
                 Mes
               </button>
@@ -717,31 +716,31 @@ export default function AdminAgendaPage() {
 
             <button 
               onClick={() => setShowMobileFilters(!showMobileFilters)}
-              className="lg:hidden p-1.5 sm:p-2 bg-stone-900/60 border border-stone-900 rounded-xl text-stone-400 hover:text-white transition-all"
+              className="lg:hidden p-1.5 sm:p-2 bg-muted border border-border rounded-xl text-mutedForeground hover:text-foreground transition-all"
             >
               <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-stone-900">
-          <button onClick={() => cambiarDia(-1)} className="p-1.5 sm:p-2 rounded-lg bg-stone-950 border border-stone-800 text-stone-400 hover:text-white transition-all">
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
+          <button onClick={() => cambiarDia(-1)} className="p-1.5 sm:p-2 rounded-lg bg-background border border-border text-mutedForeground hover:text-foreground transition-all">
             <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
-          <span className="text-[10px] sm:text-xs font-mono font-bold text-stone-200 uppercase tracking-wider text-center flex-1">
+          <span className="text-[10px] sm:text-xs font-mono font-bold text-foreground uppercase tracking-wider text-center flex-1">
             {formatFechaTitulo()}
           </span>
-          <button onClick={() => cambiarDia(1)} className="p-1.5 sm:p-2 rounded-lg bg-stone-950 border border-stone-800 text-stone-400 hover:text-white transition-all">
+          <button onClick={() => cambiarDia(1)} className="p-1.5 sm:p-2 rounded-lg bg-background border border-border text-mutedForeground hover:text-foreground transition-all">
             <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
         {showMobileFilters && (
-          <div className="lg:hidden mt-3 pt-3 border-t border-stone-900 space-y-2">
+          <div className="lg:hidden mt-3 pt-3 border-t border-border space-y-2">
             <select 
               value={filtroStaff} 
               onChange={(e) => setFiltroStaff(e.target.value)}
-              className="w-full bg-stone-900/60 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-300 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-500"
             >
               <option value="todos">🌟 Todo el Equipo</option>
               {staff.map(s => (
@@ -751,12 +750,12 @@ export default function AdminAgendaPage() {
           </div>
         )}
 
-        <div className="hidden lg:flex items-center gap-3 mt-3 pt-3 border-t border-stone-900">
-          <Filter className="w-3.5 h-3.5 text-stone-500" />
+        <div className="hidden lg:flex items-center gap-3 mt-3 pt-3 border-t border-border">
+          <Filter className="w-3.5 h-3.5 text-mutedForeground" />
           <select 
             value={filtroStaff} 
             onChange={(e) => setFiltroStaff(e.target.value)}
-            className="bg-stone-900/60 border border-stone-800 rounded-xl px-3 py-1.5 text-xs text-stone-300 focus:outline-none focus:border-cyan-500 font-mono"
+            className="bg-muted border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-cyan-500 font-mono"
           >
             <option value="todos">🌟 Todo el Equipo</option>
             {staff.map(s => (
@@ -770,7 +769,7 @@ export default function AdminAgendaPage() {
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between mb-4 animate-pulse">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <p className="text-xs font-mono text-amber-400">
+            <p className="text-xs font-mono text-amber-600 dark:text-amber-400">
               Tienes <span className="font-bold">{citasPendientes}</span> {citasPendientes === 1 ? 'cita pendiente' : 'citas pendientes'} por confirmar
             </p>
           </div>
@@ -793,42 +792,42 @@ export default function AdminAgendaPage() {
 
       {/* METRICAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-[#0e0c0b]/40 border border-stone-900 p-3 sm:p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-card border border-border p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-[8px] sm:text-[10px] text-stone-500 font-mono uppercase tracking-widest">Turnos</p>
-            <p className="text-base sm:text-xl font-mono font-bold text-stone-200 mt-0.5">{citas.length}</p>
+            <p className="text-[8px] sm:text-[10px] text-mutedForeground font-mono uppercase tracking-widest">Turnos</p>
+            <p className="text-base sm:text-xl font-mono font-bold text-foreground mt-0.5">{citas.length}</p>
           </div>
-          <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400/70" />
+          <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500 dark:text-cyan-400/70" />
         </div>
-        <div className="bg-[#0e0c0b]/40 border border-stone-900 p-3 sm:p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-card border border-border p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-[8px] sm:text-[10px] text-stone-500 font-mono uppercase tracking-widest">Proceso</p>
-            <p className="text-base sm:text-xl font-mono font-bold text-amber-400 mt-0.5">
+            <p className="text-[8px] sm:text-[10px] text-mutedForeground font-mono uppercase tracking-widest">Proceso</p>
+            <p className="text-base sm:text-xl font-mono font-bold text-amber-500 mt-0.5">
               {citas.filter(c => c.status === 'in_progress').length}
             </p>
           </div>
-          <Play className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400/70" />
+          <Play className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500/70" />
         </div>
-        <div className="bg-[#0e0c0b]/40 border border-stone-900 p-3 sm:p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-card border border-border p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-[8px] sm:text-[10px] text-stone-500 font-mono uppercase tracking-widest">Completadas</p>
-            <p className="text-base sm:text-xl font-mono font-bold text-emerald-400 mt-0.5">
+            <p className="text-[8px] sm:text-[10px] text-mutedForeground font-mono uppercase tracking-widest">Completadas</p>
+            <p className="text-base sm:text-xl font-mono font-bold text-emerald-500 mt-0.5">
               {citas.filter(c => c.status === 'completed').length}
             </p>
           </div>
-          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400/70" />
+          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500/70" />
         </div>
-        <div className="bg-[#0e0c0b]/40 border border-stone-900 p-3 sm:p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-card border border-border p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-[8px] sm:text-[10px] text-stone-500 font-mono uppercase tracking-widest">Ingresos</p>
-            <p className="text-base sm:text-xl font-mono font-bold text-emerald-400 mt-0.5">${totalIngresos.toLocaleString()}</p>
+            <p className="text-[8px] sm:text-[10px] text-mutedForeground font-mono uppercase tracking-widest">Ingresos</p>
+            <p className="text-base sm:text-xl font-mono font-bold text-emerald-500 mt-0.5">${totalIngresos.toLocaleString()}</p>
           </div>
-          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400/70" />
+          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500/70" />
         </div>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="bg-[#0e0c0b] border border-stone-900 rounded-2xl p-3 sm:p-6 shadow-xl relative min-h-[300px]">
+      <div className="bg-card border border-border rounded-2xl p-3 sm:p-6 shadow-xl relative min-h-[300px]">
         {viewMode === 'day' && renderVistaDia()}
         {viewMode === 'week' && renderVistaSemana()}
         {viewMode === 'month' && renderVistaMes()}
@@ -836,25 +835,25 @@ export default function AdminAgendaPage() {
 
       {/* MODAL NUEVA CITA */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0e0c0b] border border-stone-900 rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
                 Agendar cita
               </h3>
-              <button onClick={() => setShowNewAppointment(false)} className="p-1 hover:bg-stone-900 rounded-lg transition-colors">
-                <X className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
+              <button onClick={() => setShowNewAppointment(false)} className="p-1 hover:bg-muted rounded-lg transition-colors">
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-mutedForeground" />
               </button>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); handleAgendarCita(); }} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Cliente *</label>
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Cliente *</label>
                 <select 
                   value={newCita.clientId}
                   onChange={(e) => setNewCita({...newCita, clientId: e.target.value})}
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500"
                   required
                 >
                   <option value="">Selecciona un cliente</option>
@@ -865,11 +864,11 @@ export default function AdminAgendaPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Servicio *</label>
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Servicio *</label>
                 <select 
                   value={newCita.serviceId}
                   onChange={(e) => setNewCita({...newCita, serviceId: e.target.value})}
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500"
                   required
                 >
                   <option value="">Selecciona un servicio</option>
@@ -880,11 +879,11 @@ export default function AdminAgendaPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Profesional</label>
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Profesional</label>
                 <select 
                   value={newCita.staffId}
                   onChange={(e) => setNewCita({...newCita, staffId: e.target.value})}
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500"
                 >
                   <option value="">Cualquier profesional</option>
                   {staff.map(s => (
@@ -895,43 +894,43 @@ export default function AdminAgendaPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Fecha *</label>
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Fecha *</label>
                   <input 
                     type="date"
                     value={newCita.date}
                     onChange={(e) => setNewCita({...newCita, date: e.target.value})}
-                    className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-400 font-medium mb-1">Hora *</label>
+                  <label className="block text-xs text-mutedForeground font-medium mb-1">Hora *</label>
                   <input 
                     type="time"
                     value={newCita.time}
                     onChange={(e) => setNewCita({...newCita, time: e.target.value})}
-                    className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-stone-400 font-medium mb-1">Notas</label>
+                <label className="block text-xs text-mutedForeground font-medium mb-1">Notas</label>
                 <textarea 
                   value={newCita.notes}
                   onChange={(e) => setNewCita({...newCita, notes: e.target.value})}
                   rows={2}
-                  className="w-full bg-stone-900/50 border border-stone-900 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 placeholder-stone-500"
+                  className="w-full bg-background border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-foreground focus:outline-none focus:border-cyan-500 placeholder-mutedForeground"
                   placeholder="Alergias, observaciones..."
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 sm:pt-4 border-t border-stone-900">
+              <div className="flex gap-3 pt-3 sm:pt-4 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setShowNewAppointment(false)}
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-stone-900/50 border border-stone-900 text-stone-400 rounded-xl text-sm font-medium hover:bg-stone-900 transition-colors"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border text-mutedForeground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
                 >
                   Cancelar
                 </button>

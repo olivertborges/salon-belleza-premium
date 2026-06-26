@@ -32,20 +32,20 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const firstName = userName.split('@')[0] || 'Admin'
 
   return (
-    <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 py-3 md:py-4 flex items-center justify-between transition-colors duration-300 ${
+    <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between transition-colors duration-300 ${
       isDark
-        ? 'bg-[#0e0c0b]/95 border-stone-900 text-white'
+        ? 'bg-[#0e0c0b]/95 border-stone-900/80 text-white'
         : 'bg-white/95 border-stone-200 text-stone-900'
     }`}>
-      {/* Lado izquierdo */}
+      {/* LADO IZQUIERDO */}
       <div className="flex items-center gap-3 md:gap-4">
         {/* Botón hamburguesa (móvil) */}
         <button
           onClick={onMenuClick}
-          className={`lg:hidden p-2 rounded-xl border transition-all ${
+          className={`lg:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
             isDark
               ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
-              : 'bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-900 hover:border-stone-300'
+              : 'bg-white border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:border-stone-300'
           }`}
         >
           <Menu className="w-5 h-5" />
@@ -55,7 +55,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <h1 className={`text-sm md:text-lg font-light tracking-tight transition-colors ${
             isDark ? 'text-white' : 'text-stone-900'
           }`}>
-            Bienvenido, <span className="font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">{firstName}</span>
+            Bienvenido, <span className="font-bold bg-gradient-to-r from-rose-500 to-amber-500 bg-clip-text text-transparent">{firstName}</span>
           </h1>
           <p className={`text-[10px] md:text-xs font-light hidden sm:block transition-colors ${
             isDark ? 'text-stone-500' : 'text-stone-400'
@@ -65,38 +65,39 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         </div>
       </div>
 
-      {/* Lado derecho */}
-      <div className="flex items-center gap-2 md:gap-4">
-        {/* Botón de tema (Dark/Light) */}
+      {/* LADO DERECHO - TRES ICONOS JUNTOS (TEMA, NOTIFICACIONES, PERFIL MÓVIL) */}
+      <div className="flex items-center gap-2.5 md:gap-4 h-10">
+        
+        {/* 1. Icono Cambiar Tema */}
         <button
           onClick={toggleTheme}
-          className={`p-2 rounded-xl border transition-all ${
+          className={`h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
             isDark
               ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
-              : 'bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-900 hover:border-stone-300'
+              : 'bg-white border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:border-stone-300'
           }`}
           aria-label="Cambiar tema"
         >
           {isDark ? (
-            <Sun className="w-4 h-4 text-amber-400" />
+            <Sun className="w-4 h-4 text-amber-400 animate-pulse" />
           ) : (
-            <Moon className="w-4 h-4 text-indigo-400" />
+            <Moon className="w-4 h-4 text-rose-500" />
           )}
         </button>
 
-        {/* Notificaciones */}
-        <div className="relative">
+        {/* 2. Icono Notificaciones */}
+        <div className="relative h-10 w-10 shrink-0 flex items-center justify-center">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`p-2 rounded-xl border transition-all relative ${
+            className={`h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all relative ${
               isDark
                 ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
-                : 'bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-900 hover:border-stone-300'
+                : 'bg-white border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:border-stone-300'
             }`}
           >
             <Bell className="w-4 h-4 md:w-5 md:h-5" />
             {unreadCount > 0 && (
-              <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[8px] font-bold text-white rounded-full flex items-center justify-center border ${
+              <span className={`absolute top-1.5 right-1.5 w-4 h-4 text-[8px] font-bold text-white rounded-full flex items-center justify-center border animate-pulse shadow-[0_0_10px_rgba(225,29,72,0.4)] ${
                 isDark ? 'border-[#0e0c0b]' : 'border-white'
               } bg-rose-500`}>
                 {unreadCount}
@@ -106,45 +107,60 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
           {/* Dropdown notificaciones */}
           {showNotifications && (
-            <div className={`absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl shadow-2xl overflow-hidden z-50 border ${
-              isDark
-                ? 'bg-[#0e0c0b] border-stone-900'
-                : 'bg-white border-stone-200'
-            }`}>
-              <div className={`p-3 border-b flex items-center justify-between ${
-                isDark ? 'border-stone-900' : 'border-stone-200'
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+              <div className={`absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl shadow-2xl overflow-hidden z-50 border backdrop-blur-xl ${
+                isDark
+                  ? 'bg-[#0e0c0b]/95 border-stone-900 text-stone-200'
+                  : 'bg-white/95 border-stone-200 text-stone-900'
               }`}>
-                <span className={`text-xs font-medium ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                  Notificaciones
-                </span>
-                <button className={`text-[10px] transition-colors ${
-                  isDark ? 'text-stone-400 hover:text-cyan-400' : 'text-stone-500 hover:text-cyan-600'
+                <div className={`p-3 border-b flex items-center justify-between ${
+                  isDark ? 'border-stone-900' : 'border-stone-200'
                 }`}>
-                  Marcar todas como leídas
-                </button>
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications.map((n) => (
-                  <div key={n.id} className={`p-3 border-b transition-colors ${!n.read ? (isDark ? 'bg-cyan-500/5' : 'bg-cyan-50') : ''} ${
-                    isDark ? 'border-stone-900/50 hover:bg-stone-900/30' : 'border-stone-200/50 hover:bg-stone-50'
+                  <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                    Notificaciones
+                  </span>
+                  <button className={`text-[10px] font-medium transition-colors ${
+                    isDark ? 'text-stone-400 hover:text-rose-400' : 'text-stone-500 hover:text-rose-600'
                   }`}>
-                    <p className={`text-xs ${isDark ? 'text-stone-200' : 'text-stone-700'}`}>
-                      {n.message}
-                    </p>
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                      {n.time}
-                    </p>
-                  </div>
-                ))}
+                    Marcar todas como leídas
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications.map((n) => (
+                    <div key={n.id} className={`p-3 border-b transition-colors ${!n.read ? (isDark ? 'bg-rose-500/5' : 'bg-rose-50/70') : ''} ${
+                      isDark ? 'border-stone-900/50 hover:bg-stone-900/30' : 'border-stone-200/50 hover:bg-stone-50/70'
+                    }`}>
+                      <p className={`text-xs ${isDark ? 'text-stone-200' : 'text-stone-700'} ${!n.read ? 'font-medium' : ''}`}>
+                        {n.message}
+                      </p>
+                      <p className={`text-[10px] mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        {n.time}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Perfil usuario (desktop) */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* 3. Icono Perfil móvil / Avatar Desktop */}
+        {/* En móvil se ve como el 3er botón de la fila de 3 iconos */}
+        <button className={`md:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
+          isDark
+            ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
+            : 'bg-white border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-50 hover:border-stone-300'
+        }`}>
+          <User className="w-4 h-4" />
+        </button>
+
+        {/* Separador Visual y Perfil (solo visible en Desktop) */}
+        <div className={`h-6 w-[1px] mx-0.5 hidden md:block shrink-0 ${isDark ? 'bg-stone-800' : 'bg-stone-200'}`}></div>
+
+        <div className="hidden md:flex items-center gap-3 shrink-0">
           <div className="text-right">
-            <p className={`text-xs font-medium transition-colors ${isDark ? 'text-white' : 'text-stone-900'}`}>
+            <p className={`text-xs font-medium truncate max-w-[150px] transition-colors ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
               {userName}
             </p>
             <span className={`text-[9px] font-mono tracking-wider uppercase transition-colors ${
@@ -153,23 +169,15 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               Admin
             </span>
           </div>
-          <div className={`w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-bold transition-colors ${
+          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-bold shadow-sm transition-colors ${
             isDark
-              ? 'bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border-cyan-500/30 text-cyan-400'
-              : 'bg-gradient-to-br from-cyan-100 to-amber-100 border-cyan-300 text-cyan-700'
+              ? 'bg-gradient-to-br from-rose-500/20 to-amber-500/20 border-rose-500/30 text-rose-400'
+              : 'bg-gradient-to-br from-rose-50 to-amber-50 border-rose-200 text-rose-600'
           }`}>
             {firstName.charAt(0).toUpperCase()}
           </div>
         </div>
 
-        {/* Perfil móvil */}
-        <button className={`md:hidden p-2 rounded-xl border transition-all ${
-          isDark
-            ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
-            : 'bg-stone-100 border-stone-200 text-stone-500 hover:text-stone-900 hover:border-stone-300'
-        }`}>
-          <User className="w-4 h-4" />
-        </button>
       </div>
     </header>
   )
