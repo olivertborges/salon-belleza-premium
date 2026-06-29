@@ -24,7 +24,7 @@ const ALL_MENU_ITEMS = [
   { id: 'clientes', name: 'Clientas VIP', icon: Users, path: '/admin/clientes', color: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' },
   { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' },
   { id: 'productos', name: 'Productos / Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/20' },
-  { id: 'cursos', name: 'Cursos / Academia', icon: GraduationCap, path: '/admin/cursos', color: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-950/20' },
+  /* { id: 'cursos', name: 'Cursos / Academia', icon: GraduationCap, path: '/admin/cursos', color: 'border-fuchsia-500 text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-950/20' }, */,
   { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20' },
   { id: 'staff', name: 'Staff Equipo', icon: UsersRound, path: '/admin/staff', color: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20' },
   { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'border-stone-500 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-900/40' },

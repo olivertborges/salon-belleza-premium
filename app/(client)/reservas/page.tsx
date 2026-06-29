@@ -2,70 +2,132 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export default function MisReservasPremium() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [citas, setCitas] = useState<any[]>([])
   const [nombreCliente, setNombreCliente] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const cargarCitasAutomatico = async () => {
-      const idGuardado = localStorage.getItem('cliente_id')
-      const telGuardado = localStorage.getItem('cliente_telefono')
-
-      if (!idGuardado && !telGuardado) {
+      if (!user) {
         setLoading(false)
+        setError('Inicia sesión para ver tus reservas')
         return
       }
 
-      try {
-        let clientId = idGuardado
+      setLoading(true)
+      setError(null)
 
-        if (!clientId && telGuardado) {
-          const { data: cliente } = await supabase
+      console.log('🔍 Usuario autenticado:', user.email)
+
+      // Buscar cliente por email
+      let clienteId = null
+
+      const { data: cliente, error: clienteError } = await supabase
+        .from('clients')
+        .select('id, name, phone, email')
+        .eq('email', user.email)
+        .maybeSingle()
+
+      if (clienteError) {
+        console.error('❌ Error buscando cliente:', clienteError)
+      }
+
+      if (cliente) {
+        clienteId = cliente.id
+        setNombreCliente(cliente.name || '')
+        console.log('✅ Cliente encontrado:', cliente)
+      }
+
+      // Si no se encontró por email, intentar por localStorage
+      if (!clienteId) {
+        const telGuardado = localStorage.getItem('cliente_telefono')
+        if (telGuardado) {
+          const { data: clientePorTel } = await supabase
             .from('clients')
             .select('id, name')
             .eq('phone', telGuardado)
             .maybeSingle()
           
-          if (cliente) {
-            clientId = cliente.id
-            setNombreCliente(cliente.name)
-            localStorage.setItem('cliente_id', cliente.id)
+          if (clientePorTel) {
+            clienteId = clientePorTel.id
+            setNombreCliente(clientePorTel.name || '')
+            console.log('✅ Cliente encontrado por teléfono:', clientePorTel)
           }
         }
+      }
 
-        if (!clientId) {
-          setLoading(false)
-          return
-        }
+      if (!clienteId) {
+        setLoading(false)
+        setError('No se encontró tu perfil de cliente')
+        return
+      }
 
-        const { data: appointmentsData } = await supabase
+      // ✅ Cargar citas - SIN LA RELACIÓN CON staff
+      try {
+        const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select(`
             *,
-            clients:client_id (name),
-            services:service_id (name, price, duration),
-            staff:professional_id (name)
+            clients:client_id (id, name, phone, email),
+            services:service_id (id, name, price, duration)
           `)
-          .eq('client_id', clientId)
+          .eq('client_id', clienteId)
           .order('date', { ascending: true })
 
-        if (appointmentsData && appointmentsData.length > 0) {
-          setCitas(appointmentsData)
-          setNombreCliente(appointmentsData[0].clients?.name || '')
+        if (appointmentsError) {
+          console.error('❌ Error cargando citas:', appointmentsError)
+          throw appointmentsError
         }
+
+        console.log('📋 Citas encontradas:', appointmentsData?.length || 0)
+
+        // ✅ Si quieres mostrar el nombre del staff, cárgalo por separado
+        if (appointmentsData && appointmentsData.length > 0) {
+          // Obtener los staff IDs
+          const staffIds = appointmentsData
+            .map(c => c.professional_id)
+            .filter(id => id)
+
+          let staffMap: Record<string, any> = {}
+          if (staffIds.length > 0) {
+            const { data: staffData } = await supabase
+              .from('staff')
+              .select('id, name')
+              .in('id', staffIds)
+
+            if (staffData) {
+              staffMap = staffData.reduce((acc, s) => ({ ...acc, [s.id]: s }), {})
+            }
+          }
+
+          // Combinar los datos
+          const citasConStaff = appointmentsData.map(cita => ({
+            ...cita,
+            staff: cita.professional_id ? staffMap[cita.professional_id] : null
+          }))
+
+          setCitas(citasConStaff)
+        } else {
+          setError('No tienes reservas registradas')
+        }
+
       } catch (err) {
-        console.error('Error cargando reservas:', err)
+        console.error('❌ Error cargando reservas:', err)
+        setError('Error al cargar las reservas')
       } finally {
         setLoading(false)
       }
     }
 
     cargarCitasAutomatico()
-  }, [])
+  }, [user])
 
   const renderBadge = (status: string) => {
     const base = "text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border"
@@ -90,27 +152,30 @@ export default function MisReservasPremium() {
   }
 
   return (
-    // Removido 'min-h-screen' y centrados absolutos para que respete el espacio interno del layout
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6 text-stone-200 selection:bg-amber-500 selection:text-black relative">
       
-      {/* Sutil destello de fondo para dar atmósfera premium dentro del dashboard */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[150px] bg-gradient-to-b from-amber-500/5 to-transparent blur-3xl pointer-events-none" />
 
       <div className="relative z-10">
         
-        {/* Cabecera adaptada al panel interno */}
         <div className="mb-8 text-left border-b border-stone-800/60 pb-5">
           <span className="text-[10px] font-mono tracking-widest text-amber-500 uppercase font-bold">Panel de Cliente</span>
           <h1 className="text-2xl font-bold text-white tracking-tight mt-1">
             {nombreCliente ? `Tus Reservas, ${nombreCliente.split(' ')[0]}` : 'Mis Reservas'}
           </h1>
-          <p className="text-xs text-stone-400 mt-1">Aquí puedes hacer el seguimiento en vivo de tus turnos programados.</p>
+          <p className="text-xs text-stone-400 mt-1">
+            {user?.email ? `Usuario: ${user.email}` : 'Inicia sesión para ver tus reservas'}
+          </p>
+          {error && (
+            <p className="text-xs text-amber-500 mt-2 font-mono">{error}</p>
+          )}
         </div>
 
-        {/* Listado en cuadrícula adaptativa de dos columnas */}
         {citas.length === 0 ? (
           <div className="border border-dashed border-stone-800 rounded-2xl p-8 text-center bg-[#141211]/30 backdrop-blur-md">
-            <p className="text-xs text-stone-500 font-mono">No tienes ninguna reserva registrada en este dispositivo.</p>
+            <p className="text-xs text-stone-500 font-mono">
+              {error || 'No tienes ninguna reserva registrada.'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -137,7 +202,6 @@ export default function MisReservasPremium() {
                     </div>
                   </div>
 
-                  {/* Fila inferior estilizadora */}
                   <div className="flex items-center justify-between mt-5 pt-3 border-t border-stone-800/40 text-xs">
                     <div className="flex items-center gap-2 text-stone-400">
                       <svg className="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>

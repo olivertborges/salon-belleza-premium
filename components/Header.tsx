@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { 
   FaWhatsapp, 
@@ -14,31 +14,34 @@ import {
   FaSignOutAlt, 
   FaShieldAlt, 
   FaUserTie,
-  FaCrown
+  FaCrown,
+  FaSpinner
 } from 'react-icons/fa'
 
 export default function Header() {
-  const { user, role, signOut } = useAuth()
+  const { user, role, signOut, loading } = useAuth()
   const pathname = usePathname()
+  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  // Efecto de scroll - se activa cuando se baja más de 20px
+  // Efecto de scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true)
-      } else {
-        setScrolled(false)
-      }
+      setScrolled(window.scrollY > 20)
     }
-
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Cerrar menú al cambiar de ruta
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [pathname])
+
   // Determinar el rol del usuario
   const userRole = role || 'guest'
+  const isAuthenticated = userRole !== 'guest' && user !== null
 
   const navItems = [
     { label: 'Inicio', href: '/' },
@@ -55,8 +58,75 @@ export default function Header() {
   }
 
   const handleLogout = async () => {
-    await signOut()
-    window.location.href = '/'
+    try {
+      if (signOut) {
+        await signOut()
+      }
+      setIsMenuOpen(false)
+      router.push('/')
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+    }
+  }
+
+  // Obtener nombre para mostrar
+  const getDisplayName = () => {
+    if (user?.full_name) return user.full_name
+    if (user?.email) {
+      const namePart = user.email.split('@')[0]
+      return namePart.charAt(0).toUpperCase() + namePart.slice(1)
+    }
+    return userRole || 'Usuario'
+  }
+
+  // Obtener iniciales
+  const getInitials = () => {
+    const name = getDisplayName()
+    return name.charAt(0).toUpperCase()
+  }
+
+  // Obtener color según rol
+  const getRoleColor = () => {
+    switch (userRole) {
+      case 'admin': return 'text-red-400'
+      case 'staff': return 'text-indigo-400'
+      case 'client': return 'text-rose-400'
+      default: return 'text-slate-400'
+    }
+  }
+
+  // Obtener icono según rol
+  const getRoleIcon = () => {
+    switch (userRole) {
+      case 'admin': return <FaShieldAlt className="text-red-400" />
+      case 'staff': return <FaUserTie className="text-indigo-400" />
+      case 'client': return <FaUserCircle className="text-rose-400" />
+      default: return <FaUserCircle className="text-slate-400" />
+    }
+  }
+
+  // Mostrar loading mientras se verifica autenticación
+  if (loading) {
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 bg-stone-900/95 backdrop-blur-md border-b border-stone-800 py-4">
+        <div className="w-full max-w-7xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg flex items-center justify-center text-white font-bold">
+              S
+            </div>
+            <div>
+              <h1 className="text-base font-light tracking-wider text-slate-100">
+                SALON <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400">PREMIUM</span>
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <FaSpinner className="text-rose-400 animate-spin" />
+            <span className="text-xs text-slate-400">Cargando...</span>
+          </div>
+        </div>
+      </header>
+    )
   }
 
   return (
@@ -114,7 +184,7 @@ export default function Header() {
 
         {/* Acciones Desktop */}
         <div className="hidden lg:flex items-center gap-3">
-          {userRole === 'guest' ? (
+          {!isAuthenticated ? (
             <Link href="/login">
               <button className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all ${
                 scrolled 
@@ -129,10 +199,8 @@ export default function Header() {
               scrolled ? 'bg-slate-800 border-slate-700' : 'bg-slate-950 border-slate-800'
             }`}>
               <span className="text-[10px] uppercase font-bold text-slate-300 tracking-wider flex items-center gap-1">
-                {userRole === 'admin' && <FaShieldAlt className="text-red-400" />}
-                {userRole === 'staff' && <FaUserTie className="text-indigo-400" />}
-                {userRole === 'client' && <FaUserCircle className="text-rose-400" />}
-                {user?.full_name || userRole}
+                {getRoleIcon()}
+                {getDisplayName()}
               </span>
               <button 
                 onClick={handleLogout}
@@ -173,7 +241,7 @@ export default function Header() {
             ))}
 
             <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-slate-800">
-              {userRole === 'guest' ? (
+              {!isAuthenticated ? (
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <button className="w-full bg-slate-950 border border-slate-800 text-slate-200 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 text-xs">
                     <FaUserCircle /> Iniciar Sesión
@@ -181,10 +249,13 @@ export default function Header() {
                 </Link>
               ) : (
                 <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-800 text-xs">
-                  <span className="font-bold uppercase text-slate-400 tracking-wider pl-2">
-                    {user?.full_name || userRole}
+                  <span className="font-bold uppercase text-slate-400 tracking-wider pl-2 flex items-center gap-1.5">
+                    {getRoleIcon()} {getDisplayName()}
                   </span>
-                  <button onClick={handleLogout} className="text-rose-400 font-bold flex items-center gap-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg shadow-inner">
+                  <button 
+                    onClick={handleLogout} 
+                    className="text-rose-400 font-bold flex items-center gap-1 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg shadow-inner hover:bg-rose-500/10 transition-colors"
+                  >
                     Salir <FaSignOutAlt />
                   </button>
                 </div>

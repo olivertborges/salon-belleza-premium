@@ -21,7 +21,7 @@ interface CitaCancelada {
   cancelled_at: string
   clients: { name: string; email: string; phone: string }
   services: { name: string; price: number; duration: number }
-  staff: { name: string }
+  staff: { name: string } | null
 }
 
 export default function CancelacionesPage() {
@@ -37,20 +37,46 @@ export default function CancelacionesPage() {
     setError(null)
 
     try {
+      // ✅ CONSULTA CORREGIDA - SIN staff:professional_id
       const { data, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          clients:client_id (name, email, phone),
-          services:service_id (name, price, duration),
-          staff:professional_id (name)
+          clients:client_id (id, name, email, phone),
+          services:service_id (id, name, price, duration)
         `)
         .eq('status', 'cancelled')
         .order('date', { ascending: false })
 
       if (error) throw error
 
-      setCitas(data || [])
+      // ✅ Cargar staff por separado
+      let citasConStaff = data || []
+      
+      if (data && data.length > 0) {
+        const staffIds = data
+          .map(c => c.professional_id)
+          .filter(id => id)
+
+        let staffMap: Record<string, { name: string }> = {}
+        if (staffIds.length > 0) {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('id, name')
+            .in('id', staffIds)
+
+          if (staffData) {
+            staffMap = staffData.reduce((acc, s) => ({ ...acc, [s.id]: { name: s.name } }), {})
+          }
+        }
+
+        citasConStaff = data.map(cita => ({
+          ...cita,
+          staff: cita.professional_id ? staffMap[cita.professional_id] || null : null
+        }))
+      }
+
+      setCitas(citasConStaff)
     } catch (err: any) {
       console.error('Error cargando cancelaciones:', err)
       setError(err.message || 'Error al cargar las cancelaciones')
@@ -97,6 +123,7 @@ export default function CancelacionesPage() {
 
   const totalCanceladas = citas.length
   const totalPerdido = citas.reduce((sum, c) => sum + (c.total_price || 0), 0)
+  const clientesAfectados = new Set(citas.map(c => c.client_id)).size
 
   if (loading) {
     return (
@@ -169,7 +196,7 @@ export default function CancelacionesPage() {
           <div>
             <p className="text-mutedForeground text-xs font-medium">Clientes Afectados</p>
             <span className="text-2xl font-mono font-bold text-foreground block mt-1">
-              {new Set(citas.map(c => c.client_id)).size}
+              {clientesAfectados}
             </span>
           </div>
           <div className="p-3 rounded-xl bg-muted border border-border text-mutedForeground">
