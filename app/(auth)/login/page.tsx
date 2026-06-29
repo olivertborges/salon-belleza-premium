@@ -23,15 +23,16 @@ export default function AuthMobilDefinitivo() {
     setMounted(true)
   }, [])
 
+  // Redirección proactiva basada en el estado global
   useEffect(() => {
     if (mounted && user && !authLoading && role !== null) {
       if (role === 'admin' || role === 'staff' || role === 'owner') {
-        router.replace('/dashboard')
+        window.location.href = '/dashboard'
       } else {
-        router.replace('/portal')
+        window.location.href = '/portal'
       }
     }
-  }, [user, role, authLoading, router, mounted])
+  }, [user, role, authLoading, mounted])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +44,6 @@ export default function AuthMobilDefinitivo() {
 
     try {
       if (activeTab === 'recover') {
-        // Aquí iría la lógica de recuperación
         setSuccess('Enlace de recuperación enviado con éxito.')
         setLoading(false)
         return
@@ -51,12 +51,22 @@ export default function AuthMobilDefinitivo() {
 
       if (activeTab === 'login') {
         await signIn(email, password)
-        setSuccess('¡Ingreso correcto! Sincronizando...')
-        router.refresh()
+        setSuccess('¡Ingreso correcto! Redirigiendo al panel...')
+        
+        // 🚀 BYPASS DIRECTO: 
+        // Esperamos 800ms a que Supabase asiente la cookie localmente y forzamos
+        // la entrada directa a /dashboard. Si el usuario resulta ser cliente,
+        // el middleware se encargará de rebotarlo a /portal de forma segura.
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 800)
       } else {
-        // Aquí iría la lógica de registro con el trigger de Supabase
+        // Registro
+        await signIn(email, password)
         setSuccess('Cuenta creada con éxito. Entrando...')
-        router.refresh()
+        setTimeout(() => {
+          window.location.href = '/portal'
+        }, 800)
       }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')

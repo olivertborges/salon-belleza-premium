@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Sparkles, Bell, ShoppingCart, 
-  Scissors, Heart, Gift, Calendar, 
+  Scissors, Heart, Crown, Calendar, 
   Menu, X, Store, LogOut, Home, CalendarPlus
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           console.log('🔔 Nueva notificación en tiempo real:', payload.new)
           setNotificaciones(prev => prev + 1)
           setNotificacionesList(prev => [...prev, payload.new])
-          
+
           // 🔊 Sonido de notificación (opcional)
           try {
             const audio = new Audio('/notification.mp3')
@@ -148,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Store, label: 'Boutique Fresh', href: '/productos' },
     { icon: Scissors, label: 'Peluquería & Estilo', href: '#peluqueria' },
     { icon: Heart, label: 'Cuidado & Estética', href: '#estetica' },
-    { icon: Gift, label: 'Fresh Puntos', href: '#puntos' },
+    { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 
   const inicialNombre = user?.name ? user.name.charAt(0).toUpperCase() : 'C'

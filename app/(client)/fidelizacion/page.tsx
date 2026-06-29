@@ -1,200 +1,189 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { 
-  FaArrowLeft, 
-  FaCrown, 
-  FaGem, 
-  FaGift, 
-  FaPlus, 
-  FaStar, 
-  FaToggleOn, 
-  FaToggleOff, 
-  FaQrcode, 
-  FaCheckCircle 
-} from 'react-icons/fa'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { Crown, Gift, Clock, Zap, Check, ArrowRight, Sparkle, Scissors, X, Ticket, Copy, ShieldCheck } from 'lucide-react'
+import confetti from 'canvas-confetti'
 
-export default function FidelizacionPage() {
-  // Simulación de rol: Cliente o Administrador en caja
-  const [isAdmin, setIsAdmin] = useState(false)
+interface WalletData {
+  glow_points: number
+  glow_points_earned: number
+  glow_points_redeemed: number
+  hair_points: number
+  hair_points_earned: number
+  hair_points_redeemed: number
+  glow_level: string
+  hair_level: string
+}
 
-  // Estado del cliente simulado (listo para conectar con auth y perfiles en tu base de datos)
-  const [clientPoints, setClientPoints] = useState(1450)
-  const nextLevelPoints = 2000
-  const progressPercent = (clientPoints / nextLevelPoints) * 100
+interface LevelData {
+  name: string
+  emoji: string
+  color_hex: string
+  badge: string
+  benefits: string[]
+  min_points: number
+}
 
-  // Estado para simular la recarga de puntos en caja
-  const [pointsToAdd, setPointsToAdd] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
+interface Reward {
+  id: string
+  name: string
+  description: string
+  points_required: number
+  tier: string
+  discount_percentage: number
+}
 
-  // Catálogo de recompensas exclusivas
-  const recompensas = [
-    { id: 1, title: 'Lifting de Pestañas Gratis', pointsCost: 600, available: clientPoints >= 600 },
-    { id: 2, title: 'Kit de Cuidados Post-Microblading', pointsCost: 450, available: clientPoints >= 450 },
-    { id: 3, title: '50% Desc. en Micropigmentación Labial', pointsCost: 1200, available: clientPoints >= 1200 },
-    { id: 4, title: 'Sesión de Nail Art Avanzado', pointsCost: 800, available: clientPoints >= 800 },
-  ]
+export default function VIPClubPage() {
+  const { user, tenantId } = useAuth()
+  const [wallet, setWallet] = useState<WalletData | null>(null)
+  const [glowLevels, setGlowLevels] = useState<LevelData[]>([])
+  const [hairLevels, setHairLevels] = useState<LevelData[]>([])
+  const [glowRewards, setGlowRewards] = useState<Reward[]>([])
+  const [hairRewards, setHairRewards] = useState<Reward[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'glow' | 'hair'>('glow')
+  const [showRedeemModal, setShowRedeemModal] = useState(false)
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null)
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null)
 
-  // Función para sumar puntos desde el panel de administración
-  const handleAddPoints = (e: React.FormEvent) => {
-    e.preventDefault()
-    const num = Number(pointsToAdd)
-    if (!isNaN(num) && num > 0) {
-      setClientPoints(prev => prev + num)
-      setPointsToAdd('')
-      setSuccessMessage(`¡Se han acreditado +${num} puntos con éxito!`)
-      setTimeout(() => setSuccessMessage(''), 4000)
+  useEffect(() => {
+    if (user?.id && tenantId) {
+      fetchData()
+    }
+  }, [user, tenantId])
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const { data: walletData } = await supabase
+        .from('loyalty_wallets')
+        .select('*')
+        .eq('client_id', user?.id)
+        .eq('tenant_id', tenantId)
+        .single()
+
+      setWallet(walletData || {
+        glow_points: 0, glow_points_earned: 0, glow_points_redeemed: 0,
+        hair_points: 0, hair_points_earned: 0, hair_points_redeemed: 0,
+        glow_level: 'Bronce', hair_level: 'Bronce'
+      })
+
+      const { data: gLv } = await supabase.from('vip_levels').select('*').eq('wallet_type', 'glow').eq('is_active', true).eq('tenant_id', tenantId).order('min_points', { ascending: true })
+      const { data: hLv } = await supabase.from('vip_levels').select('*').eq('wallet_type', 'hair').eq('is_active', true).eq('tenant_id', tenantId).order('min_points', { ascending: true })
+      setGlowLevels(gLv || [])
+      setHairLevels(hLv || [])
+
+      const { data: gRw } = await supabase.from('reward_catalog').select('*').eq('wallet_type', 'glow').eq('is_active', true).eq('tenant_id', tenantId).order('points_required', { ascending: true })
+      const { data: hRw } = await supabase.from('reward_catalog').select('*').eq('wallet_type', 'hair').eq('is_active', true).eq('tenant_id', tenantId).order('points_required', { ascending: true })
+      setGlowRewards(gRw || [])
+      setHairRewards(hRw || [])
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
     }
   }
 
+  const getLevelInfo = (points: number, levels: LevelData[]) => {
+    const current = [...levels].reverse().find(l => l.min_points <= points) || levels[0]
+    const next = levels.find(l => l.min_points > points)
+    if (!next) return { current, next, progress: 100, needed: 0 }
+    const base = current ? current.min_points : 0
+    const stepTotal = next.min_points - base
+    const stepProgress = points - base
+    return { current, next, progress: Math.min((stepProgress / stepTotal) * 100, 100), needed: next.min_points - points }
+  }
+
+  const currentInfo = activeTab === 'glow' 
+    ? getLevelInfo(wallet?.glow_points || 0, glowLevels)
+    : getLevelInfo(wallet?.hair_points || 0, hairLevels)
+
+  const currentWallet = activeTab === 'glow' ? {
+    points: wallet?.glow_points || 0, rewards: glowRewards, level: wallet?.glow_level || 'Bronce'
+  } : {
+    points: wallet?.hair_points || 0, rewards: hairRewards, level: wallet?.hair_level || 'Bronce'
+  }
+
+  const requestRedeem = async () => {
+    if (!selectedReward || !user?.id || !tenantId) return
+    try {
+      const { data, error } = await supabase.rpc('redeem_reward', {
+        p_client_id: user.id, p_tenant_id: tenantId, p_reward_id: selectedReward.id, p_wallet_type: activeTab
+      })
+      if (error) throw error
+      setGeneratedCode(data)
+      confetti({ particleCount: 100, spread: 50 })
+      fetchData()
+    } catch (e: any) {
+      alert(e.message || 'Error procesando el canje')
+    }
+  }
+
+  if (loading) return <div className="p-10 text-center text-xs text-stone-500">Cargando Club VIP...</div>
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-slate-100 pb-20 overflow-x-hidden">
-      
-      {/* Navbar de Navegación */}
-      <div className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 p-4 sticky top-0 z-40 flex items-center justify-between">
-        <Link href="/" className="text-slate-400 flex items-center gap-1.5 text-xs uppercase tracking-wider font-medium">
-          <FaArrowLeft className="text-rose-400" /> Volver
-        </Link>
-        <button 
-          onClick={() => setIsAdmin(!isAdmin)} 
-          className="flex items-center gap-2 text-[10px] bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800 tracking-widest uppercase text-slate-300 active:scale-95 transition-all"
-        >
-          {isAdmin ? <FaToggleOn className="text-rose-400 text-sm" /> : <FaToggleOff className="text-slate-500 text-sm" />}
-          Acceso: {isAdmin ? 'Caja / Staff' : 'Socio VIP'}
-        </button>
+    <div className="max-w-md mx-auto space-y-5 pb-24 px-3 pt-4 text-stone-200">
+      <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1">
+        <button onClick={() => { setActiveTab('glow'); setGeneratedCode(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${activeTab === 'glow' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-stone-400'}`}>Estética</button>
+        <button onClick={() => { setActiveTab('hair'); setGeneratedCode(null); }} className={`flex-1 py-2 rounded-lg text-xs font-bold ${activeTab === 'hair' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-stone-400'}`}>Peluquería</button>
       </div>
 
-      <div className="max-w-md mx-auto px-4 mt-6">
-        
-        {/* Título */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-light text-slate-100 tracking-tight">
-            Club de <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400">Fidelidad</span>
-          </h1>
-          <p className="text-slate-400 text-xs font-light mt-1">Acumula puntos en cada visita y canjéalos por experiencias premium.</p>
+      <div className="bg-stone-950 border border-stone-900 rounded-2xl p-4">
+        <div className="flex justify-between">
+          <div>
+            <span className="text-[10px] text-stone-500 block uppercase font-mono">Puntos Disponibles</span>
+            <span className="text-3xl font-black text-white">{currentWallet.points}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-xl">{currentInfo.current?.emoji || '🥉'}</span>
+            <p className="text-xs font-bold text-white">{currentWallet.level}</p>
+          </div>
         </div>
+        <div className="w-full h-1 bg-stone-900 rounded-full mt-3 overflow-hidden">
+          <div className="h-full bg-amber-500 transition-all" style={{ width: `${currentInfo.progress}%` }} />
+        </div>
+      </div>
 
-        {/* MODO ADMINISTRADOR: PANEL DE RECARGA EN CAJA */}
-        {isAdmin && (
-          <div className="bg-slate-900 border-2 border-dashed border-amber-500/40 p-5 rounded-3xl shadow-xl mb-6 animate-in slide-in-from-top-4 duration-300">
-            <h2 className="text-xs uppercase tracking-wider font-bold text-amber-400 flex items-center gap-2 mb-3">
-              <FaCrown /> Terminal de Caja Estéril
-            </h2>
-            <form onSubmit={handleAddPoints} className="flex gap-2">
-              <input 
-                type="number" 
-                value={pointsToAdd} 
-                onChange={(e) => setPointsToAdd(e.target.value)}
-                placeholder="Ej. 150 puntos por servicio"
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-slate-100 font-medium"
-                required
-              />
-              <button 
-                type="submit"
-                className="bg-gradient-to-r from-amber-500 to-rose-500 text-white px-4 rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-transform flex items-center gap-1"
-              >
-                <FaPlus /> Cargar
-              </button>
-            </form>
-            {successMessage && (
-              <p className="text-[11px] text-emerald-400 mt-2 flex items-center gap-1 animate-pulse">
-                <FaCheckCircle /> {successMessage}
-              </p>
+      <div className="space-y-2">
+        <h3 className="text-xs font-mono text-stone-400 px-1">Premios Disponibles</h3>
+        {currentWallet.rewards.map(r => {
+          const canAfford = currentWallet.points >= r.points_required
+          return (
+            <div key={r.id} className={`p-3 rounded-xl border bg-stone-900/30 flex justify-between items-center ${canAfford ? 'border-stone-800' : 'border-stone-950 opacity-40'}`}>
+              <div>
+                <p className="text-xs font-bold text-stone-200">{r.name}</p>
+                <span className="text-[10px] text-amber-400 font-mono">{r.points_required} pts</span>
+              </div>
+              <button disabled={!canAfford} onClick={() => { setSelectedReward(r); setShowRedeemModal(true); }} className="px-3 py-1 bg-stone-800 text-[10px] font-bold rounded-lg border border-stone-700 text-white">Canjear</button>
+            </div>
+          )
+        })}
+      </div>
+
+      {showRedeemModal && selectedReward && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+          <div className="bg-stone-950 border border-stone-800 rounded-xl p-4 max-w-sm w-full text-center">
+            {!generatedCode ? (
+              <>
+                <p className="text-xs text-stone-300">¿Canjear {selectedReward.name}?</p>
+                <div className="flex gap-2 mt-4">
+                  <button onClick={() => setShowRedeemModal(false)} className="flex-1 py-1.5 bg-stone-900 text-xs text-stone-400 rounded-lg">No</button>
+                  <button onClick={requestRedeem} className="flex-1 py-1.5 bg-amber-500 text-xs font-bold text-black rounded-lg">Sí, seguro</button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <span className="text-[10px] text-amber-400 font-mono block">Código de Reserva</span>
+                <div className="text-xl font-mono font-black tracking-widest text-white bg-stone-900 p-2 rounded-lg border border-stone-800">{generatedCode}</div>
+                <p className="text-[10px] text-stone-500">Muestre este código en caja para retirar su premio.</p>
+                <button onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} className="w-full py-1.5 bg-stone-800 text-xs rounded-lg text-stone-300">Cerrar</button>
+              </div>
             )}
           </div>
-        )}
-
-        {/* TARJETA VIP VIRTUAL DEL CLIENTE */}
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden mb-6">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
-          
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <span className="text-[9px] uppercase tracking-[0.2em] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-md font-bold">
-                Estatus Gold
-              </span>
-              <h3 className="font-bold text-base text-slate-200 mt-2">Valeria Mendoza</h3>
-              <p className="text-[10px] text-slate-500 tracking-wider">ID Socio: #VIP-2026</p>
-            </div>
-            <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-slate-300">
-              <FaQrcode className="text-2xl opacity-80" />
-            </div>
-          </div>
-
-          {/* Balance de Puntos */}
-          <div className="mb-4">
-            <span className="text-[10px] uppercase tracking-widest text-slate-500 block">Tus Puntos Disponibles</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-black bg-gradient-to-r from-rose-400 via-amber-400 to-rose-400 text-transparent bg-clip-text">
-                {clientPoints}
-              </span>
-              <span className="text-xs text-slate-400 font-medium">PTS</span>
-            </div>
-          </div>
-
-          {/* Barra de Progreso Hacia Siguiente Nivel */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-              <span>Próximo Nivel: <strong className="text-amber-400">Diamond Club</strong></span>
-              <span>Faltan {nextLevelPoints - clientPoints} pts</span>
-            </div>
-            <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden p-[2px] border border-slate-800">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 via-amber-500 to-orange-400 transition-all duration-500"
-                style={{ width: `${Math.min(progressPercent, 100)}%` }}
-              />
-            </div>
-          </div>
         </div>
-
-        {/* CATÁLOGO DE RECOMPENSAS */}
-        <h2 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3 flex items-center gap-1.5">
-          <FaGift className="text-rose-400" /> Recompensas Disponibles
-        </h2>
-
-        <div className="space-y-3">
-          {recompensas.map((rec) => (
-            <div 
-              key={rec.id}
-              className={`p-4 rounded-2xl border transition-all flex justify-between items-center bg-slate-900/60 ${
-                rec.available 
-                  ? 'border-slate-800 hover:border-rose-500/40 opacity-100 shadow-xl' 
-                  : 'border-slate-850 opacity-40 select-none'
-              }`}
-            >
-              <div className="pr-4">
-                <h4 className="font-bold text-xs text-slate-200 tracking-tight">{rec.title}</h4>
-                <div className="flex items-center gap-1 text-[11px] text-amber-400 font-bold mt-1">
-                  <FaGem className="text-[9px]" /> {rec.pointsCost} Puntos
-                </div>
-              </div>
-
-              <div>
-                {rec.available ? (
-                  <button 
-                    onClick={() => {
-                      if(confirm(`¿Quieres canjear tus puntos por: ${rec.title}?`)) {
-                        setClientPoints(prev => prev - rec.pointsCost)
-                        alert('¡Canje Exitoso! Muestra el código en tu próxima cita.')
-                      }
-                    }}
-                    className="bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[10px] font-bold px-3 py-2 rounded-xl uppercase tracking-wider active:scale-95 transition-transform shadow-md"
-                  >
-                    Canjear
-                  </button>
-                ) : (
-                  <span className="text-[9px] uppercase tracking-wider bg-slate-950 border border-slate-800 text-slate-600 px-2 py-1 rounded-lg font-bold">
-                    Bloqueado
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-      </div>
-    </main>
+      )}
+    </div>
   )
 }

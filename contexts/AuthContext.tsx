@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 import { Session, User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -17,7 +17,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient()
+  // ✅ Inicialización oficial con @supabase/ssr
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<'client' | 'admin' | 'staff' | null>(null)
@@ -49,7 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // ✅ OBTENER SESIÓN GUARDADA
         const { data: { session } } = await supabase.auth.getSession()
 
         if (isMounted) {
@@ -74,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // ✅ ESCUCHAR CAMBIOS DE AUTENTICACIÓN
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (!isMounted) return
 
@@ -114,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password 
     })
     if (error) throw error
-    
+
     if (data.user) {
       await fetchUserRole(data.user.id)
       setUser(data.user)

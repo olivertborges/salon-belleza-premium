@@ -13,21 +13,13 @@ export function TimePicker({ value, onChange, disabled = false }: TimePickerProp
   const [isOpen, setIsOpen] = useState(false)
   const [hours, setHours] = useState('09')
   const [minutes, setMinutes] = useState('00')
-  const [period, setPeriod] = useState<'AM' | 'PM'>('AM')
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (value) {
       const [h, m] = value.split(':')
-      const hNum = parseInt(h)
-      if (hNum >= 12) {
-        setPeriod('PM')
-        setHours(String(hNum === 12 ? 12 : hNum - 12).padStart(2, '0'))
-      } else {
-        setPeriod('AM')
-        setHours(String(hNum === 0 ? 12 : hNum).padStart(2, '0'))
-      }
-      setMinutes(m || '00')
+      setHours(h.padStart(2, '0'))
+      setMinutes(m?.padStart(2, '0') || '00')
     }
   }, [value])
 
@@ -42,34 +34,37 @@ export function TimePicker({ value, onChange, disabled = false }: TimePickerProp
   }, [])
 
   const handleConfirm = () => {
-    let h = parseInt(hours)
-    if (period === 'PM' && h !== 12) h += 12
-    if (period === 'AM' && h === 12) h = 0
-    const timeStr = `${String(h).padStart(2, '0')}:${minutes}`
-    onChange(timeStr)
-    setIsOpen(false)
+    const h = parseInt(hours)
+    const m = parseInt(minutes)
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      onChange(timeStr)
+      setIsOpen(false)
+    }
   }
 
   const incrementHour = () => {
     let h = parseInt(hours)
-    h = h === 12 ? 1 : h + 1
+    h = h === 23 ? 0 : h + 1
     setHours(String(h).padStart(2, '0'))
   }
 
   const decrementHour = () => {
     let h = parseInt(hours)
-    h = h === 1 ? 12 : h - 1
+    h = h === 0 ? 23 : h - 1
     setHours(String(h).padStart(2, '0'))
   }
 
   const incrementMinute = () => {
-    let m = parseInt(minutes) + 15
+    let m = parseInt(minutes)
+    m = m + 15
     if (m >= 60) m = 0
     setMinutes(String(m).padStart(2, '0'))
   }
 
   const decrementMinute = () => {
-    let m = parseInt(minutes) - 15
+    let m = parseInt(minutes)
+    m = m - 15
     if (m < 0) m = 45
     setMinutes(String(m).padStart(2, '0'))
   }
@@ -77,15 +72,13 @@ export function TimePicker({ value, onChange, disabled = false }: TimePickerProp
   const getDisplayTime = () => {
     if (!value) return 'Seleccionar hora'
     const [h, m] = value.split(':')
-    const hNum = parseInt(h)
-    const periodStr = hNum >= 12 ? 'PM' : 'AM'
-    const displayHour = hNum === 0 ? 12 : hNum > 12 ? hNum - 12 : hNum
-    return `${String(displayHour).padStart(2, '0')}:${m} ${periodStr}`
+    if (!h || !m) return 'Seleccionar hora'
+    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
   }
 
   if (disabled) {
     return (
-      <div className="w-full bg-muted/30 border border-border rounded-xl px-4 py-2.5 text-sm text-mutedForeground">
+      <div className="w-full bg-muted/30 border border-border rounded-xl px-3 py-2 text-sm text-mutedForeground">
         {getDisplayTime()}
       </div>
     )
@@ -96,97 +89,78 @@ export function TimePicker({ value, onChange, disabled = false }: TimePickerProp
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground flex items-center justify-between hover:border-cyan-500/50 transition-all"
+        className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm text-foreground flex items-center justify-between hover:border-cyan-500/50 transition-all"
       >
         <span className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-mutedForeground" />
+          <Clock className="w-3.5 h-3.5 text-mutedForeground" />
           {getDisplayTime()}
         </span>
-        <ChevronDown className={`w-4 h-4 text-mutedForeground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-mutedForeground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-card border border-border rounded-xl shadow-2xl z-50 p-4">
-          <div className="flex items-center justify-between gap-2">
-            {/* Horas */}
+        <div className="absolute top-full left-0 mt-1 w-56 bg-card border border-border rounded-xl shadow-2xl z-50 p-2.5">
+          <div className="flex items-center justify-between gap-1">
+            {/* Horas 0-23 */}
             <div className="flex flex-col items-center flex-1">
               <button
                 type="button"
                 onClick={incrementHour}
-                className="p-1 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
+                className="p-0.5 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
               >
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-3 h-3" />
               </button>
-              <span className="text-3xl font-mono font-bold text-foreground my-1">{hours}</span>
+              <span className="text-xl font-mono font-bold text-foreground my-0.5">{hours}</span>
               <button
                 type="button"
                 onClick={decrementHour}
-                className="p-1 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
+                className="p-0.5 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
               >
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3" />
               </button>
             </div>
 
-            <span className="text-2xl font-mono font-bold text-mutedForeground">:</span>
+            <span className="text-lg font-mono font-bold text-mutedForeground">:</span>
 
-            {/* Minutos */}
+            {/* Minutos 00, 15, 30, 45 */}
             <div className="flex flex-col items-center flex-1">
               <button
                 type="button"
                 onClick={incrementMinute}
-                className="p-1 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
+                className="p-0.5 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
               >
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-3 h-3" />
               </button>
-              <span className="text-3xl font-mono font-bold text-foreground my-1">{minutes}</span>
+              <span className="text-xl font-mono font-bold text-foreground my-0.5">{minutes}</span>
               <button
                 type="button"
                 onClick={decrementMinute}
-                className="p-1 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
+                className="p-0.5 rounded hover:bg-muted/50 transition-colors text-mutedForeground hover:text-foreground"
               >
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3" />
               </button>
             </div>
 
-            {/* AM/PM */}
-            <div className="flex flex-col gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPeriod('AM')}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all ${
-                  period === 'AM' 
-                    ? 'bg-cyan-500 text-white shadow-sm shadow-cyan-500/20' 
-                    : 'bg-muted/30 text-mutedForeground hover:bg-muted/50'
-                }`}
-              >
-                AM
-              </button>
-              <button
-                type="button"
-                onClick={() => setPeriod('PM')}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold transition-all ${
-                  period === 'PM' 
-                    ? 'bg-cyan-500 text-white shadow-sm shadow-cyan-500/20' 
-                    : 'bg-muted/30 text-mutedForeground hover:bg-muted/50'
-                }`}
-              >
-                PM
-              </button>
+            {/* Indicador 24h */}
+            <div className="flex items-center justify-center">
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg px-1.5 py-0.5">
+                <span className="text-[8px] font-mono font-bold text-cyan-600 dark:text-cyan-400">24h</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+          <div className="flex gap-1.5 mt-2 pt-2 border-t border-border">
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex-1 px-3 py-1.5 rounded-lg bg-muted/30 text-mutedForeground hover:bg-muted/50 transition-colors text-xs font-medium"
+              className="flex-1 px-2 py-1 rounded-lg bg-muted/30 text-mutedForeground hover:bg-muted/50 transition-colors text-[9px] font-medium"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={handleConfirm}
-              className="flex-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-medium hover:shadow-lg transition-all"
+              className="flex-1 px-2 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[9px] font-medium hover:shadow-lg transition-all"
             >
               Confirmar
             </button>
