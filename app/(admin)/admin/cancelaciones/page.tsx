@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   XCircle, Calendar, User, Scissors, Search, 
   Filter, Clock, DollarSign, ArrowRight, Trash2,
@@ -25,6 +26,9 @@ interface CitaCancelada {
 }
 
 export default function CancelacionesPage() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  
   const [citas, setCitas] = useState<CitaCancelada[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -37,7 +41,6 @@ export default function CancelacionesPage() {
     setError(null)
 
     try {
-      // ✅ CONSULTA CORREGIDA - SIN staff:professional_id
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -50,7 +53,6 @@ export default function CancelacionesPage() {
 
       if (error) throw error
 
-      // ✅ Cargar staff por separado
       let citasConStaff = data || []
       
       if (data && data.length > 0) {
@@ -127,28 +129,42 @@ export default function CancelacionesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center font-mono text-xs text-rose-500">
-        <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mr-2" />
-        Cargando cancelaciones...
+      <div className="flex h-96 items-center justify-center">
+        <div className="relative">
+          <div className="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-8 h-8 border-3 border-rose-500/20 rounded-full animate-ping"></div>
+        </div>
+        <span className="ml-4 text-xs font-mono text-rose-500 animate-pulse">Cargando cancelaciones...</span>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 transition-colors duration-300">
 
-      {/* HEADER */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.05] via-card to-card border border-rose-500/20 p-6 shadow-xl">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl"></div>
+      {/* HEADER CON CARD-GLOW Y EFECTOS */}
+      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.08] via-card to-card border border-rose-500/20 p-6 shadow-xl animate-fade-up ${
+        isDark 
+          ? 'bg-gradient-to-br from-rose-950/20 via-[#161311] to-[#0a0908]' 
+          : 'bg-gradient-to-br from-rose-50/50 via-white to-stone-50'
+      }`}>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-rose-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400 font-mono">❌ Cancelaciones</p>
-            <h2 className="text-2xl font-serif italic text-foreground mt-1">Citas Canceladas</h2>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-rose-600 dark:text-rose-400 font-mono flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              ❌ Cancelaciones
+            </p>
+            <h2 className="text-2xl font-serif italic text-foreground mt-1">
+              Citas <span className="text-shimmer">Canceladas</span>
+            </h2>
             <p className="text-xs text-mutedForeground mt-1">Historial de citas canceladas y pérdidas asociadas.</p>
           </div>
           <button 
             onClick={fetchCancelaciones}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition-all shadow-lg shadow-rose-600/10 self-start sm:self-auto"
+            className="glow-hover flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white text-xs font-medium transition-all shadow-lg shadow-rose-600/20 self-start sm:self-auto"
           >
             <RefreshCw className="w-4 h-4" />
             Actualizar
@@ -156,23 +172,31 @@ export default function CancelacionesPage() {
         </div>
       </div>
 
-      {/* ALERTAS */}
+      {/* ALERTAS CON EFECTOS */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-600 dark:text-red-400 text-xs">
-          <p className="font-mono">❌ {error}</p>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-600 dark:text-red-400 text-xs animate-fade-up">
+          <p className="font-mono flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            ❌ {error}
+          </p>
         </div>
       )}
       {success && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-600 dark:text-emerald-400 text-xs">
-          <p className="font-mono">✅ {success}</p>
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-600 dark:text-emerald-400 text-xs animate-fade-up">
+          <p className="font-mono flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            ✅ {success}
+          </p>
         </div>
       )}
 
-      {/* MÉTRICAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
+      {/* MÉTRICAS CON CARD-GLOW */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 stagger-children">
+        <div className={`card-glow rounded-2xl bg-card border border-border p-5 flex items-center justify-between hover:border-rose-500/30 transition-all hover:scale-105 ${
+          isDark ? 'bg-[#141211]' : 'bg-white'
+        }`}>
           <div>
-            <p className="text-mutedForeground text-xs font-medium">Total Canceladas</p>
+            <p className="text-mutedForeground text-xs font-medium uppercase tracking-wider">Total Canceladas</p>
             <span className="text-2xl font-mono font-bold text-rose-600 dark:text-rose-400 block mt-1">{totalCanceladas}</span>
           </div>
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400">
@@ -180,9 +204,11 @@ export default function CancelacionesPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
+        <div className={`card-glow rounded-2xl bg-card border border-border p-5 flex items-center justify-between hover:border-rose-500/30 transition-all hover:scale-105 ${
+          isDark ? 'bg-[#141211]' : 'bg-white'
+        }`}>
           <div>
-            <p className="text-mutedForeground text-xs font-medium">Ingresos Perdidos</p>
+            <p className="text-mutedForeground text-xs font-medium uppercase tracking-wider">Ingresos Perdidos</p>
             <span className="text-2xl font-mono font-bold text-rose-600 dark:text-rose-400 block mt-1">
               ${totalPerdido.toLocaleString()}
             </span>
@@ -192,9 +218,11 @@ export default function CancelacionesPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-5 flex items-center justify-between">
+        <div className={`card-glow rounded-2xl bg-card border border-border p-5 flex items-center justify-between hover:border-rose-500/30 transition-all hover:scale-105 ${
+          isDark ? 'bg-[#141211]' : 'bg-white'
+        }`}>
           <div>
-            <p className="text-mutedForeground text-xs font-medium">Clientes Afectados</p>
+            <p className="text-mutedForeground text-xs font-medium uppercase tracking-wider">Clientes Afectados</p>
             <span className="text-2xl font-mono font-bold text-foreground block mt-1">
               {clientesAfectados}
             </span>
@@ -205,29 +233,49 @@ export default function CancelacionesPage() {
         </div>
       </div>
 
-      {/* FILTROS */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center bg-muted border border-border rounded-xl px-3 py-2.5 flex-1">
+      {/* FILTROS CON EFECTOS */}
+      <div className="flex flex-col sm:flex-row gap-3 animate-fade-up delay-200">
+        <div className={`flex items-center border rounded-xl px-3 py-2.5 flex-1 transition-all focus-within:border-rose-500/50 focus-within:shadow-lg focus-within:shadow-rose-500/5 ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-stone-100 border-stone-200'
+        }`}>
           <Search className="w-4 h-4 text-mutedForeground shrink-0" />
           <input 
             type="text" 
             placeholder="Buscar por cliente, servicio o ID..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground w-full ml-2"
+            className={`bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground w-full ml-2 ${
+              isDark ? 'text-stone-200' : 'text-stone-800'
+            }`}
           />
+          {search && (
+            <button 
+              onClick={() => setSearch('')}
+              className="text-mutedForeground hover:text-foreground transition-colors"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <input 
             type="date"
             value={filterDate}
             onChange={(e) => filtrarPorFecha(e.target.value)}
-            className="bg-muted border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-rose-500/30"
+            className={`border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-rose-500/30 transition-all ${
+              isDark 
+                ? 'bg-stone-900/40 border-stone-800 text-stone-200' 
+                : 'bg-stone-100 border-stone-200 text-stone-800'
+            }`}
           />
           {filterDate && (
             <button 
               onClick={() => setFilterDate('')}
-              className="px-3 py-2.5 rounded-xl bg-muted border border-border text-mutedForeground hover:text-foreground text-xs"
+              className={`px-3 py-2.5 rounded-xl border text-xs transition-all hover:scale-105 ${
+                isDark 
+                  ? 'bg-stone-900/40 border-stone-800 text-mutedForeground hover:text-foreground' 
+                  : 'bg-stone-100 border-stone-200 text-mutedForeground hover:text-foreground'
+              }`}
             >
               Limpiar
             </button>
@@ -235,17 +283,23 @@ export default function CancelacionesPage() {
         </div>
       </div>
 
-      {/* LISTA DE CANCELACIONES */}
-      <div className="space-y-3">
+      {/* LISTA DE CANCELACIONES CON CARD-GLOW */}
+      <div className="space-y-3 stagger-children">
         {citasFiltradas.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-border rounded-xl font-mono text-mutedForeground text-xs">
+          <div className={`text-center py-16 border border-dashed rounded-xl font-mono text-mutedForeground text-xs animate-fade-up ${
+            isDark ? 'border-stone-800 bg-stone-950/10' : 'border-stone-200 bg-stone-50/50'
+          }`}>
             {search || filterDate ? 'No hay cancelaciones con esos filtros' : 'No hay citas canceladas'}
           </div>
         ) : (
-          citasFiltradas.map((cita) => (
+          citasFiltradas.map((cita, index) => (
             <div 
               key={cita.id} 
-              className="bg-card border border-border rounded-xl p-4 hover:border-rose-500/20 transition-all"
+              className={`card-glow rounded-xl p-4 transition-all hover:border-rose-500/30 hover:scale-[1.01] animate-fade-up delay-${(index % 5) * 100} ${
+                isDark 
+                  ? 'bg-[#141211] border-stone-850 hover:bg-stone-900/40' 
+                  : 'bg-white border-stone-200 hover:bg-stone-50'
+              }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -254,7 +308,9 @@ export default function CancelacionesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-medium text-foreground truncate">
+                      <h4 className={`text-sm font-medium truncate ${
+                        isDark ? 'text-stone-200' : 'text-stone-800'
+                      }`}>
                         {cita.clients?.name || 'Cliente'}
                       </h4>
                       <span className="text-[8px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400">
@@ -290,12 +346,20 @@ export default function CancelacionesPage() {
                   </span>
                   <button 
                     onClick={() => eliminarCita(cita.id)}
-                    className="p-1.5 rounded-lg bg-background border border-border text-mutedForeground hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-500/20 transition-all"
+                    className={`p-1.5 rounded-lg border transition-all hover:scale-110 ${
+                      isDark 
+                        ? 'bg-stone-900 border-stone-800 text-mutedForeground hover:text-rose-400 hover:border-rose-500/20' 
+                        : 'bg-stone-100 border-stone-200 text-mutedForeground hover:text-rose-600 hover:border-rose-500/20'
+                    }`}
                     title="Eliminar permanentemente"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <button className="p-1.5 rounded-lg bg-background border border-border text-mutedForeground hover:text-foreground transition-all">
+                  <button className={`p-1.5 rounded-lg border transition-all hover:scale-110 ${
+                    isDark 
+                      ? 'bg-stone-900 border-stone-800 text-mutedForeground hover:text-foreground' 
+                      : 'bg-stone-100 border-stone-200 text-mutedForeground hover:text-foreground'
+                  }`}>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>

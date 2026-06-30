@@ -5,29 +5,437 @@
 @layer base {
   /* MODO CLARO (POR DEFECTO) */
   :root {
-    --background: #fcfbfa;       /* Hueso claro premium */
-    --foreground: #1c1917;       /* Stone oscuro para letras */
-    --card: #ffffff;             /* Tarjetas blancas impecables */
+    --background: #fcfbfa;
+    --foreground: #1c1917;
+    --card: #ffffff;
     --card-foreground: #1c1917;
-    --border: #e7e5e4;           /* Bordes sutiles stone-200 */
-    --muted: #f5f5f4;            /* Gris muy suave para inputs */
-    --muted-foreground: #78716c; /* Stone-500 para textos secundarios */
+    --border: #e7e5e4;
+    --muted: #f5f5f4;
+    --muted-foreground: #78716c;
+    
+    /* Colores de acento para efectos */
+    --glow-1: rgba(225, 29, 72, 0.08);
+    --glow-2: rgba(245, 158, 11, 0.06);
+    --glow-3: rgba(139, 92, 246, 0.05);
   }
 
   /* MODO OSCURO */
   .dark {
-    --background: #0a0908;       /* Negro azabache */
-    --foreground: #f5f5f4;       /* Blanco roto para letras */
-    --card: #141211;             /* Tarjeta gris oscuro refinado */
+    --background: #0a0908;
+    --foreground: #f5f5f4;
+    --card: #141211;
     --card-foreground: #f5f5f4;
-    --border: #292524;           /* Bordes oscuros stone-800 */
-    --muted: #1c1917;            /* Inputs oscuros */
-    --muted-foreground: #a8a29e; /* Stone-400 */
+    --border: #292524;
+    --muted: #1c1917;
+    --muted-foreground: #a8a29e;
+    
+    /* Colores de acento para efectos */
+    --glow-1: rgba(225, 29, 72, 0.12);
+    --glow-2: rgba(245, 158, 11, 0.08);
+    --glow-3: rgba(139, 92, 246, 0.06);
   }
 }
 
+/* ============================================================ */
+/* 1. FONDO CON MOVIMIENTO (PARALLAX) */
+/* ============================================================ */
 body {
   background-color: var(--background);
   color: var(--foreground);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================================ */
+/* 2. FONDO ANIMADO CON GRADIENTES EN MOVIMIENTO */
+/* ============================================================ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: 
+    radial-gradient(ellipse at 20% 50%, var(--glow-1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, var(--glow-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, var(--glow-3) 0%, transparent 50%);
+  background-size: 200% 200%;
+  animation: gradientMove 20s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 0%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* ============================================================ */
+/* 3. PARTÍCULAS SUTILES (GLOW DOTS) */
+/* ============================================================ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(2px 2px at 10% 20%, rgba(225, 29, 72, 0.15) 50%, transparent),
+    radial-gradient(2px 2px at 30% 70%, rgba(245, 158, 11, 0.10) 50%, transparent),
+    radial-gradient(2px 2px at 50% 30%, rgba(139, 92, 246, 0.08) 50%, transparent),
+    radial-gradient(2px 2px at 70% 80%, rgba(225, 29, 72, 0.12) 50%, transparent),
+    radial-gradient(2px 2px at 90% 40%, rgba(245, 158, 11, 0.08) 50%, transparent);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation: particlesFloat 30s linear infinite;
+}
+
+@keyframes particlesFloat {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.05) rotate(1deg); }
+}
+
+/* ============================================================ */
+/* 4. BOTÓN DE CAMBIO DE TEMA CON EFECTO PREMIUM */
+/* ============================================================ */
+.theme-toggle-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #e11d48, #f59e0b, #8b5cf6, #e11d48);
+  background-size: 300% 300%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: gradientSpin 4s linear infinite;
+  opacity: 0.3;
+  transition: opacity 0.6s ease;
+}
+
+.theme-toggle-btn:hover::before {
+  opacity: 0.8;
+}
+
+@keyframes gradientSpin {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================================ */
+/* 5. TARJETAS CON EFECTO DE BRILLO */
+/* ============================================================ */
+.card-glow {
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--glow-1), var(--glow-2), var(--glow-3), var(--glow-1));
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderGlow 4s ease-in-out infinite alternate;
+  opacity: 0.5;
+  transition: opacity 0.5s ease;
+}
+
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+@keyframes borderGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================================ */
+/* 6. ANIMACIONES DE ENTRADA */
+/* ============================================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Clases de animación */
+.animate-fade-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-down {
+  animation: fadeInDown 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-scale {
+  animation: fadeInScale 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Delay utilities */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-800 { animation-delay: 0.8s; }
+.delay-900 { animation-delay: 0.9s; }
+.delay-1000 { animation-delay: 1s; }
+
+/* ============================================================ */
+/* 7. EFECTO DE RESPLANDOR EN ELEMENTOS INTERACTIVOS */
+/* ============================================================ */
+.glow-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.glow-hover:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 
+    0 20px 40px -12px rgba(225, 29, 72, 0.15),
+    0 8px 24px -8px rgba(245, 158, 11, 0.10),
+    0 0 40px -8px rgba(139, 92, 246, 0.08);
+}
+
+.dark .glow-hover:hover {
+  box-shadow: 
+    0 20px 40px -12px rgba(225, 29, 72, 0.25),
+    0 8px 24px -8px rgba(245, 158, 11, 0.15),
+    0 0 60px -12px rgba(139, 92, 246, 0.12);
+}
+
+/* ============================================================ */
+/* 8. EFECTO DE TEXTO CON BRILLO */
+/* ============================================================ */
+.text-shimmer {
+  background: linear-gradient(135deg, #e11d48, #f59e0b, #e11d48);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerText 4s ease-in-out infinite alternate;
+}
+
+@keyframes shimmerText {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================================ */
+/* 9. EFECTO DE ONDA EN HOVER */
+/* ============================================================ */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), 
+    rgba(225, 29, 72, 0.15) 0%, 
+    transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.ripple-effect:hover::after {
+  opacity: 1;
+}
+
+/* ============================================================ */
+/* 10. TRANSICIÓN DE TEMA CON EFECTO DE OLA */
+/* ============================================================ */
+.theme-transition {
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================ */
+/* 11. SCROLLBAR PERSONALIZADA (ELEGANTE) */
+/* ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #e11d48, #f59e0b);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #be123c, #d97706);
+}
+
+/* ============================================================ */
+/* 12. EFECTO DE PARALLAX EN EL HEADER */
+/* ============================================================ */
+.header-parallax {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.header-parallax.scrolled {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+}
+
+.dark .header-parallax.scrolled {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================ */
+/* 13. EFECTO DE CARGA (Skeleton shimmer) */
+/* ============================================================ */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, 
+    var(--muted) 0%, 
+    var(--card) 20%, 
+    var(--muted) 40%, 
+    var(--card) 60%, 
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ============================================================ */
+/* 14. EFECTO DE FRAGMENTOS (Glassmorphism) */
+/* ============================================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================================ */
+/* 15. EFECTO DE CAMBIO DE TEMA (Transición de burbuja) */
+/* ============================================================ */
+@keyframes themeBubble {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.theme-bubble {
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.3), rgba(245, 158, 11, 0.1));
+  animation: themeBubble 1.2s ease-out forwards;
 }

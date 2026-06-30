@@ -5,14 +5,17 @@ import {
   Calendar, Users, DollarSign, Gem, TrendingUp, Sparkles, 
   Activity, Heart, Zap, Target, Crown, Clock, Star, 
   Award, BarChart, ArrowUp, ArrowDown, Eye, Bell,
-  ShoppingBag, UserCheck, CalendarDays, PiggyBank
+  ShoppingBag, UserCheck, CalendarDays, PiggyBank,
+  RefreshCw, Download, AlertCircle, CheckCircle, XCircle
 } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
+import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  const { db } = useAuth() as any
+  const { user, tenantId } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [stats, setStats] = useState({
     citasHoy: 0,
     citasSemana: 0,
@@ -26,142 +29,217 @@ export default function DashboardPage() {
     citasProximas: [] as any[],
     serviciosTop: [] as any[],
     citasHoyList: [] as any[],
+    pendientes: 0,
+    confirmadas: 0,
+    completadas: 0,
+    canceladas: 0,
+    tasaOcupacion: 0,
+    crecimiento: 0,
   })
 
-  useEffect(() => {
-    const cargarEstadisticas = async () => {
-      if (!db) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const hoy = new Date().toISOString().split('T')[0]
-        const appointments = db.appointments || []
-        const clients = db.clients || []
-        const services = db.services || []
-
-        // Citas de hoy
-        const citasHoy = appointments.filter((c: any) => c.date?.startsWith(hoy))
-        const citasHoyCount = citasHoy.length
-
-        // Citas de la semana
-        const hoyDate = new Date()
-        const inicioSemana = new Date(hoyDate)
-        inicioSemana.setDate(hoyDate.getDate() - hoyDate.getDay() + 1)
-        const finSemana = new Date(inicioSemana)
-        finSemana.setDate(inicioSemana.getDate() + 6)
-        
-        const citasSemana = appointments.filter((c: any) => {
-          if (!c.date) return false
-          const cDate = new Date(c.date)
-          return cDate >= inicioSemana && cDate <= finSemana
-        }).length
-
-        // Clientes
-        const totalClientas = clients.length
-        const clientasNuevas = clients.filter((c: any) => {
-          if (!c.created_at) return false
-          const cDate = new Date(c.created_at)
-          const mesAtras = new Date()
-          mesAtras.setMonth(mesAtras.getMonth() - 1)
-          return cDate >= mesAtras
-        }).length
-
-        // Ingresos
-        const citasConPrecio = appointments.filter((a: any) => a.price > 0)
-        const totalIngresos = citasConPrecio.reduce((sum: number, a: any) => sum + Number(a.price || 0), 0)
-
-        const ingresosMes = citasConPrecio
-          .filter((a: any) => {
-            if (!a.date) return false
-            const aDate = new Date(a.date)
-            const hoyDate = new Date()
-            return aDate.getMonth() === hoyDate.getMonth() && aDate.getFullYear() === hoyDate.getFullYear()
-          })
-          .reduce((sum: number, a: any) => sum + Number(a.price || 0), 0)
-
-        // Puntos
-        const puntos = clients.reduce((sum: number, c: any) => sum + (c.points || 0), 0)
-
-        // Ticket promedio
-        const ticketPromedio = totalClientas > 0 ? Math.round(totalIngresos / totalClientas) : 0
-
-        // Ocupación
-        const ocupacion = Math.min(100, Math.round((appointments.length / 50) * 100))
-
-        // Próximas 3 citas
-        const proximas = appointments
-          .filter((c: any) => c.date && new Date(c.date) > new Date() && c.status !== 'cancelled')
-          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-          .slice(0, 3)
-
-        const citasProximas = proximas.map((cita: any) => {
-          const cliente = clients.find((c: any) => c.id === cita.client_id)
-          const servicio = services.find((s: any) => s.id === cita.service_id)
-          return {
-            ...cita,
-            clienteNombre: cliente?.name || 'Cliente',
-            servicioNombre: servicio?.name || 'Servicio',
-            precio: servicio?.price || 0,
-          }
-        })
-
-        // Citas de hoy con detalles
-        const citasHoyList = citasHoy.slice(0, 3).map((cita: any) => {
-          const cliente = clients.find((c: any) => c.id === cita.client_id)
-          const servicio = services.find((s: any) => s.id === cita.service_id)
-          return {
-            ...cita,
-            clienteNombre: cliente?.name || 'Cliente',
-            servicioNombre: servicio?.name || 'Servicio',
-          }
-        })
-
-        // Servicios top
-        const servicioCount: Record<string, number> = {}
-        appointments.forEach((c: any) => {
-          if (c.service_id) {
-            servicioCount[c.service_id] = (servicioCount[c.service_id] || 0) + 1
-          }
-        })
-
-        const serviciosTop = Object.entries(servicioCount)
-          .map(([id, count]) => {
-            const servicio = services.find((s: any) => String(s.id) === String(id))
-            return { 
-              nombre: servicio?.name || 'Servicio', 
-              count, 
-              price: servicio?.price || 0,
-              duration: servicio?.duration || 0
-            }
-          })
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 4)
-
-        setStats({
-          citasHoy: citasHoyCount,
-          citasSemana,
-          clientas: totalClientas,
-          clientasNuevas,
-          ingresos: totalIngresos,
-          ingresosMes,
-          puntos,
-          ocupacion,
-          ticketPromedio,
-          citasProximas,
-          serviciosTop,
-          citasHoyList,
-        })
-      } catch (error) {
-        console.error("Error al procesar las estadísticas del dashboard:", error)
-      } finally {
-        setLoading(false)
-      }
+  const cargarEstadisticas = async () => {
+    if (!user || !tenantId) {
+      setLoading(false)
+      return
     }
 
+    try {
+      const hoy = new Date().toISOString().split('T')[0]
+      const hoyDate = new Date()
+      const inicioSemana = new Date(hoyDate)
+      inicioSemana.setDate(hoyDate.getDate() - hoyDate.getDay() + 1)
+      const finSemana = new Date(inicioSemana)
+      finSemana.setDate(inicioSemana.getDate() + 6)
+      const mesAtras = new Date()
+      mesAtras.setMonth(mesAtras.getMonth() - 1)
+
+      // Obtener citas del tenant
+      const { data: appointmentsData } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+
+      const appointments = appointmentsData || []
+
+      // Obtener clientes
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('tenant_id', tenantId)
+
+      const clients = clientsData || []
+
+      // Obtener servicios
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('*')
+        .eq('tenant_id', tenantId)
+
+      const services = servicesData || []
+
+      // Citas de hoy
+      const citasHoy = appointments.filter((c: any) => c.date?.startsWith(hoy))
+      const citasHoyCount = citasHoy.length
+
+      // Citas de la semana
+      const citasSemana = appointments.filter((c: any) => {
+        if (!c.date) return false
+        const cDate = new Date(c.date)
+        return cDate >= inicioSemana && cDate <= finSemana
+      }).length
+
+      // Clientes
+      const totalClientas = clients.length
+      const clientasNuevas = clients.filter((c: any) => {
+        if (!c.created_at) return false
+        const cDate = new Date(c.created_at)
+        return cDate >= mesAtras
+      }).length
+
+      // Ingresos
+      const citasConPrecio = appointments.filter((a: any) => a.total_price > 0 || a.price > 0)
+      const totalIngresos = citasConPrecio.reduce((sum: number, a: any) => sum + Number(a.total_price || a.price || 0), 0)
+
+      const ingresosMes = citasConPrecio
+        .filter((a: any) => {
+          if (!a.date) return false
+          const aDate = new Date(a.date)
+          const hoyDate = new Date()
+          return aDate.getMonth() === hoyDate.getMonth() && aDate.getFullYear() === hoyDate.getFullYear()
+        })
+        .reduce((sum: number, a: any) => sum + Number(a.total_price || a.price || 0), 0)
+
+      // Puntos
+      const puntos = clients.reduce((sum: number, c: any) => sum + (c.points || 0), 0)
+
+      // Ticket promedio
+      const ticketPromedio = totalClientas > 0 ? Math.round(totalIngresos / totalClientas) : 0
+
+      // Ocupación
+      const ocupacion = Math.min(100, Math.round((appointments.length / 50) * 100))
+
+      // Estados de citas
+      const pendientes = appointments.filter((c: any) => c.status === 'pending').length
+      const confirmadas = appointments.filter((c: any) => c.status === 'confirmed').length
+      const completadas = appointments.filter((c: any) => c.status === 'completed').length
+      const canceladas = appointments.filter((c: any) => c.status === 'cancelled').length
+
+      // Tasa de ocupación real
+      const tasaOcupacion = appointments.length > 0 
+        ? Math.round((completadas / appointments.length) * 100) 
+        : 0
+
+      // Crecimiento (clientas nuevas vs total)
+      const crecimiento = totalClientas > 0 ? Math.round((clientasNuevas / totalClientas) * 100) : 0
+
+      // Próximas 3 citas
+      const proximas = appointments
+        .filter((c: any) => c.date && new Date(c.date) > new Date() && c.status !== 'cancelled')
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3)
+
+      const citasProximas = proximas.map((cita: any) => {
+        const cliente = clients.find((c: any) => c.id === cita.client_id)
+        const servicio = services.find((s: any) => s.id === cita.service_id)
+        return {
+          ...cita,
+          clienteNombre: cliente?.name || 'Cliente',
+          servicioNombre: servicio?.name || 'Servicio',
+          precio: servicio?.price || cita.total_price || 0,
+        }
+      })
+
+      // Citas de hoy con detalles
+      const citasHoyList = citasHoy.slice(0, 3).map((cita: any) => {
+        const cliente = clients.find((c: any) => c.id === cita.client_id)
+        const servicio = services.find((s: any) => s.id === cita.service_id)
+        return {
+          ...cita,
+          clienteNombre: cliente?.name || 'Cliente',
+          servicioNombre: servicio?.name || 'Servicio',
+        }
+      })
+
+      // Servicios top
+      const servicioCount: Record<string, number> = {}
+      appointments.forEach((c: any) => {
+        if (c.service_id) {
+          servicioCount[c.service_id] = (servicioCount[c.service_id] || 0) + 1
+        }
+      })
+
+      const serviciosTop = Object.entries(servicioCount)
+        .map(([id, count]) => {
+          const servicio = services.find((s: any) => String(s.id) === String(id))
+          return { 
+            nombre: servicio?.name || 'Servicio', 
+            count, 
+            price: servicio?.price || 0,
+            duration: servicio?.duration || 0
+          }
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4)
+
+      setStats({
+        citasHoy: citasHoyCount,
+        citasSemana,
+        clientas: totalClientas,
+        clientasNuevas,
+        ingresos: totalIngresos,
+        ingresosMes,
+        puntos,
+        ocupacion,
+        ticketPromedio,
+        citasProximas,
+        serviciosTop,
+        citasHoyList,
+        pendientes,
+        confirmadas,
+        completadas,
+        canceladas,
+        tasaOcupacion,
+        crecimiento,
+      })
+    } catch (error) {
+      console.error("Error al procesar las estadísticas del dashboard:", error)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
     cargarEstadisticas()
-  }, [db])
+
+    // Auto-refresh cada 60 segundos
+    const interval = setInterval(() => {
+      cargarEstadisticas()
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [user, tenantId])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    cargarEstadisticas()
+  }
+
+  const handleExportReport = () => {
+    // Generar reporte simple
+    const reporte = {
+      fecha: new Date().toISOString(),
+      estadisticas: stats,
+      resumen: {
+        totalCitas: stats.citasHoy + stats.citasSemana,
+        totalClientas: stats.clientas,
+        totalIngresos: stats.ingresos,
+        tasaOcupacion: stats.tasaOcupacion,
+      }
+    }
+    console.log('📊 Reporte exportado:', reporte)
+    alert('📊 Reporte generado en consola')
+  }
 
   if (loading) {
     return (
@@ -193,19 +271,50 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 self-start md:self-auto">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-3 py-1.5 rounded-xl bg-muted/30 border border-border text-mutedForeground hover:text-foreground transition-all flex items-center gap-1.5 text-[10px] font-mono"
+            >
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Actualizando...' : 'Actualizar'}
+            </button>
+            <button
+              onClick={handleExportReport}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 text-[10px] font-mono"
+            >
+              <Download className="w-3 h-3" />
+              Exportar
+            </button>
             <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Sistema Activo
-            </div>
-            <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-mono flex items-center gap-1.5">
-              <Bell className="w-3 h-3" />
-              0 notificaciones
+              {stats.crecimiento > 0 ? `+${stats.crecimiento}%` : 'Activo'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* MÉTRICAS PRINCIPALES - 4 COLUMNAS MEJORADAS */}
+      {/* ALERTAS DE ESTADO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {stats.pendientes > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Tienes <span className="font-bold">{stats.pendientes}</span> citas pendientes por confirmar
+            </p>
+          </div>
+        )}
+        {stats.canceladas > 0 && (
+          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-center gap-3">
+            <XCircle className="w-4 h-4 text-rose-500" />
+            <p className="text-xs text-rose-600 dark:text-rose-400">
+              <span className="font-bold">{stats.canceladas}</span> citas canceladas en total
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* MÉTRICAS PRINCIPALES */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
         <div className="rounded-2xl bg-card border border-border p-4 hover:border-rose-500/30 transition-all group">
@@ -228,7 +337,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-right">
               <span className="text-2xl font-mono font-bold text-foreground">{stats.clientas}</span>
-              <span className="text-[9px] text-emerald-500 block">+{stats.clientasNuevas} nuevo</span>
+              <span className="text-[9px] text-emerald-500 block">+{stats.clientasNuevas} nuevas</span>
             </div>
           </div>
           <p className="text-mutedForeground text-[10px] font-medium mt-2">Clientas Registradas</p>
@@ -262,17 +371,37 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* SECCIÓN PRINCIPAL: PRÓXIMAS CITAS + TOP SERVICIOS */}
+      {/* ESTADOS DE CITAS - NUEVO */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-amber-500/30 transition-all">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Pendientes</p>
+          <p className="text-xl font-mono font-bold text-amber-500">{stats.pendientes}</p>
+        </div>
+        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-emerald-500/30 transition-all">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Confirmadas</p>
+          <p className="text-xl font-mono font-bold text-emerald-500">{stats.confirmadas}</p>
+        </div>
+        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-blue-500/30 transition-all">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Completadas</p>
+          <p className="text-xl font-mono font-bold text-blue-500">{stats.completadas}</p>
+        </div>
+        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-rose-500/30 transition-all">
+          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Canceladas</p>
+          <p className="text-xl font-mono font-bold text-rose-500">{stats.canceladas}</p>
+        </div>
+      </div>
+
+      {/* SECCIÓN PRINCIPAL */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* PRÓXIMAS 3 CITAS - MEJORADO */}
+        {/* PRÓXIMAS 3 CITAS */}
         <div className="lg:col-span-2 rounded-2xl bg-card border border-border p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-rose-500" />
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Próximas Citas</h3>
             </div>
-            <Link href="/admin/agenda" className="text-[10px] text-rose-500 hover:text-rose-400 font-mono flex items-center gap-1 transition-colors">
+            <Link href="/admin/agenda" className="text-[10px] text-rose-500 hover:text-rose-400 font-mono flex items-center gap-1 transition-colors hover:translate-x-0.5">
               Ver toda la agenda →
             </Link>
           </div>
@@ -382,9 +511,9 @@ export default function DashboardPage() {
           <div>
             <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Ocupación</p>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-mono font-bold text-foreground">{stats.ocupacion}%</span>
+              <span className="text-lg font-mono font-bold text-foreground">{stats.tasaOcupacion}%</span>
               <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-rose-500 to-amber-400" style={{ width: `${stats.ocupacion}%` }} />
+                <div className="h-full bg-gradient-to-r from-rose-500 to-amber-400" style={{ width: `${stats.tasaOcupacion}%` }} />
               </div>
             </div>
           </div>
@@ -418,10 +547,11 @@ export default function DashboardPage() {
             <Award className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Clientas VIP</p>
-            <span className="text-lg font-mono font-bold text-foreground">
-              {Math.round(stats.clientas * 0.15)}
-            </span>
+            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Crecimiento</p>
+            <div className="flex items-center gap-1">
+              <span className="text-lg font-mono font-bold text-emerald-500">+{stats.crecimiento}%</span>
+              <ArrowUp className="w-3 h-3 text-emerald-500" />
+            </div>
           </div>
         </div>
 

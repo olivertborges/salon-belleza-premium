@@ -145,9 +145,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
     { icon: Calendar, label: 'Mis Citas', href: '/reservas' },
-    { icon: Store, label: 'Boutique Fresh', href: '/productos' },
-    { icon: Scissors, label: 'Peluquería & Estilo', href: '#peluqueria' },
-    { icon: Heart, label: 'Cuidado & Estética', href: '#estetica' },
+    /*{ icon: Store, label: 'Boutique Fresh', href: '/productos' }*/,
+    { icon: Scissors, label: 'Peluquería & Estilo', href: '/peluqueria' },
+    { icon: Heart, label: 'Cuidado & Estética', href: '/estetica' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 

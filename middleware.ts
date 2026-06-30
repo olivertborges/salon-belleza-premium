@@ -51,8 +51,8 @@ export async function middleware(request: NextRequest) {
   console.log('🛡️ [MIDDLEWARE SEGURIDAD] Email:', user?.email || 'Nadie', '| Role:', userRole, '| Path:', pathname)
 
   // Definición de rutas según el rol
-  const isAdminPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/clientes') || pathname.startsWith('/productos') || pathname.startsWith('/servicios')
-  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas', '/fidelizacion']
+  const isAdminPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/clientes') || pathname.startsWith('/admin/productos') || pathname.startsWith('/servicios')
+  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas', '/fidelizacion', '/peluqueria', '/estetica']
   const isGoingToClientPath = clientRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
   const isLoginPage = pathname === '/login' || pathname === '/register'
 

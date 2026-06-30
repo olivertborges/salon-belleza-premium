@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { 
@@ -19,6 +20,9 @@ import {
 
 export default function MisReservasPremium() {
   const { user } = useAuth()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  
   const [loading, setLoading] = useState(true)
   const [citas, setCitas] = useState<any[]>([])
   const [nombreCliente, setNombreCliente] = useState('')
@@ -155,110 +159,29 @@ export default function MisReservasPremium() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-4">
         <div className="relative flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-          <Sparkles className="w-4 h-4 text-amber-500 absolute animate-pulse" />
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-amber-500/20 rounded-full animate-ping"></div>
+          </div>
+          <Sparkles className="w-5 h-5 text-amber-500 absolute animate-pulse" />
         </div>
-        <p className="text-xs font-mono tracking-wide text-stone-500 dark:text-stone-400 animate-pulse">Sincronizando tus agendas premium...</p>
+        <p className={`text-xs font-mono tracking-wide animate-pulse ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Sincronizando tus agendas premium...</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-6 text-stone-800 dark:text-stone-200 antialiased selection:bg-amber-500/20 relative min-h-[60vh]">
+    <div className={`w-full max-w-4xl mx-auto p-4 md:p-6 antialiased selection:bg-amber-500/20 relative min-h-[60vh] transition-colors duration-300 ${
+      isDark ? 'text-stone-200' : 'text-stone-800'
+    }`}>
       
-      {/* Auroras de iluminación ambiental de fondo */}
-      <div className="absolute top-[-10%] left-1/4 w-[300px] h-[300px] bg-amber-500/[0.03] dark:bg-amber-500/[0.04] rounded-full blur-[120px] pointer-events-none animate-float" />
-      <div className="absolute bottom-[10%] right-1/4 w-[250px] h-[250px] bg-purple-500/[0.02] dark:bg-indigo-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
+      <div className={`absolute top-[-10%] left-1/4 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none ${
+        isDark ? 'bg-amber-500/[0.04]' : 'bg-amber-500/[0.03]'
+      }`} />
+      <div className={`absolute bottom-[10%] right-1/4 w-[250px] h-[250px] rounded-full blur-[100px] pointer-events-none ${
+        isDark ? 'bg-indigo-500/[0.03]' : 'bg-purple-500/[0.02]'
+      }`} />
 
-      <div className="relative z-10 space-y-8">
-        
-        {/* Encabezado con animación de entrada suave */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-stone-200 dark:border-stone-800/80 pb-6 gap-4 animate-fadeIn">
-          <div className="space-y-1">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-amber-600 dark:text-amber-400 uppercase font-black bg-amber-500/5 dark:bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/10">
-              <Sparkles className="w-3 h-3 text-amber-500 animate-spin-slow" /> Salón VIP
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-white tracking-tight mt-1.5 bg-clip-text bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 dark:from-white dark:via-stone-200 dark:to-stone-400">
-              {nombreCliente ? `Tus Reservas, ${nombreCliente.split(' ')[0]}` : 'Mis Reservas Premium'}
-            </h1>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 font-mono tracking-wide">
-              {user?.email ? `CLIENT_ID: ${user.email}` : 'Inicia sesión para sincronizar la app'}
-            </p>
-          </div>
-          
-          {error && !citas.length && (
-            <div className="inline-flex items-center gap-2 bg-amber-500/[0.04] border border-amber-500/20 px-3 py-2 rounded-xl text-[11px] font-mono text-amber-700 dark:text-amber-400 backdrop-blur-md shadow-sm">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
-              <span>{error}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Listado Principal de Citas */}
-        {citas.length === 0 ? (
-          <div className="border border-dashed border-stone-200 dark:border-stone-800/80 rounded-2xl p-12 text-center bg-white/60 dark:bg-stone-900/20 backdrop-blur-md shadow-inner animate-fadeIn">
-            <Calendar className="w-10 h-10 text-stone-300 dark:text-stone-700 mx-auto mb-3.5" />
-            <p className="text-xs text-stone-400 dark:text-stone-500 font-mono max-w-sm mx-auto">
-              {error || 'No registras ningún tratamiento o reserva asignada en tu historial próximo.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {citas.map((cita, index) => {
-              const fechaObjeto = new Date(cita.date.replace(/-/g, '\/'))
-              const fechaLinda = format(fechaObjeto, "EEEE d 'de' MMMM", { locale: es })
-
-              return (
-                <div 
-                  key={cita.id} 
-                  style={{ animationDelay: `${index * 80}ms` }}
-                  className="group relative bg-white dark:bg-stone-900/40 backdrop-blur-md border border-stone-200/90 dark:border-stone-800/70 hover:border-amber-500/40 dark:hover:border-amber-500/30 rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)] overflow-hidden animate-slideUp"
-                >
-                  {/* Resplandor interno de esquina interactivo al hacer Hover (Modo Oscuro) */}
-                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/[0.02] dark:bg-amber-500/[0.03] rounded-full blur-2xl group-hover:bg-amber-500/[0.08] transition-all duration-500 pointer-events-none" />
-
-                  {/* Línea lateral decorativa de acento */}
-                  <div className="absolute top-0 left-0 w-[4px] h-full bg-stone-100 dark:bg-stone-800/60 rounded-l-full group-hover:bg-amber-500 transition-all duration-500" />
-                  
-                  <div className="flex justify-between items-start gap-4 pl-1">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
-                        {cita.services?.name || 'Servicio Especial Premium'}
-                        <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 text-amber-500" />
-                      </h3>
-                      
-                      <div className="inline-flex items-center gap-2 bg-stone-50 dark:bg-stone-950/50 border border-stone-200/60 dark:border-stone-800/60 px-2.5 py-1 rounded-xl text-[11px]">
-                        <User className="w-3.5 h-3.5 text-stone-400" />
-                        <span className="text-stone-400 dark:text-stone-500 font-medium">Especialista:</span>
-                        <span className="font-bold text-stone-700 dark:text-stone-300">{cita.staff?.name || 'Por asignar'}</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      {renderBadge(cita.status)}
-                    </div>
-                  </div>
-
-                  {/* Panel de Tiempos e Inserción de Fecha */}
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-stone-100 dark:border-stone-800/60 text-xs pl-1">
-                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
-                      <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-500/80" />
-                      <span className="capitalize text-stone-800 dark:text-stone-200 font-bold tracking-tight">{fechaLinda}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 font-mono text-[11px] bg-stone-900 text-white dark:bg-amber-500/10 border border-stone-950 dark:border-amber-500/20 px-3 py-1.5 rounded-xl text-amber-400 font-black shadow-md dark:shadow-none tracking-wide">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
-                      {cita.time.slice(0, 5)} HS
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-      </div>
-
-      {/* Estilos CSS Inyectados inline para soportar las animaciones sin romper configuraciones externas */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -271,7 +194,151 @@ export default function MisReservasPremium() {
         .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .animate-slideUp { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .animate-spin-slow { animation: spin 8s linear infinite; }
+        .stagger-children > * { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+        .stagger-children > *:nth-child(2) { animation-delay: 0.10s; }
+        .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+        .stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
+        .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+        .stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
+        .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+        .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
+        .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+        .stagger-children > *:nth-child(10) { animation-delay: 0.50s; }
       `}</style>
+
+      <div className="relative z-10 space-y-8">
+        
+        {/* ============================================================ */}
+        {/* HEADER CORREGIDO CON CARD-GLOW Y TEXTO SHIMMER */}
+        {/* ============================================================ */}
+        <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl animate-fade-up ${
+          isDark 
+            ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
+            : 'bg-gradient-to-br from-amber-50/50 via-white to-stone-50'
+        }`}>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
+                isDark ? 'text-amber-400' : 'text-amber-600'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                📅 Mis Reservas
+              </p>
+              <h2 className="text-2xl font-serif italic text-foreground mt-1">
+                {nombreCliente ? `Reservas de ${nombreCliente.split(' ')[0]}` : 'Mis Reservas'}
+                <span className="text-shimmer ml-2">Premium</span>
+              </h2>
+              <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                {user?.email ? `Usuario: ${user.email}` : 'Inicia sesión para sincronizar la app'}
+              </p>
+            </div>
+            
+            {error && !citas.length && (
+              <div className={`inline-flex items-center gap-2 border px-3 py-2 rounded-xl text-[11px] font-mono backdrop-blur-md shadow-sm ${
+                isDark 
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
+                  : 'bg-amber-500/5 border-amber-500/20 text-amber-700'
+              }`}>
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* LISTADO DE CITAS */}
+        {citas.length === 0 ? (
+          <div className={`border border-dashed rounded-2xl p-12 text-center backdrop-blur-md shadow-inner animate-fadeIn ${
+            isDark 
+              ? 'border-stone-800/80 bg-stone-900/20' 
+              : 'border-stone-200 bg-white/60'
+          }`}>
+            <Calendar className={`w-10 h-10 mx-auto mb-3.5 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
+            <p className={`text-xs font-mono max-w-sm mx-auto ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+              {error || 'No registras ningún tratamiento o reserva asignada en tu historial próximo.'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 stagger-children">
+            {citas.map((cita) => {
+              const fechaObjeto = new Date(cita.date.replace(/-/g, '\/'))
+              const fechaLinda = format(fechaObjeto, "EEEE d 'de' MMMM", { locale: es })
+
+              return (
+                <div 
+                  key={cita.id} 
+                  className={`card-glow group relative backdrop-blur-md border rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] overflow-hidden animate-slideUp ${
+                    isDark 
+                      ? 'bg-stone-900/40 border-stone-800/70 hover:border-amber-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
+                      : 'bg-white border-stone-200/90 hover:border-amber-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
+                  }`}
+                >
+                  <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl group-hover:bg-amber-500/[0.08] transition-all duration-500 pointer-events-none ${
+                    isDark ? 'bg-amber-500/[0.03]' : 'bg-amber-500/[0.02]'
+                  }`} />
+
+                  <div className={`absolute top-0 left-0 w-[4px] h-full rounded-l-full transition-all duration-500 ${
+                    isDark 
+                      ? 'bg-stone-800/60 group-hover:bg-amber-500' 
+                      : 'bg-stone-100 group-hover:bg-amber-500'
+                  }`} />
+                  
+                  <div className="flex justify-between items-start gap-4 pl-1">
+                    <div className="space-y-2">
+                      <h3 className={`text-sm font-black tracking-tight transition-colors flex items-center gap-1.5 ${
+                        isDark 
+                          ? 'text-stone-100 group-hover:text-amber-400' 
+                          : 'text-stone-900 group-hover:text-amber-600'
+                      }`}>
+                        {cita.services?.name || 'Servicio Especial Premium'}
+                        <ArrowUpRight className={`w-3.5 h-3.5 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 ${
+                          isDark ? 'text-amber-400' : 'text-amber-500'
+                        }`} />
+                      </h3>
+                      
+                      <div className={`inline-flex items-center gap-2 border px-2.5 py-1 rounded-xl text-[11px] ${
+                        isDark 
+                          ? 'bg-stone-950/50 border-stone-800/60' 
+                          : 'bg-stone-50 border-stone-200/60'
+                      }`}>
+                        <User className={`w-3.5 h-3.5 ${isDark ? 'text-stone-400' : 'text-stone-400'}`} />
+                        <span className={`font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Especialista:</span>
+                        <span className={`font-bold ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>{cita.staff?.name || 'Por asignar'}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {renderBadge(cita.status)}
+                    </div>
+                  </div>
+
+                  <div className={`flex items-center justify-between mt-6 pt-4 border-t text-xs pl-1 ${
+                    isDark ? 'border-stone-800/60' : 'border-stone-100'
+                  }`}>
+                    <div className={`flex items-center gap-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      <Calendar className={`w-4 h-4 ${isDark ? 'text-amber-500/80' : 'text-amber-600'}`} />
+                      <span className={`capitalize font-bold tracking-tight ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>{fechaLinda}</span>
+                    </div>
+
+                    <div className={`flex items-center gap-2 font-mono text-[11px] px-3 py-1.5 rounded-xl shadow-md dark:shadow-none tracking-wide ${
+                      isDark 
+                        ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' 
+                        : 'bg-stone-900 text-white border-stone-950'
+                    }`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
+                      {cita.time.slice(0, 5)} HS
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+      </div>
     </div>
   )
 }
