@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Crown, Gift, Check, ArrowUpRight, Sparkles, Scissors, 
-  Ticket, Copy, ShieldCheck, Award, TrendingUp, Lock
+  Ticket, Copy, ShieldCheck, Award, TrendingUp, Lock,
+  Gem, Star, Zap, Wallet, ChevronRight
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { QRCodeSVG } from 'qrcode.react'
@@ -45,7 +46,7 @@ export default function VIPClubPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  
+
   const [wallet, setWallet] = useState<WalletData | null>(null)
   const [glowLevels, setGlowLevels] = useState<LevelData[]>([])
   const [hairLevels, setHairLevels] = useState<LevelData[]>([])
@@ -67,12 +68,36 @@ export default function VIPClubPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const { data: walletData } = await supabase
+      // PRIMERO: Obtener el cliente por auth_user_id
+      const { data: cliente, error: clienteError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('auth_user_id', user?.id)
+        .single()
+
+      if (clienteError) {
+        console.error('Error obteniendo cliente:', clienteError)
+        setLoading(false)
+        return
+      }
+
+      if (!cliente) {
+        console.log('Cliente no encontrado')
+        setLoading(false)
+        return
+      }
+
+      // SEGUNDO: Obtener wallet del cliente
+      const { data: walletData, error: walletError } = await supabase
         .from('loyalty_wallets')
         .select('*')
-        .eq('client_id', user?.id)
+        .eq('client_id', cliente.id)
         .eq('tenant_id', tenantId)
         .single()
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error cargando wallet:', walletError)
+      }
 
       setWallet(walletData || {
         glow_points: 0, glow_points_earned: 0, glow_points_redeemed: 0,
@@ -80,17 +105,50 @@ export default function VIPClubPage() {
         glow_level: 'Bronce', hair_level: 'Bronce'
       })
 
-      const { data: gLv } = await supabase.from('vip_levels').select('*').eq('wallet_type', 'glow').eq('is_active', true).eq('tenant_id', tenantId).order('min_points', { ascending: true })
-      const { data: hLv } = await supabase.from('vip_levels').select('*').eq('wallet_type', 'hair').eq('is_active', true).eq('tenant_id', tenantId).order('min_points', { ascending: true })
+      // Obtener niveles VIP
+      const { data: gLv } = await supabase
+        .from('vip_levels')
+        .select('*')
+        .eq('wallet_type', 'glow')
+        .eq('is_active', true)
+        .eq('tenant_id', tenantId)
+        .order('min_points', { ascending: true })
+
       setGlowLevels(gLv || [])
+
+      const { data: hLv } = await supabase
+        .from('vip_levels')
+        .select('*')
+        .eq('wallet_type', 'hair')
+        .eq('is_active', true)
+        .eq('tenant_id', tenantId)
+        .order('min_points', { ascending: true })
+
       setHairLevels(hLv || [])
 
-      const { data: gRw } = await supabase.from('reward_catalog').select('*').eq('wallet_type', 'glow').eq('is_active', true).eq('tenant_id', tenantId).order('points_required', { ascending: true })
-      const { data: hRw } = await supabase.from('reward_catalog').select('*').eq('wallet_type', 'hair').eq('is_active', true).eq('tenant_id', tenantId).order('points_required', { ascending: true })
+      // Obtener recompensas
+      const { data: gRw } = await supabase
+        .from('reward_catalog')
+        .select('*')
+        .eq('wallet_type', 'glow')
+        .eq('is_active', true)
+        .eq('tenant_id', tenantId)
+        .order('points_required', { ascending: true })
+
       setGlowRewards(gRw || [])
+
+      const { data: hRw } = await supabase
+        .from('reward_catalog')
+        .select('*')
+        .eq('wallet_type', 'hair')
+        .eq('is_active', true)
+        .eq('tenant_id', tenantId)
+        .order('points_required', { ascending: true })
+
       setHairRewards(hRw || [])
+      
     } catch (e) {
-      console.error(e)
+      console.error('Error cargando datos VIP:', e)
     } finally {
       setLoading(false)
     }
@@ -100,7 +158,7 @@ export default function VIPClubPage() {
     if (!levels || levels.length === 0) return { current: null, next: null, progress: 0, needed: 0 }
     const current = [...levels].reverse().find(l => l.min_points <= points) || levels[0]
     const next = levels.find(l => l.min_points > points)
-    if (!next) return { current, next, progress: 100, needed: 0 }
+    if (!next) return { current, next: null, progress: 100, needed: 0 }
     const base = current ? current.min_points : 0
     const stepTotal = next.min_points - base
     const stepProgress = points - base
@@ -118,7 +176,10 @@ export default function VIPClubPage() {
     if (!selectedReward || !user?.id || !tenantId) return
     try {
       const { data, error } = await supabase.rpc('redeem_reward', {
-        p_client_id: user.id, p_tenant_id: tenantId, p_reward_id: selectedReward.id, p_wallet_type: activeTab
+        p_client_id: user.id,
+        p_tenant_id: tenantId,
+        p_reward_id: selectedReward.id,
+        p_wallet_type: activeTab
       })
       if (error) throw error
       setGeneratedCode(data)
@@ -155,10 +216,10 @@ export default function VIPClubPage() {
   }
 
   return (
-    <div className={`w-full max-w-4xl mx-auto p-4 md:p-6 antialiased selection:bg-amber-500/20 relative min-h-[60vh] space-y-6 transition-colors duration-300 ${
+    <div className={`w-full max-w-5xl mx-auto p-4 md:p-6 antialiased selection:bg-amber-500/20 relative min-h-[60vh] space-y-6 transition-colors duration-300 overflow-x-hidden ${
       isDark ? 'text-stone-200' : 'text-stone-800'
     }`}>
-      
+
       <div className={`absolute top-[-5%] left-1/3 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none ${
         isDark ? 'bg-amber-500/[0.04]' : 'bg-amber-500/[0.02]'
       }`} />
@@ -170,15 +231,15 @@ export default function VIPClubPage() {
         .custom-animate-slide { animation: customSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}} />
 
-      {/* HEADER CON CARD-GLOW */}
-      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl custom-animate-fade ${
+      {/* HEADER */}
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl custom-animate-fade ${
         isDark 
           ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
           : 'bg-gradient-to-br from-amber-50/50 via-white to-stone-50'
       }`}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        
+
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-2">
@@ -188,7 +249,19 @@ export default function VIPClubPage() {
             <h2 className="text-2xl font-serif italic text-foreground mt-1">
               Tu Pasaporte de <span className="text-shimmer">Beneficios</span>
             </h2>
-            <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Descubre tus premios disponibles y las metas de los siguientes rangos exclusivos.</p>
+            <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+              Descubre tus premios disponibles y las metas de los siguientes rangos exclusivos.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 ${
+              isDark 
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-600'
+            }`}>
+              <Gem className="w-3 h-3" />
+              {activeTab === 'glow' ? 'Glow' : 'Hair'} Points
+            </span>
           </div>
         </div>
       </div>
@@ -230,32 +303,36 @@ export default function VIPClubPage() {
         </div>
 
         {/* TARJETA DE BALANCE VIP */}
-        <div className={`card-glow relative overflow-hidden rounded-3xl border bg-white dark:bg-stone-900/30 backdrop-blur-md p-6 shadow-sm group custom-animate-slide ${
-          isDark ? 'border-stone-800/70 shadow-[0_20px_40px_rgba(0,0,0,0.5)]' : 'border-stone-200/90'
+        <div className={`relative overflow-hidden rounded-3xl border p-6 shadow-sm group custom-animate-slide ${
+          isDark 
+            ? 'bg-gradient-to-br from-stone-900/40 to-stone-950/40 border-stone-800/70 shadow-[0_20px_40px_rgba(0,0,0,0.5)]' 
+            : 'bg-gradient-to-br from-white to-stone-50 border-stone-200/90'
         }`}>
           <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-5 dark:opacity-[0.08] pointer-events-none transition-all duration-700 group-hover:scale-125 ${
             activeTab === 'glow' ? 'bg-amber-500' : 'bg-indigo-500'
           }`} />
-          
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-1">
               <span className={`text-[10px] uppercase font-mono font-black tracking-widest block ${
                 isDark ? 'text-stone-400' : 'text-stone-500'
               }`}>Puntaje Disponible</span>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-5xl font-black tracking-tight bg-clip-text bg-gradient-to-b ${
-                  isDark 
-                    ? 'from-white to-stone-300 text-white' 
-                    : 'from-stone-900 to-stone-700 text-stone-900'
-                }`}>{currentPoints}</span>
-                <span className={`text-sm font-mono font-black uppercase ${
-                  activeTab === 'glow' 
+              <div className="flex items-baseline gap-3">
+                <span className={`text-5xl font-black tracking-tight ${
+                  activeTab === 'glow'
                     ? isDark ? 'text-amber-400' : 'text-amber-600'
                     : isDark ? 'text-indigo-400' : 'text-indigo-600'
+                }`}>
+                  {currentPoints}
+                </span>
+                <span className={`text-sm font-mono font-black uppercase ${
+                  activeTab === 'glow' 
+                    ? isDark ? 'text-amber-400/70' : 'text-amber-600/70'
+                    : isDark ? 'text-indigo-400/70' : 'text-indigo-600/70'
                 }`}>Puntos</span>
               </div>
             </div>
-            
+
             <div className={`flex items-center gap-3 border p-3 rounded-2xl shrink-0 w-full sm:w-auto ${
               isDark 
                 ? 'bg-stone-950/60 border-stone-800' 
@@ -269,7 +346,7 @@ export default function VIPClubPage() {
                 {currentInfo.current?.emoji || '🥉'}
               </div>
               <div>
-                <p className={`text-xs font-mono uppercase tracking-wider ${
+                <p className={`text-[10px] font-mono uppercase tracking-wider ${
                   isDark ? 'text-stone-400' : 'text-stone-500'
                 }`}>Tu Rango VIP</p>
                 <p className={`text-sm font-black tracking-tight ${
@@ -288,8 +365,8 @@ export default function VIPClubPage() {
               <div 
                 className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${
                   activeTab === 'glow' 
-                    ? 'bg-gradient-to-r from-amber-600 to-amber-400 dark:from-amber-500 dark:to-amber-300' 
-                    : 'bg-gradient-to-r from-indigo-600 to-indigo-400 dark:from-indigo-500 dark:to-indigo-300'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-300 dark:from-amber-500 dark:to-amber-300' 
+                    : 'bg-gradient-to-r from-indigo-500 to-indigo-300 dark:from-indigo-500 dark:to-indigo-300'
                 }`} 
                 style={{ width: `${currentInfo.progress}%` }} 
               />
@@ -303,7 +380,9 @@ export default function VIPClubPage() {
                   <span>Faltan <strong className={`font-bold ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>{currentInfo.needed} pts</strong> para {currentInfo.next.name}</span>
                 </>
               ) : (
-                <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 w-full justify-center py-0.5"><Award className="w-3.5 h-3.5" /> ¡Nivel máximo alcanzado! Eres un miembro supremo.</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 w-full justify-center py-0.5">
+                  <Award className="w-3.5 h-3.5" /> ¡Nivel máximo alcanzado!
+                </span>
               )}
             </div>
           </div>
@@ -356,9 +435,9 @@ export default function VIPClubPage() {
             <Gift className={`w-4 h-4 ${isDark ? 'text-amber-500' : 'text-amber-600'}`} />
             <h3 className={`text-xs uppercase font-mono font-black tracking-widest ${
               isDark ? 'text-stone-400' : 'text-stone-500'
-            }`}>Todo el Universo de Premios</h3>
+            }`}>Catálogo de Premios</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {currentRewards.length === 0 ? (
               <div className={`col-span-full p-8 text-center border border-dashed rounded-2xl ${
@@ -366,17 +445,17 @@ export default function VIPClubPage() {
                   ? 'border-stone-800/80 bg-stone-900/10 text-stone-500' 
                   : 'border-stone-200 bg-white/50 text-stone-400'
               }`}>
-                <p className="text-xs font-mono">No hay premios parametrizados para este salón.</p>
+                <p className="text-xs font-mono">No hay premios disponibles en este momento.</p>
               </div>
             ) : (
               currentRewards.map((r) => {
                 const lockedByTier = isTierLocked(r.tier, currentLevels, currentLevelName)
                 const canAfford = currentPoints >= r.points_required && !lockedByTier
-                
+
                 return (
                   <div 
                     key={r.id} 
-                    className={`card-glow group relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-4 bg-white dark:bg-stone-900/30 backdrop-blur-sm ${
+                    className={`group relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-4 bg-white dark:bg-stone-900/30 backdrop-blur-sm ${
                       lockedByTier 
                         ? isDark 
                           ? 'border-stone-900/40 bg-stone-950/5 shadow-inner' 
@@ -412,7 +491,9 @@ export default function VIPClubPage() {
                           {r.name}
                         </p>
                         {!lockedByTier && r.discount_percentage > 0 && (
-                          <span className="text-[9px] font-mono font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">-{r.discount_percentage}% OFF</span>
+                          <span className="text-[9px] font-mono font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+                            -{r.discount_percentage}% OFF
+                          </span>
                         )}
                       </div>
                       <p className={`text-xs leading-normal line-clamp-2 ${
@@ -435,9 +516,9 @@ export default function VIPClubPage() {
                         }`}>{r.points_required} PTS</span>
                         <span className={`text-[9px] font-mono uppercase tracking-wider ${
                           isDark ? 'text-stone-500' : 'text-stone-400'
-                        }`}>Categoría: {r.tier}</span>
+                        }`}>Nivel: {r.tier}</span>
                       </div>
-                      
+
                       {lockedByTier ? (
                         <span className={`text-[9px] font-mono uppercase tracking-wider font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-xl border ${
                           isDark 
@@ -460,7 +541,8 @@ export default function VIPClubPage() {
                                 : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed'
                           }`}
                         >
-                          {currentPoints >= r.points_required ? 'Canjear Premio' : 'Faltan Puntos'} <ArrowUpRight className="w-3 h-3" />
+                          {currentPoints >= r.points_required ? 'Canjear' : 'Faltan Puntos'} 
+                          <ArrowUpRight className="w-3 h-3" />
                         </button>
                       )}
                     </div>
@@ -472,7 +554,7 @@ export default function VIPClubPage() {
         </div>
       </div>
 
-      {/* MODAL MULTI-ESTADO DE CANJE */}
+      {/* MODAL DE CANJE */}
       {showRedeemModal && selectedReward && (
         <div className="fixed inset-0 bg-stone-950/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 custom-animate-fade">
           <div className={`border rounded-3xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden transition-all duration-500 border-t-amber-500/30 ${
@@ -480,7 +562,7 @@ export default function VIPClubPage() {
               ? 'bg-stone-950 border-stone-800' 
               : 'bg-white border-stone-200'
           }`}>
-            
+
             {!generatedCode ? (
               <div className="space-y-4 text-center">
                 <div className={`w-12 h-12 border rounded-full flex items-center justify-center mx-auto ${
@@ -491,8 +573,10 @@ export default function VIPClubPage() {
                   <Ticket className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className={`font-black text-base tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>¿Confirmar Operación de Canje?</h4>
-                  <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Se debitarán de inmediato <strong className={`font-mono ${isDark ? 'text-white' : 'text-stone-900'}`}>{selectedReward.points_required} puntos</strong> de tu billetera digital por:</p>
+                  <h4 className={`font-black text-base tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>¿Confirmar Canje?</h4>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    Canjearás <strong className={`font-mono ${isDark ? 'text-white' : 'text-stone-900'}`}>{selectedReward.points_required} puntos</strong> por:
+                  </p>
                   <p className={`text-xs font-bold mt-3 p-3 rounded-xl border ${
                     isDark 
                       ? 'text-amber-400 bg-stone-900 border-stone-800' 
@@ -509,7 +593,7 @@ export default function VIPClubPage() {
                     isDark 
                       ? 'bg-white text-black hover:bg-stone-100' 
                       : 'bg-stone-900 text-white hover:bg-stone-800'
-                  }`}>Confirmar Canje</button>
+                  }`}>Confirmar</button>
                 </div>
               </div>
             ) : (
@@ -522,8 +606,10 @@ export default function VIPClubPage() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className={`font-black text-base tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>¡Premio Canjeado con Éxito!</h4>
-                  <p className={`text-[11px] mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Presenta este comprobante en la recepción de la sucursal para liberar tu beneficio.</p>
+                  <h4 className={`font-black text-base tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>¡Premio Canjeado!</h4>
+                  <p className={`text-[11px] mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    Presenta este código en recepción.
+                  </p>
                 </div>
 
                 <div className={`p-4 rounded-2xl inline-block shadow-md border mx-auto ${
@@ -559,7 +645,7 @@ export default function VIPClubPage() {
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                
+
                 <button 
                   onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
                   className={`w-full py-2.5 text-xs rounded-xl font-black transition-colors ${
@@ -568,7 +654,7 @@ export default function VIPClubPage() {
                       : 'bg-stone-900 text-white hover:bg-stone-800'
                   }`}
                 >
-                  Finalizar y Cerrar
+                  Finalizar
                 </button>
               </div>
             )}

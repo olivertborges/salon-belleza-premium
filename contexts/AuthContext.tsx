@@ -1,149 +1,185 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
-import { Session, User } from '@supabase/supabase-js'
+import { User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
 
 interface AuthContextType {
-  session: Session | null
   user: User | null
-  role: 'client' | 'admin' | 'staff' | null 
+  clientId: string | null
   tenantId: string | null
+  points: number | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signUp: (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => Promise<{ data: any; error: any }>
   signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // ✅ Inicialización oficial con @supabase/ssr
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [role, setRole] = useState<'client' | 'admin' | 'staff' | null>(null)
+  const [clientId, setClientId] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchUserRole = async (userId: string) => {
+  // Función para obtener datos del cliente y tenant
+  const fetchClientData = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role, tenant_id')
-        .eq('id', userId)
+      console.log('🔍 Buscando cliente para userId:', userId)
+
+      // 1. Obtener el cliente
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('id, points, tenant_id')
+        .eq('auth_user_id', userId)
         .single()
 
-      if (!error && data) {
-        setRole(data.role || 'client')
-        setTenantId(data.tenant_id || null)
+      if (clientError) {
+        console.error('❌ Error al buscar cliente:', clientError)
+        return
+      }
+
+      if (client) {
+        console.log('✅ Cliente encontrado:', client.id)
+        console.log('💰 Puntos:', client.points)
+        setClientId(client.id)
+        setPoints(client.points)
+        
+        // 2. Guardar tenantId
+        if (client.tenant_id) {
+          setTenantId(client.tenant_id)
+          console.log('🏢 Tenant ID:', client.tenant_id)
+        }
+
+        // 3. Obtener puntos de loyalty_wallets (más exacto)
+        const { data: wallet, error: walletError } = await supabase
+          .from('loyalty_wallets')
+          .select('glow_points, hair_points')
+          .eq('client_id', client.id)
+          .maybeSingle()
+
+        if (!walletError && wallet) {
+          // Sumar glow_points + hair_points para el total
+          const totalPuntos = (wallet.glow_points || 0) + (wallet.hair_points || 0)
+          setPoints(totalPuntos)
+          console.log('💎 Puntos wallet:', totalPuntos)
+        }
       } else {
-        setRole('client')
+        console.log('⚠️ No se encontró cliente para este usuario')
       }
     } catch (error) {
-      console.error('Error fetching role:', error)
-      setRole('client')
+      console.error('❌ Error en fetchClientData:', error)
     }
   }
 
   useEffect(() => {
-    let isMounted = true
-
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-
-        if (isMounted) {
-          setSession(session)
-          setUser(session?.user ?? null)
-
-          if (session?.user) {
-            await fetchUserRole(session.user.id)
-          } else {
-            setRole('client')
-          }
-        }
-      } catch (error) {
-        console.error('Error inicializando auth:', error)
-        if (isMounted) setRole('client')
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+    // Obtener sesión inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null
+      setUser(user)
+      
+      if (user) {
+        fetchClientData(user.id)
       }
-    }
-
-    initializeAuth()
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      if (!isMounted) return
-
-      console.log('🔄 Auth state changed:', event)
-
-      if (event === 'SIGNED_OUT') {
-        setSession(null)
-        setUser(null)
-        setRole(null)
-        setTenantId(null)
-        setLoading(false)
-        return
-      }
-
-      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_UP') {
-        setSession(currentSession)
-        setUser(currentSession?.user ?? null)
-
-        if (currentSession?.user) {
-          await fetchUserRole(currentSession.user.id)
-        } else {
-          setRole('client')
-        }
-        setLoading(false)
-      }
+      
+      setLoading(false)
     })
 
-    return () => {
-      isMounted = false
-      listener?.subscription.unsubscribe()
-    }
+    // Escuchar cambios de autenticación
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const user = session?.user ?? null
+      setUser(user)
+      
+      if (user) {
+        await fetchClientData(user.id)
+      } else {
+        setClientId(null)
+        setTenantId(null)
+        setPoints(null)
+      }
+      
+      setLoading(false)
+    })
+
+    return () => listener?.subscription.unsubscribe()
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password 
-    })
-    if (error) throw error
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: password.trim()
+      })
+      
+      if (error) return { error }
+      
+      if (data.user) {
+        setUser(data.user)
+        await fetchClientData(data.user.id)
+      }
+      
+      return { error: null }
+    } catch (err: any) {
+      return { error: err }
+    }
+  }
 
-    if (data.user) {
-      await fetchUserRole(data.user.id)
-      setUser(data.user)
-      setSession(data.session)
+  const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        options: {
+          data: {
+            full_name: fullName,
+            phone: phone || '',
+            referral_code: referralCode || null,
+          },
+        },
+      })
+      
+      if (error) return { data: null, error }
+      
+      if (data.user) {
+        setUser(data.user)
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        await fetchClientData(data.user.id)
+      }
+      
+      return { data, error: null }
+    } catch (err: any) {
+      return { data: null, error: err }
     }
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    setRole(null)
-    setTenantId(null)
     setUser(null)
-    setSession(null)
+    setClientId(null)
+    setTenantId(null)
+    setPoints(null)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, role, tenantId, loading, signIn, signOut }}>
-      {children}
+    <AuthContext.Provider value={{ 
+      user, 
+      clientId, 
+      tenantId,
+      points, 
+      loading, 
+      signIn, 
+      signUp, 
+      signOut 
+    }}>
+      {!loading && children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth debe usarse dentro de AuthProvider')
-  }
+  if (!context) throw new Error('useAuth debe usarse dentro de AuthProvider')
   return context
 }

@@ -22,42 +22,71 @@ import Link from 'next/link'
 
 export default function ClientBookingPage() {
   const { theme } = useTheme()
-  const { user } = useAuth()
+  const { user, tenantId } = useAuth()
   const isDark = theme === 'dark'
-  
+
   const [paso, setPaso] = useState<number>(1)
   const [services, setServices] = useState<any[]>([])
   const [staff, setStaff] = useState<any[]>([])
   const [citasYBloqueos, setCitasYBloqueos] = useState<any[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([])
 
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [selectedService, setSelectedService] = useState<any>(null)
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null)
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [selectedTime, setSelectedTime] = useState<string>('')
-  
+
   const [clientData, setClientData] = useState({ name: '', phone: '', email: '', notes: '' })
   const [showSuccessAnimation, setShowSuccessAnimation] = useState<boolean>(false)
 
-  const horariosJornada = [
+  const horariosPorDefecto = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
     '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', 
     '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', 
     '18:00', '18:30', '19:00', '19:30'
   ]
 
-  // === EFECTOS ===
+  // DOMINGO = 0, LUNES = 1 (NO LABORABLES)
+  const esNoLaborable = (fecha: Date) => {
+    const dia = getDay(fecha)
+    return dia === 0 || dia === 1
+  }
+
+  const obtenerHorariosBD = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('working_hours')
+        .select('start_time')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .order('start_time', { ascending: true })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        return data.map((h: any) => h.start_time)
+      }
+      return horariosPorDefecto
+    } catch (error) {
+      console.error('Error obteniendo horarios:', error)
+      return horariosPorDefecto
+    }
+  }
+
   useEffect(() => {
     const fetchInicial = async () => {
       try {
-        const [servicesRes, staffRes] = await Promise.all([
+        const [servicesRes, staffRes, horarios] = await Promise.all([
           supabase.from('services').select('*').eq('is_active', true),
-          supabase.from('staff').select('*').eq('is_active', true)
+          supabase.from('staff').select('*').eq('is_active', true),
+          obtenerHorariosBD()
         ])
         setServices(servicesRes.data || [])
         setStaff(staffRes.data || [])
+        setHorariosDisponibles(horarios)
       } catch (err) {
         console.error("Error al cargar datos iniciales:", err)
       } finally {
@@ -86,7 +115,6 @@ export default function ClientBookingPage() {
     fetchOcupacion()
   }, [selectedDate, selectedProfessional])
 
-  // === FUNCIONES DE DISPONIBILIDAD ===
   const comprobarDisponibilidad = (horaEvaluar: string, fechaEvaluarStr = selectedDate) => {
     if (fechaEvaluarStr === format(new Date(), 'yyyy-MM-dd')) {
       const ahoraStr = format(new Date(), 'HH:mm')
@@ -118,7 +146,6 @@ export default function ClientBookingPage() {
     end: endOfMonth(currentMonth)
   })
 
-  // === MANEJO DE RESERVA ===
   const handleFinalizarReserva = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!clientData.name || !clientData.phone) {
@@ -129,23 +156,41 @@ export default function ClientBookingPage() {
     try {
       setSubmitting(true)
       let client_id = null
-      
-      const { data: clientesEncontrados } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('phone', clientData.phone.trim())
 
-      const clienteExistente = clientesEncontrados && clientesEncontrados.length > 0 ? clientesEncontrados[0] : null
+      if (user?.id) {
+        const { data: clienteAuth } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single()
 
-      if (clienteExistente) {
-        client_id = clienteExistente.id
-      } else {
+        if (clienteAuth) {
+          client_id = clienteAuth.id
+        }
+      }
+
+      if (!client_id) {
+        const { data: clientesEncontrados } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('phone', clientData.phone.trim())
+
+        if (clientesEncontrados && clientesEncontrados.length > 0) {
+          client_id = clientesEncontrados[0].id
+        }
+      }
+
+      if (!client_id) {
         const { data: nuevoClienteData, error: insertClientError } = await supabase
           .from('clients')
           .insert([{ 
             name: clientData.name.trim(), 
             phone: clientData.phone.trim(), 
-            email: clientData.email.trim() || null 
+            email: clientData.email.trim() || null,
+            auth_user_id: user?.id || null,
+            tenant_id: tenantId,
+            points: 0,
+            is_active: true
           }])
           .select('id')
 
@@ -166,19 +211,114 @@ export default function ClientBookingPage() {
             time: selectedTime, 
             status: 'pending', 
             total_price: Number(selectedService.price),
-            notes: clientData.notes.trim() || null
+            notes: clientData.notes.trim() || null,
+            tenant_id: tenantId
           }
         ])
 
       if (appointmentError) throw appointmentError
+
+      // ============================================================
+      // SUMAR PUNTOS A LOYALTY_WALLETS
+      // ============================================================
+      const PUNTOS_POR_CITA = 50
       
-      // Mostrar animación de éxito
+      // Buscar o crear wallet
+      const { data: walletData, error: walletError } = await supabase
+        .from('loyalty_wallets')
+        .select('glow_points')
+        .eq('client_id', client_id)
+        .eq('tenant_id', tenantId)
+        .single()
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error obteniendo wallet:', walletError)
+      }
+
+      if (!walletData) {
+        // Crear wallet si no existe
+        await supabase
+          .from('loyalty_wallets')
+          .insert([{
+            client_id: client_id,
+            tenant_id: tenantId,
+            glow_points: PUNTOS_POR_CITA,
+            hair_points: 0,
+            created_at: new Date().toISOString()
+          }])
+        console.log(`✅ Wallet creada con +${PUNTOS_POR_CITA} puntos`)
+      } else {
+        // Sumar puntos a wallet existente
+        await supabase
+          .from('loyalty_wallets')
+          .update({
+            glow_points: (walletData.glow_points || 0) + PUNTOS_POR_CITA,
+            updated_at: new Date().toISOString()
+          })
+          .eq('client_id', client_id)
+          .eq('tenant_id', tenantId)
+        console.log(`✅ +${PUNTOS_POR_CITA} puntos agregados a wallet`)
+      }
+
+      // ============================================================
+      // COMPLETAR MISIÓN "Agenda una cita"
+      // ============================================================
+      const { data: misionData } = await supabase
+        .from('missions')
+        .select('id, points')
+        .eq('tenant_id', tenantId)
+        .eq('title', 'Agenda una cita')
+        .single()
+
+      if (misionData) {
+        const hoy = new Date().toISOString().split('T')[0]
+        const { data: misionCompletada } = await supabase
+          .from('client_missions')
+          .select('id')
+          .eq('client_id', client_id)
+          .eq('mission_id', misionData.id)
+          .gte('completed_at', hoy)
+          .single()
+
+        if (!misionCompletada) {
+          await supabase
+            .from('client_missions')
+            .insert([{
+              client_id: client_id,
+              mission_id: misionData.id,
+              tenant_id: tenantId,
+              completed_at: new Date().toISOString()
+            }])
+
+          // También sumar puntos de la misión a la wallet
+          const { data: walletActual } = await supabase
+            .from('loyalty_wallets')
+            .select('glow_points')
+            .eq('client_id', client_id)
+            .eq('tenant_id', tenantId)
+            .single()
+
+          if (walletActual) {
+            await supabase
+              .from('loyalty_wallets')
+              .update({
+                glow_points: (walletActual.glow_points || 0) + misionData.points,
+                updated_at: new Date().toISOString()
+              })
+              .eq('client_id', client_id)
+              .eq('tenant_id', tenantId)
+          }
+
+          console.log(`✅ Misión "Agenda una cita" completada! +${misionData.points} puntos`)
+        }
+      }
+
       setShowSuccessAnimation(true)
       setTimeout(() => {
         setPaso(5)
         setShowSuccessAnimation(false)
       }, 800)
-      
+
     } catch (err) {
       console.error(err)
       alert("Error al guardar la reserva.")
@@ -187,10 +327,14 @@ export default function ClientBookingPage() {
     }
   }
 
-  const horasMauna = horariosJornada.filter(h => h < '14:00')
-  const horasTarde = horariosJornada.filter(h => h >= '14:00')
+  const horasMauna = horariosDisponibles.length > 0 
+    ? horariosDisponibles.filter(h => h < '14:00')
+    : horariosPorDefecto.filter(h => h < '14:00')
+  
+  const horasTarde = horariosDisponibles.length > 0
+    ? horariosDisponibles.filter(h => h >= '14:00')
+    : horariosPorDefecto.filter(h => h >= '14:00')
 
-  // === ESTADO DE CARGA ===
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -206,20 +350,17 @@ export default function ClientBookingPage() {
     <div className={`min-h-screen bg-background text-foreground antialiased selection:bg-rose-500/20 pb-24 transition-colors duration-300 ${
       isDark ? 'bg-[#0a0908]' : 'bg-[#fcfbfa]'
     }`}>
-      
+
       <div className="max-w-6xl mx-auto px-4 md:px-6">
 
-        {/* ============================================================ */}
-        {/* HEADER CON CARD-GLOW */}
-        {/* ============================================================ */}
-        <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.08] via-card to-card border border-rose-500/20 p-6 shadow-xl mt-6 animate-fade-up ${
+        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.08] via-card to-card border border-rose-500/20 p-6 shadow-xl mt-6 ${
           isDark 
             ? 'bg-gradient-to-br from-rose-950/20 via-[#161311] to-[#0a0908]' 
             : 'bg-gradient-to-br from-rose-50/50 via-white to-stone-50'
         }`}>
           <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-          
+
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
@@ -251,16 +392,13 @@ export default function ClientBookingPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* INDICADOR DE PASOS */}
-        {/* ============================================================ */}
         {paso < 5 && (
           <div className="flex items-center justify-center gap-2 mt-8 mb-6">
             {[1, 2, 3, 4].map((num) => {
               const isActive = paso === num
               const isCompleted = paso > num
               const labels = ['Servicio', 'Profesional', 'Fecha', 'Confirmar']
-              
+
               return (
                 <div key={num} className="flex items-center">
                   <div className="flex flex-col items-center">
@@ -292,37 +430,29 @@ export default function ClientBookingPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* CONTENEDOR PRINCIPAL */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-4">
-          
+
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* ============================================================ */}
-            {/* PASO 1: SERVICIOS */}
-            {/* ============================================================ */}
+
             {paso === 1 && (
-              <div className="space-y-4 animate-fade-up">
+              <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-medium text-foreground">¿Qué servicio deseas?</h3>
                   <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                     Selecciona el tratamiento que mejor se adapte a ti
                   </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {services.map((serv, index) => (
                     <button
                       key={serv.id}
                       onClick={() => { setSelectedService(serv); setPaso(2); }}
-                      className={`card-glow group relative rounded-2xl border p-5 text-left transition-all hover:-translate-y-1 shadow-sm ${
+                      className={`group relative rounded-2xl border p-5 text-left transition-all hover:-translate-y-1 shadow-sm ${
                         isDark 
                           ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
                           : 'bg-white border-stone-200/90 hover:border-rose-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
                       }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      {/* Badge decorativo */}
                       {index === 0 && (
                         <div className={`absolute top-3 right-3 text-[8px] font-mono uppercase px-2 py-0.5 rounded-full ${
                           isDark 
@@ -332,7 +462,7 @@ export default function ClientBookingPage() {
                           Popular
                         </div>
                       )}
-                      
+
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className={`font-medium transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 ${
@@ -364,11 +494,8 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 2: PROFESIONALES */}
-            {/* ============================================================ */}
             {paso === 2 && (
-              <div className="space-y-4 animate-fade-up delay-200">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-medium text-foreground">Elige a tu profesional</h3>
@@ -386,17 +513,16 @@ export default function ClientBookingPage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {staff.map((prof, index) => (
                     <button
                       key={prof.id}
                       onClick={() => { setSelectedProfessional(prof); setPaso(3); }}
-                      className={`card-glow group rounded-2xl border p-4 text-left transition-all hover:-translate-y-1 shadow-sm ${
+                      className={`group rounded-2xl border p-4 text-left transition-all hover:-translate-y-1 shadow-sm ${
                         isDark 
                           ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
                           : 'bg-white border-stone-200/90 hover:border-rose-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
                       }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold relative ${
@@ -431,11 +557,8 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 3: CALENDARIO Y HORARIOS */}
-            {/* ============================================================ */}
             {paso === 3 && (
-              <div className="space-y-6 animate-fade-up delay-300">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-medium text-foreground">Elige fecha y hora</h3>
@@ -453,8 +576,7 @@ export default function ClientBookingPage() {
                   </button>
                 </div>
 
-                {/* CALENDARIO */}
-                <div className={`card-glow border rounded-2xl p-6 shadow-sm ${
+                <div className={`border rounded-2xl p-6 shadow-sm ${
                   isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
                 }`}>
                   <div className="flex items-center justify-between mb-6">
@@ -492,33 +614,34 @@ export default function ClientBookingPage() {
                         isDark ? 'text-stone-500' : 'text-stone-400'
                       }`}>{d}</div>
                     ))}
+                    
+                    {Array.from({ length: (getDay(diasDelMes[0]) + 6) % 7 }).map((_, i) => (
+                      <div key={`empty-${i}`} />
+                    ))}
+
                     {diasDelMes.map((dia, idx) => {
                       const diaStr = format(dia, 'yyyy-MM-dd')
                       const esPasado = isBefore(startOfDay(dia), startOfDay(new Date()))
                       const esSeleccionado = selectedDate === diaStr
-                      const esFinDeSemana = isWeekend(dia)
-                      
+                      const noLaborable = esNoLaborable(dia)
+
                       return (
                         <button
                           key={idx}
-                          disabled={esPasado}
+                          disabled={esPasado || noLaborable}
                           onClick={() => { setSelectedDate(diaStr); setSelectedTime(''); }}
-                          className={`py-2.5 rounded-xl text-sm font-mono transition-all relative ${
+                          className={`py-2.5 rounded-xl text-sm font-mono transition-all ${
                             esSeleccionado 
                               ? 'bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20' 
-                              : esPasado 
+                              : esPasado || noLaborable
                                 ? `text-stone-500/30 cursor-not-allowed ${isDark ? 'text-stone-700' : 'text-stone-300'}` 
-                                : esFinDeSemana
-                                  ? isDark 
-                                    ? 'text-rose-400/70 hover:bg-rose-500/10 hover:text-rose-300' 
-                                    : 'text-rose-400/70 hover:bg-rose-500/10'
-                                  : isDark 
-                                    ? 'text-stone-300 hover:bg-stone-800/50' 
-                                    : 'text-stone-600 hover:bg-stone-100'
+                                : isDark 
+                                  ? 'text-stone-300 hover:bg-stone-800/50' 
+                                  : 'text-stone-600 hover:bg-stone-100'
                           }`}
                         >
                           {format(dia, 'd')}
-                          {esFinDeSemana && !esSeleccionado && !esPasado && (
+                          {noLaborable && !esSeleccionado && !esPasado && (
                             <div className="w-1 h-1 mx-auto mt-0.5 rounded-full bg-rose-400/50" />
                           )}
                         </button>
@@ -527,9 +650,8 @@ export default function ClientBookingPage() {
                   </div>
                 </div>
 
-                {/* HORARIOS */}
                 {selectedDate && (
-                  <div className={`card-glow border rounded-2xl p-6 shadow-sm ${
+                  <div className={`border rounded-2xl p-6 shadow-sm ${
                     isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
                   }`}>
                     <p className={`text-xs font-mono border-b pb-3 mb-4 flex items-center justify-between ${
@@ -537,7 +659,7 @@ export default function ClientBookingPage() {
                     }`}>
                       <span>{format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                        isWeekend(parseISO(selectedDate))
+                        esNoLaborable(parseISO(selectedDate))
                           ? isDark 
                             ? 'bg-rose-500/10 text-rose-400' 
                             : 'bg-rose-500/10 text-rose-600'
@@ -545,11 +667,10 @@ export default function ClientBookingPage() {
                             ? 'bg-emerald-500/10 text-emerald-400' 
                             : 'bg-emerald-500/10 text-emerald-600'
                       }`}>
-                        {isWeekend(parseISO(selectedDate)) ? 'Fin de semana' : 'Laborable'}
+                        {esNoLaborable(parseISO(selectedDate)) ? 'No laborable' : 'Laborable'}
                       </span>
                     </p>
 
-                    {/* Mañana */}
                     <div className="mb-4">
                       <span className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                         🌅 Mañana
@@ -580,7 +701,6 @@ export default function ClientBookingPage() {
                       </div>
                     </div>
 
-                    {/* Tarde */}
                     <div>
                       <span className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                         🌆 Tarde
@@ -616,7 +736,7 @@ export default function ClientBookingPage() {
                 {selectedTime && (
                   <button
                     onClick={() => setPaso(4)}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white text-sm font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 glow-hover"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white text-sm font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
                   >
                     Continuar <ArrowRight className="w-4 h-4" />
                   </button>
@@ -624,11 +744,8 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 4: FORMULARIO */}
-            {/* ============================================================ */}
             {paso === 4 && (
-              <div className="space-y-4 animate-fade-up delay-400">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-medium text-foreground">Completa tus datos</h3>
@@ -646,7 +763,7 @@ export default function ClientBookingPage() {
                   </button>
                 </div>
 
-                <form onSubmit={handleFinalizarReserva} className={`card-glow border rounded-2xl p-6 shadow-sm space-y-4 ${
+                <form onSubmit={handleFinalizarReserva} className={`border rounded-2xl p-6 shadow-sm space-y-4 ${
                   isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
                 }`}>
                   <div>
@@ -734,7 +851,7 @@ export default function ClientBookingPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className={`w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 glow-hover ${
+                    className={`w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 ${
                       submitting ? 'opacity-70 cursor-not-allowed' : ''
                     }`}
                   >
@@ -758,17 +875,12 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 5: ÉXITO */}
-            {/* ============================================================ */}
             {paso === 5 && (
-              <div className={`card-glow border rounded-3xl p-8 text-center max-w-lg mx-auto shadow-xl relative overflow-hidden ${
+              <div className={`border rounded-3xl p-8 text-center max-w-lg mx-auto shadow-xl relative overflow-hidden ${
                 isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
               }`}>
-                {/* Línea superior decorativa */}
                 <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-rose-500 via-amber-500 to-rose-500" />
-                
-                {/* Partículas de confeti animadas */}
+
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                   {[...Array(12)].map((_, i) => (
                     <div
@@ -786,7 +898,7 @@ export default function ClientBookingPage() {
                 </div>
 
                 <div className="relative z-10">
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto border-2 border-emerald-500/30 animate-scale-in">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto border-2 border-emerald-500/30">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                   </div>
 
@@ -794,9 +906,11 @@ export default function ClientBookingPage() {
                   <p className={`text-sm mt-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                     Tu cita ha sido agendada exitosamente. Te esperamos.
                   </p>
+                  <p className={`text-xs mt-1 text-emerald-500 font-medium`}>
+                    🎉 +50 puntos por agendar tu cita
+                  </p>
                 </div>
 
-                {/* Detalles de la reserva */}
                 <div className={`border rounded-xl p-4 text-left space-y-2 mt-6 relative z-10 ${
                   isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-stone-50 border-stone-200'
                 }`}>
@@ -826,7 +940,6 @@ export default function ClientBookingPage() {
                   </div>
                 </div>
 
-                {/* Acciones */}
                 <div className="space-y-3 mt-6 relative z-10">
                   <button
                     onClick={() => {
@@ -837,7 +950,7 @@ export default function ClientBookingPage() {
                       setClientData({ name: '', phone: '', email: '', notes: '' })
                       setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
                     }}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 glow-hover"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
                   >
                     <Calendar className="w-4 h-4" />
                     Agendar otra cita
@@ -859,23 +972,18 @@ export default function ClientBookingPage() {
 
           </div>
 
-          {/* ============================================================ */}
-          {/* SIDEBAR DERECHO - RESUMEN */}
-          {/* ============================================================ */}
           {paso < 5 && (
-            <div className={`card-glow border rounded-2xl p-5 space-y-5 lg:sticky lg:top-6 shadow-sm relative overflow-hidden ${
+            <div className={`border rounded-2xl p-5 space-y-5 lg:sticky lg:top-6 shadow-sm relative overflow-hidden ${
               isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
             }`}>
-              {/* Badge decorativo */}
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full pointer-events-none" />
-              
+
               <h3 className={`text-[10px] font-mono uppercase tracking-[0.2em] border-b pb-3 flex items-center gap-2 ${
                 isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-stone-200'
               }`}>
                 <Bookmark className="w-3 h-3 text-rose-500" /> Resumen
               </h3>
-              
-              {/* Servicio */}
+
               {selectedService ? (
                 <div className="space-y-1 relative z-10">
                   <p className={`text-[10px] font-mono uppercase tracking-wider ${
@@ -897,7 +1005,6 @@ export default function ClientBookingPage() {
                 </p>
               )}
 
-              {/* Profesional */}
               {selectedProfessional && (
                 <div className={`space-y-1 pt-3 border-t ${
                   isDark ? 'border-stone-800' : 'border-stone-200'
@@ -912,7 +1019,6 @@ export default function ClientBookingPage() {
                 </div>
               )}
 
-              {/* Fecha y hora */}
               {selectedTime && (
                 <div className={`space-y-1 pt-3 border-t ${
                   isDark ? 'border-stone-800' : 'border-stone-200'
@@ -933,7 +1039,6 @@ export default function ClientBookingPage() {
                 </div>
               )}
 
-              {/* Total fijo */}
               {selectedService && (
                 <div className={`pt-4 border-t flex items-center justify-between ${
                   isDark ? 'border-stone-800' : 'border-stone-200'
@@ -947,7 +1052,6 @@ export default function ClientBookingPage() {
                 </div>
               )}
 
-              {/* Indicador de pasos completados */}
               <div className={`pt-3 border-t flex items-center gap-2 text-[9px] font-mono ${
                 isDark ? 'text-stone-500 border-stone-800' : 'text-stone-400 border-stone-200'
               } relative z-10`}>

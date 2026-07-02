@@ -11,7 +11,7 @@ import {
   Flower2, Droplets, Sun, Moon,
   Leaf, Feather, Wand2, 
   Eye, Sparkle, Activity,
-  Bath, Scissors, Sparkles as SparklesIcon
+  Bath, Scissors, ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -34,6 +34,7 @@ export default function EsteticaPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('todos')
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
 
   useEffect(() => {
     cargarServicios()
@@ -46,11 +47,26 @@ export default function EsteticaPage() {
         .from('services')
         .select('*')
         .eq('is_active', true)
-        .eq('category', 'Estética')
         .order('name', { ascending: true })
 
       if (error) throw error
-      setServicios(data || [])
+      
+      // Filtrar servicios de estética (los que tienen category = 'Estética' o categorías relacionadas)
+      const esteticaServices = data.filter(s => 
+        s.category === 'Estética' || 
+        s.category === 'Facial' || 
+        s.category === 'Corporal' || 
+        s.category === 'Masajes' ||
+        s.category === 'Depilación' ||
+        s.category === 'Cejas'
+      )
+      
+      setServicios(esteticaServices)
+
+      // Extraer categorías únicas de los servicios filtrados
+      const categorias = [...new Set(esteticaServices.map(s => s.category).filter(Boolean))]
+      setCategoriasDisponibles(categorias)
+      
     } catch (error) {
       console.error('Error cargando servicios:', error)
     } finally {
@@ -58,15 +74,56 @@ export default function EsteticaPage() {
     }
   }
 
-  const categorias = [
-    { id: 'todos', label: '🌟 Todos', icon: Sparkles },
-    { id: 'Facial', label: '💆 Facial', icon: Flower2 },
-    { id: 'Corporal', label: '🧴 Corporal', icon: Droplets },
-    { id: 'Masajes', label: '💆‍♂️ Masajes', icon: Sparkles },
-    { id: 'Depilación', label: '🪒 Depilación', icon: Feather },
-    { id: 'Cejas', label: '👁️ Cejas', icon: Eye },
+  // Mapeo de iconos por categoría
+  const getIconForCategory = (cat: string) => {
+    const map: Record<string, any> = {
+      'Facial': Flower2,
+      'Corporal': Droplets,
+      'Masajes': Sparkles,
+      'Depilación': Feather,
+      'Cejas': Eye,
+      'Estética': Sparkles,
+      'General': Sparkles
+    }
+    return map[cat] || Sparkles
+  }
+
+  const getCategoryLabel = (cat: string) => {
+    const map: Record<string, string> = {
+      'Facial': 'Facial',
+      'Corporal': 'Corporal',
+      'Masajes': 'Masajes',
+      'Depilación': 'Depilación',
+      'Cejas': 'Cejas',
+      'Estética': 'Estética',
+      'General': 'General'
+    }
+    return map[cat] || cat
+  }
+
+  // Construir categorías de filtro
+  const categoriasFiltro = [
+    { id: 'todos', label: 'Todos', icon: Sparkles },
+    ...categoriasDisponibles.map(cat => ({
+      id: cat,
+      label: getCategoryLabel(cat),
+      icon: getIconForCategory(cat)
+    }))
   ]
 
+  // Si no hay categorías, usar las predefinidas
+  const categoriasFinal = categoriasFiltro.length > 1 
+    ? categoriasFiltro 
+    : [
+        { id: 'todos', label: 'Todos', icon: Sparkles },
+        { id: 'Facial', label: 'Facial', icon: Flower2 },
+        { id: 'Corporal', label: 'Corporal', icon: Droplets },
+        { id: 'Masajes', label: 'Masajes', icon: Sparkles },
+        { id: 'Depilación', label: 'Depilación', icon: Feather },
+        { id: 'Cejas', label: 'Cejas', icon: Eye },
+      ]
+
+  // Filtrar servicios por categoría usando category directamente
   const serviciosFiltrados = selectedCategory === 'todos' 
     ? servicios 
     : servicios.filter(s => s.category === selectedCategory)
@@ -124,10 +181,10 @@ export default function EsteticaPage() {
   }
 
   return (
-    <div className={`w-full max-w-7xl mx-auto p-4 md:p-6 antialiased selection:bg-emerald-500/20 relative min-h-[60vh] transition-colors duration-300 ${
+    <div className={`w-full max-w-7xl mx-auto p-4 md:p-6 antialiased selection:bg-emerald-500/20 relative min-h-[60vh] transition-colors duration-300 overflow-x-hidden ${
       isDark ? 'text-stone-200' : 'text-stone-800'
     }`}>
-      
+
       {/* Fondos ambientales */}
       <div className={`absolute top-[-10%] left-1/4 w-[400px] h-[400px] rounded-full blur-[150px] pointer-events-none ${
         isDark ? 'bg-emerald-500/[0.04]' : 'bg-emerald-500/[0.03]'
@@ -146,7 +203,7 @@ export default function EsteticaPage() {
       }`}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        
+
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
@@ -194,14 +251,15 @@ export default function EsteticaPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* SEPARACIÓN: ESPACIO ENTRE HEADER Y FILTROS */}
+      {/* SECCIÓN EXPLORA NUESTROS TRATAMIENTOS */}
       {/* ============================================================ */}
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 space-y-6">
         
-        {/* Título de la sección de filtros */}
+        {/* Título y contador */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className={`text-sm font-bold ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+            <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+              <Sparkles className="w-4 h-4 text-emerald-500" />
               Descubre nuestros tratamientos
             </h3>
             <p className={`text-[10px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
@@ -211,25 +269,26 @@ export default function EsteticaPage() {
           {selectedCategory !== 'todos' && (
             <button
               onClick={() => setSelectedCategory('todos')}
-              className={`text-[10px] font-mono transition-colors ${
+              className={`text-[10px] font-mono transition-colors flex items-center gap-1 ${
                 isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-500'
               }`}
             >
-              Ver todos →
+              Ver todos
+              <ArrowRight className="w-3 h-3" />
             </button>
           )}
         </div>
 
         {/* CATEGORÍAS */}
-        <div className="flex flex-wrap gap-2">
-          {categorias.map((cat) => {
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          {categoriasFinal.map((cat) => {
             const Icon = cat.icon
             const isActive = selectedCategory === cat.id
             return (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-mono font-medium border transition-all hover:scale-105 ${
+                className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border transition-all hover:scale-105 ${
                   isActive
                     ? isDark
                       ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
@@ -239,108 +298,109 @@ export default function EsteticaPage() {
                       : 'bg-stone-100/50 border-stone-200 text-stone-500 hover:border-emerald-500/30 hover:text-stone-800'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {cat.label.replace(/[^a-zA-Z\s]/g, '').trim() || cat.label}
+                <Icon className="w-4 h-4" />
+                <span className="text-[8px] font-mono font-medium text-center leading-tight">
+                  {cat.label}
+                </span>
               </button>
             )
           })}
         </div>
+
+        {/* GRID DE SERVICIOS */}
+        {serviciosFiltrados.length === 0 ? (
+          <div className={`border border-dashed rounded-2xl p-12 text-center backdrop-blur-md shadow-inner ${
+            isDark 
+              ? 'border-stone-800/80 bg-stone-900/20' 
+              : 'border-stone-200 bg-white/60'
+          }`}>
+            <Sparkles className={`w-10 h-10 mx-auto mb-3.5 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
+            <p className={`text-xs font-mono max-w-sm mx-auto ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+              No hay tratamientos disponibles en esta categoría.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
+            {serviciosFiltrados.map((servicio, index) => {
+              const Icon = getIcon(servicio.icon || 'Sparkles')
+              const badgeColor = getBadgeColor(servicio.badge)
+
+              return (
+                <div 
+                  key={servicio.id} 
+                  className={`card-glow group relative backdrop-blur-md border rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] overflow-hidden ${
+                    isDark 
+                      ? 'bg-stone-900/40 border-stone-800/70 hover:border-emerald-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
+                      : 'bg-white border-stone-200/90 hover:border-emerald-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
+                  }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  {/* Glow interno */}
+                  <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl group-hover:bg-emerald-500/[0.08] transition-all duration-500 pointer-events-none ${
+                    isDark ? 'bg-emerald-500/[0.03]' : 'bg-emerald-500/[0.02]'
+                  }`} />
+
+                  {/* Icono */}
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all group-hover:scale-110 ${
+                    isDark 
+                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
+                      : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+
+                  {/* Badge */}
+                  {servicio.badge && (
+                    <span className={`inline-block text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-2 ${badgeColor}`}>
+                      {servicio.badge}
+                    </span>
+                  )}
+
+                  {/* Nombre y descripción */}
+                  <h3 className={`text-sm font-bold tracking-tight transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 ${
+                    isDark ? 'text-stone-100' : 'text-stone-900'
+                  }`}>
+                    {servicio.name}
+                  </h3>
+                  <p className={`text-[11px] leading-relaxed mt-1 line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    {servicio.description || 'Tratamiento profesional de cuidado y estética.'}
+                  </p>
+
+                  {/* Precio y duración */}
+                  <div className={`flex items-center justify-between mt-4 pt-3 border-t ${
+                    isDark ? 'border-stone-800/60' : 'border-stone-100'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-base font-mono font-bold ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      }`}>
+                        ${servicio.price?.toLocaleString()}
+                      </span>
+                      <span className={`text-[9px] font-mono flex items-center gap-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                        <Clock className="w-3 h-3" />
+                        {servicio.duration || 60} min
+                      </span>
+                    </div>
+                    <Link
+                      href={user ? '/agenda' : '/login'}
+                      className={`p-2 rounded-xl transition-all group-hover:scale-110 ${
+                        isDark 
+                          ? 'bg-stone-800/40 border border-stone-700 text-stone-400 hover:text-emerald-400 hover:border-emerald-500/30' 
+                          : 'bg-stone-100/60 border border-stone-200 text-stone-500 hover:text-emerald-600 hover:border-emerald-500/30'
+                      }`}
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* ============================================================ */}
-      {/* GRID DE SERVICIOS */}
-      {/* ============================================================ */}
-      {serviciosFiltrados.length === 0 ? (
-        <div className={`border border-dashed rounded-2xl p-12 text-center backdrop-blur-md shadow-inner mt-8 ${
-          isDark 
-            ? 'border-stone-800/80 bg-stone-900/20' 
-            : 'border-stone-200 bg-white/60'
-        }`}>
-          <Sparkles className={`w-10 h-10 mx-auto mb-3.5 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-          <p className={`text-xs font-mono max-w-sm mx-auto ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-            No hay tratamientos disponibles en esta categoría.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children mt-6">
-          {serviciosFiltrados.map((servicio) => {
-            const Icon = getIcon(servicio.icon || 'Sparkles')
-            const badgeColor = getBadgeColor(servicio.badge)
-
-            return (
-              <div 
-                key={servicio.id} 
-                className={`card-glow group relative backdrop-blur-md border rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] overflow-hidden ${
-                  isDark 
-                    ? 'bg-stone-900/40 border-stone-800/70 hover:border-emerald-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                    : 'bg-white border-stone-200/90 hover:border-emerald-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
-                }`}
-              >
-                {/* Glow interno */}
-                <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl group-hover:bg-emerald-500/[0.08] transition-all duration-500 pointer-events-none ${
-                  isDark ? 'bg-emerald-500/[0.03]' : 'bg-emerald-500/[0.02]'
-                }`} />
-
-                {/* Icono */}
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110 ${
-                  isDark 
-                    ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
-                    : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
-                }`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-
-                {/* Badge */}
-                {servicio.badge && (
-                  <span className={`inline-block text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-2 ${badgeColor}`}>
-                    {servicio.badge}
-                  </span>
-                )}
-
-                {/* Nombre y descripción */}
-                <h3 className={`text-base font-bold tracking-tight transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 ${
-                  isDark ? 'text-stone-100' : 'text-stone-900'
-                }`}>
-                  {servicio.name}
-                </h3>
-                <p className={`text-xs leading-relaxed mt-1 line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                  {servicio.description || 'Tratamiento profesional de cuidado y estética.'}
-                </p>
-
-                {/* Precio y duración */}
-                <div className={`flex items-center justify-between mt-4 pt-3 border-t ${
-                  isDark ? 'border-stone-800/60' : 'border-stone-100'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-lg font-mono font-bold ${
-                      isDark ? 'text-emerald-400' : 'text-emerald-600'
-                    }`}>
-                      ${servicio.price?.toLocaleString()}
-                    </span>
-                    <span className={`text-[10px] font-mono flex items-center gap-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      <Clock className="w-3 h-3" />
-                      {servicio.duration || 60} min
-                    </span>
-                  </div>
-                  <Link
-                    href={user ? '/agenda' : '/login'}
-                    className={`p-2 rounded-xl transition-all group-hover:scale-110 ${
-                      isDark 
-                        ? 'bg-stone-800/40 border border-stone-700 text-stone-400 hover:text-emerald-400 hover:border-emerald-500/30' 
-                        : 'bg-stone-100/60 border border-stone-200 text-stone-500 hover:text-emerald-600 hover:border-emerald-500/30'
-                    }`}
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* BANNER DE PROMOCIÓN - RELAX & WELLNESS */}
+      {/* BANNER DE PROMOCIÓN */}
       {/* ============================================================ */}
       <div className={`card-glow relative overflow-hidden rounded-2xl border p-6 shadow-xl mt-8 ${
         isDark 
@@ -348,8 +408,6 @@ export default function EsteticaPage() {
           : 'bg-gradient-to-br from-emerald-50/50 via-stone-50/50 to-teal-50/50 border-emerald-500/20'
       }`}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className={`p-3 rounded-2xl ${
@@ -370,7 +428,7 @@ export default function EsteticaPage() {
           </div>
           <Link
             href={user ? '/agenda' : '/login'}
-            className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg shrink-0 ${
               isDark 
                 ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20' 
                 : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20'
@@ -384,7 +442,7 @@ export default function EsteticaPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS */}
       {/* ============================================================ */}
       <style jsx global>{`
         @keyframes fadeIn {
@@ -404,6 +462,8 @@ export default function EsteticaPage() {
         .stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
         .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
         .stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
+        .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+        .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
       `}</style>
     </div>
   )

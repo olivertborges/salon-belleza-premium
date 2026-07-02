@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -13,21 +11,15 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
+        get(name: string) { return request.cookies.get(name)?.value },
         set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          })
+          response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          })
+          response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value: '', ...options })
         },
       },
@@ -35,28 +27,15 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  console.log("🔍 [DEBUG MIDDLEWARE] ¿Usuario encontrado en server?:", !!user);
+
   const { pathname } = request.nextUrl
-
-  // 1. Obtener el rol real desde la base de datos
-  let userRole = 'client'
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    userRole = profile?.role || 'client'
-  }
-
-  console.log('🛡️ [MIDDLEWARE SEGURIDAD] Email:', user?.email || 'Nadie', '| Role:', userRole, '| Path:', pathname)
-
-  // Definición de rutas según el rol
-  const isAdminPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/clientes') || pathname.startsWith('/admin/productos') || pathname.startsWith('/servicios')
-  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas', '/fidelizacion', '/peluqueria', '/estetica']
+  const isAdminPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas']
   const isGoingToClientPath = clientRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
-  const isLoginPage = pathname === '/login' || pathname === '/register'
+  const isAuthPage = pathname === '/login' || pathname === '/register'
 
-  // REGLA 1: SI NO HAY SESIÓN ACTIVA
+  // SI NO HAY USUARIO
   if (!user) {
     if (isAdminPath || isGoingToClientPath) {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -64,25 +43,19 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // REGLA 2: SI ESTÁ LOGUEADO E INTENTA IR A LOGIN O LA RAÍZ
-  if (isLoginPage || pathname === '/') {
-    const redirectUrl = (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') ? '/dashboard' : '/portal'
-    return NextResponse.redirect(new URL(redirectUrl, request.url))
+  // SI HAY USUARIO: Obtener rol solo si es necesario
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const userRole = profile?.role || 'client'
+  const isActualAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+
+  // EVITAR BUCLES: Si está en login y ya tiene sesión, mandarlo a su sitio
+  if (isAuthPage) {
+    return NextResponse.redirect(new URL(isActualAdmin ? '/dashboard' : '/portal', request.url))
   }
 
-  // REGLA 3: PROTECCIÓN DE RUTAS DE ADMIN (Si NO es admin y quiere entrar a rutas de admin -> Al portal de cliente)
-  const isActualAdmin = userRole === 'admin' || userRole === 'staff' || userRole === 'owner'
-  
-  if (!isActualAdmin && isAdminPath) {
-    console.warn(`⚠️ Bloqueado: Cliente intentó entrar a ruta admin: ${pathname}`)
-    return NextResponse.redirect(new URL('/portal', request.url))
-  }
-
-  // REGLA 4: PROTECCIÓN DE RUTAS DE CLIENTE (Si SÍ es admin y quiere entrar al portal de clientes -> Al dashboard)
-  if (isActualAdmin && isGoingToClientPath) {
-    console.warn(`⚠️ Bloqueado: Admin intentó entrar a ruta cliente: ${pathname}`)
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+  // REGLAS DE ACCESO
+  if (!isActualAdmin && isAdminPath) return NextResponse.redirect(new URL('/portal', request.url))
+  if (isActualAdmin && isGoingToClientPath && pathname !== '/portal') return NextResponse.redirect(new URL('/dashboard', request.url))
 
   return response
 }

@@ -1,191 +1,247 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Sparkles, X, RotateCw } from 'lucide-react'
-import confetti from 'canvas-confetti'
 
 interface RuedaSuerteProps {
   onPuntosGanados?: (puntos: number) => void
+  userId?: string | null
+  clientId?: string | null
+  tenantId?: string | null
 }
 
-export default function RuedaSuerte({ onPuntosGanados }: RuedaSuerteProps) {
+export default function RuedaSuerte({ 
+  onPuntosGanados, 
+  userId, 
+  clientId: propClientId, 
+  tenantId: propTenantId 
+}: RuedaSuerteProps) {
   const { theme } = useTheme()
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [mensaje, setMensaje] = useState('Gira para descubrir tu beneficio diario')
-  const [girando, setGirando] = useState(false)
-  const [mostrarModal, setMostrarModal] = useState(false)
-
   const isDark = theme === 'dark'
 
-  const SEGMENTOS = [
-    { label: "50 pts", tipo: "puntos", valor: 50 },
-    { label: "10% OFF", tipo: "descuento", valor: 10 },
-    { label: "100 pts", tipo: "puntos", valor: 100 },
-    { label: "20% OFF", tipo: "descuento", valor: 20 },
-    { label: "200 pts", tipo: "puntos", valor: 200 },
-    { label: "15% OFF", tipo: "descuento", valor: 15 },
-    { label: "500 pts", tipo: "puntos", valor: 500 },
-    { label: "Sigue intentando", tipo: "nada", valor: 0 },
-  ]
+  // USAR PROPS DIRECTAMENTE
+  const clientId = propClientId
+  const tenantId = propTenantId
+  const userEmail = userId
 
-  // Colores sofisticados adaptados según el modo actual
-  const COLORS = isDark 
-    ? ["#1c1917", "#262220", "#2e2a28", "#3a3533", "#1c1917", "#262220", "#2e2a28", "#3a3533"]
-    : ["#f5f5f4", "#e7e5e4", "#d6d3d1", "#e7e5e4", "#f5f5f4", "#e7e5e4", "#d6d3d1", "#e7e5e4"]
+  const [spinCount, setSpinCount] = useState(0)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [result, setResult] = useState<number | null>(null)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
-  const anguloPorSegmento = (Math.PI * 2) / SEGMENTOS.length
+  // Debug inicial
+  useEffect(() => {
+    setDebugInfo(`📥 Props: userId=${userId || 'NULL'} clientId=${propClientId || 'NULL'} tenantId=${propTenantId || 'NULL'}`)
+  }, [userId, propClientId, propTenantId])
 
-  const dibujarRuleta = (anguloInicio: number = 0) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    const w = canvas.width
-    const h = canvas.height
-    const centro = w / 2
-    const radio = w * 0.45
-
-    ctx.clearRect(0, 0, w, h)
-
-    for (let i = 0; i < SEGMENTOS.length; i++) {
-      const inicio = anguloInicio + i * anguloPorSegmento
-      const fin = inicio + anguloPorSegmento
-      ctx.beginPath()
-      ctx.moveTo(centro, centro)
-      ctx.arc(centro, centro, radio, inicio, fin)
-      ctx.fillStyle = COLORS[i % COLORS.length]
-      ctx.fill()
-      ctx.strokeStyle = isDark ? "#44403c" : "#d6d3d1"
-      ctx.lineWidth = 1
-      ctx.stroke()
-
-      ctx.save()
-      ctx.translate(centro, centro)
-      ctx.rotate(inicio + anguloPorSegmento / 2)
-      ctx.textAlign = "center"
-      ctx.fillStyle = isDark ? "#e7e5e4" : "#44403c"
-      ctx.font = "bold 16px 'serif'"
-      ctx.fillText(SEGMENTOS[i].label, radio * 0.6, 6)
-      ctx.restore()
+  // Verificar giros del día
+  useEffect(() => {
+    if (!clientId || !tenantId) {
+      setDebugInfo(`⏳ Esperando datos... clientId: ${clientId ? '✅' : '❌'} tenantId: ${tenantId ? '✅' : '❌'}`)
+      return
     }
 
-    // Marcador de premio superior
-    ctx.beginPath()
-    ctx.moveTo(centro, 20)
-    ctx.lineTo(centro - 10, 5)
-    ctx.lineTo(centro + 10, 5)
-    ctx.fillStyle = isDark ? "#fda4af" : "#1c1917"
-    ctx.fill()
-  }
+    const checkSpin = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('loyalty_transactions')
+          .select('created_at')
+          .eq('client_id', clientId)
+          .eq('transaction_type', 'ruleta')
+          .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
-  const girarRuleta = () => {
-    if (girando) return
-
-    setGirando(true)
-    let vueltas = 5 + Math.random() * 8
-    let tiempoInicio: number | null = null
-    const duracion = 3000
-
-    const animar = (timestamp: number) => {
-      if (!tiempoInicio) tiempoInicio = timestamp
-      let progreso = Math.min(1, (timestamp - tiempoInicio) / duracion)
-      let easing = 1 - Math.pow(1 - progreso, 3)
-      let anguloFinalRad = (Math.PI * 2 * vueltas) * easing
-
-      dibujarRuleta(anguloFinalRad)
-
-      if (progreso < 1) {
-        requestAnimationFrame(animar)
-      } else {
-        let anguloTotal = anguloFinalRad % (Math.PI * 2)
-        let indice = Math.floor(anguloTotal / anguloPorSegmento)
-        indice = (SEGMENTOS.length - indice) % SEGMENTOS.length
-        const premio = SEGMENTOS[indice]
-
-        if (premio.tipo === "puntos") {
-          setMensaje(`¡Ganaste ${premio.valor} puntos!`)
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fda4af', '#e11d48'] })
-          if (onPuntosGanados) onPuntosGanados(premio.valor)
-        } else if (premio.tipo === "descuento") {
-          setMensaje(`¡Descuento del ${premio.valor}% obtenido!`)
-          confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 } })
-        } else {
-          setMensaje("¡Sigue participando!")
+        if (error) {
+          setDebugInfo(`❌ Error al verificar giros: ${error.message}`)
+          return
         }
 
-        localStorage.setItem("freshNails_ultimoGiro", new Date().toDateString())
-        setGirando(false)
+        setSpinCount(data?.length || 0)
+        setDebugInfo(`✅ Listo para jugar - Giros hoy: ${data?.length || 0}`)
+      } catch (err: any) {
+        setDebugInfo(`❌ Error: ${err.message}`)
       }
     }
-    requestAnimationFrame(animar)
+
+    checkSpin()
+  }, [clientId, tenantId])
+
+  const handleSpin = async () => {
+    // Mostrar debug
+    setDebugInfo(`🔍 Intentando girar - clientId: ${clientId || 'NULL'} | tenantId: ${tenantId || 'NULL'} | userId: ${userId || 'NULL'}`)
+
+    // VALIDACIONES
+    if (!clientId) {
+      setError('❌ ERROR: No se encontró el ID del cliente. Cierra sesión y vuelve a entrar.')
+      setDebugInfo('❌ clientId es NULL')
+      return
+    }
+
+    if (!tenantId) {
+      setError('❌ ERROR: No se encontró el ID del salón.')
+      setDebugInfo('❌ tenantId es NULL')
+      return
+    }
+
+    if (isSpinning) return
+
+    if (spinCount >= 1) {
+      setError('⏰ Ya giraste la ruleta hoy. Vuelve mañana!')
+      return
+    }
+
+    setIsSpinning(true)
+    setError('')
+    setResult(null)
+    setMessage('🎰 Girando...')
+    setDebugInfo('🔄 Girando la ruleta...')
+
+    try {
+      const puntosGanados = Math.floor(Math.random() * 451) + 50
+      setResult(puntosGanados)
+      setDebugInfo(`🎯 Resultado: ${puntosGanados} puntos`)
+
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // Guardar en la base de datos
+      const { data: wallet, error: walletError } = await supabase
+        .from('loyalty_wallets')
+        .select('id, glow_points, hair_points')
+        .eq('client_id', clientId)
+        .eq('tenant_id', tenantId)
+        .single()
+
+      if (walletError) {
+        setError('❌ Error al obtener wallet: ' + walletError.message)
+        setDebugInfo(`❌ Error wallet: ${walletError.message}`)
+        setIsSpinning(false)
+        return
+      }
+
+      setDebugInfo(`✅ Wallet encontrada: ${wallet.id}`)
+
+      const nuevosGlowPoints = (wallet.glow_points || 0) + puntosGanados
+
+      const { error: updateError } = await supabase
+        .from('loyalty_wallets')
+        .update({
+          glow_points: nuevosGlowPoints,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', wallet.id)
+
+      if (updateError) {
+        setError('❌ Error al guardar los puntos: ' + updateError.message)
+        setDebugInfo(`❌ Error update: ${updateError.message}`)
+        setIsSpinning(false)
+        return
+      }
+
+      setDebugInfo(`✅ Puntos guardados: ${puntosGanados}`)
+
+      // Registrar transacción
+      await supabase
+        .from('loyalty_transactions')
+        .insert({
+          client_id: clientId,
+          tenant_id: tenantId,
+          transaction_type: 'ruleta',
+          points: puntosGanados,
+          description: `🎰 Ruleta - Ganaste ${puntosGanados} puntos`,
+          created_at: new Date().toISOString()
+        })
+
+      setSpinCount(1)
+      setMessage(`🎉 ¡Ganaste ${puntosGanados} puntos!`)
+      setDebugInfo(`✅ Completado - +${puntosGanados} puntos`)
+
+      if (onPuntosGanados) {
+        onPuntosGanados(puntosGanados)
+      }
+
+    } catch (err: any) {
+      setError('❌ Error inesperado: ' + err.message)
+      setDebugInfo(`❌ Catch error: ${err.message}`)
+    } finally {
+      setIsSpinning(false)
+    }
   }
 
-  // Comprobación inicial de una vez por día
-  useEffect(() => {
-    const yaGiroHoy = localStorage.getItem("freshNails_ultimoGiro") === new Date().toDateString()
-    if (!yaGiroHoy) {
-      setMostrarModal(true)
-    }
-  }, [])
-
-  // Dibuja el canvas de inmediato en cuanto el modal se renderiza en pantalla
-  useEffect(() => {
-    if (mostrarModal) {
-      // Un pequeño retraso para asegurar que el canvas ya se montó en el DOM
-      const timer = setTimeout(() => dibujarRuleta(0), 50)
-      return () => clearTimeout(timer)
-    }
-  }, [mostrarModal, theme])
-
-  if (!mostrarModal) return null
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div 
-        onClick={(e) => e.stopPropagation()}
-        className={`rounded-3xl p-8 max-w-sm w-full text-center border shadow-2xl relative transition-all duration-300 ${
-          isDark ? 'bg-[#141211] border-stone-850' : 'bg-white border-stone-200'
-        }`}
-      >
-        <button 
-          onClick={() => setMostrarModal(false)}
-          className={`absolute top-4 right-4 transition-colors ${
-            isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-900'
-          }`}
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className={`relative overflow-hidden rounded-3xl border transition-all duration-300 ${
+      isDark
+        ? 'bg-[#141211] border-stone-800/50 shadow-xl shadow-black/30'
+        : 'bg-white border-stone-200/80 shadow-xl shadow-stone-200/30'
+    }`}>
+      <div className="relative z-10 p-6 md:p-8">
 
-        <div className="mb-6">
-          <h2 className={`font-serif text-2xl ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>Tu Giro Diario</h2>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-rose-500 dark:text-rose-400 mt-1 font-bold">Cortesía del Club</p>
+        {/* PANEL DE DEBUG VISUAL */}
+        <div className="mb-4 p-3 bg-gray-900 text-green-400 font-mono text-[10px] rounded-lg overflow-auto max-h-32 border border-gray-700">
+          <div className="text-yellow-400 font-bold mb-1">🐛 DEBUG RULETA</div>
+          <div>👤 Usuario: {userEmail || 'NO LOGUEADO'}</div>
+          <div>🆔 Client ID: {clientId || '❌ NULL'}</div>
+          <div>🏢 Tenant ID: {tenantId || '❌ NULL'}</div>
+          <div>📊 Estado: {debugInfo || 'Esperando...'}</div>
+          <div>🎯 Giros hoy: {spinCount}/1</div>
         </div>
 
-        <canvas 
-          ref={canvasRef} 
-          width="500" 
-          height="500" 
-          className="w-56 h-56 mx-auto mb-6 drop-shadow-md" 
-        />
-
-        <div className="mb-6 h-12 flex items-center justify-center">
-          <p className={`font-medium italic text-sm ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>{mensaje}</p>
+        {/* Título */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className={`p-3 rounded-2xl ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+            <span className="text-2xl">🎰</span>
+          </div>
+          <div>
+            <h2 className={`text-xl font-light ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
+              Ruleta de la <span className="font-serif italic text-amber-500">Suerte</span>
+            </h2>
+            <p className={`text-[11px] ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+              {spinCount >= 1 ? '✅ Ya giraste hoy. Vuelve mañana!' : '🎯 Gira y gana hasta 500 puntos!'}
+            </p>
+          </div>
         </div>
 
-        <button 
-          onClick={girarRuleta}
-          disabled={girando}
-          className={`w-full py-4 rounded-2xl font-mono text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 disabled:opacity-40 ${
-            isDark 
-              ? 'bg-stone-100 text-stone-950 hover:bg-stone-200' 
-              : 'bg-stone-900 text-white hover:bg-stone-800'
+        {/* Errores */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Resultado */}
+        {result && (
+          <div className={`mb-4 p-4 rounded-2xl text-center ${
+            isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'
+          }`}>
+            <p className="text-2xl font-bold text-amber-500">+{result} pts</p>
+          </div>
+        )}
+
+        {/* Botón */}
+        <button
+          onClick={handleSpin}
+          disabled={isSpinning || spinCount >= 1 || !clientId}
+          className={`w-full py-4 rounded-2xl font-medium transition-all duration-300 ${
+            isSpinning || spinCount >= 1 || !clientId
+              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:shadow-2xl hover:shadow-amber-500/30 active:scale-[0.98]'
           }`}
         >
-          {girando ? <RotateCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          {girando ? 'Girando...' : 'Girar Ahora'}
+          {!clientId ? '⚠️ Inicia sesión para jugar' :
+           isSpinning ? '🎰 Girando...' :
+           spinCount >= 1 ? '✅ Ya jugaste hoy' :
+           '🎰 Girar la ruleta'}
         </button>
+
+        {/* Info extra */}
+        <div className="mt-4 text-center">
+          <p className={`text-[10px] ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+            {spinCount >= 1 
+              ? '🔄 Vuelve mañana para más puntos'
+              : clientId ? '✅ Listo para jugar!' : '🔑 Inicia sesión para jugar'}
+          </p>
+        </div>
       </div>
     </div>
   )

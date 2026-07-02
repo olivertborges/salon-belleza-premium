@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Bell, ShoppingCart, 
   Scissors, Heart, Crown, Calendar, 
-  Menu, X, Store, LogOut, Home, CalendarPlus
+  Menu, X, LogOut, Home, CalendarPlus
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -63,11 +63,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('🔔 Nueva notificación en tiempo real:', payload.new)
           setNotificaciones(prev => prev + 1)
           setNotificacionesList(prev => [...prev, payload.new])
 
-          // 🔊 Sonido de notificación (opcional)
           try {
             const audio = new Audio('/notification.mp3')
             audio.volume = 0.3
@@ -84,7 +82,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          // Actualizar contador cuando se marcan como leídas
           if (payload.new.read === true) {
             setNotificaciones(prev => Math.max(0, prev - 1))
             setNotificacionesList(prev => 
@@ -100,52 +97,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
-  // ✅ MARCAR TODAS COMO LEÍDAS AL HACER CLICK EN EL BOTÓN
-  const marcarTodasLeidas = async () => {
-    if (!user || notificaciones === 0) return
-
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user.id)
-        .eq('read', false)
-
-      if (error) throw error
-
-      setNotificaciones(0)
-      setNotificacionesList(prev => prev.map(n => ({ ...n, read: true })))
-    } catch (error) {
-      console.error('Error marcando notificaciones como leídas:', error)
-    }
-  }
-
-  // ✅ ELIMINAR UNA NOTIFICACIÓN
-  const eliminarNotificacion = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user?.id)
-
-      if (error) throw error
-
-      setNotificacionesList(prev => prev.filter(n => n.id !== id))
-      setNotificaciones(prev => {
-        const notif = notificacionesList.find(n => n.id === id)
-        return notif?.read === false ? Math.max(0, prev - 1) : prev
-      })
-    } catch (error) {
-      console.error('Error eliminando notificación:', error)
-    }
-  }
-
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
     { icon: Calendar, label: 'Mis Citas', href: '/reservas' },
-    /*{ icon: Store, label: 'Boutique Fresh', href: '/productos' }*/,
     { icon: Scissors, label: 'Peluquería & Estilo', href: '/peluqueria' },
     { icon: Heart, label: 'Cuidado & Estética', href: '/estetica' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
@@ -154,15 +109,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const inicialNombre = user?.name ? user.name.charAt(0).toUpperCase() : 'C'
   const primerNombre = user?.name ? user.name.split(' ')[0] : 'Clienta'
 
+  // ⚠️ CIERRE DE SESIÓN AGRESIVO ANTI-BUCLE
   const handleLogoutClick = async () => {
     try {
+      // 1. Intentamos cerrar sesión desde nuestro AuthContext
       if (signOut) {
         await signOut()
       }
-      router.push('/login')
+      
+      // 2. Forzamos al cliente de Supabase local a destruir los tokens en memoria
+      await supabase.auth.signOut()
+
+      // 3. Limpieza total de almacenamientos locales
+      localStorage.clear()
+      sessionStorage.clear()
+
+      // 4. Borrado manual de cookies de Supabase en el navegador por si el Middleware las sigue leyendo
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // 5. Pequeño retraso de 100ms para asegurar que el navegador procese los borrados antes de redirigir
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
+
     } catch (error) {
-      console.error('Error al cerrar sesión:', error)
-      router.push('/login')
+      console.error('Error crítico en el logout:', error)
+      window.location.href = '/login'
     }
   }
 
@@ -171,7 +147,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isDark ? 'bg-[#090807]' : 'bg-[#faf8f6]'
     }`}>
 
-      {/* FONDO OSCURO INTERACTIVO MÓVIL */}
       {sidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)} 
@@ -275,18 +250,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
-
         {/* HEADER */}
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
-          isDark
-            ? 'bg-[#090807]/80 border-stone-900'
-            : 'bg-white/80 border-stone-200'
+          isDark ? 'bg-[#090807]/80 border-stone-900' : 'bg-white/80 border-stone-200'
         }`}>
           <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2.5 rounded-xl border transition-colors ${
-              isDark
-                ? 'bg-stone-900 border-stone-800 text-stone-400'
-                : 'bg-stone-100 border-stone-200 text-stone-500'
+              isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-stone-100 border-stone-200 text-stone-500'
             }`}>
               <Menu className="w-5 h-5" />
             </button>
@@ -309,7 +279,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3.5">
             <ThemeToggle />
 
-            {/* ✅ BOTÓN DE NOTIFICACIONES CON CONTADOR REAL */}
             <Link 
               href="/notificaciones"
               className={`relative p-2.5 rounded-xl border transition-all hover:shadow-lg ${

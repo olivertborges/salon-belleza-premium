@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { format } from 'date-fns'
@@ -18,11 +18,11 @@ import {
   ArrowUpRight
 } from 'lucide-react'
 
-export default function MisReservasPremium() {
+export default function MisReservasPage() {
   const { user } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  
+
   const [loading, setLoading] = useState(true)
   const [citas, setCitas] = useState<any[]>([])
   const [nombreCliente, setNombreCliente] = useState('')
@@ -41,10 +41,11 @@ export default function MisReservasPremium() {
 
       let clienteId = null
 
+      // 1. BUSCAR CLIENTE POR auth_user_id (CORREGIDO)
       const { data: cliente, error: clienteError } = await supabase
         .from('clients')
         .select('id, name, phone, email')
-        .eq('email', user.email)
+        .eq('auth_user_id', user.id)
         .maybeSingle()
 
       if (clienteError) console.error('❌ Error buscando cliente:', clienteError)
@@ -54,6 +55,21 @@ export default function MisReservasPremium() {
         setNombreCliente(cliente.name || '')
       }
 
+      // 2. SI NO SE ENCUENTRA POR auth_user_id, buscar por email (fallback)
+      if (!clienteId && user.email) {
+        const { data: clientePorEmail } = await supabase
+          .from('clients')
+          .select('id, name')
+          .eq('email', user.email)
+          .maybeSingle()
+
+        if (clientePorEmail) {
+          clienteId = clientePorEmail.id
+          setNombreCliente(clientePorEmail.name || '')
+        }
+      }
+
+      // 3. SI NO, buscar por teléfono en localStorage
       if (!clienteId) {
         const telGuardado = localStorage.getItem('cliente_telefono')
         if (telGuardado) {
@@ -174,7 +190,7 @@ export default function MisReservasPremium() {
     <div className={`w-full max-w-4xl mx-auto p-4 md:p-6 antialiased selection:bg-amber-500/20 relative min-h-[60vh] transition-colors duration-300 ${
       isDark ? 'text-stone-200' : 'text-stone-800'
     }`}>
-      
+
       <div className={`absolute top-[-10%] left-1/4 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none ${
         isDark ? 'bg-amber-500/[0.04]' : 'bg-amber-500/[0.03]'
       }`} />
@@ -208,10 +224,8 @@ export default function MisReservasPremium() {
       `}</style>
 
       <div className="relative z-10 space-y-8">
-        
-        {/* ============================================================ */}
-        {/* HEADER CORREGIDO CON CARD-GLOW Y TEXTO SHIMMER */}
-        {/* ============================================================ */}
+
+        {/* HEADER */}
         <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl animate-fade-up ${
           isDark 
             ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
@@ -219,7 +233,7 @@ export default function MisReservasPremium() {
         }`}>
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-          
+
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
@@ -236,7 +250,7 @@ export default function MisReservasPremium() {
                 {user?.email ? `Usuario: ${user.email}` : 'Inicia sesión para sincronizar la app'}
               </p>
             </div>
-            
+
             {error && !citas.length && (
               <div className={`inline-flex items-center gap-2 border px-3 py-2 rounded-xl text-[11px] font-mono backdrop-blur-md shadow-sm ${
                 isDark 
@@ -286,7 +300,7 @@ export default function MisReservasPremium() {
                       ? 'bg-stone-800/60 group-hover:bg-amber-500' 
                       : 'bg-stone-100 group-hover:bg-amber-500'
                   }`} />
-                  
+
                   <div className="flex justify-between items-start gap-4 pl-1">
                     <div className="space-y-2">
                       <h3 className={`text-sm font-black tracking-tight transition-colors flex items-center gap-1.5 ${
@@ -299,7 +313,7 @@ export default function MisReservasPremium() {
                           isDark ? 'text-amber-400' : 'text-amber-500'
                         }`} />
                       </h3>
-                      
+
                       <div className={`inline-flex items-center gap-2 border px-2.5 py-1 rounded-xl text-[11px] ${
                         isDark 
                           ? 'bg-stone-950/50 border-stone-800/60' 
