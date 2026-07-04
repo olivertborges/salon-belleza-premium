@@ -2,6 +2,36 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const isDev = process.env.NODE_ENV === 'development'
+
+  // ============================================
+  // 🔓 RUTAS PÚBLICAS (NO requieren autenticación)
+  // ============================================
+  const publicRoutes = ['/login', '/register']
+  const isPublicRoute = publicRoutes.some(r => pathname === r)
+
+  // ============================================
+  // 🔓 RUTAS DE API Y ESTÁTICOS
+  // ============================================
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+
+  if (pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)$/)) {
+    return NextResponse.next()
+  }
+
+  // RUTAS PROTEGIDAS
+  const adminRoutes = ['/dashboard', '/admin']
+  const isAdminRoute = adminRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
+
+  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas']
+  const isClientRoute = clientRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
+
+  // ============================================
+  // CREAR CLIENTE SUPABASE
+  // ============================================
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
@@ -26,40 +56,59 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // OBTENER USUARIO desde la cookie
   const { data: { user } } = await supabase.auth.getUser()
-  console.log("🔍 [DEBUG MIDDLEWARE] ¿Usuario encontrado en server?:", !!user);
 
-  const { pathname } = request.nextUrl
-  const isAdminPath = pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
-  const clientRoutes = ['/portal', '/academy', '/agenda', '/reservas', '/review', '/referidos', '/citas']
-  const isGoingToClientPath = clientRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))
-  const isAuthPage = pathname === '/login' || pathname === '/register'
+  // 🛠️ PARCHE CRÍTICO PARA TERMUX / MÓVIL EN DESARROLLO 🛠️
+  // Si estamos en entorno local y no viene la cookie, dejamos pasar la petición para evitar el bucle infinito.
+  // El cliente (AuthContext) se encargará de validar el LocalStorage y proteger la vista.
+  if (!user && isDev && (isAdminRoute || isClientRoute)) {
+    console.log(`⚠️ [Middleware Bypass] Sin cookie detectada en móvil local. Permitiendo paso a: ${pathname}`)
+    return response
+  }
 
-  // SI NO HAY USUARIO
+  // ============================================
+  // FLUJO NORMAL (PRODUCCIÓN O CON COOKIES)
+  // ============================================
   if (!user) {
-    if (isAdminPath || isGoingToClientPath) {
+    if (isPublicRoute) return response
+    if (isAdminRoute || isClientRoute) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  // SI HAY USUARIO: Obtener rol solo si es necesario
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  const userRole = profile?.role || 'client'
-  const isActualAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+  // Si hay usuario, intentamos leer el perfil
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-  // EVITAR BUCLES: Si está en login y ya tiene sesión, mandarlo a su sitio
-  if (isAuthPage) {
-    return NextResponse.redirect(new URL(isActualAdmin ? '/dashboard' : '/portal', request.url))
+    const userRole = profile?.role || 'client'
+    const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+
+    if (isPublicRoute) {
+      return NextResponse.redirect(new URL(isAdmin ? '/dashboard' : '/portal', request.url))
+    }
+
+    if (!isAdmin && isAdminRoute) {
+      return NextResponse.redirect(new URL('/portal', request.url))
+    }
+
+    if (isAdmin && isClientRoute && pathname !== '/portal') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  } catch (err) {
+    console.error("[Middleware] Error cargando rol, continuando por defecto:", err)
   }
-
-  // REGLAS DE ACCESO
-  if (!isActualAdmin && isAdminPath) return NextResponse.redirect(new URL('/portal', request.url))
-  if (isActualAdmin && isGoingToClientPath && pathname !== '/portal') return NextResponse.redirect(new URL('/dashboard', request.url))
 
   return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AuthMobilDefinitivo() {
   const router = useRouter()
-  const { signIn, signUp, role, user, loading: authLoading } = useAuth()
+  const { signIn, role, user, loading: authLoading } = useAuth()
+  const supabase = createClientComponentClient()
 
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'recover'>('login')
@@ -22,14 +24,12 @@ export default function AuthMobilDefinitivo() {
 
   useEffect(() => {
     setMounted(true)
-    
     const searchParams = new URLSearchParams(window.location.search);
     const ref = searchParams.get('ref');
-    if (ref) {
-      setReferralCode(ref);
-    }
+    if (ref) setReferralCode(ref);
   }, [])
 
+  // Mantenemos también el useEffect por si entra una sesión externa
   useEffect(() => {
     if (mounted && user && !authLoading && role !== null) {
       if (role === 'admin' || role === 'staff' || role === 'owner') {
@@ -40,61 +40,80 @@ export default function AuthMobilDefinitivo() {
     }
   }, [user, role, authLoading, mounted])
 
-  // LOGIN - usa signIn del contexto
+  // LOGIN CON REDIRECCIÓN MANUAL INSTANTÁNEA
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
-
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      await signIn(email, password)
-      setSuccess('¡Ingreso correcto!')
+      // 1. Loguear con Supabase directamente para forzar sesión local
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) throw signInError
 
+      setSuccess('¡Ingreso correcto!')
+      router.refresh()
+
+      // 2. Traer el perfil manualmente para saber a dónde mandarlo sin demoras
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+
+      const userRole = profile?.role || 'client'
+      
       setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 800)
+        if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
+          window.location.href = '/dashboard'
+        } else {
+          window.location.href = '/portal'
+        }
+      }, 400)
+
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
     }
   }
 
-  // REGISTRO - usa signUp del contexto (NO API)
+  // REGISTRO CON LLAMADA API Y LOGUEO INMEDIATO AL PORTAL
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
-
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      const { data, error } = await signUp(
-        email,
-        password,
-        fullName,
-        phone,
-        referralCode || undefined
-      )
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          nombre: fullName.trim(),
+          telefono: phone.trim()
+        })
+      })
 
-      if (error) {
-        setError(error.message || 'Error al registrarse')
-        setLoading(false)
-        return
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
-      if (data?.user) {
-        setSuccess('✅ ¡Registro exitoso! Redirigiendo...')
-        setTimeout(() => {
-          window.location.href = '/portal'
-        }, 2000)
-      } else {
-        setError('No se pudo crear la cuenta')
-        setLoading(false)
-      }
+      setSuccess('✅ ¡Registro exitoso! Redirigiendo...')
+      router.refresh()
+
+      // Forzar inicio de sesión en el cliente para que gane las cookies
+      await supabase.auth.signInWithPassword({ email, password })
+      
+      setTimeout(() => {
+        window.location.href = '/portal'
+      }, 600)
+
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
       setLoading(false)
@@ -104,17 +123,10 @@ export default function AuthMobilDefinitivo() {
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
-
     setLoading(true)
     setError('')
     setSuccess('')
-
-    try {
-      setSuccess('📧 Enlace de recuperación enviado a tu correo.')
-    } catch (err: any) {
-      setError(err.message || 'Ocurrió un error inesperado.')
-    }
-    
+    setSuccess('📧 Enlace de recuperación enviado a tu correo.')
     setLoading(false)
   }
 
@@ -310,7 +322,7 @@ export default function AuthMobilDefinitivo() {
                   placeholder="tuemail@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                  className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none"
                   required
                 />
               </div>

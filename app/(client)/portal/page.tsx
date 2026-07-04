@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase/client'
 import {
   Calendar, Camera, Sparkles, User, Award, Clock, Instagram,
   Gift, Star, Heart, Crown, Gem, Zap, Shield, Check, ArrowRight,
-  TrendingUp, Users, Image as ImageIcon, CalendarDays, Bell
+  TrendingUp, Users, Image as ImageIcon, CalendarDays, Bell, RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
 import InsigniasLogros from '@/components/InsigniasLogros'
@@ -56,7 +56,7 @@ interface GaleriaImagen {
 }
 
 export default function ClientDashboardIndex() {
-  const { user, tenantId, clientId: authClientId, points: authPoints } = useAuth()
+  const { user, tenantId, clientId: authClientId, points: authPoints, refreshUserData } = useAuth()
   const { theme } = useTheme()
   const [citas, setCitas] = useState<Cita[]>([])
   const [cliente, setCliente] = useState<Cliente | null>(null)
@@ -64,6 +64,7 @@ export default function ClientDashboardIndex() {
   const [referidos, setReferidos] = useState<any[]>([])
   const [galeria, setGaleria] = useState<GaleriaImagen[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [nombreCliente, setNombreCliente] = useState('')
   const [genero, setGenero] = useState<'male' | 'female' | 'other'>('female')
   const [citasProximas, setCitasProximas] = useState<Cita[]>([])
@@ -112,9 +113,17 @@ export default function ClientDashboardIndex() {
 
       const total = (data?.glow_points || 0) + (data?.hair_points || 0)
       setPuntos(total)
+      console.log('🔄 Puntos actualizados:', total)
     } catch (error) {
       console.error('Error refrescando puntos:', error)
     }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await refreshUserData()
+    await refreshPuntos()
+    setTimeout(() => setRefreshing(false), 500)
   }
 
   const handlePuntosGanados = (puntosGanados: number) => {
@@ -335,6 +344,18 @@ export default function ClientDashboardIndex() {
                     </div>
                   </div>
                 ))}
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className={`flex items-center gap-1 text-[10px] font-medium px-3 py-1.5 rounded-full transition-all ${
+                    isDark 
+                      ? 'bg-stone-800/50 text-stone-400 hover:text-white hover:bg-stone-700/50' 
+                      : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/20'
+                  } ${refreshing ? 'opacity-50' : ''}`}
+                >
+                  <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Actualizando...' : 'Recargar puntos'}
+                </button>
               </div>
             </div>
 
@@ -513,9 +534,7 @@ export default function ClientDashboardIndex() {
         />
       </div>
 
-      {/* ============================================ */}
-      {/* RUEDA DE LA SUERTE - CON PROPS EXPLÍCITAS */}
-      {/* ============================================ */}
+      {/* RUEDA DE LA SUERTE */}
       <RuedaSuerte 
         onPuntosGanados={handlePuntosGanados}
         userId={user?.id}

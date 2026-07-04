@@ -20,7 +20,6 @@ export default function RuedaSuerte({
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  // USAR PROPS DIRECTAMENTE
   const clientId = propClientId
   const tenantId = propTenantId
   const userEmail = userId
@@ -37,7 +36,7 @@ export default function RuedaSuerte({
     setDebugInfo(`📥 Props: userId=${userId || 'NULL'} clientId=${propClientId || 'NULL'} tenantId=${propTenantId || 'NULL'}`)
   }, [userId, propClientId, propTenantId])
 
-  // Verificar giros del día
+  // Verificar giros del día consultando la API local de Next.js u origen seguro
   useEffect(() => {
     if (!clientId || !tenantId) {
       setDebugInfo(`⏳ Esperando datos... clientId: ${clientId ? '✅' : '❌'} tenantId: ${tenantId ? '✅' : '❌'}`)
@@ -69,19 +68,15 @@ export default function RuedaSuerte({
   }, [clientId, tenantId])
 
   const handleSpin = async () => {
-    // Mostrar debug
-    setDebugInfo(`🔍 Intentando girar - clientId: ${clientId || 'NULL'} | tenantId: ${tenantId || 'NULL'} | userId: ${userId || 'NULL'}`)
+    setDebugInfo(`🔍 Intentando girar - clientId: ${clientId || 'NULL'} | tenantId: ${tenantId || 'NULL'}`)
 
-    // VALIDACIONES
     if (!clientId) {
       setError('❌ ERROR: No se encontró el ID del cliente. Cierra sesión y vuelve a entrar.')
-      setDebugInfo('❌ clientId es NULL')
       return
     }
 
     if (!tenantId) {
       setError('❌ ERROR: No se encontró el ID del salón.')
-      setDebugInfo('❌ tenantId es NULL')
       return
     }
 
@@ -99,71 +94,46 @@ export default function RuedaSuerte({
     setDebugInfo('🔄 Girando la ruleta...')
 
     try {
+      // 1. Calcular puntos ganados aleatoriamente
       const puntosGanados = Math.floor(Math.random() * 451) + 50
       setResult(puntosGanados)
-      setDebugInfo(`🎯 Resultado: ${puntosGanados} puntos`)
+      setDebugInfo(`🎯 Resultado calculado: ${puntosGanados} puntos. Conectando con servidor...`)
 
+      // Pequeña pausa para simular el efecto visual de giro
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Guardar en la base de datos
-      const { data: wallet, error: walletError } = await supabase
-        .from('loyalty_wallets')
-        .select('id, glow_points, hair_points')
-        .eq('client_id', clientId)
-        .eq('tenant_id', tenantId)
-        .single()
+      // 2. Llamar a la API segura del servidor para guardar los puntos de la ruleta
+      const res = await fetch('/api/loyalty/spin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId,
+          tenantId,
+          points: puntosGanados
+        })
+      })
 
-      if (walletError) {
-        setError('❌ Error al obtener wallet: ' + walletError.message)
-        setDebugInfo(`❌ Error wallet: ${walletError.message}`)
-        setIsSpinning(false)
-        return
+      const apiResult = await res.json()
+
+      if (!res.ok) {
+        throw new Error(apiResult.error || 'Error desconocido al guardar puntos.')
       }
 
-      setDebugInfo(`✅ Wallet encontrada: ${wallet.id}`)
-
-      const nuevosGlowPoints = (wallet.glow_points || 0) + puntosGanados
-
-      const { error: updateError } = await supabase
-        .from('loyalty_wallets')
-        .update({
-          glow_points: nuevosGlowPoints,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', wallet.id)
-
-      if (updateError) {
-        setError('❌ Error al guardar los puntos: ' + updateError.message)
-        setDebugInfo(`❌ Error update: ${updateError.message}`)
-        setIsSpinning(false)
-        return
-      }
-
-      setDebugInfo(`✅ Puntos guardados: ${puntosGanados}`)
-
-      // Registrar transacción
-      await supabase
-        .from('loyalty_transactions')
-        .insert({
-          client_id: clientId,
-          tenant_id: tenantId,
-          transaction_type: 'ruleta',
-          points: puntosGanados,
-          description: `🎰 Ruleta - Ganaste ${puntosGanados} puntos`,
-          created_at: new Date().toISOString()
-        })
-
+      // 3. Éxito
       setSpinCount(1)
       setMessage(`🎉 ¡Ganaste ${puntosGanados} puntos!`)
-      setDebugInfo(`✅ Completado - +${puntosGanados} puntos`)
+      setDebugInfo(`✅ Completado - Servidor procesó +${puntosGanados} puntos`)
 
       if (onPuntosGanados) {
         onPuntosGanados(puntosGanados)
       }
 
     } catch (err: any) {
-      setError('❌ Error inesperado: ' + err.message)
+      setError('❌ Error al procesar tiro: ' + err.message)
       setDebugInfo(`❌ Catch error: ${err.message}`)
+      setResult(null)
     } finally {
       setIsSpinning(false)
     }
@@ -179,7 +149,7 @@ export default function RuedaSuerte({
 
         {/* PANEL DE DEBUG VISUAL */}
         <div className="mb-4 p-3 bg-gray-900 text-green-400 font-mono text-[10px] rounded-lg overflow-auto max-h-32 border border-gray-700">
-          <div className="text-yellow-400 font-bold mb-1">🐛 DEBUG RULETA</div>
+          <div className="text-yellow-400 font-bold mb-1">🐛 DEBUG RULETA (API MIGRADA)</div>
           <div>👤 Usuario: {userEmail || 'NO LOGUEADO'}</div>
           <div>🆔 Client ID: {clientId || '❌ NULL'}</div>
           <div>🏢 Tenant ID: {tenantId || '❌ NULL'}</div>
@@ -209,8 +179,15 @@ export default function RuedaSuerte({
           </div>
         )}
 
+        {/* Mensaje de Estado */}
+        {message && !error && (
+          <div className={`mb-4 p-3 text-center text-sm rounded-xl ${isDark ? 'text-amber-400' : 'text-stone-700'}`}>
+            {message}
+          </div>
+        )}
+
         {/* Resultado */}
-        {result && (
+        {result && !error && !isSpinning && (
           <div className={`mb-4 p-4 rounded-2xl text-center ${
             isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'
           }`}>

@@ -7,7 +7,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Faltan variables de entorno de Supabase')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Configuración con persistencia forzada en localStorage para entornos móviles
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'freshnails-auth-token',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    detectSessionInUrl: true,
+    autoRefreshToken: true
+  }
+})
 
 export type Database = {
   public: {
@@ -171,7 +180,7 @@ export type Database = {
           service_id: string
           date: string
           time: string
-          status: string // 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'
+          status: string
           price: number
           notes: string | null
           created_at: string

@@ -3,16 +3,14 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  console.log('📝 [API] Iniciando registro...')
-  
+  console.log('\n==================================================')
+  console.log('🚀 [REGISTRO] Procesando bono de bienvenida (100 pts)')
+  console.log('==================================================')
+
   const cookieStore = cookies()
   const { email, password, fullName, phone } = await request.json()
-  
-  console.log('📧 Email:', email)
-  console.log('👤 Nombre:', fullName)
-
   const response = NextResponse.json({ success: true })
-
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,121 +29,89 @@ export async function POST(request: Request) {
     }
   )
 
-  // 1. Crear usuario
-  console.log('📤 [API] Llamando a signUp...')
-  
-  const { data, error: signUpError } = await supabase.auth.signUp({
+  // 1. Crear el usuario en Supabase Auth
+  console.log('📤 1. Creando usuario en Auth...')
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password: password.trim(),
     options: {
-      data: {
-        full_name: fullName.trim(),
-        phone: phone?.trim() || '',
-      }
+      data: { full_name: fullName.trim(), phone: phone?.trim() || '' }
     }
   })
 
-  console.log('📦 [API] Respuesta de signUp:')
-  console.log('  - data:', data)
-  console.log('  - error:', signUpError)
-
-  if (signUpError) {
-    console.log('❌ [API] Error en signUp:', signUpError.message)
-    return NextResponse.json({ error: signUpError.message }, { status: 400 })
+  if (authError) {
+    console.log('❌ Error en Auth:', authError.message)
+    return NextResponse.json({ error: `Auth: ${authError.message}` }, { status: 400 })
   }
 
-  if (!data?.user) {
-    console.log('❌ [API] No se recibió usuario en la respuesta')
-    return NextResponse.json({ error: 'No se pudo crear el usuario' }, { status: 400 })
-  }
+  const userId = authData.user?.id
+  if (!userId) return NextResponse.json({ error: 'ID de usuario no generado.' }, { status: 400 })
 
-  console.log('✅ [API] Usuario creado:', data.user.id)
-
-  // 2. Obtener tenant
-  console.log('📤 [API] Buscando tenant...')
-  
-  const { data: tenant, error: tenantError } = await supabase
+  // 2. Buscar el Tenant ID
+  const { data: tenant } = await supabase
     .from('tenants')
     .select('id')
     .eq('name', 'Salon Fresh Nails')
     .single()
-
-  if (tenantError) {
-    console.log('⚠️ [API] Error al obtener tenant:', tenantError.message)
-  }
-
-  const tenantId = tenant?.id
-  console.log('  - tenantId:', tenantId)
-
-  // 3. Crear perfil
-  console.log('📤 [API] Creando perfil...')
   
+  const tenantId = tenant?.id || null
+
+  // 3. Crear Perfil Público
+  console.log('📤 2. Creando perfil...')
   const { error: profileError } = await supabase
     .from('profiles')
     .insert({
-      id: data.user.id,
+      id: userId,
       tenant_id: tenantId,
       email: email.trim().toLowerCase(),
       full_name: fullName.trim(),
       role: 'client',
-      is_active: true,
+      is_active: true
     })
 
   if (profileError) {
-    console.log('❌ [API] Error al crear perfil:', profileError.message)
-  } else {
-    console.log('✅ [API] Perfil creado')
+    console.log('❌ Error en profiles:', profileError.message)
+    return NextResponse.json({ error: profileError.message }, { status: 400 })
   }
 
-  // 4. Crear cliente
-  console.log('📤 [API] Creando cliente...')
-  
-  const { data: client, error: clientError } = await supabase
+  // 4. Crear Cliente con los 100 puntos iniciales por registro
+  console.log('📤 3. Guardando cliente con 100 puntos de bienvenida...')
+  const { data: clientData, error: clientError } = await supabase
     .from('clients')
     .insert({
-      auth_user_id: data.user.id,
+      auth_user_id: userId,
       tenant_id: tenantId,
-      profile_id: data.user.id,
+      profile_id: userId,
       name: fullName.trim(),
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || '',
-      points: 100,
-      is_active: true,
+      points: 100, // Bono por registrarse por primera vez
+      is_active: true
     })
     .select('id')
     .single()
 
   if (clientError) {
-    console.log('❌ [API] Error al crear cliente:', clientError.message)
-  } else {
-    console.log('✅ [API] Cliente creado:', client?.id)
+    console.log('❌ Error en clients:', clientError.message)
+    return NextResponse.json({ error: clientError.message }, { status: 400 })
   }
 
-  // 5. Crear wallet
-  if (client) {
-    console.log('📤 [API] Creando wallet...')
-    
-    const { error: walletError } = await supabase
-      .from('loyalty_wallets')
-      .insert({
-        client_id: client.id,
-        tenant_id: tenantId,
-        glow_points: 0,
-        hair_points: 100,
-      })
+  // 5. Inicializar la Billetera de Lealtad (Loyalty Wallet)
+  console.log('📤 4. Inicializando billetera de lealtad...')
+  const { error: walletError } = await supabase
+    .from('loyalty_wallets')
+    .insert({
+      client_id: clientData.id,
+      tenant_id: tenantId,
+      glow_points: 0,
+      hair_points: 100 // Reflejamos los mismos 100 puntos iniciales
+    })
 
-    if (walletError) {
-      console.log('❌ [API] Error al crear wallet:', walletError.message)
-    } else {
-      console.log('✅ [API] Wallet creada')
-    }
+  if (walletError) {
+    console.log('❌ Error en wallet:', walletError.message)
+    return NextResponse.json({ error: walletError.message }, { status: 400 })
   }
 
-  console.log('🎉 [API] Proceso completado para:', email)
-
-  return NextResponse.json({ 
-    success: true, 
-    user: data.user,
-    client: client 
-  })
+  console.log(`🎉 ¡Completado! Cliente registrado y premiado con 100 pts: ${email}`)
+  return NextResponse.json({ success: true, user: authData.user, client: clientData })
 }

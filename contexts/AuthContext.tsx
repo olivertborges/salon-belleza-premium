@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => Promise<{ data: any; error: any }>
   signOut: () => Promise<void>
+  refreshUserData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,12 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Función para obtener datos del cliente y tenant
   const fetchClientData = async (userId: string) => {
     try {
-      console.log('🔍 Buscando cliente para userId:', userId)
+      console.log('🔍 [Auth] Buscando cliente para userId:', userId)
 
-      // 1. Obtener el cliente
       const { data: client, error: clientError } = await supabase
         .from('clients')
         .select('id, points, tenant_id')
@@ -37,23 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (clientError) {
-        console.error('❌ Error al buscar cliente:', clientError)
+        console.error('❌ [Auth] Error al buscar cliente:', clientError)
         return
       }
 
       if (client) {
-        console.log('✅ Cliente encontrado:', client.id)
-        console.log('💰 Puntos:', client.points)
+        console.log('✅ [Auth] Cliente encontrado:', client.id)
+        console.log('💰 [Auth] Puntos:', client.points)
         setClientId(client.id)
         setPoints(client.points)
-        
-        // 2. Guardar tenantId
+
         if (client.tenant_id) {
           setTenantId(client.tenant_id)
-          console.log('🏢 Tenant ID:', client.tenant_id)
+          console.log('🏢 [Auth] Tenant ID:', client.tenant_id)
         }
 
-        // 3. Obtener puntos de loyalty_wallets (más exacto)
         const { data: wallet, error: walletError } = await supabase
           .from('loyalty_wallets')
           .select('glow_points, hair_points')
@@ -61,37 +58,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
 
         if (!walletError && wallet) {
-          // Sumar glow_points + hair_points para el total
           const totalPuntos = (wallet.glow_points || 0) + (wallet.hair_points || 0)
           setPoints(totalPuntos)
-          console.log('💎 Puntos wallet:', totalPuntos)
+          console.log('💎 [Auth] Puntos wallet:', totalPuntos)
         }
       } else {
-        console.log('⚠️ No se encontró cliente para este usuario')
+        console.log('⚠️ [Auth] No se encontró cliente para este usuario')
       }
     } catch (error) {
-      console.error('❌ Error en fetchClientData:', error)
+      console.error('❌ [Auth] Error en fetchClientData:', error)
+    }
+  }
+
+  const refreshUserData = async () => {
+    if (user?.id) {
+      await fetchClientData(user.id)
     }
   }
 
   useEffect(() => {
-    // Obtener sesión inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null
       setUser(user)
-      
       if (user) {
         fetchClientData(user.id)
       }
-      
       setLoading(false)
     })
 
-    // Escuchar cambios de autenticación
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null
       setUser(user)
-      
+
       if (user) {
         await fetchClientData(user.id)
       } else {
@@ -99,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(null)
         setPoints(null)
       }
-      
+
       setLoading(false)
     })
 
@@ -112,20 +110,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: email.trim().toLowerCase(),
         password: password.trim()
       })
-      
+
       if (error) return { error }
-      
+
       if (data.user) {
         setUser(data.user)
         await fetchClientData(data.user.id)
       }
-      
+
       return { error: null }
     } catch (err: any) {
       return { error: err }
     }
   }
 
+  // signUp SOLO PARA CUANDO NO SE USA LA API
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -139,15 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         },
       })
-      
+
       if (error) return { data: null, error }
-      
+
       if (data.user) {
         setUser(data.user)
         await new Promise(resolve => setTimeout(resolve, 2000))
         await fetchClientData(data.user.id)
       }
-      
+
       return { data, error: null }
     } catch (err: any) {
       return { data: null, error: err }
@@ -171,7 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading, 
       signIn, 
       signUp, 
-      signOut 
+      signOut,
+      refreshUserData
     }}>
       {!loading && children}
     </AuthContext.Provider>
