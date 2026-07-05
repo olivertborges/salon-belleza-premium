@@ -64,7 +64,7 @@ export default function AuthMobilDefinitivo() {
         .single()
 
       const userRole = profile?.role || 'client'
-      
+
       setTimeout(() => {
         if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
           window.location.href = '/dashboard'
@@ -79,7 +79,7 @@ export default function AuthMobilDefinitivo() {
     }
   }
 
-  // REGISTRO CON LLAMADA API Y LOGUEO INMEDIATO AL PORTAL
+  // REGISTRO CON LLAMADA API Y LOGUEO INMEDIATO AL PORTAL (CON PASO DE REFERIDO)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
@@ -95,7 +95,8 @@ export default function AuthMobilDefinitivo() {
           email: email.trim(),
           password,
           nombre: fullName.trim(),
-          telefono: phone.trim()
+          telefono: phone.trim(),
+          referralCode: referralCode.trim() // <-- ENVIADO AL BACKEND CON ÉXITO
         })
       })
 
@@ -109,7 +110,7 @@ export default function AuthMobilDefinitivo() {
 
       // Forzar inicio de sesión en el cliente para que gane las cookies
       await supabase.auth.signInWithPassword({ email, password })
-      
+
       setTimeout(() => {
         window.location.href = '/portal'
       }, 600)
