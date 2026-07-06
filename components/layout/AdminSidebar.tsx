@@ -51,8 +51,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
 
   if (!mounted) return null
 
-  const isAdmin = role === 'admin' || role === 'staff'
-  const visibleMenu = isAdmin ? ALL_MENU_ITEMS : ALL_MENU_ITEMS.slice(0, 5)
+// 🔓 BYPASS DE ROLES PARA TERMUX / DESARROLLO LOCAL
+const visibleMenu = ALL_MENU_ITEMS; 
+// const isAdmin = role === 'admin' || role === 'staff'
+// const visibleMenu = isAdmin ? ALL_MENU_ITEMS : ALL_MENU_ITEMS.slice(0, 5)
 
   const handleNavigation = (path: string) => {
     router.push(path)

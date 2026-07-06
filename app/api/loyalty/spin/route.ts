@@ -8,10 +8,15 @@ export async function POST(request: Request) {
   console.log('==================================================')
 
   const cookieStore = cookies()
-  const { clientId, tenantId, points } = await request.json()
+  const { clientId, tenantId, points, category } = await request.json()
 
-  if (!clientId || !tenantId || points === undefined) {
-    return NextResponse.json({ error: 'Faltan datos requeridos (clientId, tenantId o puntos).' }, { status: 400 })
+  // Validamos que venga la categoría obligatoriamente ('glow' o 'hair')
+  if (!clientId || !tenantId || points === undefined || !category) {
+    return NextResponse.json({ error: 'Faltan datos requeridos (clientId, tenantId, categoría o puntos).' }, { status: 400 })
+  }
+
+  if (category !== 'glow' && category !== 'hair') {
+    return NextResponse.json({ error: 'Categoría de billetera inválida.' }, { status: 400 })
   }
 
   const response = NextResponse.json({ success: true })
@@ -52,10 +57,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Ya utilizaste tu tiro de hoy.' }, { status: 400 })
   }
 
-  // 2. Obtener la billetera actual
+  // 2. Obtener la billetera actual (Pedimos tanto glow_points como hair_points)
   const { data: wallet, error: walletError } = await supabase
     .from('loyalty_wallets')
-    .select('id, glow_points')
+    .select('id, glow_points, hair_points')
     .eq('client_id', clientId)
     .eq('tenant_id', tenantId)
     .single()
@@ -65,16 +70,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Billetera no encontrada.' }, { status: 400 })
   }
 
-  // 3. Sumar los puntos obtenidos en la ruleta
-  const nuevosGlowPoints = (wallet.glow_points || 0) + points
-  console.log(`📊 Puntos actuales: ${wallet.glow_points} | Sumando: ${points} | Total: ${nuevosGlowPoints}`)
+  // 3. Identificar la columna a actualizar y calcular el nuevo puntaje
+  const columnaPuntos = category === 'glow' ? 'glow_points' : 'hair_points'
+  const puntosActuales = wallet[columnaPuntos] || 0
+  const nuevosPuntos = puntosActuales + points
+
+  console.log(`📊 Billetera: ${category.toUpperCase()} | Puntos actuales: ${puntosActuales} | Sumando: ${points} | Total: ${nuevosPuntos}`)
+
+  // Creamos el payload dinámico para el update
+  const updatePayload: Record<string, any> = {
+    updated_at: new Date().toISOString()
+  }
+  updatePayload[columnaPuntos] = nuevosPuntos
 
   const { error: updateError } = await supabase
     .from('loyalty_wallets')
-    .update({
-      glow_points: nuevosGlowPoints,
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', wallet.id)
 
   if (updateError) {
@@ -84,6 +95,8 @@ export async function POST(request: Request) {
 
   // 4. Crear el registro histórico en la tabla de transacciones
   console.log('📤 Creando registro histórico en transacciones...')
+  const nombreCategoriaLog = category === 'glow' ? 'Estética' : 'Peluquería'
+  
   const { error: insertTxError } = await supabase
     .from('loyalty_transactions')
     .insert({
@@ -91,7 +104,8 @@ export async function POST(request: Request) {
       tenant_id: tenantId,
       transaction_type: 'ruleta',
       points: points,
-      description: `🎰 Ruleta - Ganaste ${points} puntos`,
+      category: category, // Guardamos la categoría en el historial si tu tabla cuenta con esa columna
+      description: `🎰 Ruleta - Ganaste ${points} puntos para ${nombreCategoriaLog}`,
       created_at: new Date().toISOString()
     })
 
@@ -100,5 +114,9 @@ export async function POST(request: Request) {
   }
 
   console.log('✅ [API RULETA] ¡Puntos procesados con éxito en el servidor!')
-  return NextResponse.json({ success: true, nuevosGlowPoints })
+  return NextResponse.json({ 
+    success: true, 
+    category,
+    puntosActualizados: nuevosPuntos 
+  })
 }

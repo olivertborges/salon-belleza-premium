@@ -18,6 +18,7 @@ interface Mision {
   target: number
   progress: number
   completed: boolean
+  category?: 'glow' | 'hair'
 }
 
 export default function MisionesDiarias() {
@@ -26,7 +27,10 @@ export default function MisionesDiarias() {
   const [misiones, setMisiones] = useState<Mision[]>([])
   const [loading, setLoading] = useState(true)
   const [racha, setRacha] = useState(0)
-  const [totalPuntos, setTotalPuntos] = useState(0)
+  
+  const [puntosGlow, setPuntosGlow] = useState(0)
+  const [puntosHair, setPuntosHair] = useState(0)
+  
   const [clientId, setClientId] = useState<string | null>(null)
 
   const isDark = theme === 'dark'
@@ -48,68 +52,74 @@ export default function MisionesDiarias() {
         .eq('auth_user_id', user.id)
         .single()
       if (error) return null
-      return data?.id || null
+      return (data as any)?.id || null
     } catch (error) {
       return null
     }
   }
 
-  // Obtener puntos de loyalty_wallets
-  const obtenerPuntosWallet = async (clientId: string) => {
-    if (!clientId || !tenantId) return 0
+  // Obtener ambos saldos de loyalty_wallets
+  const cargarSaldosWallet = async (clientId: string) => {
+    if (!clientId || !tenantId) return { glow: 0, hair: 0 }
     try {
       const { data, error } = await supabase
         .from('loyalty_wallets')
-        .select('glow_points')
+        .select('glow_points, hair_points')
         .eq('client_id', clientId)
         .eq('tenant_id', tenantId)
         .single()
-      if (error) return 0
-      return data?.glow_points || 0
+      if (error || !data) return { glow: 0, hair: 0 }
+      
+      const wallet = data as any
+      return {
+        glow: wallet.glow_points || 0,
+        hair: wallet.hair_points || 0
+      }
     } catch (error) {
-      return 0
+      return { glow: 0, hair: 0 }
     }
   }
 
-  // Sumar puntos a loyalty_wallets
-  const sumarPuntosWallet = async (clientId: string, puntos: number) => {
+  // Sumar puntos dinámicamente
+  const sumarPuntosWallet = async (clientId: string, puntos: number, category: 'glow' | 'hair' = 'glow') => {
     if (!clientId || !tenantId) return
     
+    const columnaPuntos = category === 'glow' ? 'glow_points' : 'hair_points'
+    
     try {
-      // Verificar si existe wallet
       const { data: walletData } = await supabase
         .from('loyalty_wallets')
-        .select('glow_points')
+        .select('id, glow_points, hair_points')
         .eq('client_id', clientId)
         .eq('tenant_id', tenantId)
         .single()
 
       if (!walletData) {
-        // Crear wallet si no existe
-        await supabase
-          .from('loyalty_wallets')
-          .insert([{
-            client_id: clientId,
-            tenant_id: tenantId,
-            glow_points: puntos,
-            hair_points: 0,
-            created_at: new Date().toISOString()
-          }])
+        const nuevoPayload: any = {
+          client_id: clientId,
+          tenant_id: tenantId,
+          glow_points: category === 'glow' ? puntos : 0,
+          hair_points: category === 'hair' ? puntos : 0,
+          created_at: new Date().toISOString()
+        }
+        await supabase.from('loyalty_wallets').insert([nuevoPayload] as any)
       } else {
-        // Sumar puntos a wallet existente
+        const wallet = walletData as any
+        const puntosActuales = wallet[columnaPuntos] || 0
+        const updatePayload: any = {
+          updated_at: new Date().toISOString()
+        }
+        updatePayload[columnaPuntos] = puntosActuales + puntos
+
         await supabase
           .from('loyalty_wallets')
-          .update({
-            glow_points: (walletData.glow_points || 0) + puntos,
-            updated_at: new Date().toISOString()
-          })
-          .eq('client_id', clientId)
-          .eq('tenant_id', tenantId)
+          .update(updatePayload as any)
+          .eq('id', wallet.id)
       }
       
-      // Actualizar puntos totales
-      const nuevosPuntos = await obtenerPuntosWallet(clientId)
-      setTotalPuntos(nuevosPuntos)
+      const saldos = await cargarSaldosWallet(clientId)
+      setPuntosGlow(saldos.glow)
+      setPuntosHair(saldos.hair)
       
     } catch (error) {
       console.error('Error sumando puntos a wallet:', error)
@@ -124,7 +134,6 @@ export default function MisionesDiarias() {
       }
 
       try {
-        // Obtener client_id
         const cId = await getClientId()
         if (!cId) {
           setLoading(false)
@@ -132,11 +141,10 @@ export default function MisionesDiarias() {
         }
         setClientId(cId)
 
-        // Obtener puntos de wallet
-        const puntos = await obtenerPuntosWallet(cId)
-        setTotalPuntos(puntos)
+        const saldos = await cargarSaldosWallet(cId)
+        setPuntosGlow(saldos.glow)
+        setPuntosHair(saldos.hair)
 
-        // Obtener misiones del sistema
         const { data: misionesData, error: misionesError } = await supabase
           .from('missions')
           .select('*')
@@ -144,13 +152,12 @@ export default function MisionesDiarias() {
           .eq('tenant_id', tenantId)
           .order('order', { ascending: true })
 
-        if (misionesError) {
+        if (misionesError || !misionesData) {
           console.error('Error cargando misiones:', misionesError)
           setLoading(false)
           return
         }
 
-        // Obtener misiones completadas hoy
         const hoy = new Date()
         hoy.setHours(0, 0, 0, 0)
         const hoyStr = hoy.toISOString()
@@ -162,19 +169,19 @@ export default function MisionesDiarias() {
           .eq('tenant_id', tenantId)
           .gte('completed_at', hoyStr)
 
-        const completadasSet = new Set(completadasData?.map(c => c.mission_id) || [])
+        const arrayCompletadas = (completadasData as any[]) || []
+        const completadasSet = new Set(arrayCompletadas.map(c => c.mission_id))
 
-        // Mapear misiones con su estado
-        const misionesConEstado = misionesData.map((mision: any) => ({
+        const misionesConEstado = (misionesData as any[]).map((mision: any) => ({
           ...mision,
+          category: mision.category || 'glow',
           progress: completadasSet.has(mision.id) ? mision.target : 0,
           completed: completadasSet.has(mision.id)
         }))
 
         setMisiones(misionesConEstado)
 
-        // Calcular racha
-        const rachaCalculada = completadasData?.length > 0 ? 3 : 0
+        const rachaCalculada = arrayCompletadas.length > 0 ? 3 : 0
         setRacha(rachaCalculada)
 
       } catch (error) {
@@ -191,33 +198,32 @@ export default function MisionesDiarias() {
     if (!clientId || !tenantId) return
     
     try {
-      // Buscar la misión
       const mision = misiones.find(m => m.id === misionId)
       if (!mision || mision.completed) return
 
-      // Registrar misión completada
+      const nuevoRegistroMision: any = {
+        client_id: clientId,
+        mission_id: misionId,
+        tenant_id: tenantId,
+        completed_at: new Date().toISOString()
+      }
+
       const { error: insertError } = await supabase
         .from('client_missions')
-        .insert([{
-          client_id: clientId,
-          mission_id: misionId,
-          tenant_id: tenantId,
-          completed_at: new Date().toISOString()
-        }])
+        .insert([nuevoRegistroMision] as any)
 
       if (insertError) throw insertError
 
-      // Sumar puntos a loyalty_wallets
-      await sumarPuntosWallet(clientId, mision.points)
+      await sumarPuntosWallet(clientId, mision.points, mision.category)
 
-      // Actualizar estado local
       setMisiones(prev => prev.map(m => 
         m.id === misionId 
           ? { ...m, completed: true, progress: m.target }
           : m
       ))
 
-      alert(`🎉 ¡Misión completada! Has ganado +${mision.points} puntos`)
+      const bolsaTexto = mision.category === 'hair' ? 'Peluquería 💇' : 'Estética ✨'
+      alert(`🎉 ¡Misión completada! Has ganado +${mision.points} puntos para ${bolsaTexto}`)
 
     } catch (error) {
       console.error('Error completando misión:', error)
@@ -260,9 +266,18 @@ export default function MisionesDiarias() {
             <h2 className={`text-xl font-extralight tracking-tight ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
               Misiones <span className="font-serif italic font-normal text-rose-600 dark:text-rose-300">Diarias</span>
             </h2>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500 font-medium mt-1">
-              {misiones.length} misiones • {totalPuntos} puntos totales
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 mt-1">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-stone-400 dark:text-stone-500 font-medium">
+                {misiones.length} misiones activos
+              </p>
+              <div className="hidden md:block text-stone-600">•</div>
+              <p className="text-[10px] font-mono font-semibold text-rose-500 dark:text-rose-400">
+                ✨ Estética: {puntosGlow} pts
+              </p>
+              <p className="text-[10px] font-mono font-semibold text-amber-500 dark:text-amber-400">
+                💇 Peluquería: {puntosHair} pts
+              </p>
+            </div>
           </div>
         </div>
 
@@ -302,8 +317,6 @@ export default function MisionesDiarias() {
           </div>
         ) : (
           misiones.map((mision) => {
-            const IconComponent = getIcon(mision.icon)
-
             return (
               <div 
                 key={mision.id}
@@ -322,20 +335,22 @@ export default function MisionesDiarias() {
                   }
                 }}
               >
-                <div className="flex items-center gap-3.5 max-w-[75%]">
+                <div className="flex items-center gap-3.5 max-w-[70%]">
                   {mision.completed ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                   ) : (
                     <Circle className={`w-5 h-5 shrink-0 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
                   )}
                   <div>
-                    <p className={`text-xs md:text-sm font-light tracking-wide ${
-                      mision.completed 
-                        ? 'line-through text-stone-400 dark:text-stone-500' 
-                        : isDark ? 'text-stone-300' : 'text-stone-700'
-                    }`}>
-                      {mision.title}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`text-xs md:text-sm font-light tracking-wide ${
+                        mision.completed 
+                          ? 'line-through text-stone-400 dark:text-stone-500' 
+                          : isDark ? 'text-stone-300' : 'text-stone-700'
+                      }`}>
+                        {mision.title}
+                      </p>
+                    </div>
                     <p className={`text-[9px] ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                       {mision.description}
                     </p>
@@ -343,6 +358,14 @@ export default function MisionesDiarias() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded border tracking-wider font-semibold ${
+                    mision.category === 'hair'
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
+                      : 'bg-rose-500/10 border-rose-500/30 text-rose-500'
+                  }`}>
+                    {mision.category === 'hair' ? 'Pelo' : 'Glow'}
+                  </span>
+                  
                   <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border ${
                     isDark ? 'bg-stone-950 border-stone-900' : 'bg-stone-100/80 border-stone-200/60'
                   }`}>
