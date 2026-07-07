@@ -4,10 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { 
-  CheckCircle2, Circle, Flame, Sparkles, Trophy, 
-  Calendar, Users, Share2, User, Star, Award
-} from 'lucide-react'
+import { CheckCircle2, Circle, Flame, Trophy } from 'lucide-react'
 
 interface Mision {
   id: string
@@ -23,112 +20,99 @@ interface Mision {
 
 export default function MisionesDiarias() {
   const { theme } = useTheme()
-  const { user, tenantId } = useAuth()
+  const { user } = useAuth()
   const [misiones, setMisiones] = useState<Mision[]>([])
   const [loading, setLoading] = useState(true)
   const [racha, setRacha] = useState(0)
-  
+
   const [puntosGlow, setPuntosGlow] = useState(0)
   const [puntosHair, setPuntosHair] = useState(0)
-  
   const [clientId, setClientId] = useState<string | null>(null)
 
   const isDark = theme === 'dark'
 
-  const getIcon = (iconName: string) => {
-    const icons: Record<string, any> = {
-      Calendar, Users, Share2, User, Star, Award
-    }
-    return icons[iconName] || Star
-  }
-
-  // Obtener client_id
   const getClientId = async () => {
     if (!user?.id) return null
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('clients')
         .select('id')
         .eq('auth_user_id', user.id)
-        .single()
-      if (error) return null
-      return (data as any)?.id || null
-    } catch (error) {
+        .maybeSingle()
+      return data?.id || null
+    } catch {
       return null
     }
   }
 
-  // Obtener ambos saldos de loyalty_wallets
   const cargarSaldosWallet = async (clientId: string) => {
-    if (!clientId || !tenantId) return { glow: 0, hair: 0 }
+    if (!clientId) return { glow: 0, hair: 0 }
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('loyalty_wallets')
         .select('glow_points, hair_points')
         .eq('client_id', clientId)
-        .eq('tenant_id', tenantId)
-        .single()
-      if (error || !data) return { glow: 0, hair: 0 }
-      
-      const wallet = data as any
+        .maybeSingle()
+      if (!data) return { glow: 0, hair: 0 }
+
       return {
-        glow: wallet.glow_points || 0,
-        hair: wallet.hair_points || 0
+        glow: data.glow_points || 0,
+        hair: data.hair_points || 0
       }
-    } catch (error) {
+    } catch {
       return { glow: 0, hair: 0 }
     }
   }
 
-  // Sumar puntos dinámicamente
-  const sumarPuntosWallet = async (clientId: string, puntos: number, category: 'glow' | 'hair' = 'glow') => {
-    if (!clientId || !tenantId) return
-    
-    const columnaPuntos = category === 'glow' ? 'glow_points' : 'hair_points'
-    
+  const completarMision = async (misionId: string) => {
+    if (!clientId) return
+
     try {
+      const mision = misiones.find(m => m.id === misionId)
+      if (!mision || mision.completed) return
+
+      const { error: insertError } = await supabase
+        .from('client_missions')
+        .insert({
+          client_id: clientId,
+          mission_id: misionId,
+          completed_at: new Date().toISOString()
+        })
+
+      if (insertError) throw insertError
+
+      const columnaPuntos = mision.category === 'hair' ? 'hair_points' : 'glow_points'
       const { data: walletData } = await supabase
         .from('loyalty_wallets')
         .select('id, glow_points, hair_points')
         .eq('client_id', clientId)
-        .eq('tenant_id', tenantId)
-        .single()
+        .maybeSingle()
 
-      if (!walletData) {
-        const nuevoPayload: any = {
-          client_id: clientId,
-          tenant_id: tenantId,
-          glow_points: category === 'glow' ? puntos : 0,
-          hair_points: category === 'hair' ? puntos : 0,
-          created_at: new Date().toISOString()
-        }
-        await supabase.from('loyalty_wallets').insert([nuevoPayload] as any)
-      } else {
-        const wallet = walletData as any
-        const puntosActuales = wallet[columnaPuntos] || 0
-        const updatePayload: any = {
-          updated_at: new Date().toISOString()
-        }
-        updatePayload[columnaPuntos] = puntosActuales + puntos
-
+      if (walletData) {
+        const puntosActuales = walletData[columnaPuntos] || 0
         await supabase
           .from('loyalty_wallets')
-          .update(updatePayload as any)
-          .eq('id', wallet.id)
+          .update({ [columnaPuntos]: puntosActuales + mision.points })
+          .eq('id', walletData.id)
       }
-      
+
+      setMisiones(prev => prev.map(m => 
+        m.id === misionId ? { ...m, completed: true, progress: m.target } : m
+      ))
+
       const saldos = await cargarSaldosWallet(clientId)
       setPuntosGlow(saldos.glow)
       setPuntosHair(saldos.hair)
-      
+
+      alert(`🎉 ¡Misión completada! Ganaste +${mision.points} puntos.`)
     } catch (error) {
-      console.error('Error sumando puntos a wallet:', error)
+      console.error(error)
     }
   }
 
   useEffect(() => {
     async function loadMisiones() {
-      if (!user?.id || !tenantId) {
+      if (!user?.id) {
         setLoading(false)
         return
       }
@@ -145,242 +129,103 @@ export default function MisionesDiarias() {
         setPuntosGlow(saldos.glow)
         setPuntosHair(saldos.hair)
 
-        const { data: misionesData, error: misionesError } = await supabase
+        const { data: misionesData } = await supabase
           .from('missions')
           .select('*')
           .eq('is_active', true)
-          .eq('tenant_id', tenantId)
-          .order('order', { ascending: true })
 
-        if (misionesError || !misionesData) {
-          console.error('Error cargando misiones:', misionesError)
+        if (!misionesData) {
           setLoading(false)
           return
         }
 
         const hoy = new Date()
         hoy.setHours(0, 0, 0, 0)
-        const hoyStr = hoy.toISOString()
 
         const { data: completadasData } = await supabase
           .from('client_missions')
           .select('mission_id')
           .eq('client_id', cId)
-          .eq('tenant_id', tenantId)
-          .gte('completed_at', hoyStr)
+          .gte('completed_at', hoy.toISOString())
 
-        const arrayCompletadas = (completadasData as any[]) || []
+        const arrayCompletadas = completadasData || []
         const completadasSet = new Set(arrayCompletadas.map(c => c.mission_id))
 
-        const misionesConEstado = (misionesData as any[]).map((mision: any) => ({
-          ...mision,
-          category: mision.category || 'glow',
-          progress: completadasSet.has(mision.id) ? mision.target : 0,
-          completed: completadasSet.has(mision.id)
-        }))
-
-        setMisiones(misionesConEstado)
-
-        const rachaCalculada = arrayCompletadas.length > 0 ? 3 : 0
-        setRacha(rachaCalculada)
-
+        setMisiones(misionesData.map((m: any) => ({
+          ...m,
+          category: m.category || 'glow',
+          progress: completadasSet.has(m.id) ? m.target : 0,
+          completed: completadasSet.has(m.id)
+        })))
+        setRacha(arrayCompletadas.length > 0 ? 3 : 0)
       } catch (error) {
-        console.error('Error en loadMisiones:', error)
+        console.error(error)
       } finally {
         setLoading(false)
       }
     }
 
     loadMisiones()
-  }, [user, tenantId])
+  }, [user])
 
-  const completarMision = async (misionId: string) => {
-    if (!clientId || !tenantId) return
-    
-    try {
-      const mision = misiones.find(m => m.id === misionId)
-      if (!mision || mision.completed) return
-
-      const nuevoRegistroMision: any = {
-        client_id: clientId,
-        mission_id: misionId,
-        tenant_id: tenantId,
-        completed_at: new Date().toISOString()
-      }
-
-      const { error: insertError } = await supabase
-        .from('client_missions')
-        .insert([nuevoRegistroMision] as any)
-
-      if (insertError) throw insertError
-
-      await sumarPuntosWallet(clientId, mision.points, mision.category)
-
-      setMisiones(prev => prev.map(m => 
-        m.id === misionId 
-          ? { ...m, completed: true, progress: m.target }
-          : m
-      ))
-
-      const bolsaTexto = mision.category === 'hair' ? 'Peluquería 💇' : 'Estética ✨'
-      alert(`🎉 ¡Misión completada! Has ganado +${mision.points} puntos para ${bolsaTexto}`)
-
-    } catch (error) {
-      console.error('Error completando misión:', error)
-      alert('Error al completar la misión')
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className={`flex items-center justify-center p-8 rounded-3xl border ${
-        isDark ? 'bg-[#141211] border-stone-850' : 'bg-white border-stone-200'
-      }`}>
-        <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return null
 
   const completadas = misiones.filter(m => m.completed).length
   const porcentaje = misiones.length > 0 ? Math.round((completadas / misiones.length) * 100) : 0
 
   return (
     <div className={`border p-6 sm:p-8 rounded-3xl transition-all duration-300 shadow-md ${
-      isDark 
-        ? 'bg-[#141211] border-stone-850 shadow-[0_30px_60px_rgba(0,0,0,0.5)]' 
-        : 'bg-white border-stone-200'
+      isDark ? 'bg-[#141211] border-stone-850' : 'bg-white border-stone-200'
     } space-y-6`}>
-
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6 ${
-        isDark ? 'border-stone-900' : 'border-stone-100'
-      }`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6 dark:border-stone-900">
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 border rounded-xl flex items-center justify-center ${
-            isDark 
-              ? 'bg-gradient-to-r from-orange-500/10 to-rose-500/10 border-orange-500/20' 
-              : 'bg-orange-50 border-orange-200'
-          }`}>
-            <Flame className="w-5 h-5 text-orange-500 dark:text-orange-400 animate-pulse" />
+          <div className="w-12 h-12 border rounded-xl flex items-center justify-center bg-orange-50 dark:bg-orange-500/10 dark:border-orange-500/20">
+            <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
           </div>
           <div>
             <h2 className={`text-xl font-extralight tracking-tight ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
               Misiones <span className="font-serif italic font-normal text-rose-600 dark:text-rose-300">Diarias</span>
             </h2>
-            <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 mt-1">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-stone-400 dark:text-stone-500 font-medium">
-                {misiones.length} misiones activos
-              </p>
-              <div className="hidden md:block text-stone-600">•</div>
-              <p className="text-[10px] font-mono font-semibold text-rose-500 dark:text-rose-400">
-                ✨ Estética: {puntosGlow} pts
-              </p>
-              <p className="text-[10px] font-mono font-semibold text-amber-500 dark:text-amber-400">
-                💇 Peluquería: {puntosHair} pts
-              </p>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+              <p className="text-[10px] font-mono font-semibold text-rose-500">✨ Estética: {puntosGlow} pts</p>
+              <p className="text-[10px] font-mono font-semibold text-amber-500">💇 Peluquería: {puntosHair} pts</p>
             </div>
           </div>
-        </div>
-
-        <div className={`inline-flex items-center gap-2 border px-4 py-2 rounded-xl self-start sm:self-center ${
-          isDark ? 'bg-orange-500/5 border-orange-500/20' : 'bg-orange-50/50 border-orange-200'
-        }`}>
-          <span className="text-xs text-stone-500 dark:text-stone-400 font-light">Racha:</span>
-          <span className="text-sm font-mono font-bold text-orange-500 dark:text-orange-400 flex items-center gap-1">
-            {racha} {racha === 1 ? 'Día' : 'Días'} 
-            {racha > 0 && <Flame className="w-3.5 h-3.5 fill-orange-500/20" />}
-          </span>
         </div>
       </div>
 
       <div className="space-y-2">
-        <div className={`flex justify-between text-[11px] font-mono tracking-wider ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-          <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-500 dark:text-amber-400" /> Progreso de hoy</span>
-          <span className={`font-bold ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-            {completadas}/{misiones.length} • {porcentaje}%
-          </span>
+        <div className="flex justify-between text-[11px] font-mono tracking-wider text-stone-400">
+          <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-500" /> Progreso</span>
+          <span>{completadas}/{misiones.length} • {porcentaje}%</span>
         </div>
-        <div className={`h-2 w-full rounded-full overflow-hidden border relative ${
-          isDark ? 'bg-stone-950 border-stone-900' : 'bg-stone-100 border-stone-200/60'
-        }`}>
+        <div className="h-2 w-full rounded-full bg-stone-100 dark:bg-stone-950 border dark:border-stone-900 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-500" style={{ width: `${porcentaje}%` }} />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {misiones.map((mision) => (
           <div 
-            className="h-full bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 rounded-full transition-all duration-1000 ease-out"
-            style={{ width: `${porcentaje}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        {misiones.length === 0 ? (
-          <div className={`text-center py-8 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-            <p className="text-sm">No hay misiones disponibles hoy</p>
-            <p className="text-[10px] mt-1">Vuelve más tarde para nuevas misiones</p>
-          </div>
-        ) : (
-          misiones.map((mision) => {
-            return (
-              <div 
-                key={mision.id}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
-                  mision.completed 
-                    ? isDark
-                      ? 'bg-stone-900/20 border-stone-850/60 opacity-60' 
-                      : 'bg-stone-50 border-stone-200/60 opacity-60'
-                    : isDark
-                      ? 'bg-stone-900/40 border-stone-850 hover:border-stone-700 cursor-pointer'
-                      : 'bg-stone-50/60 border-stone-200 hover:border-stone-300 cursor-pointer'
-                }`}
-                onClick={() => {
-                  if (!mision.completed) {
-                    completarMision(mision.id)
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3.5 max-w-[70%]">
-                  {mision.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                  ) : (
-                    <Circle className={`w-5 h-5 shrink-0 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className={`text-xs md:text-sm font-light tracking-wide ${
-                        mision.completed 
-                          ? 'line-through text-stone-400 dark:text-stone-500' 
-                          : isDark ? 'text-stone-300' : 'text-stone-700'
-                      }`}>
-                        {mision.title}
-                      </p>
-                    </div>
-                    <p className={`text-[9px] ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                      {mision.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className={`text-[8px] uppercase font-mono px-1.5 py-0.5 rounded border tracking-wider font-semibold ${
-                    mision.category === 'hair'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-500'
-                      : 'bg-rose-500/10 border-rose-500/30 text-rose-500'
-                  }`}>
-                    {mision.category === 'hair' ? 'Pelo' : 'Glow'}
-                  </span>
-                  
-                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border ${
-                    isDark ? 'bg-stone-950 border-stone-900' : 'bg-stone-100/80 border-stone-200/60'
-                  }`}>
-                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">
-                      +{mision.points}
-                    </span>
-                    <Sparkles className="w-2.5 h-2.5 text-amber-500 dark:text-amber-400" />
-                  </div>
-                </div>
+            key={mision.id}
+            className={`flex items-center justify-between p-4 rounded-xl border ${
+              mision.completed ? 'opacity-60 bg-stone-900/10' : 'cursor-pointer hover:border-stone-500 bg-stone-900/30'
+            }`}
+            onClick={() => { if (!mision.completed) completarMision(mision.id) }}
+          >
+            <div className="flex items-center gap-3">
+              {mision.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5 text-stone-600" />}
+              <div>
+                <p className={`text-xs md:text-sm font-light ${mision.completed ? 'line-through text-stone-500' : ''}`}>{mision.title}</p>
+                <p className="text-[9px] text-stone-500">{mision.description}</p>
               </div>
-            )
-          })
-        )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-amber-400 font-bold">+{mision.points}</span>
+            </div>
+          </div>
+        ))}
       </div>
-
     </div>
   )
 }

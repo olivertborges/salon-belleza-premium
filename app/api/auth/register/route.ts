@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     const { email, password, nombre, telefono, referralCode } = body
 
     if (!email || !password || !nombre) {
+      console.log('⚠️ [LOG] Registro cancelado: Faltan campos obligatorios.')
       return NextResponse.json({ error: 'Faltan campos obligatorios.' }, { status: 400 })
     }
 
@@ -18,15 +19,15 @@ export async function POST(request: Request) {
     const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
     const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    // Usamos el cliente admin para tener superpoderes de escritura sin chocar con RLS
     const supabaseAdmin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!, {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
     const cleanEmail = email.trim().toLowerCase()
-    console.log(`📤 Creando usuario: ${cleanEmail} | Referido: ${referralCode || 'Ninguno'}`)
+    console.log(`📩 [LOG STEP 1] Intentando registrar: ${cleanEmail}`)
 
-    // 1. Crear el usuario en la autenticación de Supabase
+    // 1. Crear el usuario en auth.users
+    console.log('📡 [LOG STEP 2] Creando usuario en auth.users...')
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: cleanEmail,
       password: password,
@@ -39,79 +40,129 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
-      console.log('❌ Error en Auth Admin:', authError.message)
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+      console.log('❌ [LOG ERROR] Supabase Auth rechazó el registro:', authError.message)
+      throw new Error(`Error en Auth Admin: ${authError.message}`)
     }
 
     const userId = authData.user?.id
-    console.log(`✅ Usuario creado correctamente. ID: ${userId}`)
+    console.log(`🟢 [LOG STEP 3] Usuario creado en Auth. ID: ${userId}`)
 
-    // 2. Determinar puntos iniciales por referidos
-    // Si viene recomendado, le regalamos 500 puntos en Estética (glow) y 0 en Peluquería (hair)
-    // Puedes ajustar el regalo a tu gusto
-    const puntosInicialesGlow = referralCode ? 500 : 0
+    // Obtener el ID del negocio (tenant_id) de tu base de datos
+    const { data: tenantData } = await supabaseAdmin.from('tenants').select('id').limit(1).single()
+    const currentTenantId = tenantData?.id
+
+    // Buscar si el código de referido existe para identificar al padrino
+    let v_referrer_id = null
+    if (referralCode) {
+      const { data: referrerData } = await supabaseAdmin
+        .from('clients')
+        .select('id')
+        .eq('referral_code', referralCode.trim())
+        .maybeSingle()
+      
+      if (referrerData) {
+        v_referrer_id = referrerData.id
+        console.log(`👤 [LOG REFERIDO] Padrino detectado con ID: ${v_referrer_id}`)
+      }
+    }
+
+    // 2. Insertar al cliente en public.clients (Evitamos colisiones con un upsert por si acaso)
+    console.log('📡 [LOG STEP 3.5] Creando registro en la tabla public.clients...')
+    const { error: clientError } = await supabaseAdmin
+      .from('clients')
+      .upsert([
+        {
+          id: userId,
+          auth_user_id: userId,
+          name: nombre.trim(),
+          email: cleanEmail,
+          phone: telefono || '',
+          referred_by_id: v_referrer_id,
+          referral_code: 'REF-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+          tenant_id: currentTenantId
+        }
+      ], { onConflict: 'id' })
+
+    if (clientError) {
+      console.log('❌ [LOG ERROR] La tabla public.clients rechazó al cliente!')
+      throw new Error(`Error en public.clients: ${clientError.message}`)
+    }
+    console.log('🟢 [LOG STEP 3.6] Cliente asentado correctamente en public.clients.')
+
+    // Definir los puntos de bienvenida oficiales (100 normales)
+    const puntosInicialesGlow = 100
     const puntosInicialesHair = 0
 
-    console.log(`🎁 Inicializando billetera VIP. Puntos iniciales Estética: ${puntosInicialesGlow}`)
+    console.log(`📡 [LOG STEP 4] Insertando/Verificando en loyalty_wallets con 100 puntos...`)
 
-    // 3. Crear su Billetera de Fidelización en 'loyalty_wallets'
-    const { data: walletData, error: walletError } = await supabaseAdmin
+    // 🌟 [PASO REPARADO CONTRA DUPLICADOS]: Cambiamos .insert por un .upsert controlado
+    // Si la billetera ya existe debido al unique constraint, simplemente ignorará el duplicado o mantendrá el registro
+    const { error: walletError } = await supabaseAdmin
       .from('loyalty_wallets')
-      .insert([
+      .upsert([
         {
           client_id: userId,
+          tenant_id: currentTenantId,
           glow_points: puntosInicialesGlow,
           glow_points_earned: puntosInicialesGlow,
           glow_points_redeemed: 0,
-          glow_level: 'bronce',
+          glow_level: 1,  
           hair_points: puntosInicialesHair,
           hair_points_earned: puntosInicialesHair,
           hair_points_redeemed: 0,
-          hair_level: 'bronce',
+          hair_level: 1,  
           is_active: true
         }
-      ])
-      .select()
-      .single()
+      ], { onConflict: 'client_id,tenant_id' }) // Especificamos las columnas exactas del constraint que chocaba
 
     if (walletError) {
-      console.log('⚠️ Error al crear la loyalty_wallet (No detiene el flujo):', walletError.message)
-    } else if (puntosInicialesGlow > 0) {
-      // 4. Si ganó puntos por referido, guardamos la transacción en el historial
-      const { error: txError } = await supabaseAdmin
-        .from('loyalty_transactions')
-        .insert([
-          {
-            client_id: userId,
-            wallet_type: 'glow', // Cuenta para el balance de estética
-            points: puntosInicialesGlow,
-            type: 'earned',
-            category: 'referral',
-            description: `Bono de bienvenida por código de referido: ${referralCode}`
-          }
-        ])
+      console.log('❌ [LOG ERROR] La tabla loyalty_wallets rechazó la operación!')
+      throw new Error(`Error en loyalty_wallets: ${walletError.message}`)
+    }
+    console.log('🟢 [LOG STEP 5] Billetera asegurada exitosamente con sus 100 puntos.')
+
+    // 3. Si viene por un código de referido, premiamos al padrino con 500 puntos extra
+    if (v_referrer_id) {
+      console.log('📡 [LOG STEP 6] Aplicando bono de 500 puntos al padrino...')
       
-      if (txError) console.log('⚠️ Error al asentar transacción de referido:', txError.message)
+      // Consultamos los puntos actuales del padrino para sumarle de forma segura
+      const { data: currentWallet } = await supabaseAdmin
+        .from('loyalty_wallets')
+        .select('glow_points, glow_points_earned')
+        .eq('client_id', v_referrer_id)
+        .single()
+
+      if (currentWallet) {
+        await supabaseAdmin
+          .from('loyalty_wallets')
+          .update({ 
+            glow_points: (currentWallet.glow_points || 0) + 500,
+            glow_points_earned: (currentWallet.glow_points_earned || 0) + 500,
+            updated_at: new Date() 
+          })
+          .eq('client_id', v_referrer_id)
+      }
+
+      // Asentar en transacciones el historial del nuevo cliente
+      await supabaseAdmin.from('loyalty_transactions').insert([
+        {
+          client_id: userId,
+          wallet_type: 'glow',
+          points: puntosInicialesGlow,
+          type: 'earned',
+          category: 'welcome',
+          description: `Bono de bienvenida inicial por invitación`
+        }
+      ])
     }
 
-    // 5. Login automático para el cliente
-    const supabasePublic = createClient(SUPABASE_URL!, ANON_KEY!, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    })
-
-    const { data: loginData } = await supabasePublic.auth.signInWithPassword({
-      email: cleanEmail,
-      password: password
-    })
-
-    return NextResponse.json({
-      success: true,
-      userId,
-      session: loginData?.session || null
-    })
+    console.log('🏁 [LOG FINAL] ¡Todo el flujo se completó con éxito total!')
+    return NextResponse.json({ success: true, userId })
 
   } catch (err: any) {
-    console.log('❌ Error crítico en API de registro:', err.message)
+    console.log('\n💥💥💥 [API CRASH LOG] 💥💥💥')
+    console.log('Mensaje del error:', err.message)
+    console.log('==================================================')
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

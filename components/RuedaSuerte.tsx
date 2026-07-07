@@ -1,22 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js' // 👈 Importamos el creador nativo para asegurar la persistencia
+import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 import { X, Sparkles, Award, AlertCircle, Loader2 } from 'lucide-react'
-
-// Creamos un cliente local ultra-seguro y persistente SOLO para la ruleta
-// Esto obliga al navegador a buscar el token de sesión en el LocalStorage sí o sí.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-const supabaseRuleta = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined
-  }
-})
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -36,6 +23,7 @@ const PREMIOS = [
 ]
 
 export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuarioActivo, tenantIdActivo }: RuletaModalProps) {
+  const { refreshUserData } = useAuth()
   const [isValidating, setIsValidating] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
@@ -47,108 +35,86 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
   const [rotationDegrees, setRotationDegrees] = useState(0)
   const ruletaRef = useRef<HTMLDivElement>(null)
 
+  const [debugTokenExists, setDebugTokenExists] = useState<string>('Cargando...')
+  const [debugRawUser, setDebugRawUser] = useState<string>('Cargando...')
+  const [debugClientTable, setDebugClientTable] = useState<string>('Cargando...')
+  const [debugDBWriteStatus, setDebugDBWriteStatus] = useState<string>('Esperando tiro...')
+
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
-      
+
       setIsValidating(true)
       setErrorMessage(null)
       setYaGiroHoy(false)
       setChosenPrize(null)
 
       try {
-        let currentUserId = usuarioActivo?.id
-        let currentTenantId = tenantIdActivo
-
-        // 🔍 FORZAR DETECCIÓN: Le pedimos la sesión a nuestra instancia persistente
-        if (!currentUserId) {
-          console.log('📡 [Ruleta] Forzando lectura de sesión persistente...');
-          
-          // Intentamos primero con la sesión actual
-          const { data: { session }, error: sessionError } = await supabaseRuleta.auth.getSession()
-          
-          if (sessionError) {
-            console.error('❌ [Ruleta] Error al extraer sesión persistente:', sessionError)
-          }
-
-          if (session?.user) {
-            currentUserId = session.user.id
-            console.log('✅ [Ruleta] ¡Sesión encontrada por LocalStorage! ID:', currentUserId)
-          } else {
-            // Intento desesperado secundario: Ver si hay un usuario actual cargado en memoria
-            const { data: { user } } = await supabaseRuleta.auth.getUser()
-            if (user) {
-              currentUserId = user.id
-              console.log('✅ [Ruleta] ¡Usuario recuperado mediante getUser()! ID:', currentUserId)
-            }
-          }
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('freshnails-auth-token')
+          setDebugTokenExists(token ? '✅ SÍ EXISTE EN STORAGE' : '❌ NO EXISTE (Vacio)')
         }
 
-        // Si después de forzar la persistencia sigue dando null, es porque las llaves de autenticación están en otra cookie o localStorage key
-        if (!currentUserId) {
-          console.error('❌ [Ruleta] Supabase sigue reportando null. No hay token de login válido en este dominio.');
-          setErrorMessage('No se pudo verificar la sesión activa desde el panel principal. Por favor, cierra sesión e ingresa nuevamente.')
+        let currentUserId = usuarioActivo?.id
+
+        const { data: { session } } = await supabase.auth.getSession()
+        currentUserId = session?.user?.id
+        
+        if (session?.user) {
+          setDebugRawUser(`✅ ID: ${session.user.id}`)
+        } else {
+          setDebugRawUser('❌ Supabase reporta session = null')
+          setErrorMessage('No hay sesión activa de Supabase.')
           setIsValidating(false)
           return
         }
 
-        // Buscamos el cliente correspondiente en la tabla 'clients'
-        console.log('📡 [Ruleta] Buscando perfil en base de datos para el UUID registrado:', currentUserId)
-        const { data: clientData, error: clientError } = await supabaseRuleta
+        const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('id, tenant_id')
           .eq('auth_user_id', currentUserId)
           .maybeSingle()
 
         if (clientError) {
-          console.error('❌ [Ruleta] Error en tabla "clients":', clientError)
-          setErrorMessage('Error de conexión al verificar tu perfil de cliente.')
+          setDebugClientTable(`❌ Error DB: ${clientError.message}`)
+          setErrorMessage(`Error de base de datos: ${clientError.message}`)
           setIsValidating(false)
           return
         }
 
         if (!clientData) {
-          console.error('❌ [Ruleta] No existe el auth_user_id en la tabla clients. ¿El registro guardó la fila?')
-          setErrorMessage('Tu usuario está registrado, pero tu perfil de cliente no está completamente vinculado.')
+          setDebugClientTable('❌ Tu usuario NO existe en la tabla "clients"')
+          setErrorMessage('Tu cuenta no está vinculada a un perfil de cliente.')
           setIsValidating(false)
           return
         }
 
-        const finalTenantId = currentTenantId || clientData.tenant_id
-        
-        if (!finalTenantId) {
-          setErrorMessage('No se pudo determinar el comercio asociado a tu perfil.')
-          setIsValidating(false)
-          return
-        }
+        setDebugClientTable(`✅ Cliente ID: ${clientData.id} | Tenant: ${clientData.tenant_id}`)
 
+        const finalTenantId = tenantIdActivo || clientData.tenant_id
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
-        // Verificar si ya giró hoy
         const hoyInicio = new Date()
         hoyInicio.setHours(0, 0, 0, 0)
-        const hoyFin = new Date()
-        hoyFin.setHours(23, 59, 59, 999)
-
-        const { data: transData } = await supabaseRuleta
+        
+        const { data: transData } = await supabase
           .from('loyalty_transactions')
           .select('id')
           .eq('client_id', clientData.id)
-          .eq('tenant_id', finalTenantId)
-          .eq('source', 'ruleta')
+          .ilike('description', '%Ruleta Diaria%')
           .gte('created_at', hoyInicio.toISOString())
-          .lte('created_at', hoyFin.toISOString())
 
         if (transData && transData.length > 0) {
           setYaGiroHoy(true)
+          setDebugDBWriteStatus('ℹ️ Ya giraste hoy de forma preventiva.')
+        } else {
+          setDebugDBWriteStatus('✅ Listo para girar.')
         }
 
         setIsValidating(false)
-
-      } catch (error) {
-        console.error('❌ [Ruleta] Excepción atrapada:', error)
-        setErrorMessage('Ocurrió un error inesperado al validar tus datos de acceso.')
+      } catch (error: any) {
+        setErrorMessage(`Ocurrió un error inesperado: ${error.message || error}`)
         setIsValidating(false)
       }
     }
@@ -161,6 +127,7 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
 
     setIsSpinning(true)
     setChosenPrize(null)
+    setDebugDBWriteStatus('⏳ Girando... Esperando detención...')
 
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
     const premioGanado = PREMIOS[randomIndex]
@@ -173,41 +140,83 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
 
     setTimeout(async () => {
       setChosenPrize(premioGanado)
-      
-      if (premioGanado.value > 0) {
-        try {
-          await supabaseRuleta.from('loyalty_transactions').insert({
-            client_id: clientId,
-            tenant_id: resolvedTenantId,
-            source: 'ruleta',
-            points: premioGanado.value,
-            type: premioGanado.type,
-            description: `Premio obtenido en Ruleta Diaria: ${premioGanado.text}`
-          })
 
-          const columnaPuntos = premioGanado.type === 'hair' ? 'hair_points' : 'glow_points'
-          
-          const { data: wallet } = await supabaseRuleta
+      if (premioGanado.value > 0) {
+        setDebugDBWriteStatus('💾 Insertando historial con tipos estrictos...')
+        
+        // CORRECCIÓN EXACTA BASADA EN EL SCHEMA VERIFICADO
+        const { error: txError } = await supabase.from('loyalty_transactions').insert({
+          client_id: clientId,
+          tenant_id: resolvedTenantId,
+          points: premioGanado.value,
+          type: 'earned',       // VALOR VERIFICADO EN EL CHECK
+          wallet_type: premioGanado.type, // VALOR VERIFICADO EN EL CHECK ('hair' o 'glow')
+          category: 'manual',    // VALOR VERIFICADO EN EL CHECK
+          description: `Premio obtenido en Ruleta Diaria: ${premioGanado.text}`
+        })
+
+        if (txError) {
+          setDebugDBWriteStatus(`❌ Error Historial: ${txError.message} (Código: ${txError.code})`)
+          setIsSpinning(false)
+          return
+        }
+
+        const columnaPuntos = premioGanado.type === 'hair' ? 'hair_points' : 'glow_points'
+        setDebugDBWriteStatus('💾 Leyendo billetera (loyalty_wallets)...')
+
+        const { data: wallet, error: walletGetError } = await supabase
+          .from('loyalty_wallets')
+          .select('*')
+          .eq('client_id', clientId)
+          .eq('tenant_id', resolvedTenantId)
+          .maybeSingle()
+
+        if (walletGetError) {
+          setDebugDBWriteStatus(`❌ Error billetera: ${walletGetError.message}`)
+          setIsSpinning(false)
+          return
+        }
+
+        if (wallet) {
+          setDebugDBWriteStatus(`💾 Actualizando saldo en columna: ${columnaPuntos}`)
+          const { error: updateError } = await supabase
             .from('loyalty_wallets')
-            .select('*')
+            .update({ [columnaPuntos]: (wallet[columnaPuntos] || 0) + premioGanado.value })
             .eq('client_id', clientId)
             .eq('tenant_id', resolvedTenantId)
-            .maybeSingle()
 
-          if (wallet) {
-            const saldoActual = wallet[columnaPuntos] || 0
-            await supabaseRuleta
-              .from('loyalty_wallets')
-              .update({ [columnaPuntos]: saldoActual + premioGanado.value })
-              .eq('client_id', clientId)
-              .eq('tenant_id', resolvedTenantId)
+          if (updateError) {
+            setDebugDBWriteStatus(`❌ Error actualizando saldo: ${updateError.message}`)
+            setIsSpinning(false)
+            return
           }
-          
-          if (onPremioProcesado) onPremioProcesado()
+        } else {
+          setDebugDBWriteStatus('💾 Creando saldo inicial de billetera...')
+          const { error: insertWalletError } = await supabase
+            .from('loyalty_wallets')
+            .insert({
+              client_id: clientId,
+              tenant_id: resolvedTenantId,
+              hair_points: premioGanado.type === 'hair' ? premioGanado.value : 0,
+              glow_points: premioGanado.type === 'glow' ? premioGanado.value : 0
+            })
 
-        } catch (dbError) {
-          console.error('Fallo al guardar premio:', dbError)
+          if (insertWalletError) {
+            setDebugDBWriteStatus(`❌ Error saldo inicial: ${insertWalletError.message}`)
+            setIsSpinning(false)
+            return
+          }
         }
+
+        setDebugDBWriteStatus('🔄 Sincronizando con la interfaz...')
+        if (refreshUserData) {
+          await refreshUserData()
+        }
+
+        setDebugDBWriteStatus('🎉 ¡PUNTOS ASENTADOS CON ÉXITO!')
+        if (onPremioProcesado) onPremioProcesado()
+      } else {
+        setDebugDBWriteStatus('ℹ️ 0 puntos ganados. Fin del proceso.')
       }
 
       setYaGiroHoy(true)
@@ -222,6 +231,16 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
       <div className="fixed inset-0 bg-stone-950/80 backdrop-blur-md" onClick={!isSpinning ? onClose : undefined} />
 
       <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 p-6 text-center shadow-2xl z-10">
+        
+        {/* PANEL DE AUDITORÍA */}
+        <div className="mb-4 p-3 bg-black/60 rounded-xl border border-dashed border-stone-700 text-left text-[11px] font-mono space-y-1 text-stone-300">
+          <p className="text-amber-400 font-bold border-b border-stone-800 pb-0.5 mb-1">🔍 AUDITORÍA DE BASE DE DATOS:</p>
+          <p>• LocalStorage: <span className="font-bold text-white">{debugTokenExists}</span></p>
+          <p>• Auth User UID: <span className="font-bold text-white">{debugRawUser}</span></p>
+          <p>• Fila en Clients: <span className="font-bold text-white">{debugClientTable}</span></p>
+          <p className="border-t border-stone-800/80 pt-1 mt-1 text-cyan-400">• Operación DB: <span className="font-bold text-white">{debugDBWriteStatus}</span></p>
+        </div>
+
         {!isSpinning && (
           <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-white p-1 rounded-full hover:bg-stone-800 transition-colors">
             <X className="w-5 h-5" />
@@ -231,14 +250,14 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
         {isValidating ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-4">
             <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-            <p className="text-stone-300 font-mono text-sm tracking-wide animate-pulse">Forzando enlace de sesión segura...</p>
+            <p className="text-stone-300 font-mono text-sm tracking-wide animate-pulse">Consultando base de datos...</p>
           </div>
         ) : errorMessage ? (
           <div className="py-8 flex flex-col items-center space-y-4">
             <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
               <AlertCircle className="w-8 h-8 text-red-400" />
             </div>
-            <h3 className="text-white font-medium text-base">Verificación de Cuenta</h3>
+            <h3 className="text-white font-medium text-base">Estado de la cuenta</h3>
             <p className="text-stone-400 text-xs px-4 leading-relaxed">{errorMessage}</p>
             <button onClick={onClose} className="mt-2 px-5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-white text-xs font-medium">Cerrar</button>
           </div>

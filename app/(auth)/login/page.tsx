@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase/client' // Unificamos el cliente persistente
 
 export default function AuthMobilDefinitivo() {
   const router = useRouter()
-  const { signIn, role, user, loading: authLoading } = useAuth()
-  const supabase = createClientComponentClient()
+  const { signIn, signUp, role, user, loading: authLoading } = useAuth()
 
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'recover'>('login')
@@ -29,7 +28,6 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // Mantenemos también el useEffect por si entra una sesión externa
   useEffect(() => {
     if (mounted && user && !authLoading && role !== null) {
       if (role === 'admin' || role === 'staff' || role === 'owner') {
@@ -40,7 +38,7 @@ export default function AuthMobilDefinitivo() {
     }
   }, [user, role, authLoading, mounted])
 
-  // LOGIN CON REDIRECCIÓN MANUAL INSTANTÁNEA
+  // LOGIN UTILIZANDO EL AUTHCONTEXT (FUEZA LA PERSISTENCIA EN EL TELÉFONO)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
@@ -49,29 +47,32 @@ export default function AuthMobilDefinitivo() {
     setSuccess('')
 
     try {
-      // 1. Loguear con Supabase directamente para forzar sesión local
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      // Usamos el método unificado del contexto que escribe el localStorage
+      const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto!')
       router.refresh()
 
-      // 2. Traer el perfil manualmente para saber a dónde mandarlo sin demoras
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
+      // Traemos el perfil usando la misma instancia persistente para la redirección
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
 
-      const userRole = profile?.role || 'client'
+        const userRole = profile?.role || 'client'
 
-      setTimeout(() => {
-        if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
-          window.location.href = '/dashboard'
-        } else {
-          window.location.href = '/portal'
-        }
-      }, 400)
+        setTimeout(() => {
+          if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
+            window.location.href = '/dashboard'
+          } else {
+            window.location.href = '/portal'
+          }
+        }, 400)
+      }
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
@@ -79,7 +80,7 @@ export default function AuthMobilDefinitivo() {
     }
   }
 
-  // REGISTRO CON LLAMADA API Y LOGUEO INMEDIATO AL PORTAL (CON PASO DE REFERIDO)
+  // REGISTRO UTILIZANDO EL AUTHCONTEXT
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
@@ -96,7 +97,7 @@ export default function AuthMobilDefinitivo() {
           password,
           nombre: fullName.trim(),
           telefono: phone.trim(),
-          referralCode: referralCode.trim() // <-- ENVIADO AL BACKEND CON ÉXITO
+          referralCode: referralCode.trim()
         })
       })
 
@@ -108,8 +109,8 @@ export default function AuthMobilDefinitivo() {
       setSuccess('✅ ¡Registro exitoso! Redirigiendo...')
       router.refresh()
 
-      // Forzar inicio de sesión en el cliente para que gane las cookies
-      await supabase.auth.signInWithPassword({ email, password })
+      // Forzar inicio de sesión usando el contexto unificado para que asiente la sesión local
+      await signIn(email, password)
 
       setTimeout(() => {
         window.location.href = '/portal'
