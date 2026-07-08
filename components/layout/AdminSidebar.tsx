@@ -18,16 +18,16 @@ interface AdminSidebarProps {
 }
 
 const ALL_MENU_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20' },
-  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/admin/agenda', color: 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/20' },
-  { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' },
-  { id: 'clientes', name: 'Clientas VIP', icon: Users, path: '/admin/clientes', color: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' },
-  { id: 'fidelizacion', name: 'Consola VIP', icon: Crown, path: '/admin/fidelizacion', color: 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20' },
-  { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' },
-  { id: 'productos', name: 'Productos / Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'border-violet-500 text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/20' },
-  { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'border-red-500 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20' },
-  { id: 'staff', name: 'Staff Equipo', icon: UsersRound, path: '/admin/staff', color: 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20' },
-  { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'border-stone-500 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-900/40' },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'text-pink-500' },
+  { id: 'agenda', name: 'Agenda Citas', icon: Calendar, path: '/admin/agenda', color: 'text-violet-500' },
+  { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'text-blue-500' },
+  { id: 'clientes', name: 'Clientas VIP', icon: Users, path: '/admin/clientes', color: 'text-rose-500' },
+  { id: 'fidelizacion', name: 'Consola VIP', icon: Crown, path: '/admin/fidelizacion', color: 'text-amber-500' },
+  { id: 'servicios', name: 'Servicios Menu', icon: Sparkles, path: '/admin/servicios', color: 'text-fuchsia-500' },
+  { id: 'productos', name: 'Productos / Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'text-emerald-500' },
+  { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'text-red-500' },
+  { id: 'staff', name: 'Staff Equipo', icon: UsersRound, path: '/admin/staff', color: 'text-cyan-500' },
+  { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'text-orange-500' },
 ]
 
 export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
@@ -37,35 +37,22 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const pathname = usePathname()
 
   const [mounted, setMounted] = useState(false)
-  const [currentPath, setCurrentPath] = useState(pathname)
-
   const isDark = theme === 'dark'
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    setCurrentPath(pathname)
-  }, [pathname])
-
   if (!mounted) return null
-
-// 🔓 BYPASS DE ROLES PARA TERMUX / DESARROLLO LOCAL
-const visibleMenu = ALL_MENU_ITEMS; 
-// const isAdmin = role === 'admin' || role === 'staff'
-// const visibleMenu = isAdmin ? ALL_MENU_ITEMS : ALL_MENU_ITEMS.slice(0, 5)
 
   const handleNavigation = (path: string) => {
     router.push(path)
     onClose()
   }
 
-  const activePath = currentPath || pathname || '/dashboard'
-
   const isItemActive = (itemPath: string) => {
-    if (itemPath === '/dashboard') return activePath === '/dashboard'
-    return activePath?.startsWith(itemPath + '/') || activePath === itemPath
+    if (itemPath === '/dashboard') return pathname === '/dashboard'
+    return pathname?.startsWith(itemPath + '/') || pathname === itemPath
   }
 
   const handleLogoutClick = async () => {
@@ -80,130 +67,123 @@ const visibleMenu = ALL_MENU_ITEMS;
 
   return (
     <>
+      {/* OVERLAY MÓVIL DIVERTIDO */}
       {isOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={onClose} />
+        <div className="lg:hidden fixed inset-0 bg-fuchsia-950/20 backdrop-blur-xs z-40" onClick={onClose} />
       )}
 
       <aside className={`
-        fixed lg:sticky top-0 left-0 z-50 h-screen border-r transition-colors duration-300 flex flex-col shadow-2xl
+        fixed lg:sticky top-0 left-0 z-50 h-screen transition-all duration-300 flex flex-col border-r
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${collapsed ? 'w-[72px]' : 'w-72'}
-        ${isDark ? 'bg-[#0e0c0b] border-stone-900/80 text-stone-200' : 'bg-white border-stone-200 text-stone-900'}
+        ${collapsed ? 'w-[76px]' : 'w-64'}
+        ${isDark ? 'bg-[#0f0c1b] border-fuchsia-950/40 text-stone-200' : 'bg-[#fffafd] border-pink-100 text-stone-800'}
       `}>
-        {/* HEADER */}
-        <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-stone-900' : 'border-stone-100'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(225,29,72,0.25)] flex-shrink-0">
-              <span className="text-white text-sm">💅</span>
+        
+        {/* CABECERA CON BRILLO */}
+        <div className={`h-16 px-5 flex items-center justify-between border-b ${isDark ? 'border-fuchsia-950/30' : 'border-pink-50'}`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 flex items-center justify-center shrink-0 shadow-md shadow-pink-500/20">
+              <Sparkles className="w-4 h-4 text-white animate-pulse" />
             </div>
             {!collapsed && (
-              <div>
-                <span className={`text-xs font-bold uppercase tracking-[0.2em] block ${isDark ? 'text-stone-100' : 'text-stone-800'}`}>Fresh Nails</span>
-                <span className={`text-[8px] uppercase tracking-widest font-mono block ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>{role || 'Cargando...'} Control</span>
+              <div className="animate-fade-in">
+                <span className="text-sm font-serif tracking-wide block font-extrabold bg-gradient-to-r from-pink-600 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-amber-300">
+                  Fresh Nails
+                </span>
+                <span className="text-[9px] uppercase tracking-widest font-mono block text-pink-400 dark:text-fuchsia-400/80 font-bold">{role || 'Studio'}</span>
               </div>
             )}
           </div>
-          <button 
-            onClick={onClose} 
-            className={`lg:hidden p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-stone-900 text-stone-400 hover:text-white' : 'hover:bg-stone-100 text-stone-500 hover:text-stone-900'}`}
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {isOpen && (
+            <button onClick={onClose} className="lg:hidden p-1 text-pink-400 hover:text-pink-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* PERFIL */}
+        {/* PERFIL GLOW VIBRANTE */}
         {!collapsed && (
-          <div className={`mx-4 mt-4 p-3 border rounded-xl ${isDark ? 'bg-stone-900/30 border-stone-900/80' : 'bg-stone-50 border-stone-100'}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/30 flex items-center justify-center font-bold text-rose-500 text-xs">
+          <div className="px-4 pt-4 shrink-0">
+            <div className={`p-3 rounded-2xl flex items-center gap-3 transition-all border ${
+              isDark 
+                ? 'bg-gradient-to-r from-fuchsia-950/30 to-pink-950/20 border-fuchsia-900/30 shadow-inner' 
+                : 'bg-gradient-to-r from-pink-50/60 to-amber-50/40 border-pink-100/70 shadow-xs'
+            }`}>
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-400 to-fuchsia-500 flex items-center justify-center font-mono text-xs font-bold text-white shadow-sm">
                 {user?.email?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-medium truncate ${isDark ? 'text-stone-200' : 'text-stone-700'}`}>{user?.email || 'Cargando...'}</p>
-                <span className="text-[8px] font-mono tracking-wider text-amber-500 uppercase block">En Línea</span>
+                <p className="text-xs font-semibold truncate text-stone-800 dark:text-pink-100">{user?.email || 'Admin'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                  <span className="text-[9px] font-mono tracking-wider text-emerald-600 dark:text-emerald-400 font-bold uppercase">Activa</span>
+                </div>
               </div>
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
             </div>
           </div>
         )}
 
-        {/* MENÚ */}
-        <nav className={`flex-1 p-3 space-y-1 overflow-y-auto ${collapsed ? 'px-2' : ''}`}>
-          {visibleMenu.map((item) => {
+        {/* NAVEGACIÓN LLENA DE VIVEZA Y COLOR */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none select-none">
+          {ALL_MENU_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive = isItemActive(item.path)
-
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium border transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group ${
                   isActive 
-                    ? `${item.color} font-semibold shadow-sm` 
-                    : isDark 
-                      ? 'border-transparent text-stone-400 hover:text-stone-100 hover:bg-stone-900/30'
-                      : 'border-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-50'
-                } ${collapsed ? 'justify-center px-2' : ''}`}
+                    ? isDark 
+                      ? 'bg-gradient-to-r from-fuchsia-950/60 to-pink-950/40 text-pink-200 border border-fuchsia-900/40 shadow-sm shadow-fuchsia-950/50' 
+                      : 'bg-gradient-to-r from-pink-100/70 to-rose-50/50 text-pink-950 border border-pink-200/50 shadow-xs'
+                    : isDark
+                      ? 'text-stone-400 hover:bg-stone-900/30 hover:text-stone-100'
+                      : 'text-stone-500 hover:bg-pink-50/30 hover:text-pink-700'
+                } ${collapsed ? 'justify-center px-0' : ''}`}
                 title={collapsed ? item.name : ''}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                {!collapsed && <span className="truncate">{item.name}</span>}
-                {isActive && <span className="ml-auto w-1 h-6 rounded-full bg-current opacity-60"></span>}
+                {isActive && (
+                  <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-gradient-to-b from-pink-500 to-fuchsia-500" />
+                )}
+                
+                <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
+                  isActive 
+                    ? 'scale-110 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]' 
+                    : 'group-hover:scale-110'
+                } ${item.color}`} />
+                
+                {!collapsed && <span className="truncate tracking-wide">{item.name}</span>}
               </button>
             )
           })}
         </nav>
 
-        {/* RESUMEN */}
-        {!collapsed && (
-          <div className={`mx-4 mb-2 p-4 border rounded-xl space-y-2 shrink-0 ${isDark ? 'bg-[#0c0a09] border-stone-900' : 'bg-stone-50 border-stone-100'}`}>
-            <p className="text-[9px] font-mono text-stone-400 uppercase tracking-widest">Resumen de Hoy</p>
-            <div className="flex justify-between items-center text-[11px]">
-              <span className={isDark ? 'text-stone-400' : 'text-stone-600'}>Puntos otorgados</span>
-              <span className="text-rose-500 font-medium">+245</span>
-            </div>
-            <div className="flex justify-between items-center text-[11px]">
-              <span className={isDark ? 'text-stone-400' : 'text-stone-600'}>Nuevas clientas</span>
-              <span className="text-amber-500 font-medium">+12</span>
-            </div>
-            <div className={`flex justify-between items-center text-[11px] pt-1 border-t ${isDark ? 'border-stone-900/40' : 'border-stone-200'}`}>
-              <span className={isDark ? 'text-stone-400' : 'text-stone-600'}>Citas hoy</span>
-              <span className="text-cyan-600 dark:text-cyan-400 font-medium">8</span>
-            </div>
-          </div>
-        )}
-
-        {/* ACCIONES */}
-        <div className={`p-3 border-t space-y-1 ${collapsed ? 'px-2' : ''} ${isDark ? 'border-stone-900/60 bg-[#0c0a09]' : 'border-stone-100 bg-stone-50'}`}>
-          <button
-            onClick={toggleTheme}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${collapsed ? 'justify-center px-2' : ''} ${
-              isDark ? 'text-stone-400 hover:text-stone-100 hover:bg-stone-900/40' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/50'
-            }`}
-          >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-stone-600" />}
-            {!collapsed && <span>{isDark ? 'Modo claro' : 'Modo oscuro'}</span>}
+        {/* CONTROLES ELEGANTES EN EL PIE */}
+        <div className={`p-3 border-t space-y-1 shrink-0 ${isDark ? 'border-fuchsia-950/30 bg-[#0c0a14]' : 'border-pink-50 bg-[#fffdf1]/40'}`}>
+          <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-stone-500 dark:text-stone-400 hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400 collapsed ? 'justify-center' : ''">
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+            {!collapsed && <span>Cambiar ambiente</span>}
           </button>
-
-          <button
-            onClick={handleLogoutClick}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs border border-transparent transition-all group ${collapsed ? 'justify-center px-2' : ''} ${
-              isDark ? 'text-stone-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/20' : 'text-stone-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
-            }`}
-          >
+          
+          <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group text-stone-500 dark:text-stone-400 hover:bg-rose-500/5 hover:text-rose-600 dark:hover:text-rose-400 collapsed ? 'justify-center' : ''">
             <Power className="w-4 h-4 text-stone-400 group-hover:text-rose-500 transition-colors" />
-            {!collapsed && <span>Cerrar Sesión</span>}
+            {!collapsed && <span>Cerrar sesión</span>}
           </button>
         </div>
       </aside>
 
+      {/* TIRADOR DE PANTALLA FLOTANTE CON DEGRADADO */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`hidden lg:flex absolute -right-3 top-20 border rounded-full p-1 transition-all z-50 ${
-          isDark ? 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white hover:bg-stone-800' : 'bg-white border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-50'
+        className={`hidden lg:flex fixed top-5 border rounded-full p-1.5 transition-all z-50 shadow-md ${
+          isDark 
+            ? 'bg-[#151126] border-fuchsia-900/50 text-fuchsia-400 hover:text-pink-400' 
+            : 'bg-white border-pink-200 text-pink-400 hover:text-pink-600'
         }`}
+        style={{ left: collapsed ? '60px' : '244px', transition: 'left 300ms' }}
       >
-        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5 animate-pulse" /> : <ChevronLeft className="w-3.5 h-3.5" />}
       </button>
     </>
   )

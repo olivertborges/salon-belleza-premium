@@ -8,9 +8,9 @@ import {
   X, Edit, Save, FileText, TrendingUp, Users, 
   Calendar, ChevronDown, Bell, Menu, Search,
   Star, Award, Zap, Eye, MessageCircle, Ban,
-  RefreshCw, Scissors, Loader2
+  RefreshCw, Scissors, Loader2, Building2
 } from 'lucide-react'
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay, isSameMonth } from 'date-fns'
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase/client'
 import { TimePicker } from '@/components/TimePicker'
@@ -51,7 +51,6 @@ export default function AdminAgendaPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [citaParaEliminar, setCitaParaEliminar] = useState<string | null>(null)
 
   const [newCita, setNewCita] = useState({
     clientId: '',
@@ -62,14 +61,8 @@ export default function AdminAgendaPage() {
     notes: '',
   })
 
-  // ============================================================
-  // MOSTRAR TOAST
-  // ============================================================
   const mostrarToastLlamativo = (nuevaCita: any) => {
-    if (!nuevaCita || !nuevaCita.date || !nuevaCita.time) {
-      console.warn('⚠️ Cita incompleta para mostrar toast:', nuevaCita)
-      return
-    }
+    if (!nuevaCita || !nuevaCita.date || !nuevaCita.time) return
 
     const ID_TOAST = 'toast-nueva-cita'
     let toastExistente = document.getElementById(ID_TOAST)
@@ -77,7 +70,7 @@ export default function AdminAgendaPage() {
 
     const toast = document.createElement('div')
     toast.id = ID_TOAST
-    toast.className = `fixed top-5 right-5 z-[9999] p-4 rounded-xl shadow-xl max-w-sm transition-all duration-300 border ${
+    toast.className = `fixed top-5 right-5 z-[9999] p-4 rounded-xl shadow-2xl max-w-sm transition-all duration-300 border ${
       isDark ? 'bg-stone-900 border-stone-800 text-stone-200' : 'bg-white border-stone-200 text-stone-800'
     }`
 
@@ -85,12 +78,12 @@ export default function AdminAgendaPage() {
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <h4 class="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">¡Nueva Cita Recibida!</h4>
+          <h4 class="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">¡Nueva Cita!</h4>
         </div>
-        <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">Una clienta se acaba de agendar para el día <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.date}</span> a las <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.time.slice(0,5)}</span>.</p>
+        <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">Una clienta se acaba de agendar para el <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.date}</span> a las <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.time.slice(0,5)}</span>.</p>
         <div class="flex justify-end gap-3 mt-1 border-t border-stone-100 dark:border-stone-800/60 pt-2">
           <button id="btn-cerrar-toast" class="text-[9px] font-mono uppercase tracking-wider text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors">Cerrar</button>
           <button id="btn-ir-toast" class="text-[9px] font-mono uppercase tracking-wider border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded hover:bg-stone-50 dark:hover:bg-stone-800 transition-all font-bold">Revisar</button>
@@ -103,7 +96,7 @@ export default function AdminAgendaPage() {
     document.getElementById('btn-cerrar-toast')?.addEventListener('click', () => toast.remove())
     document.getElementById('btn-ir-toast')?.addEventListener('click', () => {
       if (nuevaCita.date) {
-        const fechaCita = new Date(nuevaCita.date.replace(/-/g, '\/'))
+        const fechaCita = new Date(nuevaCita.date.replace(/-/g, '/'))
         setFechaSeleccionada(fechaCita)
       }
       setViewMode('day')
@@ -296,11 +289,11 @@ export default function AdminAgendaPage() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string, color: string, bg: string, icon: any }> = {
-      pending: { label: 'Pendiente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/5 border-amber-500/10', icon: Clock },
-      confirmed: { label: 'Confirmada', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/5 border-emerald-500/10', icon: CheckCircle2 },
-      in_progress: { label: 'En proceso', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/5 border-blue-500/10', icon: Play },
-      completed: { label: 'Completada', color: 'text-stone-500 dark:text-stone-400', bg: 'bg-stone-500/5 border-stone-500/10', icon: Award },
-      cancelled: { label: 'Cancelada', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/5 border-rose-500/10', icon: X },
+      pending: { label: 'Pendiente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', icon: Clock },
+      confirmed: { label: 'Confirmada', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
+      in_progress: { label: 'En proceso', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', icon: Play },
+      completed: { label: 'Completada', color: 'text-stone-500 dark:text-stone-400', bg: 'bg-stone-500/10 border-stone-500/20', icon: Award },
+      cancelled: { label: 'Cancelada', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20', icon: X },
       blocked: { label: 'Bloqueado', color: 'text-stone-600 dark:text-stone-400', bg: 'bg-stone-100 dark:bg-stone-900 border-stone-200 dark:border-stone-800', icon: Ban },
     }
     return config[status] || config.pending
@@ -429,7 +422,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // VISTA DÍA - HYBRID TIMELINE CARDS
+  // RENDER VISTA DÍA (REDISEÑADO)
   // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = citas.filter(c => c.date === format(fechaSeleccionada, 'yyyy-MM-dd'))
@@ -438,16 +431,16 @@ export default function AdminAgendaPage() {
     if (citasOrdenadas.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 space-y-4">
-          <div className="w-12 h-12 rounded-full border border-dashed border-stone-200 dark:border-stone-800 flex items-center justify-center bg-stone-50 dark:bg-stone-900/40">
-            <Sparkles className="w-4 h-4 text-stone-400 stroke-[1.25]" />
+          <div className="w-16 h-16 rounded-full border-2 border-dashed border-stone-200 dark:border-stone-800 flex items-center justify-center bg-stone-50/50 dark:bg-stone-900/20">
+            <CalendarIcon className="w-6 h-6 text-stone-300 dark:text-stone-600" />
           </div>
           <div className="text-center">
-            <p className="text-xs font-mono uppercase tracking-widest text-stone-400">Sin Movimiento</p>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">No hay citas agendadas para este día.</p>
+            <p className="text-sm font-serif italic text-stone-400 dark:text-stone-500">Día libre</p>
+            <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">No hay citas agendadas para este día</p>
           </div>
           <button 
             onClick={() => setShowNewAppointment(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-mono uppercase tracking-wider hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-600 dark:text-stone-300"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-xs font-mono uppercase tracking-wider hover:opacity-90 transition-all shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             Agendar turno
@@ -476,89 +469,114 @@ export default function AdminAgendaPage() {
 
     const grupos = agruparPorFranja()
     const franjas = [
-      { key: 'mañana', label: 'Mañana', icon: <Clock className="w-3 h-3 text-stone-400" />, citas: grupos.mañana },
-      { key: 'tarde', label: 'Tarde', icon: <Clock className="w-3 h-3 text-stone-400" />, citas: grupos.tarde },
-      { key: 'noche', label: 'Noche', icon: <Clock className="w-3 h-3 text-stone-400" />, citas: grupos.noche }
+      { key: 'mañana', label: 'Mañana', emoji: '🌅', citas: grupos.mañana },
+      { key: 'tarde', label: 'Tarde', emoji: '☀️', citas: grupos.tarde },
+      { key: 'noche', label: 'Noche', emoji: '🌙', citas: grupos.noche }
     ]
 
     return (
-      <div className="space-y-6 pb-4">
-        <div className="flex items-center justify-between p-4 rounded-xl border border-stone-200 dark:border-stone-800/60 bg-stone-50/50 dark:bg-stone-900/10">
+      <div className="space-y-5 pb-4">
+        <div className={`flex items-center justify-between p-4 rounded-2xl border ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        }`}>
           <div>
-            <p className="text-[10px] font-mono text-stone-400 uppercase tracking-widest font-bold">
+            <p className="text-[9px] font-mono text-stone-400 uppercase tracking-[0.15em] font-bold">
               {format(fechaSeleccionada, 'EEEE', { locale: es })}
             </p>
-            <h2 className="text-xl font-serif italic text-stone-900 dark:text-stone-100 mt-1">
+            <h2 className="text-2xl font-serif italic text-stone-900 dark:text-stone-100 mt-0.5">
               {format(fechaSeleccionada, 'd', { locale: es })}
-              <span className="text-xs font-serif font-normal text-stone-400 ml-1">
-                de {format(fechaSeleccionada, 'MMMM', { locale: es })}
+              <span className="text-sm font-serif font-normal text-stone-400 ml-1.5">
+                {format(fechaSeleccionada, 'MMMM', { locale: es })}
               </span>
             </h2>
           </div>
-          <div>
-            <span className="text-[10px] font-mono uppercase tracking-wider bg-stone-100 dark:bg-stone-900 text-stone-500 border border-stone-200 dark:border-stone-800 px-3 py-1 rounded-md">
+          <div className="flex items-center gap-3">
+            <span className={`text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg border ${
+              isDark ? 'bg-stone-900/60 border-stone-800 text-stone-400' : 'bg-stone-50 border-stone-200 text-stone-500'
+            }`}>
               {citasOrdenadas.length} {citasOrdenadas.length === 1 ? 'Turno' : 'Turnos'}
             </span>
+            {isToday(fechaSeleccionada) && (
+              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Hoy
+              </span>
+            )}
           </div>
         </div>
 
-        {franjas.map(({ key, label, icon, citas: citasFranja }) => {
+        {franjas.map(({ key, label, emoji, citas: citasFranja }) => {
           if (citasFranja.length === 0) return null
 
           return (
             <div key={key} className="space-y-2.5">
-              <div className="flex items-center gap-2 border-b border-stone-100 dark:border-stone-900 pb-1.5">
-                {icon}
-                <h3 className="text-[10px] font-mono uppercase tracking-widest font-bold text-stone-400">{label}</h3>
-                <span className="text-[10px] font-mono text-stone-400">({citasFranja.length})</span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">{emoji}</span>
+                <h3 className="text-[10px] font-mono uppercase tracking-[0.15em] font-bold text-stone-400 dark:text-stone-500">
+                  {label}
+                </h3>
+                <span className="text-[9px] font-mono text-stone-300 dark:text-stone-600">({citasFranja.length})</span>
               </div>
 
-              <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-2">
                 {citasFranja.map((cita) => {
                   const statusInfo = getStatusBadge(cita.status)
                   const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
                   const isCompleted = cita.status === 'completed'
                   const isProcessing = cita.status === 'in_progress'
 
-                  let cardBg = 'bg-white dark:bg-[#110f0e]/40 border-stone-200 dark:border-stone-900/80'
+                  let cardBg = isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
                   if (isCompleted) {
-                    cardBg = 'bg-stone-50/40 dark:bg-stone-950/10 border-stone-200 dark:border-stone-900/50 opacity-70'
+                    cardBg = isDark ? 'bg-stone-900/20 border-stone-800/50 opacity-60' : 'bg-stone-50/60 border-stone-200/50 opacity-60'
                   }
                   if (isProcessing) {
-                    cardBg = 'bg-white dark:bg-[#110f0e]/50 border-amber-500/20 dark:border-amber-500/20'
+                    cardBg = isDark ? 'bg-stone-900/60 border-blue-500/30' : 'bg-white border-blue-300 shadow-md'
                   }
 
                   return (
                     <div 
                       key={cita.id} 
                       onClick={() => abrirDetalleCita(cita)}
-                      className={`relative overflow-hidden rounded-xl border p-4 transition-all cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-900/30 flex items-center justify-between gap-4 ${cardBg}`}
+                      className={`relative overflow-hidden rounded-xl border p-4 transition-all cursor-pointer hover:scale-[1.01] hover:shadow-lg flex items-center justify-between gap-4 ${cardBg}`}
                     >
-                      <div className="flex items-center gap-4 min-w-0">
-                        {/* Indicador de hora elegante */}
-                        <div className="w-12 h-12 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 flex flex-col items-center justify-center shrink-0">
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${
+                        cita.status === 'pending' ? 'bg-amber-400' :
+                        cita.status === 'confirmed' ? 'bg-emerald-400' :
+                        cita.status === 'in_progress' ? 'bg-blue-400 animate-pulse' :
+                        cita.status === 'completed' ? 'bg-stone-400' :
+                        'bg-rose-400'
+                      }`} />
+
+                      <div className="flex items-center gap-4 min-w-0 pl-3">
+                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
+                          isDark ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-stone-50'
+                        }`}>
                           <Clock className="w-3 h-3 text-stone-400" />
-                          <span className="text-[10px] font-mono font-bold mt-0.5 text-stone-600 dark:text-stone-300">{horaMostrar}</span>
+                          <span className="text-[11px] font-mono font-bold mt-0.5 text-stone-700 dark:text-stone-300">
+                            {horaMostrar}
+                          </span>
                         </div>
 
                         <div className="space-y-0.5 min-w-0">
-                          <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate flex items-center gap-1.5">
-                            <User className="w-3 h-3 text-stone-400" /> {cita.clients?.name || 'Cliente'}
+                          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 truncate flex items-center gap-2">
+                            {cita.clients?.name || 'Cliente'}
                           </h4>
                           <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate flex items-center gap-1.5">
-                            <Scissors className="w-3 h-3 text-stone-400" /> {cita.services?.name || 'Servicio'}
+                            <Scissors className="w-3 h-3 text-stone-400" />
+                            {cita.services?.name || 'Servicio'}
                           </p>
-                          <p className="text-[10px] text-stone-400 dark:text-stone-500 font-mono flex items-center gap-1">
-                            <span>💅 {cita.staff?.name || 'Sin asignar'}</span>
+                          <p className="text-[9px] text-stone-400 dark:text-stone-500 font-mono flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {cita.staff?.name || 'Sin asignar'}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="text-xs font-mono font-bold text-stone-900 dark:text-stone-200">
+                        <span className="text-sm font-mono font-bold text-stone-900 dark:text-stone-200">
                           ${Number(cita.services?.price || 0).toLocaleString()}
                         </span>
-                        <span className={`text-[8px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
+                        <span className={`text-[8px] font-mono uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
                           {statusInfo.label}
                         </span>
                       </div>
@@ -574,7 +592,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // VISTA SEMANA
+  // RENDER VISTA SEMANA (REDISEÑADO)
   // ============================================================
   const renderVistaSemana = () => {
     const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
@@ -584,7 +602,7 @@ export default function AdminAgendaPage() {
     const horaFinNum = 20
     const totalHoras = horaFinNum - horaInicioNum + 1
     const horasCuadricula = Array.from({ length: totalHoras }, (_, i) => i + horaInicioNum)
-    const HORA_ALTURA = 70
+    const HORA_ALTURA = 72
 
     const limpiarHora24h = (timeStr: string | null) => {
       if (!timeStr) return '--:--'
@@ -600,44 +618,67 @@ export default function AdminAgendaPage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="overflow-x-auto select-none border border-stone-200 dark:border-stone-800 rounded-xl bg-white dark:bg-[#0c0a09]">
-          <div className="min-w-[900px] flex flex-col">
+        <div className={`overflow-x-auto select-none rounded-2xl border ${
+          isDark ? 'border-stone-800 bg-stone-900/30' : 'border-stone-200 bg-white shadow-sm'
+        }`}>
+          <div className="min-w-[950px] flex flex-col">
 
-            {/* Cabecera de días de la semana */}
-            <div className="flex border-b border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-950/80 sticky top-0 z-10">
-              <div className="w-16 flex-shrink-0 border-r border-stone-200 dark:border-stone-800" />
+            <div className={`flex border-b ${
+              isDark ? 'border-stone-800 bg-stone-950/60' : 'border-stone-200 bg-stone-50/80'
+            }`}>
+              <div className={`w-16 flex-shrink-0 border-r ${
+                isDark ? 'border-stone-800' : 'border-stone-200'
+              }`} />
               <div className="flex-1 grid grid-cols-7">
                 {weekDays.map((day) => {
                   const isTodayDate = isToday(day)
+                  const citasDelDia = getCitasDelDia(day)
+                  const tieneCitas = citasDelDia.length > 0
+
                   return (
                     <div 
                       key={day.toString()} 
-                      className={`text-center py-2.5 border-r border-stone-200 dark:border-stone-800/60 last:border-r-0 flex flex-col items-center justify-center transition-all ${
-                        isTodayDate ? 'bg-stone-100/50 dark:bg-stone-900/40' : ''
+                      className={`text-center py-3 border-r last:border-r-0 transition-all ${
+                        isDark ? 'border-stone-800' : 'border-stone-200'
+                      } ${
+                        isTodayDate ? isDark ? 'bg-stone-800/40' : 'bg-stone-100/60' : ''
                       }`}
                     >
                       <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
-                        isTodayDate ? 'text-stone-900 dark:text-stone-100' : 'text-stone-400'
+                        isTodayDate ? 'text-stone-900 dark:text-stone-100' : 'text-stone-400 dark:text-stone-500'
                       }`}>
                         {format(day, 'EEE', { locale: es })}
                       </span>
-                      <div className={`mt-1 text-xs font-mono font-bold ${
+                      <div className={`mt-1 text-sm font-mono font-bold ${
                         isTodayDate 
-                          ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 w-6 h-6 flex items-center justify-center rounded-md shadow-sm' 
-                          : 'text-stone-700 dark:text-stone-300'
+                          ? `w-8 h-8 flex items-center justify-center rounded-xl mx-auto ${
+                            isDark ? 'bg-stone-100 text-stone-900' : 'bg-stone-900 text-white'
+                          } shadow-sm` 
+                          : `text-stone-700 dark:text-stone-300 ${tieneCitas ? 'font-bold' : 'font-normal'}`
                       }`}>
                         {format(day, 'd')}
                       </div>
+                      {tieneCitas && (
+                        <div className="mt-1 flex justify-center gap-0.5">
+                          {citasDelDia.slice(0, 3).map((_, i) => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-600" />
+                          ))}
+                          {citasDelDia.length > 3 && (
+                            <span className="text-[7px] font-mono text-stone-400">+{citasDelDia.length - 3}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
             </div>
 
-            {/* Cuadricula Horaria */}
             <div className="flex relative">
               <div 
-                className="w-16 flex-shrink-0 border-r border-stone-200 dark:border-stone-800 bg-stone-50/90 dark:bg-stone-950/90 z-[15] sticky left-0"
+                className={`w-16 flex-shrink-0 border-r ${
+                  isDark ? 'border-stone-800 bg-stone-950/90' : 'border-stone-200 bg-stone-50/90'
+                } z-[15] sticky left-0`}
                 style={{ height: `${totalHoras * HORA_ALTURA}px` }}
               >
                 {horasCuadricula.map((hora) => (
@@ -654,7 +695,6 @@ export default function AdminAgendaPage() {
               <div className="flex-1 overflow-x-auto relative">
                 <div className="relative" style={{ height: `${totalHoras * HORA_ALTURA}px`, minWidth: '700px' }}>
 
-                  {/* Slots Droppables de Fondo */}
                   <div className="absolute inset-0 grid grid-cols-7" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const dayStr = format(day, 'yyyy-MM-dd')
@@ -664,7 +704,9 @@ export default function AdminAgendaPage() {
                           <DroppableSlot
                             key={`slot-${dayStr}-${horaStr}`}
                             id={`slot-${dayStr}-${horaStr}`}
-                            className="border-r border-b border-stone-100 dark:border-stone-900/40 hover:bg-stone-50 dark:hover:bg-stone-900/20 transition-colors"
+                            className={`border-r border-b ${
+                              isDark ? 'border-stone-900/40 hover:bg-stone-900/30' : 'border-stone-100 hover:bg-stone-50'
+                            } transition-colors`}
                             style={{
                               gridColumn: colIdx + 1,
                               gridRow: rowIdx + 1,
@@ -684,7 +726,6 @@ export default function AdminAgendaPage() {
                     })}
                   </div>
 
-                  {/* Citas Draggables Flotantes */}
                   <div className="absolute inset-0 grid grid-cols-7 pointer-events-none" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const citasDelDia = getCitasDelDia(day)
@@ -705,12 +746,11 @@ export default function AdminAgendaPage() {
                         const statusInfo = getStatusBadge(cita.status)
                         const isProcessing = cita.status === 'in_progress'
                         const isCompleted = cita.status === 'completed'
-
-                        let cardBgColor = 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 shadow-sm'
-                        if (isProcessing) cardBgColor = 'bg-amber-500/[0.03] dark:bg-amber-500/[0.02] border-amber-500/30 text-stone-800 dark:text-stone-100'
-                        if (isCompleted) cardBgColor = 'bg-stone-50 dark:bg-stone-950 border-stone-200 dark:border-stone-900 text-stone-400 dark:text-stone-500 opacity-60'
-
                         const isDragging = activeId === cita.id
+
+                        let cardBgColor = `bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 shadow-sm`
+                        if (isProcessing) cardBgColor = `bg-amber-500/5 dark:bg-amber-500/5 border-amber-500/30 text-stone-800 dark:text-stone-100`
+                        if (isCompleted) cardBgColor = `bg-stone-50 dark:bg-stone-950 border-stone-200 dark:border-stone-900 text-stone-400 dark:text-stone-500 opacity-60`
 
                         return (
                           <div
@@ -737,11 +777,14 @@ export default function AdminAgendaPage() {
                               >
                                 <div className="min-w-0">
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[9px] font-mono font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded">
+                                    <span className="text-[9px] font-mono font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded">
                                       {horaFormateada}
                                     </span>
-                                    <span className={`text-[7px] px-1.5 py-0.5 rounded-full border uppercase font-mono font-bold tracking-wider ${statusInfo.color} ${statusInfo.bg}`}>
-                                      {statusInfo.label}
+                                    <span className={`text-[6px] px-1.5 py-0.5 rounded-full border uppercase font-mono font-bold tracking-wider ${statusInfo.color} ${statusInfo.bg}`}>
+                                      {statusInfo.label === 'En proceso' ? 'Proceso' : 
+                                       statusInfo.label === 'Confirmada' ? '✓' :
+                                       statusInfo.label === 'Pendiente' ? '⏳' :
+                                       statusInfo.label === 'Completada' ? '✅' : '✕'}
                                     </span>
                                   </div>
                                   <p className="text-[10px] font-bold truncate text-stone-900 dark:text-stone-100 mt-1 tracking-wide">
@@ -776,7 +819,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // VISTA MES
+  // RENDER VISTA MES (REDISEÑADO)
   // ============================================================
   const renderVistaMes = () => {
     const monthStart = startOfMonth(fechaSeleccionada)
@@ -803,44 +846,51 @@ export default function AdminAgendaPage() {
     citas.forEach(c => diasConCitas.add(c.date))
 
     return (
-      <div className="flex flex-col h-full select-none">
-        <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-950/40 text-center font-mono font-bold text-[9px] text-stone-400 py-2.5 rounded-t-xl">
+      <div className={`flex flex-col h-full select-none rounded-2xl overflow-hidden border ${
+        isDark ? 'border-stone-800' : 'border-stone-200'
+      }`}>
+        <div className={`grid grid-cols-7 text-center font-mono font-bold text-[9px] py-2.5 ${
+          isDark ? 'bg-stone-950/60 text-stone-500 border-b border-stone-800' : 'bg-stone-50/80 text-stone-400 border-b border-stone-200'
+        }`}>
           {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, idx) => (
             <span key={idx} className="uppercase tracking-widest">{d}</span>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-px bg-stone-200 dark:bg-stone-800/80 border-b border-r border-l border-stone-200 dark:border-stone-800 rounded-b-xl overflow-hidden">
+        <div className={`grid grid-cols-7 gap-px ${
+          isDark ? 'bg-stone-800' : 'bg-stone-200'
+        }`}>
           {days.map((day, idx) => {
             if (!day) {
-              return <div key={`empty-${idx}`} className="bg-stone-50/30 dark:bg-stone-900/10 min-h-[85px]" />
+              return <div key={`empty-${idx}`} className={`${isDark ? 'bg-stone-950/60' : 'bg-stone-50'} min-h-[85px]`} />
             }
 
             const citasDelDia = getCitasDelDia(day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
             const isTodayDate = isToday(day)
             const tieneCitas = citasDelDia.length > 0
-            const esDiaConCitas = diasConCitas.has(format(day, 'yyyy-MM-dd'))
 
             return (
               <div 
                 key={idx} 
                 onClick={() => { setFechaSeleccionada(day); setViewMode('day') }}
-                className={`bg-white dark:bg-[#110f0e]/60 p-2 min-h-[85px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-50 dark:hover:bg-stone-900/40 relative group ${
+                className={`${isDark ? 'bg-stone-950' : 'bg-white'} p-2 min-h-[85px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-50 dark:hover:bg-stone-900/40 relative ${
                   isTodayDate ? 'ring-1 ring-inset ring-stone-400 dark:ring-stone-700 bg-stone-50/60 dark:bg-stone-900/30' : ''
                 }`}
               >
                 <div className="flex justify-between items-start">
-                  <span className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-5 h-5 transition-all ${
+                  <span className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-6 h-6 transition-all ${
                     isTodayDate 
                       ? 'bg-stone-950 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
-                      : esDiaConCitas 
+                      : tieneCitas 
                         ? 'text-stone-900 dark:text-stone-100 font-bold' 
-                        : 'text-stone-400'
+                        : 'text-stone-400 dark:text-stone-600'
                   }`}>
                     {format(day, 'd')}
                   </span>
                   {tieneCitas && (
-                    <span className="text-[8px] font-mono font-bold text-stone-500 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-1.5 py-0.5 rounded">
+                    <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                      isDark ? 'bg-stone-800 text-stone-400' : 'bg-stone-100 text-stone-500'
+                    }`}>
                       {citasDelDia.length}
                     </span>
                   )}
@@ -849,32 +899,38 @@ export default function AdminAgendaPage() {
                 <div className="flex-1 space-y-0.5 mt-1 overflow-y-hidden max-h-[55px]">
                   {citasDelDia.slice(0, 2).map((cita) => {
                     const hora24 = format24h(cita.time)
-                    const isProcessing = cita.status === 'in_progress'
-                    const isCompleted = cita.status === 'completed'
 
-                    let badgeStyle = 'bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-900 text-stone-700 dark:text-stone-300'
-                    if (isProcessing) badgeStyle = 'bg-white border-amber-500/30 text-stone-800 dark:text-stone-100 border-l-2 border-l-amber-500'
-                    if (isCompleted) badgeStyle = 'bg-stone-50 dark:bg-stone-950 border-stone-100 dark:border-stone-900 text-stone-400 dark:text-stone-500 opacity-50 line-through'
+                    let badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 ${
+                      isDark ? 'bg-stone-900/60 text-stone-400' : 'bg-stone-50 text-stone-600'
+                    }`
+                    if (cita.status === 'in_progress') {
+                      badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 ${
+                        isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
+                      }`
+                    }
+                    if (cita.status === 'completed') {
+                      badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 opacity-50 line-through ${
+                        isDark ? 'bg-stone-900/40 text-stone-500' : 'bg-stone-50 text-stone-400'
+                      }`
+                    }
 
                     return (
                       <div 
                         key={cita.id} 
                         onClick={(e) => { e.stopPropagation(); abrirDetalleCita(cita) }}
-                        className={`flex items-center gap-1 text-[8px] px-1 py-0.5 rounded transition-all cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-900 truncate ${badgeStyle}`} 
+                        className={`cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${badgeStyle}`}
                         title={`${hora24} - ${cita.clients?.name}`}
                       >
-                        <span className="font-mono font-bold shrink-0 text-[8px] opacity-80">
-                          {hora24}
-                        </span>
-                        <span className="truncate font-medium flex-1 text-[8px]">
-                          {cita.clients?.name || 'Cliente'}
-                        </span>
+                        <span className="font-mono font-bold shrink-0">{hora24}</span>
+                        <span className="truncate flex-1">{cita.clients?.name || 'Cliente'}</span>
                       </div>
                     )
                   })}
 
                   {citasDelDia.length > 2 && (
-                    <div className="text-[7px] text-stone-400 dark:text-stone-500 font-mono font-bold bg-stone-50 dark:bg-stone-950 rounded border border-stone-100 dark:border-stone-900 text-center py-0.5">
+                    <div className={`text-[6px] text-center font-mono font-bold py-0.5 rounded ${
+                      isDark ? 'bg-stone-900/40 text-stone-500' : 'bg-stone-50 text-stone-400'
+                    }`}>
                       +{citasDelDia.length - 2} más
                     </div>
                   )}
@@ -921,11 +977,11 @@ export default function AdminAgendaPage() {
   // RENDER PRINCIPAL
   // ============================================================
   return (
-    <div className={`min-h-screen pb-20 pt-4 antialiased space-y-6 max-w-5xl mx-auto px-4 ${
+    <div className={`min-h-screen pb-20 pt-4 antialiased space-y-6 max-w-6xl mx-auto px-4 ${
       isDark ? 'text-stone-300' : 'text-stone-800'
     }`}>
 
-      {/* CABECERA EDITORIAL */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-stone-200 dark:border-stone-800/60">
         <div>
           <div className="flex items-center gap-2">
@@ -941,20 +997,20 @@ export default function AdminAgendaPage() {
         <div className="flex items-center gap-1.5 self-start sm:self-end">
           <button 
             onClick={() => setShowNewAppointment(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 text-[11px] font-mono uppercase tracking-wider transition-all hover:opacity-90 shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 text-[11px] font-mono uppercase tracking-wider transition-all hover:opacity-90 shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" /> Nueva Cita
           </button>
           <button 
             onClick={() => setShowCalendar(!showCalendar)}
-            className="p-2 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
+            className="p-2.5 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             title="Calendario rápido"
           >
             <CalendarIcon className="w-4 h-4 stroke-[1.5]" />
           </button>
           <button 
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="p-2 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
+            className="p-2.5 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             title="Filtros por Staff"
           >
             <Filter className="w-4 h-4 stroke-[1.5]" />
@@ -962,13 +1018,12 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* SELECTORES Y CONTROL DE FECHAS */}
+      {/* CONTROLES DE VISTA Y FECHA */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        {/* Modos de vista */}
         <div className="flex border border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/20 rounded-xl p-1 self-start">
           <button 
             onClick={() => setViewMode('day')}
-            className={`px-4 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
+            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
               viewMode === 'day' 
                 ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
                 : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
@@ -978,7 +1033,7 @@ export default function AdminAgendaPage() {
           </button>
           <button 
             onClick={() => setViewMode('week')}
-            className={`px-4 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
+            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
               viewMode === 'week' 
                 ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
                 : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
@@ -988,7 +1043,7 @@ export default function AdminAgendaPage() {
           </button>
           <button 
             onClick={() => setViewMode('month')}
-            className={`px-4 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
+            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
               viewMode === 'month' 
                 ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
                 : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
@@ -998,7 +1053,6 @@ export default function AdminAgendaPage() {
           </button>
         </div>
 
-        {/* Navegador de fecha */}
         <div className="flex items-center gap-3 border border-stone-200 dark:border-stone-800/80 bg-stone-50/50 dark:bg-stone-900/10 rounded-xl px-3 py-1.5 justify-between md:justify-start min-w-[280px]">
           <button 
             onClick={() => cambiarDia(-1)} 
@@ -1018,16 +1072,20 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* FILTROS PLEGABLES */}
+      {/* FILTROS */}
       {showMobileFilters && (
-        <div className="p-4 border border-stone-200 dark:border-stone-800 rounded-xl bg-stone-50/50 dark:bg-stone-900/20 space-y-1.5">
+        <div className={`p-4 border rounded-xl ${
+          isDark ? 'bg-stone-900/30 border-stone-800' : 'bg-stone-50/50 border-stone-200'
+        }`}>
           <label className="text-[9px] font-mono uppercase tracking-wider font-bold text-stone-400 flex items-center gap-1">
             <Users className="w-3 h-3" /> Filtrar Especialista
           </label>
           <select 
             value={filtroStaff} 
             onChange={(e) => setFiltroStaff(e.target.value)}
-            className="w-full sm:w-64 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-700 dark:text-stone-300 focus:outline-none"
+            className={`w-full sm:w-64 mt-1.5 border rounded-xl px-3 py-2 text-xs focus:outline-none ${
+              isDark ? 'bg-stone-950 border-stone-800 text-stone-300' : 'bg-white border-stone-200 text-stone-700'
+            }`}
           >
             <option value="todos">Todo el Equipo</option>
             {staff.map(s => (
@@ -1037,10 +1095,12 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* MINI CALENDARIO INTERACTIVO */}
+      {/* MINI CALENDARIO */}
       {showCalendar && (
-        <div className="bg-white dark:bg-[#110f0e] border border-stone-200 dark:border-stone-800/80 rounded-xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
+        <div className={`border rounded-xl p-4 shadow-sm ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
             <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
               <ChevronLeft className="w-4 h-4 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200" />
             </button>
@@ -1089,9 +1149,9 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* NOTIFICACIÓN INTERNA DE PENDIENTES */}
+      {/* NOTIFICACIÓN DE PENDIENTES */}
       {citasPendientes > 0 && (
-        <div className="bg-amber-500/[0.03] border border-amber-500/20 rounded-xl p-3 flex items-center justify-between">
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
             <p className="text-[11px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">
@@ -1100,50 +1160,58 @@ export default function AdminAgendaPage() {
           </div>
           <button 
             onClick={() => {
-              const primeraPendiente = citas.find(c => c.status === 'pending');
+              const primeraPendiente = citas.find(c => c.status === 'pending')
               if (primeraPendiente && primeraPendiente.date) {
-                const fechaCita = new Date(primeraPendiente.date.replace(/-/g, '\/'));
-                setFechaSeleccionada(fechaCita);
+                const fechaCita = new Date(primeraPendiente.date.replace(/-/g, '/'))
+                setFechaSeleccionada(fechaCita)
               }
-              setViewMode('day');
-              setFiltroStaff('todos');
+              setViewMode('day')
+              setFiltroStaff('todos')
             }}
-            className="text-[9px] font-mono uppercase border border-amber-500/20 px-2.5 py-1 rounded-md text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-500/5 transition-all"
+            className="text-[9px] font-mono uppercase border border-amber-500/20 px-3 py-1 rounded-md text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-500/5 transition-all"
           >
             Enfocar
           </button>
         </div>
       )}
 
-      {/* TABLERO DE MÉTRICAS (ESTADÍSTICAS) */}
+      {/* MÉTRICAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-[#110f0e]/50 rounded-xl p-3 text-center shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className={`border rounded-xl p-3 text-center ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        }`}>
           <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Total Turnos</p>
           <p className="text-xl font-mono font-bold text-stone-900 dark:text-stone-100 mt-0.5">{citas.length}</p>
           <Layers className="w-3.5 h-3.5 mx-auto mt-1 text-stone-400 stroke-[1.25]" />
         </div>
-        <div className="border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-[#110f0e]/50 rounded-xl p-3 text-center shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className={`border rounded-xl p-3 text-center ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        }`}>
           <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">En Proceso</p>
           <p className="text-xl font-mono font-bold text-amber-600 dark:text-amber-400 mt-0.5">
             {citas.filter(c => c.status === 'in_progress').length}
           </p>
           <Play className="w-3.5 h-3.5 mx-auto mt-1 text-amber-500/40 stroke-[1.25]" />
         </div>
-        <div className="border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-[#110f0e]/50 rounded-xl p-3 text-center shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className={`border rounded-xl p-3 text-center ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        }`}>
           <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Completados</p>
           <p className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
             {citas.filter(c => c.status === 'completed').length}
           </p>
           <CheckCircle2 className="w-3.5 h-3.5 mx-auto mt-1 text-emerald-500/40 stroke-[1.25]" />
         </div>
-        <div className="border border-stone-200 dark:border-stone-800/80 bg-white dark:bg-[#110f0e]/50 rounded-xl p-3 text-center shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+        <div className={`border rounded-xl p-3 text-center ${
+          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        }`}>
           <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Caja Estimada</p>
           <p className="text-xl font-mono font-bold text-stone-900 dark:text-stone-100 mt-0.5">${totalIngresos.toLocaleString()}</p>
           <DollarSign className="w-3.5 h-3.5 mx-auto mt-1 text-stone-400 stroke-[1.25]" />
         </div>
       </div>
 
-      {/* CONTENEDOR ESTRUCTURAL DE LA AGENDA */}
+      {/* RENDER DE LA VISTA SELECCIONADA */}
       <div className="w-full">
         {viewMode === 'day' && renderVistaDia()}
         {viewMode === 'week' && renderVistaSemana()}
@@ -1151,40 +1219,44 @@ export default function AdminAgendaPage() {
       </div>
 
       {/* ============================================================
-          MODAL: REGISTRO DE NUEVA CITA
+          MODAL: NUEVA CITA
           ============================================================ */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-stone-950/40 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md bg-white dark:bg-[#110f0e] border border-stone-200 dark:border-stone-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200 dark:border-stone-800/60 bg-stone-50/50 dark:bg-stone-950/20">
+        <div className="fixed inset-0 bg-stone-950/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col ${
+            isDark ? 'bg-stone-900 border border-stone-800' : 'bg-white border border-stone-200'
+          }`}>
+            <div className={`flex items-center justify-between px-5 py-4 border-b ${
+              isDark ? 'border-stone-800' : 'border-stone-200'
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg border border-stone-200 dark:border-stone-800 flex items-center justify-center bg-white dark:bg-stone-900 shadow-sm">
-                  <Plus className="w-3.5 h-3.5 text-stone-500" />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  isDark ? 'bg-stone-800' : 'bg-stone-100'
+                }`}>
+                  <Plus className="w-4 h-4 text-stone-500" />
                 </div>
-                <div>
-                  <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100">Agendar Turno</h3>
-                </div>
+                <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100">Agendar Turno</h3>
               </div>
               <button 
                 onClick={() => setShowNewAppointment(false)} 
-                className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-900 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="overflow-y-auto p-5">
-              <form onSubmit={(e) => { e.preventDefault(); handleAgendarCita(); }} className="space-y-4">
-
+            <div className="overflow-y-auto p-5 max-h-[70vh]">
+              <form onSubmit={(e) => { e.preventDefault(); handleAgendarCita() }} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <User className="w-3 h-3" /> Cliente <span className="text-stone-400 dark:text-stone-600">*</span>
+                    <User className="w-3 h-3" /> Cliente <span className="text-stone-400">*</span>
                   </label>
                   <select 
                     value={newCita.clientId}
                     onChange={(e) => setNewCita({...newCita, clientId: e.target.value})}
-                    className="w-full bg-stone-50/60 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2.5 text-xs text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 dark:focus:ring-stone-700 transition-all"
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    }`}
                     required
                   >
                     <option value="">Selecciona una clienta</option>
@@ -1196,12 +1268,14 @@ export default function AdminAgendaPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Servicio o Tratamiento <span className="text-stone-400 dark:text-stone-600">*</span>
+                    <Sparkles className="w-3 h-3" /> Servicio <span className="text-stone-400">*</span>
                   </label>
                   <select 
                     value={newCita.serviceId}
                     onChange={(e) => setNewCita({...newCita, serviceId: e.target.value})}
-                    className="w-full bg-stone-50/60 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2.5 text-xs text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 dark:focus:ring-stone-700 transition-all"
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    }`}
                     required
                   >
                     <option value="">Selecciona un servicio</option>
@@ -1213,12 +1287,14 @@ export default function AdminAgendaPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <Users className="w-3 h-3" /> Especialista Asignado
+                    <Users className="w-3 h-3" /> Especialista
                   </label>
                   <select 
                     value={newCita.staffId}
                     onChange={(e) => setNewCita({...newCita, staffId: e.target.value})}
-                    className="w-full bg-stone-50/60 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2.5 text-xs text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 dark:focus:ring-stone-700 transition-all"
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    }`}
                   >
                     <option value="">Cualquier especialista</option>
                     {staff.map(s => (
@@ -1230,19 +1306,21 @@ export default function AdminAgendaPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3" /> Fecha <span className="text-stone-400 dark:text-stone-600">*</span>
+                      <CalendarIcon className="w-3 h-3" /> Fecha <span className="text-stone-400">*</span>
                     </label>
                     <input 
                       type="date"
                       value={newCita.date}
                       onChange={(e) => setNewCita({...newCita, date: e.target.value})}
-                      className="w-full bg-stone-50/60 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 dark:focus:ring-stone-700 transition-all"
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 transition-all ${
+                        isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                      }`}
                       required
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Hora <span className="text-stone-400 dark:text-stone-600">*</span>
+                      <Clock className="w-3 h-3" /> Hora <span className="text-stone-400">*</span>
                     </label>
                     <TimePicker
                       value={newCita.time}
@@ -1253,34 +1331,40 @@ export default function AdminAgendaPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <FileText className="w-3 h-3" /> Observaciones o Notas
+                    <FileText className="w-3 h-3" /> Observaciones
                   </label>
                   <textarea 
                     value={newCita.notes}
                     onChange={(e) => setNewCita({...newCita, notes: e.target.value})}
                     rows={2}
-                    className="w-full bg-stone-50/60 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 dark:focus:ring-stone-700 resize-none"
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 transition-all resize-none ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    }`}
                     placeholder="Alergias, especificaciones..."
                   />
                 </div>
 
                 {formError && (
-                  <div className="bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-3 text-stone-600 dark:text-stone-400 text-[11px] font-mono leading-relaxed">
+                  <div className={`p-3 rounded-xl text-[11px] font-mono leading-relaxed ${
+                    isDark ? 'bg-stone-950 border border-stone-800 text-stone-400' : 'bg-stone-50 border border-stone-200 text-stone-600'
+                  }`}>
                     {formError}
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-900">
+                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
                   <button
                     type="button"
                     onClick={() => setShowNewAppointment(false)}
-                    className="flex-1 px-4 py-2 border border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-colors"
+                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-colors ${
+                      isDark ? 'border border-stone-800 text-stone-400 hover:bg-stone-800' : 'border border-stone-200 text-stone-500 hover:bg-stone-50'
+                    }`}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-stone-950 dark:bg-stone-100 text-white dark:text-stone-950 rounded-xl text-[11px] font-mono uppercase tracking-wider font-bold transition-opacity hover:opacity-90 shadow-sm"
+                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider font-bold transition-opacity hover:opacity-90 shadow-sm bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
                   >
                     Confirmar Turno
                   </button>
@@ -1292,78 +1376,102 @@ export default function AdminAgendaPage() {
       )}
 
       {/* ============================================================
-          MODAL: DETALLE Y EDICIÓN DE CITA EXISTENTE
+          MODAL: DETALLE DE CITA
           ============================================================ */}
       {showDetailModal && selectedCita && (
-        <div className="fixed inset-0 bg-stone-950/40 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#110f0e] border border-stone-200 dark:border-stone-800 rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-stone-100 dark:border-stone-900">
+        <div className="fixed inset-0 bg-stone-950/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto ${
+            isDark ? 'bg-stone-900 border border-stone-800' : 'bg-white border border-stone-200'
+          }`}>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-stone-100 dark:border-stone-800">
               <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                 <CalendarIcon className="w-4 h-4 text-stone-400" />
                 Ficha del Turno
               </h3>
-              <button onClick={() => setShowDetailModal(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-900 rounded-lg text-stone-400">
+              <button onClick={() => setShowDetailModal(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg text-stone-400">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {isEditing ? (
               <div className="space-y-4">
-                {/* Campos de edición básicos en línea con la lógica */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold">Notas de la Cita</label>
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold">Notas</label>
                   <textarea
                     value={selectedCita.notes || ''}
                     onChange={(e) => setSelectedCita({...selectedCita, notes: e.target.value})}
-                    className="w-full bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none resize-none"
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none resize-none ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200' : 'bg-stone-50 border border-stone-200 text-stone-800'
+                    }`}
                     rows={3}
                   />
                 </div>
-
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-900">
+                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="flex-1 px-4 py-2 border border-stone-200 dark:border-stone-800 text-stone-500 rounded-xl text-[11px] font-mono uppercase tracking-wider"
+                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider ${
+                      isDark ? 'border border-stone-800 text-stone-400' : 'border border-stone-200 text-stone-500'
+                    }`}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={actualizarCita}
-                    className="flex-1 px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-950 font-bold rounded-xl text-[11px] font-mono uppercase tracking-wider"
+                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider font-bold bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
                   >
-                    Guardar Cambios
+                    Guardar
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Visualización informativa de la ficha */}
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-stone-50 dark:border-stone-900">
+                  <div className={`flex justify-between py-1.5 border-b ${
+                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  }`}>
                     <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Clienta</span>
                     <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.clients?.name || 'Cliente'}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-stone-50 dark:border-stone-900">
+                  <div className={`flex justify-between py-1.5 border-b ${
+                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  }`}>
                     <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Servicio</span>
                     <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.services?.name || 'Servicio'}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-stone-50 dark:border-stone-900">
+                  <div className={`flex justify-between py-1.5 border-b ${
+                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  }`}>
                     <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Especialista</span>
                     <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.staff?.name || 'Sin Asignar'}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-stone-50 dark:border-stone-900">
+                  <div className={`flex justify-between py-1.5 border-b ${
+                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  }`}>
                     <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Horario</span>
-                    <span className="font-mono font-bold text-stone-900 dark:text-stone-100">{selectedCita.time?.substring(0,5)} hs ({selectedCita.date})</span>
+                    <span className="font-mono font-bold text-stone-900 dark:text-stone-100">
+                      {selectedCita.time?.substring(0,5)} hs • {selectedCita.date}
+                    </span>
+                  </div>
+                  <div className={`flex justify-between py-1.5 border-b ${
+                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  }`}>
+                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Estado</span>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      getStatusBadge(selectedCita.status).bg
+                    } ${getStatusBadge(selectedCita.status).color}`}>
+                      {getStatusBadge(selectedCita.status).label}
+                    </span>
                   </div>
                   {selectedCita.notes && (
-                    <div className="p-2.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-900 rounded-xl text-[11px] text-stone-500 leading-relaxed">
-                      <span className="block font-mono text-[9px] uppercase tracking-wider text-stone-400 font-bold mb-0.5">Notas internas</span>
+                    <div className={`p-2.5 rounded-xl text-[11px] leading-relaxed ${
+                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-400' : 'bg-stone-50 border border-stone-200 text-stone-500'
+                    }`}>
+                      <span className="block font-mono text-[9px] uppercase tracking-wider text-stone-400 font-bold mb-0.5">Notas</span>
                       {selectedCita.notes}
                     </div>
                   )}
                 </div>
 
-                {/* Controles de cambio de estado rápido de tu componente */}
                 <div className="space-y-1 pt-2">
                   <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Actualizar Estado</label>
                   <div className="grid grid-cols-3 gap-1">
@@ -1371,29 +1479,30 @@ export default function AdminAgendaPage() {
                       <button
                         key={st}
                         onClick={() => cambiarEstadoCita(selectedCita.id, st)}
-                        className={`px-2 py-1 text-[9px] font-mono uppercase tracking-wider border rounded-md transition-all ${
+                        className={`px-2 py-1.5 text-[9px] font-mono uppercase tracking-wider border rounded-md transition-all ${
                           selectedCita.status === st 
-                            ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 font-bold' 
-                            : 'text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900'
+                            ? isDark ? 'bg-stone-100 text-stone-900 font-bold' : 'bg-stone-900 text-white font-bold'
+                            : isDark ? 'border-stone-800 text-stone-400 hover:bg-stone-800' : 'border-stone-200 text-stone-400 hover:bg-stone-50'
                         }`}
                       >
-                        {st === 'pending' ? 'Pendiente' : st === 'confirmed' ? 'Confirmar' : 'Proceso'}
+                        {st === 'pending' ? '⏳ Pend' : st === 'confirmed' ? '✓ Conf' : '▶️ Proceso'}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Acciones principales del Modal */}
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-900">
+                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex-1 px-4 py-2 border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5"
+                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 ${
+                      isDark ? 'border border-stone-800 text-stone-300 hover:bg-stone-800' : 'border border-stone-200 text-stone-700 hover:bg-stone-50'
+                    }`}
                   >
                     <Edit className="w-3.5 h-3.5" /> Editar
                   </button>
                   <button
                     onClick={() => eliminarCita(selectedCita.id)}
-                    className="flex-1 px-4 py-2 border border-stone-200 dark:border-stone-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5"
+                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 border border-rose-200 text-rose-600 dark:text-rose-400 dark:border-rose-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Eliminar
                   </button>

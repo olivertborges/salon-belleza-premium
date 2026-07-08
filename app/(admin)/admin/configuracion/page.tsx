@@ -3,28 +3,28 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   Settings, Save, Store, Phone, Mail, MapPin, 
-  Clock, Palette, Instagram, Facebook, Youtube, 
-  DollarSign, Bell, Gift, Globe, X, Check,
-  Smartphone, Users, Calendar, Sparkles, Edit3,
-  Linkedin, Twitter, Share2, Eye, EyeOff,
-  Moon, Sun, Monitor, RefreshCw
+  Clock, Palette, Instagram, Facebook, DollarSign, 
+  Bell, X, Check, Smartphone, Loader2, RefreshCw
 } from 'lucide-react'
 
 export default function ConfiguracionPage() {
   const { theme } = useTheme()
+  const { tenantId, loading: authLoading } = useAuth()
   const isDark = theme === 'dark'
-  
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [activeSection, setActiveSection] = useState('general')
 
   const [config, setConfig] = useState({
-    business_name: 'Fresh Nails Salon',
-    business_phone: '+34 123 456 789',
-    business_email: 'info@freshnails.com',
-    business_address: 'Calle Principal 123, Madrid',
+    business_name: '',
+    business_phone: '',
+    business_email: '',
+    business_address: '',
     schedule: {
       monday: '09:00 - 21:00',
       tuesday: '09:00 - 21:00',
@@ -37,9 +37,9 @@ export default function ConfiguracionPage() {
     primary_color: '#DB5B9A',
     secondary_color: '#E5A46E',
     social: {
-      instagram: '@freshnails',
-      facebook: 'freshnails',
-      tiktok: '@freshnails'
+      instagram: '',
+      facebook: '',
+      tiktok: ''
     },
     currency: '€',
     appointment_duration: 60,
@@ -51,8 +51,6 @@ export default function ConfiguracionPage() {
     loyalty_points: 1
   })
 
-  const [activeSection, setActiveSection] = useState('general')
-
   const sections = [
     { id: 'general', label: 'General', icon: Store },
     { id: 'schedule', label: 'Horarios', icon: Clock },
@@ -61,84 +59,146 @@ export default function ConfiguracionPage() {
     { id: 'notifications', label: 'Notificaciones', icon: Bell },
   ]
 
+  // Cargar configuraciones reales desde Supabase filtradas por tenant_id
   useEffect(() => {
-    setTimeout(() => setLoading(false), 500)
-  }, [])
+    async function loadBusinessSettings() {
+      if (!tenantId) return
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('business_settings')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .maybeSingle()
 
-  const handleSave = () => {
-    setSaving(true)
-    setTimeout(() => {
-      setSaving(false)
+        if (error) throw error
+
+        if (data) {
+          setConfig({
+            business_name: data.business_name || '',
+            business_phone: data.business_phone || '',
+            business_email: data.business_email || '',
+            business_address: data.business_address || '',
+            schedule: data.schedule || config.schedule,
+            primary_color: data.primary_color || '#DB5B9A',
+            secondary_color: data.secondary_color || '#E5A46E',
+            social: data.social || config.social,
+            currency: data.currency || '€',
+            appointment_duration: data.appointment_duration || 60,
+            appointment_gap: data.appointment_gap || 15,
+            notifications: data.notifications || config.notifications,
+            loyalty_points: data.loyalty_points || 1
+          })
+        }
+      } catch (err) {
+        console.error('Error cargando configuraciones de Supabase:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (tenantId) {
+      loadBusinessSettings()
+    } else if (authLoading === false) {
+      setLoading(false)
+    }
+  }, [tenantId, authLoading])
+
+  // Guardar (o actualizar) configuraciones reales en Supabase usando un upsert controlado
+  const handleSave = async () => {
+    if (!tenantId) return
+    try {
+      setSaving(true)
+      const { error } = await supabase
+        .from('business_settings')
+        .upsert({
+          tenant_id: tenantId,
+          business_name: config.business_name,
+          business_phone: config.business_phone,
+          business_email: config.business_email,
+          business_address: config.business_address,
+          schedule: config.schedule,
+          primary_color: config.primary_color,
+          secondary_color: config.secondary_color,
+          social: config.social,
+          currency: config.currency,
+          appointment_duration: config.appointment_duration,
+          appointment_gap: config.appointment_gap,
+          notifications: config.notifications,
+          loyalty_points: config.loyalty_points,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'tenant_id' })
+
+      if (error) throw error
+
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    }, 1000)
+    } catch (err: any) {
+      alert('Error al guardar configuraciones: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="relative">
-          <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-8 h-8 border-3 border-amber-500/20 rounded-full animate-ping"></div>
-        </div>
-        <span className="ml-4 text-xs font-mono text-amber-500 animate-pulse">Cargando configuración...</span>
+      <div className="flex h-96 flex-col items-center justify-center space-y-3">
+        <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+        <span className="text-[10px] font-mono tracking-widest uppercase text-stone-400">Sincronizando ajustes...</span>
+      </div>
+    )
+  }
+
+  if (!tenantId) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center text-center p-4">
+        <Settings className="w-6 h-6 text-stone-400 mb-2 stroke-[1.25]" />
+        <p className="text-xs font-mono uppercase tracking-widest text-stone-400">Acceso Restringido</p>
+        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1 max-w-xs leading-relaxed">
+          Tu cuenta de administrador no tiene vinculado un identificador de negocio activo (<code className="font-mono text-red-500 bg-stone-100 dark:bg-stone-900 px-1 py-0.5 rounded">tenant_id</code>).
+        </p>
       </div>
     )
   }
 
   return (
-    <div className={`max-w-4xl mx-auto space-y-6 transition-colors duration-300 ${
-      isDark ? 'text-stone-200' : 'text-stone-800'
+    <div className={`max-w-4xl mx-auto space-y-6 transition-colors duration-300 px-1 sm:px-0 ${
+      isDark ? 'text-stone-300' : 'text-stone-800'
     }`}>
 
-      {/* HEADER CON CARD-GLOW */}
-      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl animate-fade-up ${
-        isDark 
-          ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
-          : 'bg-gradient-to-br from-amber-50/50 via-white to-stone-50'
-      }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
-        
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              ⚙️ Panel de Control
-            </p>
-            <h2 className="text-2xl font-serif italic text-foreground mt-1">
-              Configuración <span className="text-shimmer">Premium</span>
-            </h2>
-            <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Personaliza los ajustes del sistema</p>
+      {/* CABECERA EDITORIAL */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-stone-200 dark:border-stone-800/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-600 animate-pulse" />
+            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-400 font-mono font-bold">Ajustes Globales</p>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="glow-hover flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white rounded-xl text-sm font-medium transition-all disabled:opacity-50 shadow-lg shadow-amber-600/20"
-          >
-            {saving ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {saving ? 'Guardando...' : 'Guardar cambios'}
-          </button>
+          <h1 className="text-3xl font-serif italic tracking-tight text-stone-900 dark:text-stone-100 mt-2">
+            Configuración <span className="text-shimmer">Sistema</span>
+          </h1>
+          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">Parametrice las reglas de reserva, pasarelas visuales y contacto de su marca.</p>
         </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 text-[11px] font-mono uppercase tracking-wider font-bold transition-all disabled:opacity-50 shadow-sm"
+        >
+          {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          {saving ? 'Sincronizando...' : 'Guardar Cambios'}
+        </button>
       </div>
 
       {success && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2 animate-fade-up">
-          <Check className="w-4 h-4" /> Cambios guardados correctamente
+        <div className="bg-emerald-500/[0.03] border border-emerald-500/20 rounded-xl p-3 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono uppercase tracking-wider font-bold flex items-center gap-2">
+          <Check className="w-3.5 h-3.5" /> Ajustes actualizados de forma persistente
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-6">
-
-        {/* Navegación lateral */}
-        <div className="md:w-48 flex-shrink-0">
-          <div className={`border rounded-xl p-2 space-y-1 ${
-            isDark ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'
-          }`}>
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        {/* NAVEGACIÓN LATERAL */}
+        <div className="w-full md:w-48 flex-shrink-0">
+          <div className="border border-stone-200 dark:border-stone-800 rounded-xl p-1.5 space-y-1 bg-stone-50/50 dark:bg-[#110f0e]/50">
             {sections.map((section) => {
               const Icon = section.icon
               const isActive = activeSection === section.id
@@ -146,17 +206,13 @@ export default function ConfiguracionPage() {
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all hover:scale-105 ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? isDark
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                      : `text-mutedForeground hover:text-foreground hover:bg-muted ${
-                          isDark ? 'hover:bg-stone-800/30' : 'hover:bg-stone-100'
-                        }`
+                      ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm font-bold'
+                      : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 stroke-[1.5]" />
                   {section.label}
                 </button>
               )
@@ -164,105 +220,72 @@ export default function ConfiguracionPage() {
           </div>
         </div>
 
-        {/* CONTENIDO */}
-        <div className={`flex-1 border rounded-xl p-6 ${
-          isDark ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'
-        }`}>
-
-          {/* GENERAL */}
+        {/* CONTENEDOR CENTRAL SECCIONAL */}
+        <div className="flex-1 w-full border border-stone-200 dark:border-stone-800 rounded-xl p-5 bg-white dark:bg-[#110f0e]/30">
+          
+          {/* SECCIÓN GENERAL */}
           {activeSection === 'general' && (
-            <div className="space-y-5">
-              <h3 className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Información del negocio</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Nombre</label>
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pb-1 border-b border-stone-100 dark:border-stone-900">Información Corporativa</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Nombre Comercial</label>
                   <input
                     type="text"
                     value={config.business_name}
                     onChange={(e) => setConfig({...config, business_name: e.target.value})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Teléfono</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Teléfono de Atención</label>
                   <input
                     type="text"
                     value={config.business_phone}
                     onChange={(e) => setConfig({...config, business_phone: e.target.value})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Email</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Email Corporativo</label>
                   <input
                     type="email"
                     value={config.business_email}
                     onChange={(e) => setConfig({...config, business_email: e.target.value})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Moneda</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Divisa Base</label>
                   <select
                     value={config.currency}
                     onChange={(e) => setConfig({...config, currency: e.target.value})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none text-stone-700 dark:text-stone-300"
                   >
-                    <option value="€" className={isDark ? 'bg-stone-950 text-stone-200' : 'bg-white text-stone-800'}>€ Euro</option>
-                    <option value="$" className={isDark ? 'bg-stone-950 text-stone-200' : 'bg-white text-stone-800'}>$ Dólar</option>
-                    <option value="MX$" className={isDark ? 'bg-stone-950 text-stone-200' : 'bg-white text-stone-800'}>MX$ Peso Mexicano</option>
-                    <option value="COP$" className={isDark ? 'bg-stone-950 text-stone-200' : 'bg-white text-stone-800'}>COP$ Peso Colombiano</option>
-                    <option value="ARS$" className={isDark ? 'bg-stone-950 text-stone-200' : 'bg-white text-stone-800'}>ARS$ Peso Argentino</option>
+                    <option value="€">€ Euro</option>
+                    <option value="$">$ Dólar</option>
+                    <option value="MX$">MX$ Peso Mexicano</option>
+                    <option value="UYU$">UYU$ Peso Uruguayo</option>
                   </select>
                 </div>
               </div>
-              <div>
-                <label className={`block text-[10px] font-medium mb-1.5 ${
-                  isDark ? 'text-stone-400' : 'text-stone-500'
-                }`}>Dirección</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Dirección Física</label>
                 <input
                   type="text"
                   value={config.business_address}
                   onChange={(e) => setConfig({...config, business_address: e.target.value})}
-                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                    isDark 
-                      ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                      : 'bg-stone-50 border-stone-200 text-stone-800'
-                  }`}
+                  className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                 />
               </div>
             </div>
           )}
 
-          {/* HORARIOS */}
+          {/* SECCIÓN HORARIOS */}
           {activeSection === 'schedule' && (
-            <div className="space-y-5">
-              <h3 className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Horario de atención</h3>
-              <div className="space-y-3">
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pb-1 border-b border-stone-100 dark:border-stone-900">Horarios de Apertura</h3>
+              <div className="space-y-2">
                 {[
                   { key: 'monday', label: 'Lunes' },
                   { key: 'tuesday', label: 'Martes' },
@@ -273,7 +296,7 @@ export default function ConfiguracionPage() {
                   { key: 'sunday', label: 'Domingo' },
                 ].map((day) => (
                   <div key={day.key} className="flex items-center gap-3">
-                    <span className={`text-sm w-20 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>{day.label}</span>
+                    <span className="text-xs font-medium w-20 text-stone-400">{day.label}</span>
                     <input
                       type="text"
                       value={config.schedule[day.key as keyof typeof config.schedule]}
@@ -281,107 +304,73 @@ export default function ConfiguracionPage() {
                         ...config,
                         schedule: { ...config.schedule, [day.key]: e.target.value }
                       })}
-                      className={`flex-1 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                        isDark 
-                          ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                          : 'bg-stone-50 border-stone-200 text-stone-800'
-                      }`}
+                      className="flex-1 bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
                       placeholder="09:00 - 21:00"
                     />
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Duración cita (min)</label>
+              
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pt-3 pb-1 border-b border-stone-100 dark:border-stone-900">Márgenes de Turno</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Franja por Cita (min)</label>
                   <input
                     type="number"
                     value={config.appointment_duration}
                     onChange={(e) => setConfig({...config, appointment_duration: parseInt(e.target.value) || 0})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Tiempo entre citas (min)</label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Tiempo entre citas (min)</label>
                   <input
                     type="number"
                     value={config.appointment_gap}
                     onChange={(e) => setConfig({...config, appointment_gap: parseInt(e.target.value) || 0})}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* APARIENCIA */}
+          {/* SECCIÓN APARIENCIA */}
           {activeSection === 'appearance' && (
-            <div className="space-y-5">
-              <h3 className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Colores del sistema</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Color principal</label>
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-xl border border-border flex-shrink-0"
-                      style={{ backgroundColor: config.primary_color }}
-                    />
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pb-1 border-b border-stone-100 dark:border-stone-900">Pasarela de Identidad</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Tonalidad Primaria</label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={config.primary_color}
                       onChange={(e) => setConfig({...config, primary_color: e.target.value})}
-                      className={`flex-1 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                        isDark 
-                          ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                          : 'bg-stone-50 border-stone-200 text-stone-800'
-                      }`}
+                      className="flex-1 bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
                     />
                     <input
                       type="color"
                       value={config.primary_color}
                       onChange={(e) => setConfig({...config, primary_color: e.target.value})}
-                      className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0"
+                      className="w-8 h-8 rounded-xl border border-stone-200 dark:border-stone-800 cursor-pointer bg-transparent p-0 shrink-0"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Color secundario</label>
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-xl border border-border flex-shrink-0"
-                      style={{ backgroundColor: config.secondary_color }}
-                    />
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Tonalidad Secundaria</label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={config.secondary_color}
                       onChange={(e) => setConfig({...config, secondary_color: e.target.value})}
-                      className={`flex-1 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                        isDark 
-                          ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                          : 'bg-stone-50 border-stone-200 text-stone-800'
-                      }`}
+                      className="flex-1 bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
                     />
                     <input
                       type="color"
                       value={config.secondary_color}
                       onChange={(e) => setConfig({...config, secondary_color: e.target.value})}
-                      className="w-10 h-10 rounded-xl border border-border cursor-pointer bg-transparent p-0"
+                      className="w-8 h-8 rounded-xl border border-stone-200 dark:border-stone-800 cursor-pointer bg-transparent p-0 shrink-0"
                     />
                   </div>
                 </div>
@@ -389,17 +378,13 @@ export default function ConfiguracionPage() {
             </div>
           )}
 
-          {/* REDES SOCIALES */}
+          {/* SECCIÓN REDES */}
           {activeSection === 'social' && (
-            <div className="space-y-5">
-              <h3 className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Redes sociales</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 flex items-center gap-2 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>
-                    <Instagram className="w-4 h-4 text-mutedForeground/80" /> Instagram
-                  </label>
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pb-1 border-b border-stone-100 dark:border-stone-900">Canales de Difusión</h3>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Instagram Handle</label>
                   <input
                     type="text"
                     value={config.social.instagram}
@@ -407,20 +392,12 @@ export default function ConfiguracionPage() {
                       ...config,
                       social: { ...config.social, instagram: e.target.value }
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                     placeholder="@usuario"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 flex items-center gap-2 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>
-                    <Facebook className="w-4 h-4 text-mutedForeground/80" /> Facebook
-                  </label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Facebook Page</label>
                   <input
                     type="text"
                     value={config.social.facebook}
@@ -428,19 +405,11 @@ export default function ConfiguracionPage() {
                       ...config,
                       social: { ...config.social, facebook: e.target.value }
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className={`block text-[10px] font-medium mb-1.5 flex items-center gap-2 ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>
-                    <Smartphone className="w-4 h-4 text-mutedForeground/80" /> TikTok
-                  </label>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">TikTok Profile</label>
                   <input
                     type="text"
                     value={config.social.tiktok}
@@ -448,11 +417,7 @@ export default function ConfiguracionPage() {
                       ...config,
                       social: { ...config.social, tiktok: e.target.value }
                     })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/30 transition-all ${
-                      isDark 
-                        ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                        : 'bg-stone-50 border-stone-200 text-stone-800'
-                    }`}
+                    className="w-full bg-stone-50/50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs focus:outline-none"
                     placeholder="@usuario"
                   />
                 </div>
@@ -460,56 +425,48 @@ export default function ConfiguracionPage() {
             </div>
           )}
 
-          {/* NOTIFICACIONES */}
+          {/* SECCIÓN NOTIFICACIONES */}
           {activeSection === 'notifications' && (
-            <div className="space-y-5">
-              <h3 className={`text-sm font-medium ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Notificaciones</h3>
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between p-4 border rounded-xl ${
-                  isDark ? 'bg-stone-900/30 border-stone-800' : 'bg-stone-50 border-stone-200'
-                }`}>
+            <div className="space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-400 pb-1 border-b border-stone-100 dark:border-stone-900">Automatizaciones de Alerta</h3>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between p-3 border border-stone-100 dark:border-stone-900 rounded-xl bg-stone-50/30">
                   <div>
-                    <p className={`text-sm ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Notificaciones por email</p>
-                    <p className={`text-[10px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Recibe alertas por correo electrónico</p>
+                    <p className="text-xs font-bold text-stone-900 dark:text-stone-200">Alertas por Correo Electrónico</p>
+                    <p className="text-[10px] text-stone-400">Envia confirmaciones automáticas vía SMTP.</p>
                   </div>
                   <button
                     onClick={() => setConfig({
                       ...config,
                       notifications: { ...config.notifications, email: !config.notifications.email }
                     })}
-                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all hover:scale-105 ${
+                    className={`px-3 py-1 rounded-lg text-[10px] font-mono uppercase font-bold tracking-wider border ${
                       config.notifications.email
-                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : `bg-muted text-mutedForeground border border-border ${
-                            isDark ? 'bg-stone-800 border-stone-700' : ''
-                          }`
+                        ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 border-transparent'
+                        : 'text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-50'
                     }`}
                   >
-                    {config.notifications.email ? 'Activado' : 'Desactivado'}
+                    {config.notifications.email ? 'On' : 'Off'}
                   </button>
                 </div>
 
-                <div className={`flex items-center justify-between p-4 border rounded-xl ${
-                  isDark ? 'bg-stone-900/30 border-stone-800' : 'bg-stone-50 border-stone-200'
-                }`}>
+                <div className="flex items-center justify-between p-3 border border-stone-100 dark:border-stone-900 rounded-xl bg-stone-50/30">
                   <div>
-                    <p className={`text-sm ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Notificaciones por WhatsApp</p>
-                    <p className={`text-[10px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Recibe alertas por WhatsApp</p>
+                    <p className="text-xs font-bold text-stone-900 dark:text-stone-200">Recordatorios vía WhatsApp</p>
+                    <p className="text-[10px] text-stone-400">Despacha notificaciones usando la API de mensajería.</p>
                   </div>
                   <button
                     onClick={() => setConfig({
                       ...config,
                       notifications: { ...config.notifications, whatsapp: !config.notifications.whatsapp }
                     })}
-                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all hover:scale-105 ${
+                    className={`px-3 py-1 rounded-lg text-[10px] font-mono uppercase font-bold tracking-wider border ${
                       config.notifications.whatsapp
-                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : `bg-muted text-mutedForeground border border-border ${
-                            isDark ? 'bg-stone-800 border-stone-700' : ''
-                          }`
+                        ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 border-transparent'
+                        : 'text-stone-400 border-stone-200 dark:border-stone-800 hover:bg-stone-50'
                     }`}
                   >
-                    {config.notifications.whatsapp ? 'Activado' : 'Desactivado'}
+                    {config.notifications.whatsapp ? 'On' : 'Off'}
                   </button>
                 </div>
               </div>
