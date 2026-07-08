@@ -71,22 +71,22 @@ export default function AdminAgendaPage() {
     const toast = document.createElement('div')
     toast.id = ID_TOAST
     toast.className = `fixed top-5 right-5 z-[9999] p-4 rounded-xl shadow-2xl max-w-sm transition-all duration-300 border ${
-      isDark ? 'bg-stone-900 border-stone-800 text-stone-200' : 'bg-white border-stone-200 text-stone-800'
+      isDark ? 'bg-zinc-900 border-fuchsia-900 text-pink-100' : 'bg-white border-pink-200 text-stone-800'
     }`
 
     toast.innerHTML = `
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
           </span>
-          <h4 class="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">¡Nueva Cita!</h4>
+          <h4 class="text-[10px] font-mono font-bold uppercase tracking-widest text-pink-600 dark:text-pink-400">¡Nueva Cita!</h4>
         </div>
-        <p class="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">Una clienta se acaba de agendar para el <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.date}</span> a las <span class="font-mono font-bold text-stone-900 dark:text-stone-100">${nuevaCita.time.slice(0,5)}</span>.</p>
-        <div class="flex justify-end gap-3 mt-1 border-t border-stone-100 dark:border-stone-800/60 pt-2">
-          <button id="btn-cerrar-toast" class="text-[9px] font-mono uppercase tracking-wider text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors">Cerrar</button>
-          <button id="btn-ir-toast" class="text-[9px] font-mono uppercase tracking-wider border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded hover:bg-stone-50 dark:hover:bg-stone-800 transition-all font-bold">Revisar</button>
+        <p class="text-[11px] text-stone-500 dark:text-pink-200/70 leading-relaxed">Una clienta se acaba de agendar para el <span class="font-mono font-bold text-pink-600 dark:text-pink-400">${nuevaCita.date}</span> a las <span class="font-mono font-bold text-pink-600 dark:text-pink-400">${nuevaCita.time.slice(0,5)}</span>.</p>
+        <div class="flex justify-end gap-3 mt-1 border-t border-pink-100 dark:border-fuchsia-950 pt-2">
+          <button id="btn-cerrar-toast" class="text-[9px] font-mono uppercase tracking-wider text-stone-400 hover:text-pink-500 transition-colors">Cerrar</button>
+          <button id="btn-ir-toast" class="text-[9px] font-mono uppercase tracking-wider border border-pink-200 dark:border-fuchsia-800 px-2 py-0.5 rounded hover:bg-pink-50 dark:hover:bg-fuchsia-950 transition-all font-bold text-pink-600 dark:text-pink-300">Revisar</button>
         </div>
       </div>
     `
@@ -291,10 +291,10 @@ export default function AdminAgendaPage() {
     const config: Record<string, { label: string, color: string, bg: string, icon: any }> = {
       pending: { label: 'Pendiente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', icon: Clock },
       confirmed: { label: 'Confirmada', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-      in_progress: { label: 'En proceso', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', icon: Play },
-      completed: { label: 'Completada', color: 'text-stone-500 dark:text-stone-400', bg: 'bg-stone-500/10 border-stone-500/20', icon: Award },
+      in_progress: { label: 'En proceso', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20', icon: Play },
+      completed: { label: 'Completada', color: 'text-stone-500 dark:text-fuchsia-400/70', bg: 'bg-stone-500/10 border-stone-500/20 dark:bg-fuchsia-500/10 dark:border-fuchsia-500/20', icon: Award },
       cancelled: { label: 'Cancelada', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20', icon: X },
-      blocked: { label: 'Bloqueado', color: 'text-stone-600 dark:text-stone-400', bg: 'bg-stone-100 dark:bg-stone-900 border-stone-200 dark:border-stone-800', icon: Ban },
+      blocked: { label: 'Bloqueado', color: 'text-stone-600 dark:text-stone-400', bg: 'bg-stone-100 dark:bg-zinc-900 border-stone-200 dark:border-zinc-800', icon: Ban },
     }
     return config[status] || config.pending
   }
@@ -343,7 +343,7 @@ export default function AdminAgendaPage() {
       setCitas(prev => prev.filter(c => c.id !== id))
       setShowDetailModal(false)
     } catch (err) {
-      console.error('Error eliminando cita:', err)
+      console.error('Error deleting appointment:', err)
     }
   }
 
@@ -368,7 +368,7 @@ export default function AdminAgendaPage() {
       setIsEditing(false)
       setShowDetailModal(false)
     } catch (err) {
-      console.error('Error actualizando cita:', err)
+      console.error('Error updating appointment:', err)
       alert('Error al actualizar la cita')
     }
   }
@@ -422,7 +422,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // RENDER VISTA DÍA (REDISEÑADO)
+  // RENDER VISTA DÍA (FRESH NAILS STYLE)
   // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = citas.filter(c => c.date === format(fechaSeleccionada, 'yyyy-MM-dd'))
@@ -430,20 +430,20 @@ export default function AdminAgendaPage() {
 
     if (citasOrdenadas.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-16 space-y-4">
-          <div className="w-16 h-16 rounded-full border-2 border-dashed border-stone-200 dark:border-stone-800 flex items-center justify-center bg-stone-50/50 dark:bg-stone-900/20">
-            <CalendarIcon className="w-6 h-6 text-stone-300 dark:text-stone-600" />
+        <div className="flex flex-col items-center justify-center py-20 space-y-5">
+          <div className="w-20 h-20 rounded-full border-2 border-dashed border-pink-200 dark:border-fuchsia-950 flex items-center justify-center bg-pink-50/30 dark:bg-fuchsia-950/10">
+            <CalendarIcon className="w-8 h-8 text-pink-300 dark:text-fuchsia-800" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-serif italic text-stone-400 dark:text-stone-500">Día libre</p>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">No hay citas agendadas para este día</p>
+            <p className="text-base font-serif italic text-stone-400 dark:text-pink-200/50">Día libre en el Studio</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">No hay citas agendadas para esta fecha</p>
           </div>
           <button 
             onClick={() => setShowNewAppointment(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl text-xs font-mono uppercase tracking-wider hover:opacity-90 transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 text-white rounded-xl text-xs font-mono uppercase tracking-widest hover:opacity-95 transition-all shadow-md shadow-pink-500/20 font-bold"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Agendar turno
+            <Plus className="w-4 h-4" />
+            Agendar turno VIP
           </button>
         </div>
       )
@@ -469,36 +469,36 @@ export default function AdminAgendaPage() {
 
     const grupos = agruparPorFranja()
     const franjas = [
-      { key: 'mañana', label: 'Mañana', emoji: '🌅', citas: grupos.mañana },
-      { key: 'tarde', label: 'Tarde', emoji: '☀️', citas: grupos.tarde },
-      { key: 'noche', label: 'Noche', emoji: '🌙', citas: grupos.noche }
+      { key: 'mañana', label: 'Turnos Mañana', emoji: '✨', citas: grupos.mañana },
+      { key: 'tarde', label: 'Turnos Tarde', emoji: '💖', citas: grupos.tarde },
+      { key: 'noche', label: 'Turnos Noche', emoji: '🌙', citas: grupos.noche }
     ]
 
     return (
-      <div className="space-y-5 pb-4">
-        <div className={`flex items-center justify-between p-4 rounded-2xl border ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+      <div className="space-y-6 pb-6">
+        <div className={`flex items-center justify-between p-5 rounded-2xl border ${
+          isDark ? 'bg-zinc-900/60 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm'
         }`}>
           <div>
-            <p className="text-[9px] font-mono text-stone-400 uppercase tracking-[0.15em] font-bold">
+            <p className="text-[10px] font-mono text-pink-500 dark:text-pink-400 uppercase tracking-[0.2em] font-bold">
               {format(fechaSeleccionada, 'EEEE', { locale: es })}
             </p>
-            <h2 className="text-2xl font-serif italic text-stone-900 dark:text-stone-100 mt-0.5">
+            <h2 className="text-3xl font-serif italic text-stone-900 dark:text-pink-50 mt-1 capitalize">
               {format(fechaSeleccionada, 'd', { locale: es })}
-              <span className="text-sm font-serif font-normal text-stone-400 ml-1.5">
+              <span className="text-base font-serif font-normal text-stone-400 dark:text-pink-200/40 ml-2">
                 {format(fechaSeleccionada, 'MMMM', { locale: es })}
               </span>
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg border ${
-              isDark ? 'bg-stone-900/60 border-stone-800 text-stone-400' : 'bg-stone-50 border-stone-200 text-stone-500'
+            <span className={`text-[10px] font-mono uppercase tracking-widest px-3 py-1.5 rounded-xl border font-bold ${
+              isDark ? 'bg-fuchsia-950/40 border-fuchsia-900/40 text-pink-300' : 'bg-pink-50/60 border-pink-100 text-pink-700'
             }`}>
               {citasOrdenadas.length} {citasOrdenadas.length === 1 ? 'Turno' : 'Turnos'}
             </span>
             {isToday(fechaSeleccionada) && (
-              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20 shadow-sm shadow-pink-500/5">
+                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 animate-pulse" />
                 Hoy
               </span>
             )}
@@ -509,74 +509,78 @@ export default function AdminAgendaPage() {
           if (citasFranja.length === 0) return null
 
           return (
-            <div key={key} className="space-y-2.5">
-              <div className="flex items-center gap-2.5">
-                <span className="text-lg">{emoji}</span>
-                <h3 className="text-[10px] font-mono uppercase tracking-[0.15em] font-bold text-stone-400 dark:text-stone-500">
+            <div key={key} className="space-y-3">
+              <div className="flex items-center gap-2.5 pl-1">
+                <span className="text-base text-pink-500">{emoji}</span>
+                <h3 className="text-[11px] font-mono uppercase tracking-[0.2em] font-black text-stone-400 dark:text-pink-200/40">
                   {label}
                 </h3>
-                <span className="text-[9px] font-mono text-stone-300 dark:text-stone-600">({citasFranja.length})</span>
+                <span className="text-[10px] font-mono text-pink-400/60 dark:text-pink-300/30">({citasFranja.length})</span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {citasFranja.map((cita) => {
                   const statusInfo = getStatusBadge(cita.status)
                   const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
                   const isCompleted = cita.status === 'completed'
                   const isProcessing = cita.status === 'in_progress'
 
-                  let cardBg = isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+                  let cardBg = isDark ? 'bg-zinc-900/40 border-fuchsia-950/40' : 'bg-white border-pink-50 shadow-sm'
                   if (isCompleted) {
-                    cardBg = isDark ? 'bg-stone-900/20 border-stone-800/50 opacity-60' : 'bg-stone-50/60 border-stone-200/50 opacity-60'
+                    cardBg = isDark ? 'bg-zinc-950/40 border-fuchsia-950/20 opacity-50' : 'bg-stone-50/50 border-stone-200/40 opacity-60'
                   }
                   if (isProcessing) {
-                    cardBg = isDark ? 'bg-stone-900/60 border-blue-500/30' : 'bg-white border-blue-300 shadow-md'
+                    cardBg = isDark ? 'bg-fuchsia-950/20 border-pink-500/30 shadow-md shadow-pink-500/5' : 'bg-pink-50/30 border-pink-300 shadow-md shadow-pink-500/5'
                   }
 
                   return (
                     <div 
                       key={cita.id} 
                       onClick={() => abrirDetalleCita(cita)}
-                      className={`relative overflow-hidden rounded-xl border p-4 transition-all cursor-pointer hover:scale-[1.01] hover:shadow-lg flex items-center justify-between gap-4 ${cardBg}`}
+                      className={`relative overflow-hidden rounded-2xl border p-4.5 transition-all cursor-pointer hover:scale-[1.01] hover:shadow-xl hover:border-pink-300/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${cardBg}`}
                     >
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${
+                      {/* Gradient Line Accent */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${
                         cita.status === 'pending' ? 'bg-amber-400' :
                         cita.status === 'confirmed' ? 'bg-emerald-400' :
-                        cita.status === 'in_progress' ? 'bg-blue-400 animate-pulse' :
-                        cita.status === 'completed' ? 'bg-stone-400' :
-                        'bg-rose-400'
+                        cita.status === 'in_progress' ? 'bg-gradient-to-b from-pink-500 to-rose-500 animate-pulse' :
+                        cita.status === 'completed' ? 'bg-stone-400 dark:bg-fuchsia-900' :
+                        'bg-rose-500'
                       }`} />
 
-                      <div className="flex items-center gap-4 min-w-0 pl-3">
-                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
-                          isDark ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-stone-50'
+                      <div className="flex items-center gap-4 min-w-0 pl-2">
+                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border transition-colors ${
+                          isDark ? 'border-fuchsia-950 bg-zinc-950 text-pink-300' : 'border-pink-100 bg-pink-50/40 text-pink-700'
                         }`}>
-                          <Clock className="w-3 h-3 text-stone-400" />
-                          <span className="text-[11px] font-mono font-bold mt-0.5 text-stone-700 dark:text-stone-300">
+                          <Clock className="w-3.5 h-3.5 opacity-60" />
+                          <span className="text-xs font-mono font-black mt-1">
                             {horaMostrar}
                           </span>
                         </div>
 
-                        <div className="space-y-0.5 min-w-0">
-                          <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 truncate flex items-center gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <h4 className="text-base font-black text-stone-900 dark:text-pink-50 tracking-wide truncate">
                             {cita.clients?.name || 'Cliente'}
                           </h4>
-                          <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate flex items-center gap-1.5">
-                            <Scissors className="w-3 h-3 text-stone-400" />
-                            {cita.services?.name || 'Servicio'}
-                          </p>
-                          <p className="text-[9px] text-stone-400 dark:text-stone-500 font-mono flex items-center gap-1">
-                            <Building2 className="w-3 h-3" />
-                            {cita.staff?.name || 'Sin asignar'}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 dark:text-pink-200/60">
+                            <span className="font-bold text-pink-600 dark:text-pink-400 flex items-center gap-1">
+                              <Scissors className="w-3 h-3 text-pink-400 shrink-0" />
+                              {cita.services?.name || 'Servicio'}
+                            </span>
+                            <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-fuchsia-900 shrink-0" />
+                            <span className="font-mono text-[10px] uppercase tracking-wider flex items-center gap-1 dark:text-pink-300/60">
+                              <Building2 className="w-3 h-3 text-stone-400 shrink-0" />
+                              {cita.staff?.name || 'Sin asignar'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="text-sm font-mono font-bold text-stone-900 dark:text-stone-200">
+                      <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 shrink-0 border-t sm:border-0 border-dashed border-pink-100 dark:border-fuchsia-950 pt-2 sm:pt-0">
+                        <span className="text-base font-mono font-black text-stone-900 dark:text-pink-100 bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent dark:from-pink-300 dark:to-amber-300">
                           ${Number(cita.services?.price || 0).toLocaleString()}
                         </span>
-                        <span className={`text-[8px] font-mono uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
+                        <span className={`text-[8px] font-mono uppercase tracking-widest font-black px-3 py-1 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
                           {statusInfo.label}
                         </span>
                       </div>
@@ -592,7 +596,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // RENDER VISTA SEMANA (REDISEÑADO)
+  // RENDER VISTA SEMANA (FRESH NAILS STYLE)
   // ============================================================
   const renderVistaSemana = () => {
     const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
@@ -602,7 +606,7 @@ export default function AdminAgendaPage() {
     const horaFinNum = 20
     const totalHoras = horaFinNum - horaInicioNum + 1
     const horasCuadricula = Array.from({ length: totalHoras }, (_, i) => i + horaInicioNum)
-    const HORA_ALTURA = 72
+    const HORA_ALTURA = 76
 
     const limpiarHora24h = (timeStr: string | null) => {
       if (!timeStr) return '--:--'
@@ -619,15 +623,16 @@ export default function AdminAgendaPage() {
         onDragEnd={handleDragEnd}
       >
         <div className={`overflow-x-auto select-none rounded-2xl border ${
-          isDark ? 'border-stone-800 bg-stone-900/30' : 'border-stone-200 bg-white shadow-sm'
+          isDark ? 'border-fuchsia-950 bg-zinc-900/20' : 'border-pink-100 bg-white shadow-sm'
         }`}>
           <div className="min-w-[950px] flex flex-col">
 
+            {/* WEEK TIMELINE HEADERS */}
             <div className={`flex border-b ${
-              isDark ? 'border-stone-800 bg-stone-950/60' : 'border-stone-200 bg-stone-50/80'
+              isDark ? 'border-fuchsia-950 bg-zinc-950/80' : 'border-pink-100 bg-pink-50/20'
             }`}>
               <div className={`w-16 flex-shrink-0 border-r ${
-                isDark ? 'border-stone-800' : 'border-stone-200'
+                isDark ? 'border-fuchsia-950' : 'border-pink-100'
               }`} />
               <div className="flex-1 grid grid-cols-7">
                 {weekDays.map((day) => {
@@ -638,33 +643,33 @@ export default function AdminAgendaPage() {
                   return (
                     <div 
                       key={day.toString()} 
-                      className={`text-center py-3 border-r last:border-r-0 transition-all ${
-                        isDark ? 'border-stone-800' : 'border-stone-200'
+                      className={`text-center py-3.5 border-r last:border-r-0 transition-all ${
+                        isDark ? 'border-fuchsia-950' : 'border-pink-50'
                       } ${
-                        isTodayDate ? isDark ? 'bg-stone-800/40' : 'bg-stone-100/60' : ''
+                        isTodayDate ? isDark ? 'bg-fuchsia-950/20' : 'bg-pink-50/40' : ''
                       }`}
                     >
-                      <span className={`text-[9px] font-mono uppercase tracking-widest font-bold ${
-                        isTodayDate ? 'text-stone-900 dark:text-stone-100' : 'text-stone-400 dark:text-stone-500'
+                      <span className={`text-[9px] font-mono uppercase tracking-[0.2em] font-black ${
+                        isTodayDate ? 'text-pink-500' : 'text-stone-400 dark:text-pink-300/30'
                       }`}>
                         {format(day, 'EEE', { locale: es })}
                       </span>
-                      <div className={`mt-1 text-sm font-mono font-bold ${
+                      <div className={`mt-1.5 text-base font-mono font-black ${
                         isTodayDate 
                           ? `w-8 h-8 flex items-center justify-center rounded-xl mx-auto ${
-                            isDark ? 'bg-stone-100 text-stone-900' : 'bg-stone-900 text-white'
-                          } shadow-sm` 
-                          : `text-stone-700 dark:text-stone-300 ${tieneCitas ? 'font-bold' : 'font-normal'}`
+                            isDark ? 'bg-gradient-to-tr from-pink-500 to-rose-500 text-white' : 'bg-stone-900 text-white'
+                          } shadow-sm shadow-pink-500/10` 
+                          : `text-stone-700 dark:text-pink-100 ${tieneCitas ? 'font-black' : 'font-normal'}`
                       }`}>
                         {format(day, 'd')}
                       </div>
                       {tieneCitas && (
-                        <div className="mt-1 flex justify-center gap-0.5">
+                        <div className="mt-1.5 flex justify-center gap-1">
                           {citasDelDia.slice(0, 3).map((_, i) => (
-                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-600" />
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-gradient-to-tr from-pink-400 to-rose-400 dark:from-pink-500 dark:to-fuchsia-600" />
                           ))}
                           {citasDelDia.length > 3 && (
-                            <span className="text-[7px] font-mono text-stone-400">+{citasDelDia.length - 3}</span>
+                            <span className="text-[8px] font-mono font-bold text-pink-500/70">+{citasDelDia.length - 3}</span>
                           )}
                         </div>
                       )}
@@ -674,17 +679,18 @@ export default function AdminAgendaPage() {
               </div>
             </div>
 
+            {/* TIMELINE MATRIX HOURLY */}
             <div className="flex relative">
               <div 
                 className={`w-16 flex-shrink-0 border-r ${
-                  isDark ? 'border-stone-800 bg-stone-950/90' : 'border-stone-200 bg-stone-50/90'
+                  isDark ? 'border-fuchsia-950 bg-zinc-950/90' : 'border-pink-100 bg-pink-50/10'
                 } z-[15] sticky left-0`}
                 style={{ height: `${totalHoras * HORA_ALTURA}px` }}
               >
                 {horasCuadricula.map((hora) => (
                   <div 
                     key={hora} 
-                    className="text-[9px] font-mono font-bold text-stone-400 flex items-start justify-end pr-2.5 pt-2" 
+                    className="text-[10px] font-mono font-bold text-stone-400 dark:text-pink-200/40 flex items-start justify-end pr-3 pt-2" 
                     style={{ height: `${HORA_ALTURA}px` }}
                   >
                     {String(hora).padStart(2, '0')}:00
@@ -695,6 +701,7 @@ export default function AdminAgendaPage() {
               <div className="flex-1 overflow-x-auto relative">
                 <div className="relative" style={{ height: `${totalHoras * HORA_ALTURA}px`, minWidth: '700px' }}>
 
+                  {/* DROP CELLS LAYERING BACKGROUND */}
                   <div className="absolute inset-0 grid grid-cols-7" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const dayStr = format(day, 'yyyy-MM-dd')
@@ -705,7 +712,7 @@ export default function AdminAgendaPage() {
                             key={`slot-${dayStr}-${horaStr}`}
                             id={`slot-${dayStr}-${horaStr}`}
                             className={`border-r border-b ${
-                              isDark ? 'border-stone-900/40 hover:bg-stone-900/30' : 'border-stone-100 hover:bg-stone-50'
+                              isDark ? 'border-fuchsia-950/30 hover:bg-fuchsia-950/10' : 'border-pink-50/60 hover:bg-pink-50/20'
                             } transition-colors`}
                             style={{
                               gridColumn: colIdx + 1,
@@ -726,6 +733,7 @@ export default function AdminAgendaPage() {
                     })}
                   </div>
 
+                  {/* ABSOLUTE CARDS RENDER IN TIMELINE GRID */}
                   <div className="absolute inset-0 grid grid-cols-7 pointer-events-none" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const citasDelDia = getCitasDelDia(day)
@@ -748,9 +756,9 @@ export default function AdminAgendaPage() {
                         const isCompleted = cita.status === 'completed'
                         const isDragging = activeId === cita.id
 
-                        let cardBgColor = `bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 shadow-sm`
-                        if (isProcessing) cardBgColor = `bg-amber-500/5 dark:bg-amber-500/5 border-amber-500/30 text-stone-800 dark:text-stone-100`
-                        if (isCompleted) cardBgColor = `bg-stone-50 dark:bg-stone-950 border-stone-200 dark:border-stone-900 text-stone-400 dark:text-stone-500 opacity-60`
+                        let cardBgColor = `bg-white dark:bg-zinc-900 border-pink-100 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 shadow-sm`
+                        if (isProcessing) cardBgColor = `bg-gradient-to-tr from-pink-500/10 to-rose-500/5 border-pink-400/40 text-stone-800 dark:text-pink-50 ring-1 ring-pink-400/20`
+                        if (isCompleted) cardBgColor = `bg-stone-50 dark:bg-zinc-950 border-stone-200/60 dark:border-fuchsia-950/20 text-stone-400 dark:text-pink-300/30 opacity-60`
 
                         return (
                           <div
@@ -764,8 +772,8 @@ export default function AdminAgendaPage() {
                             <DraggableAppointment
                               id={cita.id}
                               disabled={cita.status === 'completed' || cita.status === 'cancelled'}
-                              className={`w-full h-full border rounded-xl p-2 flex flex-col justify-between overflow-hidden transition-all ${cardBgColor} ${
-                                isDragging ? 'opacity-40 ring-1 ring-stone-400 dark:ring-stone-700' : 'hover:bg-stone-50 dark:hover:bg-stone-900/60'
+                              className={`w-full h-full border rounded-xl p-2.5 flex flex-col justify-between overflow-hidden transition-all ${cardBgColor} ${
+                                isDragging ? 'opacity-30 ring-2 ring-pink-400' : 'hover:shadow-md hover:border-pink-300/30'
                               }`}
                             >
                               <div 
@@ -775,30 +783,30 @@ export default function AdminAgendaPage() {
                                 }} 
                                 className="w-full h-full cursor-pointer flex flex-col justify-between"
                               >
-                                <div className="min-w-0">
+                                <div className="min-w-0 space-y-0.5">
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[9px] font-mono font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded">
+                                    <span className="text-[9px] font-mono font-black text-pink-700 dark:text-pink-300 bg-pink-50 dark:bg-fuchsia-950/50 px-1.5 py-0.5 rounded-md">
                                       {horaFormateada}
                                     </span>
-                                    <span className={`text-[6px] px-1.5 py-0.5 rounded-full border uppercase font-mono font-bold tracking-wider ${statusInfo.color} ${statusInfo.bg}`}>
+                                    <span className={`text-[6px] px-1.5 py-0.5 rounded-full border uppercase font-mono font-black tracking-widest ${statusInfo.color} ${statusInfo.bg}`}>
                                       {statusInfo.label === 'En proceso' ? 'Proceso' : 
                                        statusInfo.label === 'Confirmada' ? '✓' :
                                        statusInfo.label === 'Pendiente' ? '⏳' :
                                        statusInfo.label === 'Completada' ? '✅' : '✕'}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] font-bold truncate text-stone-900 dark:text-stone-100 mt-1 tracking-wide">
+                                  <p className="text-[11px] font-black truncate text-stone-900 dark:text-pink-50 pt-1 tracking-wide">
                                     {cita.clients?.name || 'Cliente'}
                                   </p>
-                                  <p className="text-[8px] text-stone-400 dark:text-stone-500 font-medium truncate">
+                                  <p className="text-[9px] text-pink-600 dark:text-pink-400 font-bold truncate">
                                     {cita.services?.name || 'Servicio'}
                                   </p>
                                 </div>
-                                <div className="flex items-center justify-between text-[8px] border-t border-stone-100 dark:border-stone-800/60 pt-1 mt-1 font-mono">
-                                  <span className="text-stone-400 truncate max-w-[55%]">
-                                    👤 {cita.staff?.name || 'Sin'}
+                                <div className="flex items-center justify-between text-[8px] border-t border-pink-100/40 dark:border-fuchsia-950/50 pt-1.5 mt-1 font-mono">
+                                  <span className="text-stone-400 dark:text-pink-200/40 truncate max-w-[55%]">
+                                    💅 {cita.staff?.name || 'Sin'}
                                   </span>
-                                  <span className="font-bold text-stone-900 dark:text-stone-200">
+                                  <span className="font-black text-pink-600 dark:text-pink-300">
                                     ${Number(cita.services?.price || 0).toLocaleString()}
                                   </span>
                                 </div>
@@ -819,7 +827,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // RENDER VISTA MES (REDISEÑADO)
+  // RENDER VISTA MES (FRESH NAILS STYLE)
   // ============================================================
   const renderVistaMes = () => {
     const monthStart = startOfMonth(fechaSeleccionada)
@@ -847,10 +855,10 @@ export default function AdminAgendaPage() {
 
     return (
       <div className={`flex flex-col h-full select-none rounded-2xl overflow-hidden border ${
-        isDark ? 'border-stone-800' : 'border-stone-200'
+        isDark ? 'border-fuchsia-950' : 'border-pink-100'
       }`}>
-        <div className={`grid grid-cols-7 text-center font-mono font-bold text-[9px] py-2.5 ${
-          isDark ? 'bg-stone-950/60 text-stone-500 border-b border-stone-800' : 'bg-stone-50/80 text-stone-400 border-b border-stone-200'
+        <div className={`grid grid-cols-7 text-center font-mono font-black text-[10px] py-3 ${
+          isDark ? 'bg-zinc-950/80 text-pink-300/60 border-b border-fuchsia-950' : 'bg-pink-50/40 text-pink-700/80 border-b border-pink-100'
         }`}>
           {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, idx) => (
             <span key={idx} className="uppercase tracking-widest">{d}</span>
@@ -858,11 +866,11 @@ export default function AdminAgendaPage() {
         </div>
 
         <div className={`grid grid-cols-7 gap-px ${
-          isDark ? 'bg-stone-800' : 'bg-stone-200'
+          isDark ? 'bg-fuchsia-950/30' : 'bg-pink-100/60'
         }`}>
           {days.map((day, idx) => {
             if (!day) {
-              return <div key={`empty-${idx}`} className={`${isDark ? 'bg-stone-950/60' : 'bg-stone-50'} min-h-[85px]`} />
+              return <div key={`empty-${idx}`} className={`${isDark ? 'bg-zinc-950/40' : 'bg-pink-50/10'} min-h-[90px]`} />
             }
 
             const citasDelDia = getCitasDelDia(day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
@@ -873,44 +881,44 @@ export default function AdminAgendaPage() {
               <div 
                 key={idx} 
                 onClick={() => { setFechaSeleccionada(day); setViewMode('day') }}
-                className={`${isDark ? 'bg-stone-950' : 'bg-white'} p-2 min-h-[85px] flex flex-col justify-between cursor-pointer transition-all hover:bg-stone-50 dark:hover:bg-stone-900/40 relative ${
-                  isTodayDate ? 'ring-1 ring-inset ring-stone-400 dark:ring-stone-700 bg-stone-50/60 dark:bg-stone-900/30' : ''
+                className={`${isDark ? 'bg-zinc-950' : 'bg-white'} p-2 min-h-[90px] flex flex-col justify-between cursor-pointer transition-all hover:bg-pink-50/20 dark:hover:bg-fuchsia-950/10 relative ${
+                  isTodayDate ? 'ring-1 ring-inset ring-pink-400 bg-pink-50/10 dark:bg-fuchsia-950/20' : ''
                 }`}
               >
                 <div className="flex justify-between items-start">
-                  <span className={`text-xs font-mono font-bold flex items-center justify-center rounded-md w-6 h-6 transition-all ${
+                  <span className={`text-xs font-mono font-black flex items-center justify-center rounded-lg w-6 h-6 transition-all ${
                     isTodayDate 
-                      ? 'bg-stone-950 text-white dark:bg-stone-100 dark:text-stone-900 shadow-sm' 
+                      ? 'bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-sm' 
                       : tieneCitas 
-                        ? 'text-stone-900 dark:text-stone-100 font-bold' 
-                        : 'text-stone-400 dark:text-stone-600'
+                        ? 'text-stone-900 dark:text-pink-50 font-black' 
+                        : 'text-stone-400 dark:text-pink-300/20'
                   }`}>
                     {format(day, 'd')}
                   </span>
                   {tieneCitas && (
-                    <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      isDark ? 'bg-stone-800 text-stone-400' : 'bg-stone-100 text-stone-500'
+                    <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded-md ${
+                      isDark ? 'bg-fuchsia-950 text-pink-300' : 'bg-pink-50 text-pink-700'
                     }`}>
                       {citasDelDia.length}
                     </span>
                   )}
                 </div>
 
-                <div className="flex-1 space-y-0.5 mt-1 overflow-y-hidden max-h-[55px]">
+                <div className="flex-1 space-y-1 mt-1.5 overflow-y-hidden max-h-[60px]">
                   {citasDelDia.slice(0, 2).map((cita) => {
                     const hora24 = format24h(cita.time)
 
-                    let badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 ${
-                      isDark ? 'bg-stone-900/60 text-stone-400' : 'bg-stone-50 text-stone-600'
+                    let badgeStyle = `text-[8px] px-1.5 py-0.5 rounded-md truncate font-mono flex items-center gap-1 ${
+                      isDark ? 'bg-zinc-900 text-pink-300/80 border border-fuchsia-950/40' : 'bg-pink-50/40 text-pink-800 border border-pink-100/30'
                     }`
                     if (cita.status === 'in_progress') {
-                      badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 ${
-                        isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
+                      badgeStyle = `text-[8px] px-1.5 py-0.5 rounded-md truncate font-mono flex items-center gap-1 font-bold ${
+                        isDark ? 'bg-pink-500/10 text-pink-400 border border-pink-500/20' : 'bg-pink-50 text-pink-600 border border-pink-200'
                       }`
                     }
                     if (cita.status === 'completed') {
-                      badgeStyle = `text-[7px] px-1 py-0.5 rounded truncate font-mono flex items-center gap-0.5 opacity-50 line-through ${
-                        isDark ? 'bg-stone-900/40 text-stone-500' : 'bg-stone-50 text-stone-400'
+                      badgeStyle = `text-[8px] px-1.5 py-0.5 rounded-md truncate font-mono flex items-center gap-1 opacity-50 line-through ${
+                        isDark ? 'bg-zinc-950 text-stone-500 border border-transparent' : 'bg-stone-50 text-stone-400'
                       }`
                     }
 
@@ -918,20 +926,20 @@ export default function AdminAgendaPage() {
                       <div 
                         key={cita.id} 
                         onClick={(e) => { e.stopPropagation(); abrirDetalleCita(cita) }}
-                        className={`cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${badgeStyle}`}
+                        className={`cursor-pointer transition-colors ${badgeStyle}`}
                         title={`${hora24} - ${cita.clients?.name}`}
                       >
-                        <span className="font-mono font-bold shrink-0">{hora24}</span>
-                        <span className="truncate flex-1">{cita.clients?.name || 'Cliente'}</span>
+                        <span className="font-black shrink-0">{hora24}</span>
+                        <span className="truncate flex-1 tracking-wide">{cita.clients?.name || 'Cliente'}</span>
                       </div>
                     )
                   })}
 
                   {citasDelDia.length > 2 && (
-                    <div className={`text-[6px] text-center font-mono font-bold py-0.5 rounded ${
-                      isDark ? 'bg-stone-900/40 text-stone-500' : 'bg-stone-50 text-stone-400'
+                    <div className={`text-[7px] text-center font-mono font-black py-0.5 rounded-md ${
+                      isDark ? 'bg-fuchsia-950/20 text-pink-400/50' : 'bg-pink-50/30 text-pink-600/70'
                     }`}>
-                      +{citasDelDia.length - 2} más
+                      +{citasDelDia.length - 2} más turnos
                     </div>
                   )}
                 </div>
@@ -948,9 +956,9 @@ export default function AdminAgendaPage() {
   // ============================================================
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-3">
-        <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
-        <p className="text-[10px] text-stone-400 font-mono tracking-widest uppercase">Sincronizando agenda...</p>
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <Loader2 className="w-6 h-6 animate-spin text-pink-500" />
+        <p className="text-[10px] text-pink-500 font-mono tracking-widest uppercase font-bold animate-pulse">Sincronizando Agenda Fresh Nails VIP...</p>
       </div>
     )
   }
@@ -958,15 +966,15 @@ export default function AdminAgendaPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-96 p-4">
-        <div className="text-center space-y-3 max-w-sm border border-stone-200 dark:border-stone-800/60 p-6 rounded-xl bg-white dark:bg-[#110f0e]">
-          <X className="w-5 h-5 text-rose-500 mx-auto" />
-          <p className="text-xs font-mono uppercase tracking-wider text-rose-500">Fallo de sincronización</p>
-          <p className="text-[11px] text-stone-400">{error}</p>
+        <div className="text-center space-y-4 max-w-sm border border-pink-100 dark:border-fuchsia-950 p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-xl shadow-pink-500/5">
+          <X className="w-6 h-6 text-rose-500 mx-auto" />
+          <p className="text-xs font-mono uppercase tracking-widest text-rose-500 font-bold">Fallo de sincronización</p>
+          <p className="text-xs text-stone-500 dark:text-pink-200/60 leading-relaxed">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-3 py-1.5 border border-stone-200 dark:border-stone-800 rounded-lg text-[10px] font-mono uppercase tracking-wider hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-600 dark:text-stone-300"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-pink-200 dark:border-fuchsia-800 rounded-xl text-[10px] font-mono uppercase tracking-wider font-bold hover:bg-pink-50 dark:hover:bg-fuchsia-950 transition-all text-pink-600 dark:text-pink-400"
           >
-            <RefreshCw className="w-3 h-3" /> Reintentar
+            <RefreshCw className="w-3.5 h-3.5" /> Reintentar Conexión
           </button>
         </div>
       </div>
@@ -978,142 +986,133 @@ export default function AdminAgendaPage() {
   // ============================================================
   return (
     <div className={`min-h-screen pb-20 pt-4 antialiased space-y-6 max-w-6xl mx-auto px-4 ${
-      isDark ? 'text-stone-300' : 'text-stone-800'
+      isDark ? 'text-pink-100' : 'text-stone-800'
     }`}>
 
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-stone-200 dark:border-stone-800/60">
+      {/* HEADER DE MARCA PREMIUM */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-pink-100 dark:border-fuchsia-950">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-600 animate-pulse" />
-            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-400 font-mono font-bold">Panel de Control</p>
+            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 dark:bg-pink-400 animate-pulse" />
+            <p className="text-[10px] uppercase tracking-[0.3em] text-pink-500 dark:text-pink-400 font-mono font-black">✨ Control Studio</p>
           </div>
-          <h1 className="text-3xl font-serif italic tracking-tight text-stone-900 dark:text-stone-100 mt-2">
-            Agenda <span className="text-stone-400 dark:text-stone-500">Premium</span>
+          <h1 className="text-4xl font-serif font-black tracking-tight text-stone-900 dark:text-pink-50 mt-2">
+            Agenda <span className="bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 bg-clip-text text-transparent italic font-normal">Fresh Nails</span>
           </h1>
-          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">Gestión integral de turnos, estados de flujo e ingresos del equipo.</p>
+          <p className="text-xs text-stone-500 dark:text-pink-200/50 mt-1">Gestión avanzada de turnos en tiempo real, flujos de trabajo e ingresos del equipo.</p>
         </div>
 
-        <div className="flex items-center gap-1.5 self-start sm:self-end">
+        <div className="flex items-center gap-2 self-start sm:self-end">
           <button 
             onClick={() => setShowNewAppointment(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950 text-[11px] font-mono uppercase tracking-wider transition-all hover:opacity-90 shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-mono uppercase tracking-widest font-bold transition-all hover:opacity-95 shadow-md shadow-pink-500/10"
           >
-            <Plus className="w-3.5 h-3.5" /> Nueva Cita
+            <Plus className="w-4 h-4" /> Nuevo Turno
           </button>
           <button 
             onClick={() => setShowCalendar(!showCalendar)}
-            className="p-2.5 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
+            className={`p-2.5 border rounded-xl transition-all ${
+              showCalendar 
+                ? 'bg-pink-500 border-pink-500 text-white shadow-inner' 
+                : 'border-pink-100 dark:border-fuchsia-950 hover:bg-pink-50/50 dark:hover:bg-fuchsia-950/30 text-pink-500'
+            }`}
             title="Calendario rápido"
           >
-            <CalendarIcon className="w-4 h-4 stroke-[1.5]" />
+            <CalendarIcon className="w-4 h-4 stroke-[2]" />
           </button>
           <button 
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="p-2.5 border border-stone-200 dark:border-stone-800 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-900 transition-all text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
-            title="Filtros por Staff"
+            className={`p-2.5 border rounded-xl transition-all ${
+              showMobileFilters 
+                ? 'bg-pink-500 border-pink-500 text-white shadow-inner' 
+                : 'border-pink-100 dark:border-fuchsia-950 hover:bg-pink-50/50 dark:hover:bg-fuchsia-950/30 text-pink-500'
+            }`}
+            title="Filtros Especialistas"
           >
-            <Filter className="w-4 h-4 stroke-[1.5]" />
+            <Filter className="w-4 h-4 stroke-[2]" />
           </button>
         </div>
       </div>
 
       {/* CONTROLES DE VISTA Y FECHA */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex border border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/20 rounded-xl p-1 self-start">
-          <button 
-            onClick={() => setViewMode('day')}
-            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
-              viewMode === 'day' 
-                ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-            }`}
-          >
-            Día
-          </button>
-          <button 
-            onClick={() => setViewMode('week')}
-            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
-              viewMode === 'week' 
-                ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-            }`}
-          >
-            Semana
-          </button>
-          <button 
-            onClick={() => setViewMode('month')}
-            className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all ${
-              viewMode === 'month' 
-                ? 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-sm' 
-                : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
-            }`}
-          >
-            Mes
-          </button>
+        <div className="flex border border-pink-100 dark:border-fuchsia-950 bg-pink-50/20 dark:bg-fuchsia-950/10 rounded-xl p-1 self-start">
+          {(['day', 'week', 'month'] as const).map((mode) => (
+            <button 
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-5 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider font-black transition-all ${
+                viewMode === mode 
+                  ? 'bg-white dark:bg-zinc-900 border border-pink-100 dark:border-fuchsia-900/40 text-pink-600 dark:text-pink-400 shadow-sm' 
+                  : 'text-stone-400 hover:text-pink-500 dark:hover:text-pink-300/60'
+              }`}
+            >
+              {mode === 'day' ? 'Día' : mode === 'week' ? 'Semana' : 'Mes'}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3 border border-stone-200 dark:border-stone-800/80 bg-stone-50/50 dark:bg-stone-900/10 rounded-xl px-3 py-1.5 justify-between md:justify-start min-w-[280px]">
+        <div className="flex items-center gap-3 border border-pink-100 dark:border-fuchsia-950 bg-pink-50/10 dark:bg-fuchsia-950/10 rounded-xl px-3 py-1.5 justify-between md:justify-start min-w-[300px]">
           <button 
             onClick={() => cambiarDia(-1)} 
-            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-900 transition-all"
+            className="p-1.5 rounded-lg hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-all"
           >
-            <ChevronLeft className="w-4 h-4 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200" />
+            <ChevronLeft className="w-4 h-4 text-pink-500 font-bold" />
           </button>
-          <span className="text-[11px] font-serif italic text-stone-900 dark:text-stone-100 text-center flex-1 font-bold">
+          <span className="text-xs font-serif font-extrabold text-stone-900 dark:text-pink-100 text-center flex-1 capitalize tracking-wide">
             {formatFechaTitulo()}
           </span>
           <button 
             onClick={() => cambiarDia(1)} 
-            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-900 transition-all"
+            className="p-1.5 rounded-lg hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-all"
           >
-            <ChevronRight className="w-4 h-4 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200" />
+            <ChevronRight className="w-4 h-4 text-pink-500 font-bold" />
           </button>
         </div>
       </div>
 
-      {/* FILTROS */}
+      {/* FILTROS EXPANDIBLES */}
       {showMobileFilters && (
-        <div className={`p-4 border rounded-xl ${
-          isDark ? 'bg-stone-900/30 border-stone-800' : 'bg-stone-50/50 border-stone-200'
+        <div className={`p-4 border rounded-2xl shadow-inner ${
+          isDark ? 'bg-zinc-950/40 border-fuchsia-950' : 'bg-pink-50/20 border-pink-100'
         }`}>
-          <label className="text-[9px] font-mono uppercase tracking-wider font-bold text-stone-400 flex items-center gap-1">
-            <Users className="w-3 h-3" /> Filtrar Especialista
+          <label className="text-[10px] font-mono uppercase tracking-widest font-black text-pink-600 dark:text-pink-400 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" /> Filtrar Especialista en Turnos
           </label>
           <select 
             value={filtroStaff} 
             onChange={(e) => setFiltroStaff(e.target.value)}
-            className={`w-full sm:w-64 mt-1.5 border rounded-xl px-3 py-2 text-xs focus:outline-none ${
-              isDark ? 'bg-stone-950 border-stone-800 text-stone-300' : 'bg-white border-stone-200 text-stone-700'
+            className={`w-full sm:w-72 mt-2 border rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all ${
+              isDark ? 'bg-zinc-900 border-fuchsia-950 text-pink-100' : 'bg-white border-pink-100 text-stone-700'
             }`}
           >
-            <option value="todos">Todo el Equipo</option>
+            <option value="todos">🌸 Todo el Equipo Studio</option>
             {staff.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>✨ {s.name}</option>
             ))}
           </select>
         </div>
       )}
 
-      {/* MINI CALENDARIO */}
+      {/* MINI CALENDARIO INTERACTIVO */}
       {showCalendar && (
-        <div className={`border rounded-xl p-4 shadow-sm ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200'
+        <div className={`border rounded-2xl p-4.5 shadow-xl shadow-pink-500/5 ${
+          isDark ? 'bg-zinc-900/90 border-fuchsia-950' : 'bg-white border-pink-100'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
-              <ChevronLeft className="w-4 h-4 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200" />
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="p-1 rounded-lg hover:bg-pink-50">
+              <ChevronLeft className="w-4 h-4 text-pink-500" />
             </button>
-            <span className="text-xs font-mono uppercase tracking-wider text-stone-500 font-bold">
+            <span className="text-xs font-mono uppercase tracking-widest text-pink-600 dark:text-pink-400 font-black">
               {format(currentMonth, 'MMMM yyyy', { locale: es })}
             </span>
-            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
-              <ChevronRight className="w-4 h-4 text-stone-400 hover:text-stone-800 dark:hover:text-stone-200" />
+            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-1 rounded-lg hover:bg-pink-50">
+              <ChevronRight className="w-4 h-4 text-pink-500" />
             </button>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center">
+          <div className="grid grid-cols-7 gap-1.5 text-center">
             {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => (
-              <span key={d} className="text-[9px] font-mono text-stone-400 font-bold">{d}</span>
+              <span key={d} className="text-[10px] font-mono text-stone-400 dark:text-pink-300/30 font-black">{d}</span>
             ))}
             {(() => {
               const start = startOfMonth(currentMonth)
@@ -1132,12 +1131,12 @@ export default function AdminAgendaPage() {
                       setFechaSeleccionada(day)
                       setShowCalendar(false)
                     }}
-                    className={`p-1.5 rounded-md text-[11px] font-mono font-bold transition-all ${
+                    className={`p-2 rounded-xl text-xs font-mono font-bold transition-all ${
                       isSelected 
-                        ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-950' 
+                        ? 'bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md' 
                         : tieneCita 
-                          ? 'text-stone-900 dark:text-stone-100 bg-stone-100 dark:bg-stone-900/60' 
-                          : 'text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900/20'
+                          ? 'text-pink-600 dark:text-pink-300 bg-pink-500/10 border border-pink-500/20' 
+                          : 'text-stone-500 hover:bg-pink-50/50 dark:text-pink-100/60 dark:hover:bg-fuchsia-950/30'
                     }`}
                   >
                     {format(day, 'd')}
@@ -1149,13 +1148,16 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* NOTIFICACIÓN DE PENDIENTES */}
+      {/* AVISO DE TURNOS EN ESPERA */}
       {citasPendientes > 0 && (
-        <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            <p className="text-[11px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">
-              Tienes {citasPendientes} {citasPendientes === 1 ? 'turno pendiente' : 'turnos pendientes'} por confirmar
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <p className="text-[11px] font-mono uppercase tracking-wider text-amber-700 dark:text-amber-400 font-black">
+              Tenes {citasPendientes} {citasPendientes === 1 ? 'turno por confirmar' : 'turnos pendientes por confirmar'}
             </p>
           </div>
           <button 
@@ -1168,50 +1170,50 @@ export default function AdminAgendaPage() {
               setViewMode('day')
               setFiltroStaff('todos')
             }}
-            className="text-[9px] font-mono uppercase border border-amber-500/20 px-3 py-1 rounded-md text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-500/5 transition-all"
+            className="text-[9px] font-mono uppercase border border-amber-400/40 px-3 py-1.5 rounded-xl text-amber-700 dark:text-amber-400 font-black hover:bg-amber-500/10 transition-all bg-white dark:bg-zinc-900"
           >
-            Enfocar
+            Enfocar Solicitudes
           </button>
         </div>
       )}
 
-      {/* MÉTRICAS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className={`border rounded-xl p-3 text-center ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+      {/* METRICAS DE RENDIMIENTO */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className={`border rounded-2xl p-4 text-center relative overflow-hidden ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm'
         }`}>
-          <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Total Turnos</p>
-          <p className="text-xl font-mono font-bold text-stone-900 dark:text-stone-100 mt-0.5">{citas.length}</p>
-          <Layers className="w-3.5 h-3.5 mx-auto mt-1 text-stone-400 stroke-[1.25]" />
+          <p className="text-[9px] text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-widest font-black">Total Turnos</p>
+          <p className="text-2xl font-mono font-black text-stone-900 dark:text-pink-100 mt-1">{citas.length}</p>
+          <Layers className="w-4 h-4 mx-auto mt-1.5 text-pink-400/60 stroke-[1.5]" />
         </div>
-        <div className={`border rounded-xl p-3 text-center ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        <div className={`border rounded-2xl p-4 text-center relative overflow-hidden ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm'
         }`}>
-          <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">En Proceso</p>
-          <p className="text-xl font-mono font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+          <p className="text-[9px] text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-widest font-black">En Proceso</p>
+          <p className="text-2xl font-mono font-black text-pink-600 dark:text-pink-400 mt-1">
             {citas.filter(c => c.status === 'in_progress').length}
           </p>
-          <Play className="w-3.5 h-3.5 mx-auto mt-1 text-amber-500/40 stroke-[1.25]" />
+          <Play className="w-4 h-4 mx-auto mt-1.5 text-pink-500/40 stroke-[1.5] animate-pulse" />
         </div>
-        <div className={`border rounded-xl p-3 text-center ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
+        <div className={`border rounded-2xl p-4 text-center relative overflow-hidden ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm'
         }`}>
-          <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Completados</p>
-          <p className="text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+          <p className="text-[9px] text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-widest font-black">Completados</p>
+          <p className="text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-1">
             {citas.filter(c => c.status === 'completed').length}
           </p>
-          <CheckCircle2 className="w-3.5 h-3.5 mx-auto mt-1 text-emerald-500/40 stroke-[1.25]" />
+          <CheckCircle2 className="w-4 h-4 mx-auto mt-1.5 text-emerald-500/40 stroke-[1.5]" />
         </div>
-        <div className={`border rounded-xl p-3 text-center ${
-          isDark ? 'bg-stone-900/40 border-stone-800' : 'bg-white border-stone-200 shadow-sm'
-        }`}>
-          <p className="text-[8px] text-stone-400 font-mono uppercase tracking-widest font-bold">Caja Estimada</p>
-          <p className="text-xl font-mono font-bold text-stone-900 dark:text-stone-100 mt-0.5">${totalIngresos.toLocaleString()}</p>
-          <DollarSign className="w-3.5 h-3.5 mx-auto mt-1 text-stone-400 stroke-[1.25]" />
+        <div className={`border rounded-2xl p-4 text-center bg-gradient-to-tr from-pink-50/50 to-amber-50/30 dark:from-fuchsia-950/10 dark:to-transparent border-pink-100 dark:border-fuchsia-950 shadow-sm`}>
+          <p className="text-[9px] text-pink-600 dark:text-pink-400 font-mono uppercase tracking-widest font-black">Caja Estimada</p>
+          <p className="text-2xl font-mono font-black text-stone-900 dark:text-pink-100 mt-1 bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent dark:from-pink-300 dark:to-amber-300">
+            ${totalIngresos.toLocaleString()}
+          </p>
+          <DollarSign className="w-4 h-4 mx-auto mt-1.5 text-pink-500 stroke-[1.5]" />
         </div>
       </div>
 
-      {/* RENDER DE LA VISTA SELECCIONADA */}
+      {/* WORKSPACE VIEW ROUTER CONTAINER */}
       <div className="w-full">
         {viewMode === 'day' && renderVistaDia()}
         {viewMode === 'week' && renderVistaSemana()}
@@ -1219,47 +1221,47 @@ export default function AdminAgendaPage() {
       </div>
 
       {/* ============================================================
-          MODAL: NUEVA CITA
+          MODAL: NUEVA CITA VIP
           ============================================================ */}
       {showNewAppointment && (
-        <div className="fixed inset-0 bg-stone-950/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col ${
-            isDark ? 'bg-stone-900 border border-stone-800' : 'bg-white border border-stone-200'
+        <div className="fixed inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all transform scale-100 ${
+            isDark ? 'bg-zinc-900 border border-fuchsia-950' : 'bg-white border border-pink-100'
           }`}>
             <div className={`flex items-center justify-between px-5 py-4 border-b ${
-              isDark ? 'border-stone-800' : 'border-stone-200'
+              isDark ? 'border-fuchsia-950 bg-zinc-950/40' : 'border-pink-100 bg-pink-50/10'
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  isDark ? 'bg-stone-800' : 'bg-stone-100'
+                  isDark ? 'bg-fuchsia-950/50' : 'bg-pink-50'
                 }`}>
-                  <Plus className="w-4 h-4 text-stone-500" />
+                  <Plus className="w-4 h-4 text-pink-500" />
                 </div>
-                <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100">Agendar Turno</h3>
+                <h3 className="text-xs font-mono uppercase tracking-widest font-black text-stone-900 dark:text-pink-100">Agendar Turno Studio</h3>
               </div>
               <button 
                 onClick={() => setShowNewAppointment(false)} 
-                className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                className="p-1.5 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/60 text-stone-400 hover:text-pink-500 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="overflow-y-auto p-5 max-h-[70vh]">
+            <div className="overflow-y-auto p-5 max-h-[72vh] space-y-4">
               <form onSubmit={(e) => { e.preventDefault(); handleAgendarCita() }} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <User className="w-3 h-3" /> Cliente <span className="text-stone-400">*</span>
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                    <User className="w-3 h-3 text-pink-400" /> Cliente <span className="text-pink-500">*</span>
                   </label>
                   <select 
                     value={newCita.clientId}
                     onChange={(e) => setNewCita({...newCita, clientId: e.target.value})}
-                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all ${
+                      isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                     }`}
                     required
                   >
-                    <option value="">Selecciona una clienta</option>
+                    <option value="">Selecciona una clienta de la lista</option>
                     {clients.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -1267,18 +1269,18 @@ export default function AdminAgendaPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Servicio <span className="text-stone-400">*</span>
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-pink-400" /> Servicio Solicitado <span className="text-pink-500">*</span>
                   </label>
                   <select 
                     value={newCita.serviceId}
                     onChange={(e) => setNewCita({...newCita, serviceId: e.target.value})}
-                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all ${
+                      isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                     }`}
                     required
                   >
-                    <option value="">Selecciona un servicio</option>
+                    <option value="">Selecciona un servicio de manicuría/pedicuría</option>
                     {services.map(s => (
                       <option key={s.id} value={s.id}>{s.name} (${s.price})</option>
                     ))}
@@ -1286,17 +1288,17 @@ export default function AdminAgendaPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <Users className="w-3 h-3" /> Especialista
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                    <Users className="w-3 h-3 text-pink-400" /> Especialista Asignado
                   </label>
                   <select 
                     value={newCita.staffId}
                     onChange={(e) => setNewCita({...newCita, staffId: e.target.value})}
-                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 transition-all ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    className={`w-full rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all ${
+                      isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                     }`}
                   >
-                    <option value="">Cualquier especialista</option>
+                    <option value="">Cualquier especialista disponible</option>
                     {staff.map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -1305,22 +1307,22 @@ export default function AdminAgendaPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3" /> Fecha <span className="text-stone-400">*</span>
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                      <CalendarIcon className="w-3 h-3 text-pink-400" /> Fecha <span className="text-pink-500">*</span>
                     </label>
                     <input 
                       type="date"
                       value={newCita.date}
                       onChange={(e) => setNewCita({...newCita, date: e.target.value})}
-                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 transition-all ${
-                        isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all ${
+                        isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                       }`}
                       required
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Hora <span className="text-stone-400">*</span>
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-pink-400" /> Hora <span className="text-pink-500">*</span>
                     </label>
                     <TimePicker
                       value={newCita.time}
@@ -1330,41 +1332,41 @@ export default function AdminAgendaPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold flex items-center gap-1">
-                    <FileText className="w-3 h-3" /> Observaciones
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-pink-400" /> Notas Internas
                   </label>
                   <textarea 
                     value={newCita.notes}
                     onChange={(e) => setNewCita({...newCita, notes: e.target.value})}
                     rows={2}
-                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 transition-all resize-none ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200 focus:ring-stone-700' : 'bg-stone-50 border border-stone-200 text-stone-800 focus:ring-stone-400'
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 transition-all resize-none ${
+                      isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                     }`}
-                    placeholder="Alergias, especificaciones..."
+                    placeholder="Diseños específicos, detalles a tener en cuenta..."
                   />
                 </div>
 
                 {formError && (
-                  <div className={`p-3 rounded-xl text-[11px] font-mono leading-relaxed ${
-                    isDark ? 'bg-stone-950 border border-stone-800 text-stone-400' : 'bg-stone-50 border border-stone-200 text-stone-600'
+                  <div className={`p-3 rounded-xl text-[11px] font-mono leading-relaxed border ${
+                    isDark ? 'bg-fuchsia-950/20 border-fuchsia-900 text-pink-300' : 'bg-pink-50 border-pink-100 text-pink-800'
                   }`}>
                     {formError}
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex gap-2.5 pt-3 border-t border-pink-100/40 dark:border-fuchsia-950">
                   <button
                     type="button"
                     onClick={() => setShowNewAppointment(false)}
-                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider transition-colors ${
-                      isDark ? 'border border-stone-800 text-stone-400 hover:bg-stone-800' : 'border border-stone-200 text-stone-500 hover:bg-stone-50'
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest transition-colors border ${
+                      isDark ? 'border-fuchsia-950 text-pink-300/60 hover:bg-fuchsia-950/40' : 'border-pink-100 text-stone-500 hover:bg-pink-50'
                     }`}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider font-bold transition-opacity hover:opacity-90 shadow-sm bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest font-bold transition-opacity hover:opacity-95 shadow-md bg-gradient-to-r from-pink-500 to-rose-500 text-white"
                   >
                     Confirmar Turno
                   </button>
@@ -1376,135 +1378,136 @@ export default function AdminAgendaPage() {
       )}
 
       {/* ============================================================
-          MODAL: DETALLE DE CITA
+          MODAL: CONTROL DETALLE DE TURNO (FICHA)
           ============================================================ */}
       {showDetailModal && selectedCita && (
-        <div className="fixed inset-0 bg-stone-950/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto ${
-            isDark ? 'bg-stone-900 border border-stone-800' : 'bg-white border border-stone-200'
+        <div className="fixed inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className={`w-full max-w-md rounded-2xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto transform scale-100 transition-all ${
+            isDark ? 'bg-zinc-900 border border-fuchsia-950' : 'bg-white border border-pink-100'
           }`}>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-stone-100 dark:border-stone-800">
-              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                <CalendarIcon className="w-4 h-4 text-stone-400" />
-                Ficha del Turno
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-pink-100/40 dark:border-fuchsia-950">
+              <h3 className="text-xs font-mono uppercase tracking-widest font-black text-stone-900 dark:text-pink-100 flex items-center gap-1.5">
+                <CalendarIcon className="w-4 h-4 text-pink-500" />
+                Ficha del Turno VIP
               </h3>
-              <button onClick={() => setShowDetailModal(false)} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg text-stone-400">
+              <button onClick={() => setShowDetailModal(false)} className="p-1.5 hover:bg-pink-50 dark:hover:bg-fuchsia-950 rounded-xl text-stone-400 hover:text-pink-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {isEditing ? (
               <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold">Notas</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black">Notas Internas Studio</label>
                   <textarea
                     value={selectedCita.notes || ''}
                     onChange={(e) => setSelectedCita({...selectedCita, notes: e.target.value})}
-                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none resize-none ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-200' : 'bg-stone-50 border border-stone-200 text-stone-800'
+                    className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-pink-400 resize-none ${
+                      isDark ? 'bg-zinc-950 border border-fuchsia-950 text-pink-100' : 'bg-pink-50/30 border border-pink-100 text-stone-800'
                     }`}
                     rows={3}
                   />
                 </div>
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex gap-2.5 pt-3 border-t border-pink-100/40 dark:border-fuchsia-950">
                   <button
                     onClick={() => setIsEditing(false)}
-                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider ${
-                      isDark ? 'border border-stone-800 text-stone-400' : 'border border-stone-200 text-stone-500'
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest border ${
+                      isDark ? 'border-fuchsia-950 text-pink-300/60' : 'border-pink-100 text-stone-500 hover:bg-pink-50'
                     }`}
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={actualizarCita}
-                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider font-bold bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest font-bold bg-gradient-to-r from-pink-500 to-rose-500 text-white"
                   >
-                    Guardar
+                    Guardar Cambios
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2 text-xs">
-                  <div className={`flex justify-between py-1.5 border-b ${
-                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  <div className={`flex justify-between py-2 border-b ${
+                    isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
                   }`}>
-                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Clienta</span>
-                    <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.clients?.name || 'Cliente'}</span>
+                    <span className="text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-wider text-[10px]">Clienta</span>
+                    <span className="font-black text-stone-900 dark:text-pink-50">{selectedCita.clients?.name || 'Cliente'}</span>
                   </div>
-                  <div className={`flex justify-between py-1.5 border-b ${
-                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  <div className={`flex justify-between py-2 border-b ${
+                    isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
                   }`}>
-                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Servicio</span>
-                    <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.services?.name || 'Servicio'}</span>
+                    <span className="text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-wider text-[10px]">Servicio</span>
+                    <span className="font-bold text-pink-600 dark:text-pink-400">{selectedCita.services?.name || 'Servicio'}</span>
                   </div>
-                  <div className={`flex justify-between py-1.5 border-b ${
-                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  <div className={`flex justify-between py-2 border-b ${
+                    isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
                   }`}>
-                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Especialista</span>
-                    <span className="font-bold text-stone-900 dark:text-stone-100">{selectedCita.staff?.name || 'Sin Asignar'}</span>
+                    <span className="text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-wider text-[10px]">Especialista</span>
+                    <span className="font-bold text-stone-800 dark:text-pink-200">{selectedCita.staff?.name || 'Sin Asignar'}</span>
                   </div>
-                  <div className={`flex justify-between py-1.5 border-b ${
-                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  <div className={`flex justify-between py-2 border-b ${
+                    isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
                   }`}>
-                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Horario</span>
-                    <span className="font-mono font-bold text-stone-900 dark:text-stone-100">
+                    <span className="text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-wider text-[10px]">Horario Cita</span>
+                    <span className="font-mono font-bold text-pink-600 dark:text-pink-300">
                       {selectedCita.time?.substring(0,5)} hs • {selectedCita.date}
                     </span>
                   </div>
-                  <div className={`flex justify-between py-1.5 border-b ${
-                    isDark ? 'border-stone-800' : 'border-stone-100'
+                  <div className={`flex justify-between py-2 border-b ${
+                    isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
                   }`}>
-                    <span className="text-stone-400 font-mono uppercase tracking-wider text-[10px]">Estado</span>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                    <span className="text-stone-400 dark:text-pink-300/40 font-mono uppercase tracking-wider text-[10px]">Estado de Flujo</span>
+                    <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
                       getStatusBadge(selectedCita.status).bg
                     } ${getStatusBadge(selectedCita.status).color}`}>
                       {getStatusBadge(selectedCita.status).label}
                     </span>
                   </div>
                   {selectedCita.notes && (
-                    <div className={`p-2.5 rounded-xl text-[11px] leading-relaxed ${
-                      isDark ? 'bg-stone-950 border border-stone-800 text-stone-400' : 'bg-stone-50 border border-stone-200 text-stone-500'
+                    <div className={`p-3 rounded-xl text-[11px] leading-relaxed border ${
+                      isDark ? 'bg-zinc-950 border-fuchsia-950 text-pink-200/60' : 'bg-pink-50/40 border-pink-100 text-stone-600'
                     }`}>
-                      <span className="block font-mono text-[9px] uppercase tracking-wider text-stone-400 font-bold mb-0.5">Notas</span>
+                      <span className="block font-mono text-[9px] uppercase tracking-wider text-pink-500 font-black mb-0.5">Notas</span>
                       {selectedCita.notes}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-1 pt-2">
-                  <label className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-bold block">Actualizar Estado</label>
-                  <div className="grid grid-cols-3 gap-1">
+                {/* FLUJO DE CAMBIO DE ESTADOS INTERACTIVO */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[9px] font-mono uppercase tracking-widest text-stone-400 dark:text-pink-300/40 font-black block">Cambiar Estado de la Clienta</label>
+                  <div className="grid grid-cols-3 gap-1.5">
                     {['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].slice(0, 3).map((st: any) => (
                       <button
                         key={st}
                         onClick={() => cambiarEstadoCita(selectedCita.id, st)}
-                        className={`px-2 py-1.5 text-[9px] font-mono uppercase tracking-wider border rounded-md transition-all ${
+                        className={`px-2 py-2 text-[9px] font-mono uppercase tracking-wider border rounded-xl transition-all font-black ${
                           selectedCita.status === st 
-                            ? isDark ? 'bg-stone-100 text-stone-900 font-bold' : 'bg-stone-900 text-white font-bold'
-                            : isDark ? 'border-stone-800 text-stone-400 hover:bg-stone-800' : 'border-stone-200 text-stone-400 hover:bg-stone-50'
+                            ? 'bg-gradient-to-tr from-pink-500 to-rose-500 text-white border-transparent shadow-sm'
+                            : isDark ? 'border-fuchsia-950 text-pink-300/60 hover:bg-fuchsia-950/30' : 'border-pink-100 text-stone-400 hover:bg-pink-50/50'
                         }`}
                       >
-                        {st === 'pending' ? '⏳ Pend' : st === 'confirmed' ? '✓ Conf' : '▶️ Proceso'}
+                        {st === 'pending' ? '⏳ Espera' : st === 'confirmed' ? '✓ OK' : '💅 En Sillón'}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
+                <div className="flex gap-2.5 pt-3.5 border-t border-pink-100/40 dark:border-fuchsia-950">
                   <button
                     onClick={() => setIsEditing(true)}
-                    className={`flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 ${
-                      isDark ? 'border border-stone-800 text-stone-300 hover:bg-stone-800' : 'border border-stone-200 text-stone-700 hover:bg-stone-50'
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest font-black flex items-center justify-center gap-1.5 border ${
+                      isDark ? 'border-fuchsia-950 text-pink-300 hover:bg-fuchsia-950/30' : 'border-pink-100 text-stone-700 hover:bg-pink-50'
                     }`}
                   >
-                    <Edit className="w-3.5 h-3.5" /> Editar
+                    <Edit className="w-3.5 h-3.5 text-pink-500" /> Editar Ficha
                   </button>
                   <button
                     onClick={() => eliminarCita(selectedCita.id)}
-                    className="flex-1 px-4 py-2 rounded-xl text-[11px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 border border-rose-200 text-rose-600 dark:text-rose-400 dark:border-rose-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest font-black flex items-center justify-center gap-1.5 border border-rose-200 text-rose-600 dark:text-rose-400 dark:border-rose-950/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    <Trash2 className="w-3.5 h-3.5" /> Cancelar Cita
                   </button>
                 </div>
               </div>

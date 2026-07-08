@@ -4,12 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Calendar, Users, DollarSign, Gem, TrendingUp, Sparkles, 
-  Activity, Heart, Zap, Target, Crown, Clock, Star, 
-  Award, BarChart, ArrowUp, ArrowDown, Eye, Bell,
-  ShoppingBag, UserCheck, CalendarDays, PiggyBank,
-  RefreshCw, Download, AlertCircle, CheckCircle, XCircle, ShieldAlert
+  Activity, Zap, Target, Crown, Clock, BarChart, ArrowUp,
+  Download, AlertCircle, XCircle, PiggyBank, RefreshCw, Award, UserCheck
 } from 'lucide-react'
-import { useAuth } from '../../../contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -19,7 +17,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [authorized, setAuthorized] = useState(false)
-  
+
   const [stats, setStats] = useState({
     citasHoy: 0,
     citasSemana: 0,
@@ -41,9 +39,7 @@ export default function DashboardPage() {
     crecimiento: 0,
   })
 
-  // 🛡️ CONTROL DE PROTECCIÓN DE RUTA EN CLIENTE (Fuerza Bruta para Desarrollo)
   useEffect(() => {
-    console.log('🔓 [Termux-Bypass] Forzando acceso al Dashboard sin restricciones.');
     setAuthorized(true);
     cargarEstadisticas();
   }, [user, role, authLoading]);
@@ -205,173 +201,174 @@ export default function DashboardPage() {
   }
 
   const handleExportReport = () => {
-    console.log('📊 Reporte exportado:', stats)
     alert('📊 Reporte generado en consola')
   }
 
-  // Pantalla de bloqueo absoluta mientras useAuth determina el estado o redirige
   if (!authorized && loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <div className="text-center">
-          <p className="text-mutedForeground font-mono text-[10px] uppercase tracking-[0.2em]">Verificando Credenciales...</p>
-          <p className="text-[9px] text-amber-500/60 font-mono mt-1">Client-Side Verification Layer</p>
-        </div>
+        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="text-pink-600/80 font-mono text-xs uppercase tracking-widest animate-pulse">Abriendo el Salón...</p>
       </div>
     )
   }
 
-  // Fallback de contingencia en render si falló la autorización
   if (!authorized) return null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-1">
 
-      {/* TARJETA DE BIENVENIDA */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.08] via-amber-500/[0.03] to-card border border-rose-500/20 p-6 shadow-xl">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* BIENVENIDA CON GLOW Y DEGRADADO CREATIVO */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
+        <div className="relative z-10 rounded-[23px] bg-[#fffdfd] dark:bg-[#0f0c1b] p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-rose-500/20">
-              <Sparkles className="w-6 h-6 text-rose-500" />
+            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
+              <Sparkles className="w-6 h-6 animate-spin-slow" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 font-mono">✨ Operations Center (Client Protected)</p>
-              <h2 className="text-2xl font-serif italic text-foreground mt-0.5">Dashboard Ejecutivo</h2>
-              <p className="text-xs text-mutedForeground mt-0.5">Monitoreo global de reservas, finanzas e inventario en tiempo real.</p>
+              <p className="text-[10px] uppercase tracking-widest text-pink-500 dark:text-pink-400 font-bold font-mono">✨ Fresh Nails Studio Center</p>
+              <h2 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
+                Panel Ejecutivo con Brillo
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5">Control absoluto de tus citas, ingresos y comunidad VIP.</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 self-start md:self-auto">
-            <button onClick={handleRefresh} disabled={refreshing} className="px-3 py-1.5 rounded-xl bg-muted/30 border border-border text-mutedForeground hover:text-foreground transition-all flex items-center gap-1.5 text-[10px] font-mono">
-              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar'}
+          
+          <div className="flex items-center gap-2.5 self-start md:self-auto">
+            <button onClick={handleRefresh} disabled={refreshing} className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 text-pink-600 dark:text-pink-400 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold">
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Sincronizando...' : 'Actualizar'}
             </button>
-            <button onClick={handleExportReport} className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 text-[10px] font-mono">
-              <Download className="w-3 h-3" />
-              Exportar
+            <button onClick={handleExportReport} className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold">
+              <Download className="w-3.5 h-3.5" />
+              Reporte
             </button>
-            <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              {stats.crecimiento > 0 ? `+${stats.crecimiento}%` : 'Activo'}
-            </div>
           </div>
         </div>
       </div>
 
-      {/* ALERTAS DE ESTADO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* COMPONENTES DE ESTADO DINÁMICOS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {stats.pendientes > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-3 animate-pulse">
-            <AlertCircle className="w-4 h-4 text-amber-500" />
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              Tienes <span className="font-bold">{stats.pendientes}</span> citas pendientes por confirmar
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center animate-bounce"><AlertCircle className="w-4 h-4" /></div>
+            <p className="text-xs text-stone-700 dark:text-amber-300 font-medium">
+              ¡Tienes <span className="text-amber-600 dark:text-amber-400 font-bold underline decoration-2">{stats.pendientes}</span> citas esperando tu confirmación hoy!
             </p>
           </div>
         )}
         {stats.canceladas > 0 && (
-          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-center gap-3">
-            <XCircle className="w-4 h-4 text-rose-500" />
-            <p className="text-xs text-rose-600 dark:text-rose-400">
-              <span className="font-bold">{stats.canceladas}</span> citas canceladas en total
+          <div className="bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center"><XCircle className="w-4 h-4" /></div>
+            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">
+              Hay <span className="font-bold">{stats.canceladas}</span> cancelaciones procesadas en el registro general.
             </p>
           </div>
         )}
       </div>
 
-      {/* MÉTRICAS PRINCIPALES */}
+      {/* MÉTRICAS VIVAS Y LLENAS DE COLOR */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl bg-card border border-border p-4 hover:border-rose-500/30 transition-all group">
+        {/* CARD 1: CITAS HOY */}
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-pink-500/5 hover:-translate-y-1 transition-all group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-pink-500/5 to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 group-hover:bg-rose-500/20 transition-all">
+            <div className="p-3 rounded-xl bg-pink-500 text-white shadow-md shadow-pink-500/20 group-hover:scale-110 transition-transform">
               <Calendar className="w-5 h-5" />
             </div>
             <div className="text-right">
-              <span className="text-2xl font-mono font-bold text-foreground">{stats.citasHoy}</span>
-              <span className="text-[9px] text-mutedForeground block">{stats.citasSemana} esta semana</span>
+              <span className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-100">{stats.citasHoy}</span>
+              <span className="text-[10px] text-stone-400 dark:text-fuchsia-400 block font-bold mt-0.5">{stats.citasSemana} esta semana</span>
             </div>
           </div>
-          <p className="text-mutedForeground text-[10px] font-medium mt-2">Citas Hoy</p>
+          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Citas Agendadas</p>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 hover:border-amber-500/30 transition-all group">
+        {/* CARD 2: CLIENTAS */}
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-rose-500/5 hover:-translate-y-1 transition-all group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20 transition-all">
+            <div className="p-3 rounded-xl bg-rose-500 text-white shadow-md shadow-rose-500/20 group-hover:scale-110 transition-transform">
               <Users className="w-5 h-5" />
             </div>
             <div className="text-right">
-              <span className="text-2xl font-mono font-bold text-foreground">{stats.clientas}</span>
-              <span className="text-[9px] text-emerald-500 block">+{stats.clientasNuevas} nuevas</span>
+              <span className="text-3xl font-bold bg-gradient-to-r from-rose-600 to-amber-500 bg-clip-text text-transparent dark:from-rose-400 dark:to-pink-100">{stats.clientas}</span>
+              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 block font-bold mt-0.5">+{stats.clientasNuevas} este mes</span>
             </div>
           </div>
-          <p className="text-mutedForeground text-[10px] font-medium mt-2">Clientas Registradas</p>
+          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Clientas de Alta</p>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 hover:border-emerald-500/30 transition-all group">
+        {/* CARD 3: INGRESOS */}
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-emerald-500/5 hover:-translate-y-1 transition-all group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/20 transition-all">
+            <div className="p-3 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="text-right">
-              <span className="text-2xl font-mono font-bold text-foreground">${stats.ingresos.toLocaleString()}</span>
-              <span className="text-[9px] text-emerald-500 block">${stats.ingresosMes.toLocaleString()} este mes</span>
+              <span className="text-2xl font-black text-stone-900 dark:text-white">${stats.ingresos.toLocaleString()}</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold mt-0.5">${stats.ingresosMes.toLocaleString()} en curso</span>
             </div>
           </div>
-          <p className="text-mutedForeground text-[10px] font-medium mt-2">Ingresos Totales</p>
+          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Caja & Facturación</p>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 hover:border-violet-500/30 transition-all group">
+        {/* CARD 4: PUNTOS VIP */}
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-amber-500/5 hover:-translate-y-1 transition-all group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-500/5 to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 group-hover:bg-violet-500/20 transition-all">
+            <div className="p-3 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
               <Gem className="w-5 h-5" />
             </div>
             <div className="text-right">
-              <span className="text-2xl font-mono font-bold text-foreground">{stats.puntos.toLocaleString()}</span>
-              <span className="text-[9px] text-violet-500 block">Club VIP</span>
+              <span className="text-2xl font-black text-stone-900 dark:text-white">{stats.puntos.toLocaleString()}</span>
+              <span className="text-[10px] text-amber-500 dark:text-amber-400 block font-bold mt-0.5">Fidelización Club</span>
             </div>
           </div>
-          <p className="text-mutedForeground text-[10px] font-medium mt-2">Puntos Totales</p>
+          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Puntos Acumulados</p>
         </div>
       </div>
 
-      {/* ESTADOS DE CITAS */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-amber-500/30 transition-all">
-          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Pendientes</p>
-          <p className="text-xl font-mono font-bold text-amber-500">{stats.pendientes}</p>
+      {/* PASTILLAS VIBRANTES DE ACCIÓN / SUB-ESTADOS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-2.5 text-center">
+          <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Por Confirmar</p>
+          <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{stats.pendientes}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-emerald-500/30 transition-all">
-          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Confirmadas</p>
-          <p className="text-xl font-mono font-bold text-emerald-500">{stats.confirmadas}</p>
+        <div className="rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 p-2.5 text-center">
+          <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Aprobadas</p>
+          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{stats.confirmadas}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-blue-500/30 transition-all">
-          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Completadas</p>
-          <p className="text-xl font-mono font-bold text-blue-500">{stats.completadas}</p>
+        <div className="rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-900/30 p-2.5 text-center">
+          <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">Listas / Éxito</p>
+          <p className="text-lg font-bold text-indigo-700 dark:text-indigo-400">{stats.completadas}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border p-3 text-center hover:border-rose-500/30 transition-all">
-          <p className="text-[8px] text-mutedForeground font-mono uppercase tracking-wider">Canceladas</p>
-          <p className="text-xl font-mono font-bold text-rose-500">{stats.canceladas}</p>
+        <div className="rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-900/30 p-2.5 text-center">
+          <p className="text-[9px] text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">Canceladas</p>
+          <p className="text-lg font-bold text-rose-700 dark:text-rose-400">{stats.canceladas}</p>
         </div>
       </div>
 
-      {/* SECCIÓN PRINCIPAL */}
+      {/* CONTENEDOR PRINCIPAL: CITAS Y TOP SERVICIOS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-2xl bg-card border border-border p-6">
+        {/* BLOQUE PRÓXIMAS RESERVAS */}
+        <div className="lg:col-span-2 rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950/50 p-6 shadow-xs">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-rose-500" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Próximas Citas</h3>
+              <Clock className="w-4 h-4 text-pink-500 animate-pulse" />
+              <h3 className="text-sm font-black uppercase tracking-wider text-stone-800 dark:text-pink-100">Próximos Turnos</h3>
             </div>
-            <Link href="/admin/agenda" className="text-[10px] text-rose-500 hover:text-rose-400 font-mono flex items-center gap-1 transition-colors hover:translate-x-0.5">
-              Ver toda la agenda →
+            <Link href="/admin/agenda" className="text-xs font-bold text-pink-500 hover:text-pink-600 flex items-center gap-1 transition-all hover:underline">
+              Ver la Agenda Completa →
             </Link>
           </div>
 
           {stats.citasProximas.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-border rounded-xl">
-              <Calendar className="w-8 h-8 text-mutedForeground/30 mx-auto mb-2" />
-              <p className="text-xs text-mutedForeground font-mono">No hay citas pendientes agendadas.</p>
+            <div className="text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl">
+              <Calendar className="w-8 h-8 text-pink-300 dark:text-fuchsia-800 mx-auto mb-2" />
+              <p className="text-xs text-stone-400 font-medium">No hay reservas para las próximas horas.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -382,31 +379,29 @@ export default function DashboardPage() {
                 const esHoy = diffDias === 0
                 const esManana = diffDias === 1
 
-                let label = ''
-                let color = 'text-mutedForeground'
-                if (esHoy) { label = 'Hoy'; color = 'text-rose-500' }
-                else if (esManana) { label = 'Mañana'; color = 'text-amber-500' }
-                else if (diffDias <= 3) { label = `En ${diffDias} días`; color = 'text-emerald-500' }
-                else { label = `En ${diffDias} días` }
+                let label = `En ${diffDias} días`
+                let colorClasses = 'bg-pink-50 text-pink-600 dark:bg-pink-950/30 dark:text-pink-400'
+                if (esHoy) { label = 'Hoy'; colorClasses = 'bg-rose-500 text-white animate-pulse' }
+                else if (esManana) { label = 'Mañana'; colorClasses = 'bg-amber-500 text-white' }
 
                 return (
-                  <div key={idx} className="flex items-center justify-between p-3.5 bg-muted/20 border border-border rounded-xl hover:border-rose-500/20 transition-all group">
+                  <div key={idx} className="flex items-center justify-between p-3.5 bg-[#fff8fb] dark:bg-[#1a1430]/40 border border-pink-50/60 dark:border-fuchsia-950 rounded-2xl hover:border-pink-300 transition-all group">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/10 to-amber-500/10 flex items-center justify-center text-sm font-mono font-bold text-foreground flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-sm font-bold text-white shadow-sm shrink-0">
                         {citaDate.getDate()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{cita.clienteNombre}</p>
+                        <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">{cita.clienteNombre}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-mutedForeground truncate">{cita.servicioNombre}</span>
-                          <span className="w-px h-3 bg-border" />
-                          <span className="text-[10px] font-mono text-mutedForeground">{cita.time ? cita.time.slice(0,5) : '--:--'}</span>
+                          <span className="text-xs font-medium text-pink-600 dark:text-fuchsia-400 truncate">{cita.servicioNombre}</span>
+                          <span className="w-1 h-1 rounded-full bg-stone-300" />
+                          <span className="text-xs font-mono font-bold text-stone-500 dark:text-stone-400">{cita.time ? cita.time.slice(0,5) : '--:--'}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right flex flex-col items-end">
-                      <span className={`text-[10px] font-mono font-bold ${color}`}>{label}</span>
-                      <span className="text-[9px] text-mutedForeground">${cita.precio?.toLocaleString() || 0}</span>
+                    <div className="text-right flex flex-col items-end shrink-0">
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${colorClasses}`}>{label}</span>
+                      <span className="text-xs font-bold text-stone-700 dark:text-pink-200 mt-1">${cita.precio?.toLocaleString() || 0}</span>
                     </div>
                   </div>
                 )
@@ -415,39 +410,42 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* SERVICIOS TOP */}
-        <div className="rounded-2xl bg-card border border-border p-6">
+        {/* BLOQUE SERVICIOS TOP RANKING */}
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950/50 p-6 shadow-xs">
           <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Servicios Top</h3>
+            <TrendingUp className="w-4 h-4 text-rose-500" />
+            <h3 className="text-sm font-black uppercase tracking-wider text-stone-800 dark:text-pink-100">Top Preferidos</h3>
           </div>
 
           {stats.serviciosTop.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-border rounded-xl">
-              <BarChart className="w-8 h-8 text-mutedForeground/30 mx-auto mb-2" />
-              <p className="text-xs text-mutedForeground font-mono">Sin métricas registradas.</p>
+            <div className="text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl">
+              <BarChart className="w-8 h-8 text-pink-300 dark:text-fuchsia-800 mx-auto mb-2" />
+              <p className="text-xs text-stone-400">Sin datos de servicios.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4.5">
               {stats.serviciosTop.map((serv, idx) => {
                 const porcentaje = stats.serviciosTop[0]?.count > 0 ? Math.round((serv.count / stats.serviciosTop[0].count) * 100) : 0
-                const colores = ['border-rose-500', 'border-amber-500', 'border-emerald-500', 'border-violet-500']
-                const coloresBg = ['bg-rose-500/10', 'bg-amber-500/10', 'bg-emerald-500/10', 'bg-violet-500/10']
-                const coloresText = ['text-rose-500', 'text-amber-500', 'text-emerald-500', 'text-violet-500']
+                const gradientes = [
+                  'from-pink-500 to-rose-500 shadow-pink-500/20',
+                  'from-violet-500 to-purple-500 shadow-violet-500/20',
+                  'from-amber-400 to-orange-500 shadow-amber-500/20',
+                  'from-emerald-400 to-teal-500 shadow-emerald-500/20'
+                ]
 
                 return (
                   <div key={idx} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-xs font-semibold">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className={`w-5 h-5 rounded-lg ${coloresBg[idx]} flex items-center justify-center ${coloresText[idx]}`}>
-                          <span className="text-[9px] font-mono font-bold">{idx + 1}</span>
+                        <div className={`w-5 h-5 rounded-lg bg-gradient-to-tr ${gradientes[idx]} flex items-center justify-center text-white text-[9px] font-bold shadow-xs`}>
+                          {idx + 1}
                         </div>
-                        <span className="text-foreground truncate">{serv.nombre}</span>
+                        <span className="text-stone-800 dark:text-pink-100 truncate">{serv.nombre}</span>
                       </div>
-                      <span className="font-mono text-mutedForeground font-bold text-[10px]">{serv.count}</span>
+                      <span className="font-mono text-pink-600 dark:text-pink-400 font-bold bg-pink-50 dark:bg-pink-950/30 px-2 py-0.5 rounded-md">{serv.count} veces</span>
                     </div>
-                    <div className="w-full bg-muted/50 rounded-full h-1.5 overflow-hidden">
-                      <div className={`h-1.5 rounded-full transition-all ${coloresBg[idx]} border ${colores[idx]}`} style={{ width: `${porcentaje}%` }}></div>
+                    <div className="w-full bg-pink-100/30 dark:bg-fuchsia-950/30 rounded-full h-2 overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${gradientes[idx].split(' ')[0]} ${gradientes[idx].split(' ')[1]}`} style={{ width: `${porcentaje}%` }} />
                     </div>
                   </div>
                 )
@@ -457,78 +455,80 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* MÉTRICAS SECUNDARIAS */}
+      {/* SUB-MÉTRICAS CON VELOCÍMETROS VISUALES */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"><Activity className="w-4 h-4" /></div>
-          <div>
-            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Ocupación</p>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-mono font-bold text-foreground">{stats.tasaOcupacion}%</span>
-              <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-rose-500 to-amber-400" style={{ width: `${stats.tasaOcupacion}%` }} />
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-pink-500 text-white shadow-xs"><Activity className="w-4 h-4" /></div>
+          <div className="w-full">
+            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider">Ocupación</p>
+            <div className="flex items-center justify-between gap-2 mt-0.5">
+              <span className="text-base font-bold text-stone-800 dark:text-pink-100">{stats.tasaOcupacion}%</span>
+              <div className="flex-1 bg-pink-100 dark:bg-fuchsia-950/60 h-1.5 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-pink-500 to-rose-500" style={{ width: `${stats.tasaOcupacion}%` }} />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400"><PiggyBank className="w-4 h-4" /></div>
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500 text-white shadow-xs"><PiggyBank className="w-4 h-4" /></div>
           <div>
-            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Ticket Promedio</p>
-            <span className="text-lg font-mono font-bold text-foreground">${stats.ticketPromedio.toLocaleString()}</span>
+            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider">Ticket Promedio</p>
+            <span className="text-base font-bold text-stone-800 dark:text-pink-100 mt-0.5 block">${stats.ticketPromedio.toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400"><UserCheck className="w-4 h-4" /></div>
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-violet-500 text-white shadow-xs"><UserCheck className="w-4 h-4" /></div>
           <div>
-            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Retención</p>
-            <div className="flex items-center gap-1">
-              <span className="text-lg font-mono font-bold text-emerald-500">89%</span>
-              <ArrowUp className="w-3 h-3 text-emerald-500" />
+            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider">Fidelización</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-base font-bold text-emerald-500">89%</span>
+              <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-400"><Award className="w-4 h-4" /></div>
+        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-400 text-white shadow-xs"><Award className="w-4 h-4" /></div>
           <div>
-            <p className="text-mutedForeground text-[9px] font-mono uppercase tracking-wider">Crecimiento</p>
-            <div className="flex items-center gap-1">
-              <span className="text-lg font-mono font-bold text-emerald-500">+{stats.crecimiento}%</span>
-              <ArrowUp className="w-3 h-3 text-emerald-500" />
+            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider">Crecimiento</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-base font-bold text-emerald-500">+{stats.crecimiento}%</span>
+              <ArrowUp className="w-3.5 h-3.5 text-emerald-500" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* RECOMENDACIONES INTELIGENTES */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-500/[0.03] via-rose-500/[0.03] to-card border border-border p-5">
-        <div className="flex items-center gap-2 mb-3.5">
-          <Zap className="w-4 h-4 text-amber-500" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Recomendaciones Inteligentes</h3>
+      {/* SUGERENCIAS INTELIGENTES DEL SISTEMA */}
+      <div className="rounded-3xl bg-gradient-to-r from-pink-500/5 via-amber-500/5 to-transparent border border-pink-100/70 dark:border-fuchsia-950/70 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="w-4 h-4 text-amber-500 animate-bounce" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-stone-800 dark:text-pink-100">Fresh Actions Sugeridas</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-start gap-3 p-3 bg-card rounded-xl border border-border hover:border-rose-500/20 transition-all">
-            <div className="w-7 h-7 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 mt-0.5"><Target className="w-3.5 h-3.5" /></div>
+          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-pink-400 transition-all">
+            <div className="w-7 h-7 bg-pink-500 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5"><Target className="w-3.5 h-3.5" /></div>
             <div>
-              <p className="text-xs font-medium text-foreground">Servicios con baja ocupación</p>
-              <p className="text-[10px] text-mutedForeground">Promociona servicios con menos de 5 reservas este mes.</p>
+              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Potenciar Servicios</p>
+              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5">Lanza un descuento relámpago en los treatments menos pedidos este mes.</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 bg-card rounded-xl border border-border hover:border-amber-500/20 transition-all">
-            <div className="w-7 h-7 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"><Users className="w-3.5 h-3.5" /></div>
+          
+          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-violet-400 transition-all">
+            <div className="w-7 h-7 bg-violet-500 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5"><Users className="w-3.5 h-3.5" /></div>
             <div>
-              <p className="text-xs font-medium text-foreground">Clientas inactivas</p>
-              <p className="text-[10px] text-mutedForeground">{stats.clientas} clientas pueden necesitar reactivación.</p>
+              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Recuperar Clientas</p>
+              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5">Tienes clientas que no han agendado en 30 días. ¡Ofréceles puntos dobles!</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 bg-card rounded-xl border border-border hover:border-emerald-500/20 transition-all">
-            <div className="w-7 h-7 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"><Crown className="w-3.5 h-3.5" /></div>
+          
+          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-amber-400 transition-all">
+            <div className="w-7 h-7 bg-amber-400 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5"><Crown className="w-3.5 h-3.5" /></div>
             <div>
-              <p className="text-xs font-medium text-foreground">Retención en 89%</p>
-              <p className="text-[10px] text-mutedForeground">Envía un obsequio de puntos VIP para mantener el crecimiento.</p>
+              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Club VIP Activo</p>
+              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5">La retención está óptima en 89%. Premia a las mejores con un regalo especial.</p>
             </div>
           </div>
         </div>
