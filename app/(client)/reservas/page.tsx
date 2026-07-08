@@ -14,9 +14,42 @@ import {
   AlertCircle, 
   CheckCircle2,
   HelpCircle,
-  XCircle,
-  ArrowUpRight
+  XCircle
 } from 'lucide-react'
+import Link from 'next/link'
+
+// Definimos interfaces claras y planas para la vista
+interface Service {
+  id: string
+  name: string
+  price: number
+  duration: number
+}
+
+interface ClientProfile {
+  id: string
+  name: string
+  phone: string
+  email: string
+}
+
+interface Staff {
+  id: string
+  name: string
+}
+
+interface Appointment {
+  id: string
+  date: string
+  time: string
+  status: string
+  client_id: string
+  professional_id: string | null
+  service_id: string
+  clients: ClientProfile | null
+  services: Service | null
+  staff?: Staff | null
+}
 
 export default function MisReservasPage() {
   const { user } = useAuth()
@@ -24,11 +57,11 @@ export default function MisReservasPage() {
   const isDark = theme === 'dark'
 
   const [loading, setLoading] = useState(true)
-  const [citas, setCitas] = useState<any[]>([])
+  const [citas, setCitas] = useState<Appointment[]>([])
   const [nombreCliente, setNombreCliente] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+useEffect(() => {
     const cargarCitasAutomatico = async () => {
       if (!user) {
         setLoading(false)
@@ -41,27 +74,25 @@ export default function MisReservasPage() {
 
       let clienteId = null
 
-      // 1. BUSCAR CLIENTE POR auth_user_id (CORREGIDO)
-      const { data: cliente, error: clienteError } = await supabase
+      // 1. BUSCAR CLIENTE POR auth_user_id (CORREGIDO CON AS ANY)
+      const { data: cliente } = await supabase
         .from('clients')
         .select('id, name, phone, email')
         .eq('auth_user_id', user.id)
-        .maybeSingle()
-
-      if (clienteError) console.error('❌ Error buscando cliente:', clienteError)
+        .maybeSingle() as any
 
       if (cliente) {
         clienteId = cliente.id
         setNombreCliente(cliente.name || '')
       }
 
-      // 2. SI NO SE ENCUENTRA POR auth_user_id, buscar por email (fallback)
+      // 2. BUSCAR POR EMAIL (CORREGIDO CON AS ANY)
       if (!clienteId && user.email) {
         const { data: clientePorEmail } = await supabase
           .from('clients')
           .select('id, name')
           .eq('email', user.email)
-          .maybeSingle()
+          .maybeSingle() as any
 
         if (clientePorEmail) {
           clienteId = clientePorEmail.id
@@ -69,7 +100,7 @@ export default function MisReservasPage() {
         }
       }
 
-      // 3. SI NO, buscar por teléfono en localStorage
+      // 3. BUSCAR POR TELÉFONO (CORREGIDO CON AS ANY)
       if (!clienteId) {
         const telGuardado = localStorage.getItem('cliente_telefono')
         if (telGuardado) {
@@ -77,7 +108,7 @@ export default function MisReservasPage() {
             .from('clients')
             .select('id, name')
             .eq('phone', telGuardado)
-            .maybeSingle()
+            .maybeSingle() as any
 
           if (clientePorTel) {
             clienteId = clientePorTel.id
@@ -96,7 +127,13 @@ export default function MisReservasPage() {
         const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select(`
-            *,
+            id,
+            date,
+            time,
+            status,
+            client_id,
+            professional_id,
+            service_id,
             clients:client_id (id, name, phone, email),
             services:service_id (id, name, price, duration)
           `)
@@ -106,9 +143,13 @@ export default function MisReservasPage() {
         if (appointmentsError) throw appointmentsError
 
         if (appointmentsData && appointmentsData.length > 0) {
-          const staffIds = appointmentsData.map(c => c.professional_id).filter(id => id)
+          const rawAppointments = appointmentsData as any[]
 
-          let staffMap: Record<string, any> = {}
+          const staffIds = rawAppointments
+            .map((c) => c.professional_id)
+            .filter((id): id is string => !!id)
+
+          let staffMap: Record<string, Staff> = {}
           if (staffIds.length > 0) {
             const { data: staffData } = await supabase
               .from('staff')
@@ -116,14 +157,38 @@ export default function MisReservasPage() {
               .in('id', staffIds)
 
             if (staffData) {
-              staffMap = staffData.reduce((acc, s) => ({ ...acc, [s.id]: s }), {})
+              const rawStaff = staffData as any[]
+              staffMap = rawStaff.reduce<Record<string, Staff>>((acc, s) => {
+                acc[s.id] = { id: s.id, name: s.name }
+                return acc
+              }, {})
             }
           }
 
-          const citasConStaff = appointmentsData.map(cita => ({
-            ...cita,
-            staff: cita.professional_id ? staffMap[cita.professional_id] : null
-          }))
+          const citasConStaff: Appointment[] = rawAppointments.map((cita) => {
+            return {
+              id: cita.id,
+              date: cita.date,
+              time: cita.time,
+              status: cita.status,
+              client_id: cita.client_id,
+              professional_id: cita.professional_id,
+              service_id: cita.service_id,
+              clients: cita.clients ? {
+                id: cita.clients.id,
+                name: cita.clients.name,
+                phone: cita.clients.phone,
+                email: cita.clients.email
+              } : null,
+              services: cita.services ? {
+                id: cita.services.id,
+                name: cita.services.name,
+                price: Number(cita.services.price),
+                duration: Number(cita.services.duration)
+              } : null,
+              staff: cita.professional_id ? staffMap[cita.professional_id] : null
+            }
+          })
 
           setCitas(citasConStaff)
         } else {
@@ -142,23 +207,23 @@ export default function MisReservasPage() {
   }, [user])
 
   const renderBadge = (status: string) => {
-    const base = "inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full border shadow-sm transition-all duration-300"
+    const base = "inline-flex items-center gap-1.5 text-[9px] font-mono font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm transition-all duration-300"
     switch (status) {
       case 'confirmed':
         return (
-          <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30 dark:shadow-[0_0_12px_rgba(16,185,129,0.1)]`}>
+          <span className={`${base} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20`}>
             <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Confirmado
           </span>
         )
       case 'pending':
         return (
-          <span className={`${base} bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30 animate-pulse dark:shadow-[0_0_12px_rgba(245,158,11,0.15)]`}>
-            <Clock className="w-3 h-3 text-amber-400" /> Pendiente
+          <span className={`${base} bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse`}>
+            <Clock className="w-3 h-3 text-amber-500" /> Pendiente
           </span>
         )
       case 'cancelled':
         return (
-          <span className={`${base} bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30`}>
+          <span className={`${base} bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20`}>
             <XCircle className="w-3 h-3 text-rose-500" /> Cancelado
           </span>
         )
@@ -173,184 +238,144 @@ export default function MisReservasPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-4">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="relative flex items-center justify-center">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-12 h-12 border-4 border-amber-500/20 rounded-full animate-ping"></div>
-          </div>
-          <Sparkles className="w-5 h-5 text-amber-500 absolute animate-pulse" />
+          <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
+          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
         </div>
-        <p className={`text-xs font-mono tracking-wide animate-pulse ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Sincronizando tus agendas premium...</p>
       </div>
     )
   }
 
   return (
-    <div className={`w-full max-w-4xl mx-auto p-4 md:p-6 antialiased selection:bg-amber-500/20 relative min-h-[60vh] transition-colors duration-300 ${
-      isDark ? 'text-stone-200' : 'text-stone-800'
+    <div className={`min-h-screen antialiased selection:bg-pink-500/20 pb-24 transition-colors duration-500 ${
+      isDark ? 'bg-stone-950 text-stone-100' : 'bg-gradient-to-b from-pink-50/20 via-amber-50/10 to-stone-50/30 text-stone-900'
     }`}>
+      <div className="max-w-4xl mx-auto px-4">
 
-      <div className={`absolute top-[-10%] left-1/4 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none ${
-        isDark ? 'bg-amber-500/[0.04]' : 'bg-amber-500/[0.03]'
-      }`} />
-      <div className={`absolute bottom-[10%] right-1/4 w-[250px] h-[250px] rounded-full blur-[100px] pointer-events-none ${
-        isDark ? 'bg-indigo-500/[0.03]' : 'bg-purple-500/[0.02]'
-      }`} />
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-slideUp { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .animate-spin-slow { animation: spin 8s linear infinite; }
-        .stagger-children > * { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-        .stagger-children > *:nth-child(2) { animation-delay: 0.10s; }
-        .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-        .stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
-        .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
-        .stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
-        .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
-        .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
-        .stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
-        .stagger-children > *:nth-child(10) { animation-delay: 0.50s; }
-      `}</style>
-
-      <div className="relative z-10 space-y-8">
-
-        {/* HEADER */}
-        <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl animate-fade-up ${
+        {/* HERO BANNER ATELIER PRESTIGE */}
+        <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-8 shadow-xl mt-4 transition-all duration-300 ${
           isDark 
-            ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
-            : 'bg-gradient-to-br from-amber-50/50 via-white to-stone-50'
+            ? 'bg-gradient-to-br from-stone-950 via-pink-950/20 to-neutral-950 border-pink-950/40' 
+            : 'bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 border-pink-100'
         }`}>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
-                isDark ? 'text-amber-400' : 'text-amber-600'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                📅 Mis Reservas
-              </p>
-              <h2 className="text-2xl font-serif italic text-foreground mt-1">
-                {nombreCliente ? `Reservas de ${nombreCliente.split(' ')[0]}` : 'Mis Reservas'}
-                <span className="text-shimmer ml-2">Premium</span>
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                <span className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>Atelier Digital Experience</span>
+              </div>
+              <h2 className="text-3xl font-black tracking-tight text-white">
+                {nombreCliente ? `Rituales de ${nombreCliente.split(' ')[0]}` : 'Mis Reservas'} <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">VIP</span>
               </h2>
-              <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                {user?.email ? `Usuario: ${user.email}` : 'Inicia sesión para sincronizar la app'}
+              <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-pink-100/90 font-medium'}`}>
+                {user?.email ? `Historial y estatus activo de tu cuenta: ${user.email}` : 'Conectado de forma temporal'}
               </p>
             </div>
 
-            {error && !citas.length && (
-              <div className={`inline-flex items-center gap-2 border px-3 py-2 rounded-xl text-[11px] font-mono backdrop-blur-md shadow-sm ${
+            <Link
+              href="/client/booking"
+              className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border shadow-sm ${
                 isDark 
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
-                  : 'bg-amber-500/5 border-amber-500/20 text-amber-700'
-              }`}>
-                <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
-                <span>{error}</span>
-              </div>
-            )}
+                  ? 'bg-stone-900 border-stone-800 text-stone-300 hover:bg-stone-800' 
+                  : 'bg-stone-950 border-stone-900 text-white hover:bg-stone-900'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-pink-400" />
+              Agendar Ritual →
+            </Link>
           </div>
         </div>
 
-        {/* LISTADO DE CITAS */}
-        {citas.length === 0 ? (
-          <div className={`border border-dashed rounded-2xl p-12 text-center backdrop-blur-md shadow-inner animate-fadeIn ${
-            isDark 
-              ? 'border-stone-800/80 bg-stone-900/20' 
-              : 'border-stone-200 bg-white/60'
+        {/* BOX NOTIFICACIÓN FALLBACK */}
+        {error && !citas.length && (
+          <div className={`mt-6 flex items-start gap-3 border p-4 rounded-2xl backdrop-blur-md shadow-sm ${
+            isDark ? 'bg-amber-500/5 border-amber-500/20 text-amber-400' : 'bg-amber-50/60 border-amber-200 text-amber-800'
           }`}>
-            <Calendar className={`w-10 h-10 mx-auto mb-3.5 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-            <p className={`text-xs font-mono max-w-sm mx-auto ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-              {error || 'No registras ningún tratamiento o reserva asignada en tu historial próximo.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 stagger-children">
-            {citas.map((cita) => {
-              const fechaObjeto = new Date(cita.date.replace(/-/g, '\/'))
-              const fechaLinda = format(fechaObjeto, "EEEE d 'de' MMMM", { locale: es })
-
-              return (
-                <div 
-                  key={cita.id} 
-                  className={`card-glow group relative backdrop-blur-md border rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] overflow-hidden animate-slideUp ${
-                    isDark 
-                      ? 'bg-stone-900/40 border-stone-800/70 hover:border-amber-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                      : 'bg-white border-stone-200/90 hover:border-amber-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
-                  }`}
-                >
-                  <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl group-hover:bg-amber-500/[0.08] transition-all duration-500 pointer-events-none ${
-                    isDark ? 'bg-amber-500/[0.03]' : 'bg-amber-500/[0.02]'
-                  }`} />
-
-                  <div className={`absolute top-0 left-0 w-[4px] h-full rounded-l-full transition-all duration-500 ${
-                    isDark 
-                      ? 'bg-stone-800/60 group-hover:bg-amber-500' 
-                      : 'bg-stone-100 group-hover:bg-amber-500'
-                  }`} />
-
-                  <div className="flex justify-between items-start gap-4 pl-1">
-                    <div className="space-y-2">
-                      <h3 className={`text-sm font-black tracking-tight transition-colors flex items-center gap-1.5 ${
-                        isDark 
-                          ? 'text-stone-100 group-hover:text-amber-400' 
-                          : 'text-stone-900 group-hover:text-amber-600'
-                      }`}>
-                        {cita.services?.name || 'Servicio Especial Premium'}
-                        <ArrowUpRight className={`w-3.5 h-3.5 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300 ${
-                          isDark ? 'text-amber-400' : 'text-amber-500'
-                        }`} />
-                      </h3>
-
-                      <div className={`inline-flex items-center gap-2 border px-2.5 py-1 rounded-xl text-[11px] ${
-                        isDark 
-                          ? 'bg-stone-950/50 border-stone-800/60' 
-                          : 'bg-stone-50 border-stone-200/60'
-                      }`}>
-                        <User className={`w-3.5 h-3.5 ${isDark ? 'text-stone-400' : 'text-stone-400'}`} />
-                        <span className={`font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Especialista:</span>
-                        <span className={`font-bold ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>{cita.staff?.name || 'Por asignar'}</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      {renderBadge(cita.status)}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-center justify-between mt-6 pt-4 border-t text-xs pl-1 ${
-                    isDark ? 'border-stone-800/60' : 'border-stone-100'
-                  }`}>
-                    <div className={`flex items-center gap-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      <Calendar className={`w-4 h-4 ${isDark ? 'text-amber-500/80' : 'text-amber-600'}`} />
-                      <span className={`capitalize font-bold tracking-tight ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>{fechaLinda}</span>
-                    </div>
-
-                    <div className={`flex items-center gap-2 font-mono text-[11px] px-3 py-1.5 rounded-xl shadow-md dark:shadow-none tracking-wide ${
-                      isDark 
-                        ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' 
-                        : 'bg-stone-900 text-white border-stone-950'
-                    }`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
-                      {cita.time.slice(0, 5)} HS
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+            <div className="space-y-0.5">
+              <p className="text-xs font-black uppercase tracking-wider font-mono">Verificación de Cuenta</p>
+              <p className="text-xs font-medium opacity-90">{error}</p>
+            </div>
           </div>
         )}
+
+        {/* LISTADO DE CITAS BOUTIQUE */}
+        <div className="mt-8">
+          {citas.length === 0 ? (
+            <div className={`border border-dashed rounded-3xl p-12 text-center backdrop-blur-md ${
+              isDark ? 'border-stone-800 bg-stone-900/10' : 'border-pink-100 bg-white/40 shadow-inner'
+            }`}>
+              <Calendar className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-stone-800' : 'text-pink-200'}`} />
+              <p className="text-sm font-black tracking-tight text-stone-800 dark:text-stone-200">No registras tratamientos próximos</p>
+              <p className={`text-xs mt-1 max-w-sm mx-auto ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                Diseña tu próxima experiencia haciendo clic en el botón superior de reservas VIP.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {citas.map((cita) => {
+                const fechaObjeto = new Date(cita.date.replace(/-/g, '\/'))
+                const fechaLinda = format(fechaObjeto, "EEEE d 'de' MMMM", { locale: es })
+
+                return (
+                  <div 
+                    key={cita.id} 
+                    className={`group relative rounded-2xl border p-5 transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[160px] overflow-hidden ${
+                      isDark 
+                        ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
+                        : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.03] to-transparent rounded-bl-full pointer-events-none transition-all group-hover:from-pink-500/[0.08]" />
+
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-black font-mono uppercase tracking-widest text-pink-500 dark:text-pink-400">Tratamiento Adquirido</span>
+                        <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
+                          {cita.services?.name || 'Servicio Especial Boutique'}
+                        </h4>
+                        
+                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold mt-2 border ${
+                          isDark ? 'bg-stone-950/60 border-stone-800 text-stone-400' : 'bg-stone-50 border-stone-100 text-stone-500'
+                        }`}>
+                          <User className="w-3 h-3 text-pink-500" />
+                          <span>Especialista:</span>
+                          <span className="font-black text-stone-800 dark:text-stone-200">{cita.staff?.name || 'Por asignar'}</span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {renderBadge(cita.status)}
+                      </div>
+                    </div>
+
+                    <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-3.5 ${
+                      isDark ? 'border-stone-800/80' : 'border-stone-100'
+                    }`}>
+                      <div className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 font-medium">
+                        <Calendar className="w-3.5 h-3.5 text-pink-500" />
+                        <span className="capitalize font-bold text-stone-800 dark:text-stone-300">{fechaLinda}</span>
+                      </div>
+
+                      <div className={`flex items-center gap-1.5 font-mono text-[11px] font-black px-2.5 py-1 rounded-xl shadow-sm tracking-widest ${
+                        isDark 
+                          ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' 
+                          : 'bg-stone-950 text-white'
+                      }`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                        {cita.time.slice(0, 5)} HS
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>

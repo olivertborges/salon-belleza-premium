@@ -5,13 +5,10 @@ import { supabase } from '@/lib/supabase/client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { 
-  Sparkles, Heart, Star, Award, 
-  Clock, User, ChevronRight, Calendar, 
-  Crown, Shield, Zap, Gem,
-  Flower2, Droplets, Sun, Moon,
-  Leaf, Feather, Wand2, 
-  Eye, Sparkle, Activity,
-  Bath, Scissors, ArrowRight
+  Sparkles, Heart, Star, Clock, 
+  ChevronRight, Calendar, Crown, 
+  Gem, Flower2, Droplets, Feather, 
+  Eye, Sparkle, ArrowRight, Palette
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -51,30 +48,23 @@ export default function EsteticaPage() {
 
       if (error) throw error
       
-      // Filtrar servicios de estética (los que tienen category = 'Estética' o categorías relacionadas)
-      const esteticaServices = data.filter(s => 
-        s.category === 'Estética' || 
-        s.category === 'Facial' || 
-        s.category === 'Corporal' || 
-        s.category === 'Masajes' ||
-        s.category === 'Depilación' ||
-        s.category === 'Cejas'
+      // Filtrado en el cliente para mantener la vista enfocada en Bienestar/Estética
+      const esteticaServices = (data || []).filter(s => 
+        ['Estética', 'Facial', 'Corporal', 'Masajes', 'Depilación', 'Cejas'].includes(s.category)
       )
       
       setServicios(esteticaServices)
 
-      // Extraer categorías únicas de los servicios filtrados
-      const categorias = [...new Set(esteticaServices.map(s => s.category).filter(Boolean))]
+      const categorias = [...new Set(esteticaServices.map(s => s.category).filter(Boolean))] as string[]
       setCategoriasDisponibles(categorias)
       
     } catch (error) {
-      console.error('Error cargando servicios:', error)
+      console.error('Error cargando servicios de estética:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Mapeo de iconos por categoría
   const getIconForCategory = (cat: string) => {
     const map: Record<string, any> = {
       'Facial': Flower2,
@@ -82,74 +72,36 @@ export default function EsteticaPage() {
       'Masajes': Sparkles,
       'Depilación': Feather,
       'Cejas': Eye,
-      'Estética': Sparkles,
-      'General': Sparkles
+      'Estética': Sparkles
     }
     return map[cat] || Sparkles
   }
 
-  const getCategoryLabel = (cat: string) => {
-    const map: Record<string, string> = {
-      'Facial': 'Facial',
-      'Corporal': 'Corporal',
-      'Masajes': 'Masajes',
-      'Depilación': 'Depilación',
-      'Cejas': 'Cejas',
-      'Estética': 'Estética',
-      'General': 'General'
-    }
-    return map[cat] || cat
-  }
-
-  // Construir categorías de filtro
   const categoriasFiltro = [
     { id: 'todos', label: 'Todos', icon: Sparkles },
     ...categoriasDisponibles.map(cat => ({
       id: cat,
-      label: getCategoryLabel(cat),
+      label: cat,
       icon: getIconForCategory(cat)
     }))
   ]
 
-  // Si no hay categorías, usar las predefinidas
-  const categoriasFinal = categoriasFiltro.length > 1 
-    ? categoriasFiltro 
-    : [
-        { id: 'todos', label: 'Todos', icon: Sparkles },
-        { id: 'Facial', label: 'Facial', icon: Flower2 },
-        { id: 'Corporal', label: 'Corporal', icon: Droplets },
-        { id: 'Masajes', label: 'Masajes', icon: Sparkles },
-        { id: 'Depilación', label: 'Depilación', icon: Feather },
-        { id: 'Cejas', label: 'Cejas', icon: Eye },
-      ]
+  const categoriasFinal = categoriasFiltro.length > 1 ? categoriasFiltro : [
+    { id: 'todos', label: 'Todos', icon: Sparkles },
+    { id: 'Facial', label: 'Facial', icon: Flower2 },
+    { id: 'Corporal', label: 'Corporal', icon: Droplets },
+    { id: 'Masajes', label: 'Masajes', icon: Sparkles },
+    { id: 'Depilación', label: 'Depilación', icon: Feather },
+    { id: 'Cejas', label: 'Cejas', icon: Eye },
+  ]
 
-  // Filtrar servicios por categoría usando category directamente
   const serviciosFiltrados = selectedCategory === 'todos' 
     ? servicios 
     : servicios.filter(s => s.category === selectedCategory)
 
   const getIcon = (iconName: string) => {
     const icons: Record<string, any> = {
-      Sparkles: Sparkles,
-      Sparkle: Sparkle,
-      Flower2: Flower2,
-      Droplets: Droplets,
-      Leaf: Leaf,
-      Feather: Feather,
-      Wand2: Wand2,
-      Eye: Eye,
-      Activity: Activity,
-      Bath: Bath,
-      Scissors: Scissors,
-      Crown: Crown,
-      Star: Star,
-      Heart: Heart,
-      Zap: Zap,
-      Gem: Gem,
-      Sun: Sun,
-      Moon: Moon,
-      Shield: Shield,
-      Award: Award
+      Sparkles, Sparkle, Flower2, Droplets, Feather, Eye, Crown, Star, Heart, Gem, Palette
     }
     return icons[iconName] || Sparkles
   }
@@ -160,7 +112,6 @@ export default function EsteticaPage() {
       case 'Tendencia': return 'bg-violet-500/10 border-violet-500/20 text-violet-500'
       case 'Premium': return 'bg-amber-500/10 border-amber-500/20 text-amber-500'
       case 'Nuevo': return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-      case 'Relax': return 'bg-blue-500/10 border-blue-500/20 text-blue-500'
       default: return 'bg-stone-500/10 border-stone-500/20 text-stone-500'
     }
   }
@@ -169,118 +120,97 @@ export default function EsteticaPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="relative flex items-center justify-center">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-12 h-12 border-4 border-emerald-500/20 rounded-full animate-ping"></div>
-          </div>
-          <Sparkles className="w-5 h-5 text-emerald-500 absolute animate-pulse" />
+          <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin" />
+          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
         </div>
-        <p className={`text-xs font-mono tracking-wide animate-pulse ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Cargando servicios de estética...</p>
+        <p className={`text-xs font-mono tracking-widest uppercase font-black animate-pulse ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+          Iniciando Módulo Estética...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className={`w-full max-w-7xl mx-auto p-4 md:p-6 antialiased selection:bg-emerald-500/20 relative min-h-[60vh] transition-colors duration-300 overflow-x-hidden ${
-      isDark ? 'text-stone-200' : 'text-stone-800'
+    <div className={`w-full max-w-7xl mx-auto p-4 md:p-6 antialiased selection:bg-pink-500/20 relative min-h-screen transition-colors duration-500 ${
+      isDark ? 'bg-stone-950 text-stone-200' : 'bg-gradient-to-b from-pink-50/10 via-amber-50/5 to-stone-50/30 text-stone-800'
     }`}>
 
-      {/* Fondos ambientales */}
-      <div className={`absolute top-[-10%] left-1/4 w-[400px] h-[400px] rounded-full blur-[150px] pointer-events-none ${
-        isDark ? 'bg-emerald-500/[0.04]' : 'bg-emerald-500/[0.03]'
-      }`} />
-      <div className={`absolute bottom-[10%] right-1/4 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none ${
-        isDark ? 'bg-teal-500/[0.03]' : 'bg-teal-500/[0.02]'
-      }`} />
+      {/* Auras de Fondo Coherentes */}
+      <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-pink-500/[0.03] pointer-events-none" />
+      <div className="absolute bottom-20 right-1/4 w-[300px] h-[300px] rounded-full blur-[140px] bg-amber-500/[0.02] pointer-events-none" />
 
       {/* ============================================================ */}
-      {/* HEADER CON CARD-GLOW */}
+      {/* HERO BANNER ESTÉTICA PRESTIGE */}
       {/* ============================================================ */}
-      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] via-card to-card border border-emerald-500/20 p-6 shadow-xl animate-fade-up ${
+      <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-8 shadow-xl transition-all duration-300 ${
         isDark 
-          ? 'bg-gradient-to-br from-emerald-950/20 via-[#161311] to-[#0a0908]' 
-          : 'bg-gradient-to-br from-emerald-50/50 via-white to-stone-50'
+          ? 'bg-gradient-to-br from-stone-950 via-pink-950/10 to-neutral-950 border-pink-950/30' 
+          : 'bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 border-pink-100'
       }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
-              isDark ? 'text-emerald-400' : 'text-emerald-600'
-            }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              🧖‍♀️ Cuidado & Estética
-            </p>
-            <h2 className="text-2xl font-serif italic text-foreground mt-1">
-              Bienestar y <span className="text-shimmer">Belleza Natural</span>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <div className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+              <span className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>Cuidado & Estética Avanzada</span>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight text-white">
+              Bienestar & <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">MediSpa</span>
             </h2>
-            <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-              Tratamientos faciales, corporales, masajes y más. Cuida de ti con los mejores profesionales.
+            <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-pink-100/90 font-medium'}`}>
+              Tratamientos faciales, corporales y masajes diseñados para equilibrar cuerpo y mente.
             </p>
           </div>
-          <div className="flex items-center gap-3 self-start md:self-auto animate-fade-up delay-200">
-            <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 ${
-              isDark 
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600'
+
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className={`px-3 py-2 rounded-xl border text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md ${
+              isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-white/90 border-pink-100 text-stone-800'
             }`}>
-              <Gem className="w-3 h-3" />
-              {servicios.length} servicios
+              <Crown className="w-3 h-3 text-amber-400" />
+              {servicios.length} Rituales
             </div>
-            {user ? (
-              <Link href="/agenda" className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 ${
+            
+            <Link 
+              href={user ? '/agenda' : '/login'} 
+              className={`px-4 py-2 rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 border shadow-sm ${
                 isDark 
-                  ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30' 
-                  : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/20'
-              }`}>
-                <Calendar className="w-3 h-3" />
-                Reservar
-              </Link>
-            ) : (
-              <Link href="/login" className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 ${
-                isDark 
-                  ? 'bg-stone-800/40 border border-stone-700 text-stone-300 hover:bg-stone-700/40' 
-                  : 'bg-stone-100/60 border border-stone-200 text-stone-600 hover:bg-stone-200/60'
-              }`}>
-                Iniciar sesión
-              </Link>
-            )}
+                  ? 'bg-pink-500/20 border-pink-500/30 text-pink-300 hover:bg-pink-500/30' 
+                  : 'bg-stone-950 border-stone-900 text-white hover:bg-stone-900'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              Agendar Cita
+            </Link>
           </div>
         </div>
       </div>
 
       {/* ============================================================ */}
-      {/* SECCIÓN EXPLORA NUESTROS TRATAMIENTOS */}
+      {/* SECCIÓN CATEGORÍAS */}
       {/* ============================================================ */}
-      <div className="mt-8 space-y-6">
+      <div className="mt-10 space-y-6">
         
-        {/* Título y contador */}
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className={`text-base font-bold flex items-center gap-2 ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-              Descubre nuestros tratamientos
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-black uppercase tracking-wider font-mono flex items-center gap-2 text-stone-800 dark:text-stone-200">
+              <Sparkles className="w-4 h-4 text-pink-500" />
+              Filtrar Tratamientos
             </h3>
-            <p className={`text-[10px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-              {serviciosFiltrados.length} tratamientos disponibles
-            </p>
           </div>
           {selectedCategory !== 'todos' && (
             <button
               onClick={() => setSelectedCategory('todos')}
-              className={`text-[10px] font-mono transition-colors flex items-center gap-1 ${
-                isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-500'
-              }`}
+              className="text-[10px] font-mono font-black uppercase tracking-widest text-pink-500 hover:text-pink-400 transition-colors flex items-center gap-1"
             >
-              Ver todos
+              Ver Todos
               <ArrowRight className="w-3 h-3" />
             </button>
           )}
         </div>
 
-        {/* CATEGORÍAS */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+        {/* Grid de Categorías de Bienestar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {categoriasFinal.map((cat) => {
             const Icon = cat.icon
             const isActive = selectedCategory === cat.id
@@ -288,18 +218,18 @@ export default function EsteticaPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl border transition-all hover:scale-105 ${
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all duration-300 ${
                   isActive
                     ? isDark
-                      ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-                      : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.05)]'
+                      ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 shadow-sm'
+                      : 'bg-stone-950 border-stone-900 text-white shadow-sm'
                     : isDark
-                      ? 'bg-stone-900/30 border-stone-800 text-stone-400 hover:border-emerald-500/30 hover:text-stone-200'
-                      : 'bg-stone-100/50 border-stone-200 text-stone-500 hover:border-emerald-500/30 hover:text-stone-800'
+                      ? 'bg-stone-900/40 border-stone-900 text-stone-400 hover:border-pink-500/20 hover:text-stone-200'
+                      : 'bg-white border-pink-100/60 text-stone-500 hover:border-pink-300 hover:text-stone-800 shadow-sm'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-[8px] font-mono font-medium text-center leading-tight">
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-pink-400' : 'text-stone-400'}`} />
+                <span className="text-[10px] font-bold uppercase tracking-wide truncate">
                   {cat.label}
                 </span>
               </button>
@@ -307,89 +237,82 @@ export default function EsteticaPage() {
           })}
         </div>
 
-        {/* GRID DE SERVICIOS */}
+        {/* ============================================================ */}
+        {/* GRID DE TRATAMIENTOS */}
+        {/* ============================================================ */}
         {serviciosFiltrados.length === 0 ? (
-          <div className={`border border-dashed rounded-2xl p-12 text-center backdrop-blur-md shadow-inner ${
-            isDark 
-              ? 'border-stone-800/80 bg-stone-900/20' 
-              : 'border-stone-200 bg-white/60'
+          <div className={`border border-dashed rounded-3xl p-16 text-center ${
+            isDark ? 'border-stone-800 bg-stone-900/10' : 'border-pink-100 bg-white/40 shadow-inner'
           }`}>
-            <Sparkles className={`w-10 h-10 mx-auto mb-3.5 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-            <p className={`text-xs font-mono max-w-sm mx-auto ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-              No hay tratamientos disponibles en esta categoría.
-            </p>
+            <Sparkles className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-stone-800' : 'text-pink-200'}`} />
+            <p className="text-sm font-black tracking-tight text-stone-800 dark:text-stone-200">No hay tratamientos en esta sección</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
-            {serviciosFiltrados.map((servicio, index) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {serviciosFiltrados.map((servicio) => {
               const Icon = getIcon(servicio.icon || 'Sparkles')
               const badgeColor = getBadgeColor(servicio.badge)
 
               return (
                 <div 
                   key={servicio.id} 
-                  className={`card-glow group relative backdrop-blur-md border rounded-2xl p-5 transition-all duration-500 hover:-translate-y-1 shadow-sm hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)] overflow-hidden ${
+                  className={`group relative rounded-2xl border p-5 transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[220px] overflow-hidden ${
                     isDark 
-                      ? 'bg-stone-900/40 border-stone-800/70 hover:border-emerald-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                      : 'bg-white border-stone-200/90 hover:border-emerald-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
+                      ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
+                      : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
                   }`}
-                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {/* Glow interno */}
-                  <div className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl group-hover:bg-emerald-500/[0.08] transition-all duration-500 pointer-events-none ${
-                    isDark ? 'bg-emerald-500/[0.03]' : 'bg-emerald-500/[0.02]'
-                  }`} />
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.02] to-transparent rounded-bl-full pointer-events-none transition-all group-hover:from-pink-500/[0.06]" />
 
-                  {/* Icono */}
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all group-hover:scale-110 ${
-                    isDark 
-                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
-                      : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
-                  }`}>
-                    <Icon className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-105 ${
+                        isDark ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' : 'bg-stone-50 border border-stone-100 text-pink-600'
+                      }`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      
+                      {servicio.badge && (
+                        <span className={`text-[8px] font-mono font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                          {servicio.badge}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 transition-colors">
+                        {servicio.name}
+                      </h4>
+                      <p className={`text-[11px] leading-relaxed line-clamp-3 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                        {servicio.description || 'Tratamiento profesional estético de alta gama.'}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Badge */}
-                  {servicio.badge && (
-                    <span className={`inline-block text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-2 ${badgeColor}`}>
-                      {servicio.badge}
-                    </span>
-                  )}
-
-                  {/* Nombre y descripción */}
-                  <h3 className={`text-sm font-bold tracking-tight transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 ${
-                    isDark ? 'text-stone-100' : 'text-stone-900'
+                  <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-3.5 ${
+                    isDark ? 'border-stone-800/80' : 'border-stone-100'
                   }`}>
-                    {servicio.name}
-                  </h3>
-                  <p className={`text-[11px] leading-relaxed mt-1 line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                    {servicio.description || 'Tratamiento profesional de cuidado y estética.'}
-                  </p>
-
-                  {/* Precio y duración */}
-                  <div className={`flex items-center justify-between mt-4 pt-3 border-t ${
-                    isDark ? 'border-stone-800/60' : 'border-stone-100'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-base font-mono font-bold ${
-                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-base font-mono font-black tracking-tight ${
+                        isDark ? 'text-pink-400' : 'text-stone-950'
                       }`}>
                         ${servicio.price?.toLocaleString()}
                       </span>
-                      <span className={`text-[9px] font-mono flex items-center gap-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                        <Clock className="w-3 h-3" />
-                        {servicio.duration || 60} min
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-pink-400" />
+                        {servicio.duration || 60} Min
                       </span>
                     </div>
+
                     <Link
                       href={user ? '/agenda' : '/login'}
-                      className={`p-2 rounded-xl transition-all group-hover:scale-110 ${
+                      className={`p-2 rounded-xl transition-all duration-300 ${
                         isDark 
-                          ? 'bg-stone-800/40 border border-stone-700 text-stone-400 hover:text-emerald-400 hover:border-emerald-500/30' 
-                          : 'bg-stone-100/60 border border-stone-200 text-stone-500 hover:text-emerald-600 hover:border-emerald-500/30'
+                          ? 'bg-stone-950/60 border border-stone-800 text-stone-400 hover:text-pink-400 hover:border-pink-500/30' 
+                          : 'bg-stone-50 border border-stone-100 text-stone-500 hover:border-pink-300 hover:text-stone-950'
                       }`}
                     >
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
@@ -399,72 +322,6 @@ export default function EsteticaPage() {
         )}
       </div>
 
-      {/* ============================================================ */}
-      {/* BANNER DE PROMOCIÓN */}
-      {/* ============================================================ */}
-      <div className={`card-glow relative overflow-hidden rounded-2xl border p-6 shadow-xl mt-8 ${
-        isDark 
-          ? 'bg-gradient-to-br from-emerald-950/20 via-stone-900/30 to-teal-950/20 border-emerald-500/20' 
-          : 'bg-gradient-to-br from-emerald-50/50 via-stone-50/50 to-teal-50/50 border-emerald-500/20'
-      }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${
-              isDark 
-                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
-                : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600'
-            }`}>
-              <Gem className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className={`text-sm font-bold ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-                Date un momento para ti
-              </h3>
-              <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                Reserva tu tratamiento de bienestar y desconecta del estrés diario.
-              </p>
-            </div>
-          </div>
-          <Link
-            href={user ? '/agenda' : '/login'}
-            className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg shrink-0 ${
-              isDark 
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20' 
-                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Reservar ahora
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* ESTILOS */}
-      {/* ============================================================ */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-slideUp { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .stagger-children > * { animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-        .stagger-children > *:nth-child(2) { animation-delay: 0.10s; }
-        .stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-        .stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
-        .stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
-        .stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
-        .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
-        .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
-      `}</style>
     </div>
   )
 }

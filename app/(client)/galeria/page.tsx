@@ -1,989 +1,1166 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { supabase } from '@/lib/supabase/client'
 import { 
-  Camera, Sparkles, Heart, Share2, Download, ZoomIn, X,
-  Grid3x3, LayoutGrid, Image as ImageIcon, Upload, Plus,
-  Star, Award, Crown, Gem, Clock, User, Calendar,
-  Search, Filter, Loader2, AlertCircle, CheckCircle
+  Camera, 
+  Heart, 
+  X, 
+  Sparkles, 
+  Loader,     
+  Image as ImageIcon,
+  ArrowDown,
+  Calendar,
+  Eye,
+  ZoomIn,
+  Upload
 } from 'lucide-react'
 
 interface GalleryImage {
   id: string
-  client_id: string
+  client_id: string | null
+  tenant_id: string
   image_url: string
   title: string
   description: string
   is_active: boolean
+  is_public: boolean
   created_at: string
   client_name?: string
-  is_public?: boolean
   likes?: number
-}
-
-interface ClientGalleryImage {
-  id: string
-  client_id: string
-  image_url: string
-  title: string
-  description: string
-  created_at: string
+  uploaded_by_admin?: boolean
+  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
+  polish_used?: string
+  price?: string | number
+  views?: number
+  before_image_url?: string | null
+  after_image_url?: string | null
 }
 
 export default function GaleriaPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
-  const [clientImages, setClientImages] = useState<ClientGalleryImage[]>([])
+  // Refs
+  const galleryRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const beforeInputRef = useRef<HTMLInputElement>(null)
+
+  // Estados principales
   const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState<'public' | 'personal'>('public')
-  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('grid')
-  const [hoveredImage, setHoveredImage] = useState<string | null>(null)
-  const [likedImages, setLikedImages] = useState<Set<string>>(new Set())
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('todos')
+  const [sensoryFilter, setSensoryFilter] = useState<'all' | 'glossy' | '3d' | 'minimal' | 'abstract'>('all')
+  
+  // Estados de datos
+  const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
+  const [clientImages, setClientImages] = useState<GalleryImage[]>([])
   const [clientId, setClientId] = useState<string | null>(null)
+  const [likedImages, setLikedImages] = useState<Set<string>>(new Set())
+
+  // Micro-interacciones
+  const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
+  const [isHoveringImage, setIsHoveringImage] = useState(false)
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
+  const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set())
+  const [renderedFilters, setRenderedFilters] = useState<GalleryImage[]>([])
+  const [likedAnimating, setLikedAnimating] = useState<string | null>(null)
+
+  // Slider Antes/Después
+  const [sliderPosition, setSliderPosition] = useState(50)
+  const [isDraggingSlider, setIsDraggingSlider] = useState(false)
+
+  // Modal de subida - CAMPOS COMPLETOS
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploadBeforeFile, setUploadBeforeFile] = useState<File | null>(null)
+  const [uploadBeforePreview, setUploadBeforePreview] = useState<string | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | 'info' | null; message: string }>({ type: null, message: '' })
+  const [uploadCategory, setUploadCategory] = useState<'glossy' | '3d' | 'minimal' | 'abstract'>('glossy')
+  const [uploadPrice, setUploadPrice] = useState('')
+  const [uploadPolish, setUploadPolish] = useState('')
+  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
+  
+  // Lightbox
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
 
-  const categories = [
-    'todos', 'Corte', 'Color', 'Tratamientos', 'Peinados', 
-    'Extensiones', 'Cejas', 'Pestañas', 'Manicuría', 'Estética'
-  ]
+  // Historias de Instagram en Móvil
+  const [activeStoryIndex, setActiveStoryIndex] = useState(0)
+  const [storyProgress, setStoryProgress] = useState(0)
+
+  // ============================================================
+  // 1. CURSOR Y PARALLAX
+  // ============================================================
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY })
+    }
+
+    const handleScroll = () => {
+      if (!heroRef.current) return
+      const scrolled = window.scrollY
+      heroRef.current.style.opacity = Math.max(0, 1 - scrolled / 600).toString()
+      heroRef.current.style.transform = `translateY(${scrolled * 0.4}px)`
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  // ============================================================
+  // 2. HISTORIAS DE INSTAGRAM
+  // ============================================================
+  useEffect(() => {
+    if (activeTab !== 'public' || renderedFilters.length === 0) return
+    
+    const interval = setInterval(() => {
+      setStoryProgress((prev) => {
+        if (prev >= 100) {
+          setActiveStoryIndex((prevIndex) => (prevIndex + 1) % renderedFilters.length)
+          return 0
+        }
+        return prev + 1.5
+      })
+    }, 50)
+
+    return () => clearInterval(interval)
+  }, [activeStoryIndex, renderedFilters, activeTab])
 
   useEffect(() => {
-    if (user?.id && tenantId) {
-      loadGalleryData()
-    }
-  }, [user, tenantId])
+    setStoryProgress(0)
+  }, [activeStoryIndex])
+
+  // ============================================================
+  // 3. CARGAR DATOS DESDE SUPABASE
+  // ============================================================
+  useEffect(() => {
+    loadGalleryData()
+  }, [user])
 
   const loadGalleryData = async () => {
     setLoading(true)
     try {
-      const { data: cliente } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('auth_user_id', user?.id)
-        .single()
+      const { data: { session } } = await supabase.auth.getSession()
+      const activeUserId = session?.user?.id || user?.id
 
-      if (cliente) {
-        setClientId(cliente.id)
-        const { data: personalPhotos } = await supabase
-          .from('client_gallery')
-          .select('*')
-          .eq('client_id', cliente.id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
+      // Cargar imágenes del cliente
+      if (activeUserId) {
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('auth_user_id', activeUserId)
+          .maybeSingle()
 
-        setClientImages(personalPhotos || [])
+        if (cliente?.id) {
+          setClientId(cliente.id)
+          const { data: personalPhotos } = await supabase
+            .from('client_gallery')
+            .select('*')
+            .eq('client_id', cliente.id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+
+          if (personalPhotos) setClientImages(personalPhotos)
+        }
       }
 
-      const { data: publicPhotos } = await supabase
+      // Cargar imágenes públicas
+      const { data: publicPhotos, error: publicError } = await supabase
         .from('client_gallery')
-        .select(`
-          *,
-          clients:client_id (name)
-        `)
+        .select('*')
         .eq('is_active', true)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
-        .limit(30)
+        .limit(40)
 
-      const mappedPublic = (publicPhotos || []).map((photo: any) => ({
-        ...photo,
-        client_name: photo.clients?.name || 'Fresh Nails',
-        likes: Math.floor(Math.random() * 50) + 5
-      }))
+      if (publicError) throw publicError
 
-      setPublicImages(mappedPublic)
-
+      // Mapear datos respetando los existentes
+      if (publicPhotos) {
+        const mappedPublic = publicPhotos.map((photo: any) => {
+          const isAdmin = !photo.client_id
+          
+          return {
+            ...photo,
+            client_name: photo.client_name || (isAdmin ? 'Fresh Nails' : 'Cliente'),
+            uploaded_by_admin: isAdmin,
+            likes: photo.likes ?? 0,
+            views: photo.views ?? 0,
+            sensory_category: photo.sensory_category || 'glossy',
+            polish_used: photo.polish_used || 'Fresh Nails Premium',
+            price: photo.price ? `$${photo.price}` : '$45.00',
+            before_image_url: photo.before_image_url || null,
+            after_image_url: photo.after_image_url || null
+          }
+        })
+        
+        setPublicImages(mappedPublic)
+      }
     } catch (error) {
-      console.error('Error cargando galería:', error)
-      setUploadStatus({ type: 'error', message: 'Error al cargar la galería' })
+      console.error('Error cargando la galería:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLike = (imageId: string) => {
-    const newLiked = new Set(likedImages)
-    if (newLiked.has(imageId)) {
-      newLiked.delete(imageId)
-    } else {
-      newLiked.add(imageId)
-    }
-    setLikedImages(newLiked)
-  }
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUploadStatus({ type: null, message: '' })
+  // ============================================================
+  // 4. FILTRO EN CASCADA
+  // ============================================================
+  useEffect(() => {
+    const baseImages = publicImages.filter(img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter)
+    setRenderedFilters([])
     
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setUploadFile(file)
-      
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setPreviewUrl(event.target?.result as string)
-        setUploadStatus({ type: 'info', message: `📸 ${file.name} (${(file.size / 1024).toFixed(0)} KB)` })
-      }
-      reader.onerror = () => {
-        setUploadStatus({ type: 'error', message: 'Error al leer el archivo' })
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+    baseImages.forEach((img, index) => {
+      setTimeout(() => {
+        setRenderedFilters(prev => [...prev, img])
+      }, index * 80)
+    })
+  }, [sensoryFilter, publicImages])
 
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
+  // ============================================================
+  // 5. INTERSECTION OBSERVER
+  // ============================================================
+  useEffect(() => {
+    if (loading || renderedFilters.length === 0) return
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('data-id')
+            if (id) setVisibleItems((prev) => new Set([...prev, id]))
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+
+    const elements = document.querySelectorAll('.scroll-reveal-item')
+    elements.forEach((el) => observer.observe(el))
+
+    return () => observer.disconnect()
+  }, [loading, renderedFilters])
+
+  // ============================================================
+  // 6. SUBIR IMAGEN CON TODOS LOS CAMPOS
+  // ============================================================
   const handleUpload = async () => {
-    setUploadStatus({ type: null, message: '' })
+    const { data: { session } } = await supabase.auth.getSession()
+    const activeUserId = session?.user?.id || user?.id
 
-    if (!uploadFile) {
-      setUploadStatus({ type: 'error', message: 'Selecciona una foto primero' })
-      return
-    }
-    if (!clientId) {
-      setUploadStatus({ type: 'error', message: 'No se encontró tu perfil de cliente' })
-      return
-    }
-    if (!tenantId) {
-      setUploadStatus({ type: 'error', message: 'No se encontró el tenant' })
-      return
-    }
-
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg']
-    if (!validTypes.includes(uploadFile.type)) {
-      setUploadStatus({ type: 'error', message: `Formato no válido: ${uploadFile.type}` })
-      return
-    }
-
-    if (uploadFile.size > 10 * 1024 * 1024) {
-      setUploadStatus({ type: 'error', message: 'La imagen no puede superar los 10MB' })
+    if (!uploadFile || !activeUserId) {
+      setUploadStatus({ type: 'error', message: 'Debes seleccionar una imagen y estar autenticado.' })
       return
     }
 
     setUploading(true)
-    setUploadProgress(10)
-    setUploadStatus({ type: 'info', message: '⏳ Subiendo archivo...' })
+    setUploadStatus({ type: null, message: '' })
 
     try {
-      const fileExt = uploadFile.name.split('.').pop()
-      const fileName = `${clientId}/${Date.now()}.${fileExt}`
+      let resolvedTenantId = tenantId || session?.user?.user_metadata?.tenant_id || session?.user?.app_metadata?.tenant_id
+
+      if (!resolvedTenantId) {
+        const { data: clientRow } = await supabase
+          .from('clients')
+          .select('tenant_id')
+          .eq('auth_user_id', activeUserId)
+          .maybeSingle()
+        if (clientRow?.tenant_id) resolvedTenantId = clientRow.tenant_id
+      }
+
+      if (!resolvedTenantId) throw new Error("Falta el identificador del salón.")
+
+      const isAdmin = session?.user?.user_metadata?.role === 'admin' || session?.user?.app_metadata?.role === 'admin'
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Subir imagen principal
+      const fileExt = uploadFile.name.split('.').pop()
+      const folder = isAdmin ? 'salon' : clientId || 'guests'
+      const fileName = `${folder}/${Date.now()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
         .from('gallery')
-        .upload(fileName, uploadFile, {
-          cacheControl: '3600',
-          upsert: false
-        })
+        .upload(fileName, uploadFile)
 
-      if (uploadError) {
-        console.error('Error subiendo:', uploadError)
-        setUploadStatus({ type: 'error', message: `Error: ${uploadError.message}` })
-        setUploading(false)
-        return
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(fileName)
+      let afterImageUrl = urlData.publicUrl
+
+      // Subir imagen de "antes" si existe
+      let beforeImageUrl = null
+      if (uploadBeforeFile) {
+        const beforeFileName = `before/${Date.now()}_${uploadBeforeFile.name}`
+        const { error: beforeError } = await supabase.storage
+          .from('gallery')
+          .upload(beforeFileName, uploadBeforeFile)
+        
+        if (!beforeError) {
+          const { data: beforeUrlData } = supabase.storage.from('gallery').getPublicUrl(beforeFileName)
+          beforeImageUrl = beforeUrlData.publicUrl
+        }
       }
 
-      setUploadProgress(50)
-      setUploadStatus({ type: 'info', message: '📤 Obteniendo URL...' })
-
-      const { data: urlData } = supabase.storage
-        .from('gallery')
-        .getPublicUrl(fileName)
-
-      if (!urlData?.publicUrl) {
-        setUploadStatus({ type: 'error', message: 'Error obteniendo la URL de la imagen' })
-        setUploading(false)
-        return
-      }
-
-      setUploadProgress(75)
-      setUploadStatus({ type: 'info', message: '💾 Guardando en la base de datos...' })
-
-      // Insertar en la base de datos - AHORA CON tenant_id
+      // Insertar en base de datos
       const newImage = {
-        client_id: clientId,
-        tenant_id: tenantId,
-        image_url: urlData.publicUrl,
-        title: uploadTitle || 'Sin título',
+        client_id: isAdmin ? null : clientId,
+        tenant_id: resolvedTenantId,
+        image_url: afterImageUrl,
+        title: uploadTitle || (isAdmin ? 'Estilo de Vanguardia' : 'Mi Diseño'),
         description: uploadDescription || '',
+        before_image_url: beforeImageUrl,
+        after_image_url: afterImageUrl,
+        price: parseFloat(uploadPrice) || 45.00,
+        polish_used: uploadPolish || 'Fresh Nails Premium',
+        sensory_category: uploadCategory,
         is_active: true,
         is_public: true,
         created_at: new Date().toISOString()
       }
 
-      console.log('📝 Datos a insertar:', newImage)
-
-      const { data: insertData, error: insertError } = await supabase
+      const { data: insertData, error: dbError } = await supabase
         .from('client_gallery')
         .insert([newImage])
         .select()
 
-      if (insertError) {
-        console.error('Error insertando:', insertError)
-        setUploadStatus({ type: 'error', message: `Error al guardar: ${insertError.message}` })
-        setUploading(false)
-        return
-      }
-
-      console.log('✅ Insertado correctamente:', insertData)
-
-      setUploadProgress(100)
-      setUploadStatus({ type: 'success', message: '✅ Foto subida exitosamente!' })
+      if (dbError) throw dbError
 
       if (insertData && insertData[0]) {
-        const newImageData = {
+        const localCreated: GalleryImage = {
           ...insertData[0],
-          client_name: 'Tú',
-          likes: 0
+          client_name: isAdmin ? 'Fresh Nails' : 'Tú',
+          uploaded_by_admin: isAdmin,
+          likes: 0,
+          views: 0,
+          sensory_category: uploadCategory,
+          polish_used: uploadPolish || 'Fresh Nails Premium',
+          price: `$${parseFloat(uploadPrice) || 45.00}`,
+          before_image_url: beforeImageUrl,
+          after_image_url: afterImageUrl
         }
-        setClientImages(prev => [insertData[0], ...prev])
-        setPublicImages(prev => [newImageData, ...prev])
+
+        setPublicImages(prev => [localCreated, ...prev])
+        if (!isAdmin) setClientImages(prev => [insertData[0], ...prev])
       }
 
+      setUploadStatus({ type: 'success', message: '¡Diseño publicado exitosamente!' })
       setTimeout(() => {
+        setShowUploadModal(false)
         setUploadTitle('')
         setUploadDescription('')
+        setUploadPrice('')
+        setUploadPolish('')
         setUploadFile(null)
         setPreviewUrl(null)
-        setShowUploadModal(false)
+        setUploadBeforeFile(null)
+        setUploadBeforePreview(null)
         setUploadStatus({ type: null, message: '' })
-      }, 2000)
+      }, 1200)
 
-    } catch (error: any) {
-      console.error('Error general:', error)
-      setUploadStatus({ type: 'error', message: error.message || 'Error al subir la foto' })
+    } catch (e: any) {
+      setUploadStatus({ type: 'error', message: e.message || 'Error al guardar.' })
     } finally {
       setUploading(false)
-      setUploadProgress(0)
     }
   }
 
-  const handleDeleteImage = async (imageId: string) => {
-    if (!confirm('¿Eliminar esta foto?')) return
+  // ============================================================
+  // 7. LIKES
+  // ============================================================
+  const handleLike = (id: string) => {
+    setLikedAnimating(id)
+    setTimeout(() => setLikedAnimating(null), 500)
     
-    try {
-      const { error } = await supabase
-        .from('client_gallery')
-        .update({ is_active: false })
-        .eq('id', imageId)
-
-      if (error) throw error
-      
-      setClientImages(prev => prev.filter(i => i.id !== imageId))
-      setPublicImages(prev => prev.filter(i => i.id !== imageId))
-      
-    } catch (error) {
-      console.error('Error eliminando foto:', error)
-    }
+    setLikedImages(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 1) - 1 } : img))
+      } else {
+        next.add(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 0) + 1 } : img))
+      }
+      return next
+    })
   }
 
-  const filteredPublicImages = publicImages.filter(img => {
-    if (searchTerm) {
-      return img.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             img.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    }
-    if (selectedCategory !== 'todos') {
-      return img.title?.toLowerCase().includes(selectedCategory.toLowerCase())
-    }
-    return true
-  })
-
-  const getInitials = (name: string) => {
-    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'FN'
+  // ============================================================
+  // 8. SLIDER ANTES/DESPUÉS
+  // ============================================================
+  const handleSliderMove = (clientX: number) => {
+    if (!sliderRef.current) return
+    const rect = sliderRef.current.getBoundingClientRect()
+    const x = clientX - rect.left
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
+    setSliderPosition(percentage)
   }
 
+  const scrollSmoothToGallery = () => {
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // ============================================================
+  // 9. RENDER
+  // ============================================================
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="relative flex items-center justify-center">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
-            <div className="absolute inset-0 w-12 h-12 border-4 border-rose-500/20 rounded-full animate-ping" />
-          </div>
-          <Camera className="w-5 h-5 text-rose-500 absolute animate-pulse" />
-        </div>
-        <p className={`text-xs font-mono tracking-wide animate-pulse ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-          Cargando galería...
-        </p>
+      <div className="min-h-screen bg-[#FDFBF7] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
+        <Loader className="w-6 h-6 text-[#FF2A75] animate-spin stroke-[1.5]" />
+        <span className="text-xs tracking-[0.2em] uppercase text-[#C9A96E] font-light font-sans">Cargando Experiencia Visual...</span>
       </div>
     )
   }
 
   return (
-    <div className={`w-full min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-[#0a0908]' : 'bg-[#fcfbfa]'
-    }`}>
+    <div className="bg-[#FDFBF7] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen relative overflow-x-hidden selection:bg-[#FF2A75]/20 font-sans transition-colors duration-300">
+      
+      <style jsx global>{`
+        @keyframes pop {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.4); }
+          100% { transform: scale(1); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes scaleUp {
+          0% { transform: scale(0.95); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes slideDown {
+          0% { transform: translateY(-20px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.4s ease; }
+        .animate-scale-up { animation: scaleUp 0.4s ease-out; }
+        .animate-fade-in { animation: fadeIn 0.3s ease; }
+        .animate-slide-down { animation: slideDown 0.3s ease; }
+      `}</style>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      {/* CURSOR PERSONALIZADO */}
+      <div 
+        className="hidden md:block fixed pointer-events-none z-50 rounded-full border transition-all duration-75 ease-out -translate-x-1/2 -translate-y-1/2 mix-blend-difference"
+        style={{
+          left: `${mousePos.x}px`,
+          top: `${mousePos.y}px`,
+          width: isHoveringImage ? '50px' : '30px',
+          height: isHoveringImage ? '50px' : '30px',
+          borderColor: isHoveringImage ? '#FF2A75' : '#C9A96E',
+          backgroundColor: isHoveringImage ? 'rgba(255, 42, 117, 0.1)' : 'transparent'
+        }}
+      >
+        {isHoveringImage && (
+          <div className="w-full h-full flex items-center justify-center text-xs font-light text-white font-mono">+</div>
+        )}
+      </div>
 
-        {/* HEADER */}
-        <div className={`relative overflow-hidden rounded-3xl border p-8 md:p-10 shadow-xl mb-8 ${
-          isDark 
-            ? 'bg-gradient-to-br from-[#161311] via-[#120f0e] to-[#0a0908] border-stone-800/50 shadow-2xl shadow-black/50' 
-            : 'bg-gradient-to-br from-stone-900 via-stone-800 to-stone-950 border-stone-700/50 shadow-2xl shadow-stone-900/20'
-        }`}>
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+      {/* HERO SECTION */}
+      <div ref={heroRef} className="relative w-full h-screen overflow-hidden bg-neutral-950 flex items-center justify-center z-10">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="absolute inset-0 w-full h-full object-cover brightness-90 saturate-110 scale-105 select-none pointer-events-none"
+        >
+          <source src="https://assets.mixkit.co/videos/preview/mixkit-manicure-treatment-in-a-beauty-salon-41551-large.mp4" type="video/mp4" />
+        </video>
+        
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FF2A75]/10 via-transparent to-[#FDFBF7] dark:to-neutral-950 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMzYgMjRjMCAzLjMxNC0yLjY4NiA2LTYgNnMtNi0yLjY4Ni02LTYgMi42ODYtNiA2LTYgNiAyLjY4NiA2IDZ6bS0xMiA0YzAgMy4zMTQtMi42ODYgNi02IDZzLTYtMi42ODYtNi02IDIuNjg2LTYgNi02IDYgMi42ODYgNiA2eiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvc3ZnPg==')] opacity-50" />
+        
+        <div className="relative text-center space-y-6 max-w-3xl px-4 z-20">
+          <div className="space-y-2">
+            <span className="text-[#C9A96E] text-[10px] font-sans tracking-[0.4em] uppercase font-light block animate-pulse">
+              ✦ SALON ✦
+            </span>
+            <h1 className="text-5xl md:text-8xl font-light tracking-[0.15em] text-white font-serif uppercase leading-tight drop-shadow-2xl">
+              Fresh Nails
+            </h1>
           </div>
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
-                isDark ? 'text-rose-400' : 'text-rose-600'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                🖼️ Galería Fresh
-              </p>
-              <h1 className="text-3xl md:text-4xl font-serif italic text-white mt-2">
-                Tu <span className="text-shimmer">Inspiración</span> Visual
-              </h1>
-              <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-400'}`}>
-                Descubre trabajos increíbles y guarda tus mejores momentos
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 ${
-                isDark 
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-600'
-              }`}>
-                <ImageIcon className="w-3 h-3" />
-                {publicImages.length + clientImages.length} fotos
-              </div>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 ${
-                  isDark 
-                    ? 'bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white shadow-lg shadow-rose-600/20' 
-                    : 'bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white shadow-lg shadow-rose-600/20'
-                }`}
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Subir foto
-              </button>
-            </div>
+          <p className="text-white/60 text-xs md:text-sm font-sans tracking-[0.3em] uppercase font-light max-w-md mx-auto">
+            El arte de la manicura elevado a su máxima expresión
+          </p>
+          <div className="pt-4">
+            <button 
+              onClick={scrollSmoothToGallery}
+              className="group px-10 py-3.5 rounded-full text-xs font-sans font-medium tracking-[0.25em] uppercase border border-white/30 text-white hover:bg-white hover:text-neutral-900 transition-all duration-500 backdrop-blur-sm flex items-center gap-3 mx-auto hover:shadow-[0_0_40px_rgba(255,42,117,0.3)]"
+            >
+              <span>Explorar Colección</span>
+              <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-1 transition-transform duration-300" />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* TABS + FILTROS */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex gap-2">
-            <button
+      {/* GALERÍA */}
+      <div ref={galleryRef} className="max-w-7xl mx-auto px-6 md:px-10 py-20 space-y-20 relative z-20 -mt-10">
+        
+        {/* CONTROLES */}
+        <div className="flex flex-col md:flex-row items-center justify-between border-b border-neutral-200/60 dark:border-neutral-800 pb-6 gap-4">
+          <div className="flex gap-8 text-sm tracking-[0.15em] uppercase font-sans font-light">
+            <button 
               onClick={() => setActiveTab('public')}
-              className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all ${
-                activeTab === 'public'
-                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
-                  : isDark
-                    ? 'bg-stone-900/40 text-stone-400 hover:text-stone-200 border border-stone-800'
-                    : 'bg-stone-100/50 text-stone-500 hover:text-stone-800 border border-stone-200'
-              }`}
+              className={`pb-4 relative transition-colors ${activeTab === 'public' ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 dark:text-neutral-500'}`}
             >
-              <span className="flex items-center gap-2">
-                <Star className="w-3.5 h-3.5" />
-                Inspiración
-              </span>
+              Colección Alta Gama
+              {activeTab === 'public' && <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#FF2A75]" />}
             </button>
-            <button
+            <button 
               onClick={() => setActiveTab('personal')}
-              className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all ${
-                activeTab === 'personal'
-                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
-                  : isDark
-                    ? 'bg-stone-900/40 text-stone-400 hover:text-stone-200 border border-stone-800'
-                    : 'bg-stone-100/50 text-stone-500 hover:text-stone-800 border border-stone-200'
-              }`}
+              className={`pb-4 relative transition-colors ${activeTab === 'personal' ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-400 dark:text-neutral-500'}`}
             >
-              <span className="flex items-center gap-2">
-                <Heart className="w-3.5 h-3.5" />
-                Mis Fotos
-                {clientImages.length > 0 && (
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${
-                    isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-500/10 text-rose-600'
-                  }`}>
-                    {clientImages.length}
-                  </span>
-                )}
-              </span>
+              Mi Historial Privado ({clientImages.length})
+              {activeTab === 'personal' && <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#FF2A75]" />}
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            {activeTab === 'public' && (
-              <>
-                <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${
-                    isDark ? 'text-stone-500' : 'text-stone-400'
-                  }`} />
-                  <input
-                    type="text"
-                    placeholder="Buscar fotos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`pl-9 pr-4 py-2 rounded-xl text-xs border focus:outline-none focus:border-rose-500/50 transition-all w-40 md:w-56 ${
-                      isDark 
-                        ? 'bg-stone-900/40 border-stone-800 text-stone-200 placeholder-stone-500' 
-                        : 'bg-white border-stone-200 text-stone-900 placeholder-stone-400'
-                    }`}
-                  />
-                </div>
-
-                <div className={`flex gap-1 border rounded-xl p-1 ${
-                  isDark ? 'border-stone-800' : 'border-stone-200'
-                }`}>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-lg transition-all ${
-                      viewMode === 'grid'
-                        ? isDark ? 'bg-stone-800 text-white' : 'bg-stone-200 text-stone-900'
-                        : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
-                    }`}
-                  >
-                    <Grid3x3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('masonry')}
-                    className={`p-1.5 rounded-lg transition-all ${
-                      viewMode === 'masonry'
-                        ? isDark ? 'bg-stone-800 text-white' : 'bg-stone-200 text-stone-900'
-                        : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
-                    }`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowUploadModal(true)}
+            className="px-6 py-2.5 rounded-full text-xs font-sans font-light tracking-[0.15em] uppercase bg-neutral-900 dark:bg-neutral-800 text-white hover:bg-[#FF2A75] dark:hover:bg-[#FF2A75] transition-all duration-500 shadow-xl flex items-center gap-2"
+          >
+            <Camera className="w-3.5 h-3.5 stroke-[1.2]" /> Registrar Mi Look
+          </button>
         </div>
 
-        {/* CATEGORÍAS */}
+        {/* FILTROS SENSORIALES */}
         {activeTab === 'public' && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {categories.map((cat) => (
+          <div className="flex flex-wrap justify-center items-center gap-3 md:sticky md:top-6 z-40 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-3 rounded-full border border-neutral-200/50 dark:border-neutral-800/50 w-fit mx-auto shadow-sm">
+            {[
+              { id: 'all', label: 'Todo el Universo' },
+              { id: 'glossy', label: 'Efecto Glossy ✨' },
+              { id: '3d', label: 'Textura 3D 💎' },
+              { id: 'minimal', label: 'Minimalismo 🌿' },
+              { id: 'abstract', label: 'Arte Abstracto 🎨' }
+            ].map((btn) => (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-[9px] font-mono font-medium transition-all ${
-                  selectedCategory === cat
-                    ? isDark
-                      ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
-                      : 'bg-rose-500/10 border border-rose-500/40 text-rose-600'
-                    : isDark
-                      ? 'bg-stone-900/30 border border-stone-800 text-stone-400 hover:text-stone-200'
-                      : 'bg-stone-100/50 border border-stone-200 text-stone-500 hover:text-stone-800'
+                key={btn.id}
+                onClick={() => setSensoryFilter(btn.id as any)}
+                className={`px-5 py-2 rounded-full text-xs font-sans tracking-wider font-light transition-all duration-300 ${
+                  sensoryFilter === btn.id 
+                    ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-lg scale-102 border-transparent' 
+                    : 'bg-white/20 dark:bg-neutral-800/20 border border-neutral-200/30 dark:border-neutral-700/30 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 hover:text-black dark:hover:text-white hover:shadow-[0_0_20px_rgba(201,169,110,0.15)]'
                 }`}
               >
-                {cat === 'todos' ? '🌟 Todos' : cat}
+                {btn.label}
               </button>
             ))}
           </div>
         )}
 
-        {/* GALERÍA PÚBLICA */}
-        {activeTab === 'public' && (
-          <div className="space-y-6">
-            {filteredPublicImages.length === 0 ? (
-              <div className={`text-center py-16 border-2 border-dashed rounded-3xl ${
-                isDark ? 'border-stone-800 bg-stone-900/20' : 'border-stone-200 bg-stone-50/50'
-              }`}>
-                <Camera className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-                <h3 className={`text-xl font-serif italic ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-                  No hay fotos disponibles
-                </h3>
-                <p className={`text-xs mt-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                  Sé la primera en compartir tu experiencia
-                </p>
-              </div>
-            ) : (
-              <div className={`
-                ${viewMode === 'grid' 
-                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-                  : 'columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4'
-                }
-              `}>
-                {filteredPublicImages.map((img, index) => {
-                  const isLiked = likedImages.has(img.id)
-                  const isHovered = hoveredImage === img.id
-
-                  return (
-                    <div
-                      key={img.id}
-                      className={`relative group rounded-2xl overflow-hidden border transition-all duration-500 ${
-                        isDark 
-                          ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30' 
-                          : 'bg-white border-stone-200/90 hover:border-rose-500/40'
-                      } ${viewMode === 'masonry' ? 'break-inside-avoid' : ''}`}
-                      onMouseEnter={() => setHoveredImage(img.id)}
-                      onMouseLeave={() => setHoveredImage(null)}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="relative aspect-square overflow-hidden cursor-pointer">
-                        {img.image_url ? (
-                          <img
-                            src={img.image_url}
-                            alt={img.title || 'Foto de galería'}
-                            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                            onClick={() => setSelectedImage(img)}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-800 to-stone-900">
-                            <Camera className="w-12 h-12 text-stone-600" />
-                          </div>
-                        )}
-
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity duration-300 ${
-                          isHovered ? 'opacity-100' : 'opacity-0'
-                        }`}>
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-1">
-                                <p className="text-white text-sm font-medium truncate">
-                                  {img.title || 'Sin título'}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-5 h-5 rounded-full bg-rose-500/20 flex items-center justify-center text-[8px] font-bold text-rose-400">
-                                    {getInitials(img.client_name || '')}
-                                  </div>
-                                  <span className="text-white/60 text-[10px]">
-                                    {img.client_name || 'Fresh Nails'}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleLike(img.id)
-                                  }}
-                                  className={`p-2 rounded-full transition-all ${
-                                    isLiked
-                                      ? 'bg-rose-500 text-white'
-                                      : 'bg-black/50 text-white hover:bg-rose-500/80'
-                                  }`}
-                                >
-                                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                                </button>
-                                <button
-                                  onClick={() => setSelectedImage(img)}
-                                  className="p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-all"
-                                >
-                                  <ZoomIn className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[9px] font-mono flex items-center gap-1">
-                          <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                          {img.likes || 0}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* GALERÍA PERSONAL */}
-        {activeTab === 'personal' && (
-          <div className="space-y-6">
-            {clientImages.length === 0 ? (
-              <div className={`text-center py-16 border-2 border-dashed rounded-3xl ${
-                isDark ? 'border-stone-800 bg-stone-900/20' : 'border-stone-200 bg-stone-50/50'
-              }`}>
-                <Upload className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-stone-700' : 'text-stone-300'}`} />
-                <h3 className={`text-xl font-serif italic ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-                  Tu galería personal está vacía
-                </h3>
-                <p className={`text-xs mt-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                  Sube tus fotos para guardar tus mejores momentos
-                </p>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="mt-4 px-6 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 mx-auto bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white shadow-lg shadow-rose-600/20"
-                >
-                  <Plus className="w-4 h-4" />
-                  Subir mi primera foto
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {clientImages.map((img, index) => (
-                  <div
-                    key={img.id}
-                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-500 hover:-translate-y-1 ${
-                      isDark 
-                        ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                        : 'bg-white border-stone-200/90 hover:border-rose-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
-                    }`}
-                    style={{ animationDelay: `${index * 80}ms` }}
-                  >
-                    <div className="relative aspect-square overflow-hidden">
-                      {img.image_url ? (
-                        <img
-                          src={img.image_url}
-                          alt={img.title || 'Mi foto'}
-                          className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-800 to-stone-900">
-                          <Camera className="w-12 h-12 text-stone-600" />
-                        </div>
-                      )}
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <p className="text-white text-sm font-medium truncate">
-                                {img.title || 'Sin título'}
-                              </p>
-                              <p className="text-white/60 text-[10px]">
-                                {new Date(img.created_at).toLocaleDateString('es', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric'
-                                })}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteImage(img.id)}
-                              className="p-2 rounded-full bg-black/50 text-white hover:bg-red-500/80 transition-all"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+        {/* HISTORIAS DE INSTAGRAM (MÓVIL) */}
+        {activeTab === 'public' && renderedFilters.length > 0 && (
+          <div className="block md:hidden w-full space-y-4">
+            <span className="text-[10px] tracking-[0.2em] font-medium uppercase text-[#C9A96E] block text-center">Exploración Rápida</span>
+            <div className="relative aspect-[9/16] w-full max-w-sm mx-auto rounded-3xl overflow-hidden bg-neutral-900 shadow-2xl">
+              <div className="absolute top-4 inset-x-4 z-30 flex gap-1.5">
+                {renderedFilters.map((_, idx) => (
+                  <div key={idx} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-white transition-all ease-linear"
+                      style={{ 
+                        width: idx < activeStoryIndex ? '100%' : idx === activeStoryIndex ? `${storyProgress}%` : '0%' 
+                      }}
+                    />
                   </div>
                 ))}
               </div>
-            )}
+
+              <img 
+                src={renderedFilters[activeStoryIndex]?.image_url} 
+                alt={renderedFilters[activeStoryIndex]?.title}
+                className="w-full h-full object-cover"
+              />
+
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 space-y-2 text-white">
+                <span className="text-[9px] tracking-widest font-mono text-[#C9A96E] uppercase bg-black/40 px-2 py-0.5 rounded-md">
+                  {renderedFilters[activeStoryIndex]?.sensory_category}
+                </span>
+                <h3 className="font-serif text-xl tracking-wide">{renderedFilters[activeStoryIndex]?.title}</h3>
+                <p className="text-[11px] text-neutral-300 font-light truncate">{renderedFilters[activeStoryIndex]?.description || 'Diseño exclusivo por Fresh Nails.'}</p>
+                <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                  <span className="text-xs font-mono tracking-wider text-pink-400">{renderedFilters[activeStoryIndex]?.price}</span>
+                  <button 
+                    onClick={() => setSelectedImage(renderedFilters[activeStoryIndex])}
+                    className="text-[10px] uppercase tracking-widest font-sans underline"
+                  >
+                    Detalles
+                  </button>
+                </div>
+              </div>
+
+              <div className="absolute inset-y-0 left-0 w-1/4 z-20" onClick={() => setActiveStoryIndex(prev => Math.max(0, prev - 1))} />
+              <div className="absolute inset-y-0 right-0 w-1/4 z-20" onClick={() => setActiveStoryIndex(prev => (prev + 1) % renderedFilters.length)} />
+            </div>
           </div>
         )}
+
+        {/* GALERÍA MASONRY */}
+        {activeTab === 'public' ? (
+          renderedFilters.length === 0 ? (
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-8 space-y-8">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <div key={n} className="break-inside-avoid">
+                  <div className="w-full rounded-2xl bg-[#FFB6C1]/20 dark:bg-neutral-800/40 animate-pulse relative overflow-hidden" style={{ height: `${200 + Math.random() * 200}px` }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="hidden md:columns-2 lg:columns-3 xl:columns-4 gap-8 space-y-8 [column-rule:1px_solid_rgba(201,169,110,0.1)]">
+              {renderedFilters.map((img, index) => {
+                const isLiked = likedImages.has(img.id)
+                const isVisible = visibleItems.has(img.id)
+                
+                const heightMap = {
+                  'glossy': 'min-h-[320px]',
+                  '3d': 'min-h-[420px]',
+                  'minimal': 'min-h-[280px]',
+                  'abstract': 'min-h-[380px]'
+                }
+                const heightClass = heightMap[img.sensory_category || 'glossy']
+
+                const insertBanner = index > 0 && index % 8 === 0
+
+                return (
+                  <div key={img.id} className="break-inside-avoid mb-8">
+                    {insertBanner && (
+                      <div className="w-full rounded-3xl bg-gradient-to-br from-[#FF2A75] via-[#912aff] to-[#C9A96E] p-8 text-white relative overflow-hidden shadow-xl transition-all duration-500 hover:[transform:perspective(1000px)_rotateX(5deg)] group min-h-[320px] flex flex-col justify-between">
+                        <div className="absolute -right-20 -top-20 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
+                        <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
+                        <div className="space-y-3 relative z-10">
+                          <span className="text-[8px] tracking-[0.3em] uppercase font-mono text-white/60 block">Edición Limitada</span>
+                          <h3 className="font-serif text-2xl font-light tracking-wide leading-tight">
+                            ¿Inspirado? <br className="hidden sm:block" />Reserva tu sesión
+                          </h3>
+                        </div>
+                        <button className="w-fit px-6 py-2.5 bg-white/20 backdrop-blur-sm text-white rounded-full text-[10px] font-sans tracking-[0.2em] uppercase font-medium border border-white/30 hover:bg-white hover:text-neutral-900 transition-all duration-300 relative z-10">
+                          Agendar Cita ✦
+                        </button>
+                      </div>
+                    )}
+
+                    <div
+                      data-id={img.id}
+                      onClick={() => setSelectedImage(img)}
+                      onMouseEnter={() => { setIsHoveringImage(true); setHoveredImageId(img.id); }}
+                      onMouseLeave={() => { setIsHoveringImage(false); setHoveredImageId(null); }}
+                      className={`scroll-reveal-item group relative ${heightClass} w-full rounded-2xl overflow-hidden cursor-none bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/20 dark:border-neutral-800/20 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+                        hoveredImageId === img.id ? 'scale-[1.02] z-30 shadow-2xl' : ''
+                      } ${
+                        hoveredImageId && hoveredImageId !== img.id ? 'brightness-50 blur-[2px] scale-[0.98]' : ''
+                      } ${
+                        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+                      }`}
+                    >
+                      <img 
+                        src={img.image_url} 
+                        alt={img.title} 
+                        className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-105 select-none pointer-events-none" 
+                        loading="lazy"
+                      />
+                      
+                      <div className="absolute top-4 left-4 z-20 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xs px-2.5 py-1 rounded-md text-[8px] font-sans font-medium uppercase tracking-widest text-neutral-900 dark:text-neutral-100">
+                        {img.sensory_category || 'Exclusivo'}
+                      </div>
+
+                      <div className="absolute top-4 right-4 flex items-center gap-1.5 text-white/60 text-[8px] font-mono bg-black/30 backdrop-blur-xs px-2 py-1 rounded-md">
+                        <Eye className="w-3 h-3" />
+                        {img.views || 0}
+                      </div>
+
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <span className="text-[7px] tracking-[0.3em] uppercase text-white/40 font-mono">
+                          ✦ Fresh Nails
+                        </span>
+                      </div>
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-5 flex flex-col justify-end">
+                        <div className="flex items-end justify-between text-white">
+                          <div className="min-w-0 pr-3">
+                            <h3 className="font-serif text-sm tracking-wide truncate">{img.title}</h3>
+                            <p className="text-[10px] text-neutral-300 font-light truncate mt-0.5">{img.client_name || 'Fresh Nails'}</p>
+                            {img.price && (
+                              <p className="text-[10px] font-mono text-[#C9A96E] mt-0.5">{img.price}</p>
+                            )}
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleLike(img.id); }} 
+                            className={`p-2 rounded-full backdrop-blur-md transition-all duration-300 ${
+                              isLiked ? 'bg-[#FF2A75] text-white scale-110' : 'bg-white/20 text-white hover:bg-white/40'
+                            } ${likedAnimating === img.id ? 'animate-pop' : ''}`}
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''} stroke-[1.5]`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Badge de "Antes/Después" si tiene ambas imágenes */}
+                      {img.before_image_url && img.after_image_url && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-[#FF2A75]/90 backdrop-blur-xs px-3 py-0.5 rounded-full text-[7px] font-sans font-medium uppercase tracking-widest text-white">
+                          Antes / Después
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : (
+          /* HISTORIAL PRIVADO */
+          clientImages.length === 0 ? (
+            <div className="text-center py-24 bg-neutral-50 dark:bg-neutral-900 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-800 max-w-md mx-auto space-y-3">
+              <ImageIcon className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-600 stroke-[1.2]" />
+              <h3 className="text-xs font-sans tracking-wider uppercase font-medium">Historial Vacío</h3>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 font-light px-6">Conserva las imágenes de tus visitas para monitorear el cuidado de tus uñas.</p>
+            </div>
+          ) : (
+            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4 space-y-4">
+              {clientImages.map((img) => (
+                <div 
+                  key={img.id} 
+                  onClick={() => setSelectedImage(img)}
+                  className="break-inside-avoid group relative rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border dark:border-neutral-800 cursor-zoom-in transition-transform duration-300 hover:scale-[1.02]"
+                >
+                  <img src={img.image_url} alt={img.title} className="w-full h-auto object-cover" />
+                  <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded text-[9px] text-white font-mono">
+                    {new Date(img.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* SLIDER ANTES/DESPUÉS DINÁMICO */}
+        {activeTab === 'public' && renderedFilters.length > 0 && (
+          <div className="space-y-4 pt-10 border-t border-neutral-200/50 dark:border-neutral-800/50">
+            <div className="text-center space-y-1">
+              <span className="text-[10px] text-[#C9A96E] uppercase font-sans tracking-[0.25em] block font-medium">✦ Demostración de Técnica ✦</span>
+              <h2 className="font-serif text-2xl tracking-wide font-light">Efecto Revelador: Arquitectura de la Uña</h2>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 font-light">Arrastra el control deslizante para ver la transformación</p>
+            </div>
+            
+            {(() => {
+              // Buscar la primera imagen que tenga before y after
+              const beforeAfterImage = renderedFilters.find(
+                img => img.before_image_url && img.after_image_url
+              )
+              
+              // Usar imágenes de la BD o por defecto
+              const beforeImage = beforeAfterImage?.before_image_url || 
+                "https://images.unsplash.com/photo-1632345031435-8797b2d58045?q=80&w=1200&auto=format&fit=crop"
+              const afterImage = beforeAfterImage?.after_image_url || 
+                "https://images.unsplash.com/photo-1604654894610-df490651e56c?q=80&w=1200&auto=format&fit=crop"
+              
+              return (
+                <div 
+                  ref={sliderRef}
+                  onMouseMove={(e) => isDraggingSlider && handleSliderMove(e.clientX)}
+                  onTouchMove={(e) => isDraggingSlider && e.touches[0] && handleSliderMove(e.touches[0].clientX)}
+                  onMouseDown={() => setIsDraggingSlider(true)}
+                  onTouchStart={() => setIsDraggingSlider(true)}
+                  onMouseUp={() => setIsDraggingSlider(false)}
+                  onTouchEnd={() => setIsDraggingSlider(false)}
+                  onMouseLeave={() => setIsDraggingSlider(false)}
+                  className="relative w-full max-w-3xl aspect-video mx-auto rounded-3xl overflow-hidden shadow-2xl bg-neutral-800 select-none cursor-ew-resize"
+                >
+                  {/* Lado Derecho: DESPUÉS */}
+                  <div className="absolute inset-0">
+                    <img 
+                      src={afterImage}
+                      alt="Después" 
+                      className="w-full h-full object-cover pointer-events-none"
+                    />
+                    <div className="absolute bottom-4 right-4 bg-black/60 px-3 py-1 rounded-md text-[10px] tracking-widest text-white uppercase font-sans font-light">Después</div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-white/5 text-8xl font-serif tracking-widest">✦</span>
+                    </div>
+                  </div>
+
+                  {/* Lado Izquierdo: ANTES */}
+                  <div 
+                    className="absolute inset-y-0 left-0 overflow-hidden"
+                    style={{ width: `${sliderPosition}%` }}
+                  >
+                    <img 
+                      src={beforeImage}
+                      alt="Antes" 
+                      className="absolute inset-y-0 left-0 w-full h-full object-cover max-w-none pointer-events-none"
+                      style={{ width: sliderRef.current?.getBoundingClientRect().width }}
+                    />
+                    <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-md text-[10px] tracking-widest text-white uppercase font-sans font-light">Antes</div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-white/5 text-8xl font-serif tracking-widest">✦</span>
+                    </div>
+                  </div>
+
+                  {/* Línea Divisoria */}
+                  <div 
+                    className="absolute inset-y-0 w-[2px] -translate-x-1/2 pointer-events-none z-30"
+                    style={{ 
+                      left: `${sliderPosition}%`,
+                      backgroundColor: '#C9A96E',
+                      boxShadow: '0 0 20px #FF2A75, 0 0 40px #FF2A75'
+                    }}
+                  >
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white dark:bg-neutral-900 border-2 border-[#C9A96E] dark:border-neutral-700 shadow-2xl flex items-center justify-center text-xs font-light text-neutral-500 transition-all duration-300 hover:scale-110">
+                      <span className="text-[10px]">↔</span>
+                    </div>
+                  </div>
+                  
+                  {/* Información del diseño */}
+                  {beforeAfterImage && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm px-4 py-1.5 rounded-full text-[10px] text-white/80 font-sans tracking-wider flex items-center gap-4">
+                      <span>{beforeAfterImage.title}</span>
+                      <span className="text-[#C9A96E]">{beforeAfterImage.price}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
       </div>
 
-      {/* MODAL DE IMAGEN COMPLETA */}
+      {/* LIGHTBOX */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 animate-fade-in overflow-y-auto transition-colors duration-300 ${
+            isDark ? 'bg-neutral-950/98' : 'bg-[#f5e6d3]/95'
+          }`}
           onClick={() => setSelectedImage(null)}
         >
-          <div 
-            className="relative max-w-4xl w-full max-h-[90vh] rounded-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+          <button 
+            onClick={() => setSelectedImage(null)} 
+            className={`absolute top-6 right-6 p-2 hover:scale-110 transition-transform z-50 rounded-full ${
+              isDark ? 'text-neutral-200 hover:bg-neutral-800' : 'text-neutral-800 hover:bg-white/50'
+            }`}
           >
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-all"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <X className="w-5 h-5 stroke-[1.5]" />
+          </button>
 
-            <div className="relative w-full h-full bg-black/50">
-              {selectedImage.image_url ? (
-                <img
-                  src={selectedImage.image_url}
-                  alt={selectedImage.title || 'Foto'}
-                  className="w-full h-auto max-h-[80vh] object-contain"
-                />
-              ) : (
-                <div className="w-full h-96 flex items-center justify-center">
-                  <Camera className="w-20 h-20 text-stone-600" />
-                </div>
-              )}
+          <div 
+            className={`rounded-3xl overflow-hidden shadow-2xl max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 animate-scale-up ${
+              isDark ? 'bg-neutral-900' : 'bg-white'
+            }`}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="relative aspect-square w-full bg-[#FDFBF7] dark:bg-neutral-950 overflow-hidden group">
+              <img 
+                src={selectedImage.image_url} 
+                alt={selectedImage.title} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-zoom-in" 
+              />
+              <div className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-xs px-2 py-1 rounded text-[8px] text-white/60 font-mono flex items-center gap-1">
+                <ZoomIn className="w-3 h-3" /> Zoom
+              </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-white text-xl font-serif italic">
-                    {selectedImage.title || 'Sin título'}
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    {selectedImage.description || 'Sin descripción'}
+            <div className={`p-8 flex flex-col justify-between space-y-6 ${
+              isDark ? 'text-neutral-100' : 'text-neutral-900'
+            }`}>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[9px] font-sans font-medium tracking-[0.25em] uppercase px-3 py-1 rounded-md ${
+                    isDark ? 'bg-neutral-800 text-[#C9A96E]' : 'bg-[#f5e6d3] text-[#C9A96E]'
+                  }`}>
+                    {selectedImage.sensory_category || 'Exclusivo'}
+                  </span>
+                  <span className="text-[9px] font-sans font-light text-neutral-400 dark:text-neutral-500 tracking-wider">
+                    {new Date(selectedImage.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <h3 className="font-serif text-2xl md:text-3xl font-light tracking-wide">
+                  {selectedImage.title}
+                </h3>
+                <div className="h-[1px] w-12 bg-[#C9A96E]" />
+                
+                {selectedImage.description && (
+                  <p className={`text-xs font-sans font-light leading-relaxed ${
+                    isDark ? 'text-neutral-400' : 'text-neutral-500'
+                  }`}>
+                    {selectedImage.description}
                   </p>
-                  <div className="flex items-center gap-3 text-white/50 text-[10px] font-mono">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {selectedImage.client_name || 'Fresh Nails'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
-                      {selectedImage.likes || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(selectedImage.created_at).toLocaleDateString('es', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
+                )}
+
+                <div className={`pt-4 space-y-3 font-sans text-xs border-t ${
+                  isDark ? 'border-neutral-800' : 'border-neutral-100'
+                }`}>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400 dark:text-neutral-500 font-light">Esmaltado/Sistema:</span>
+                    <span className="font-medium">{selectedImage.polish_used || 'Fresh Nails Premium Finish'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400 dark:text-neutral-500 font-light">Especialista:</span>
+                    <span className="font-medium">Fresh Nails Master Staff</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400 dark:text-neutral-500 font-light">Visualizaciones:</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> {selectedImage.views || 0}
                     </span>
                   </div>
+                  {selectedImage.before_image_url && (
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400 dark:text-neutral-500 font-light">Antes/Después:</span>
+                      <span className="font-medium text-[#C9A96E]">✓ Disponible</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleLike(selectedImage.id)}
-                    className={`p-2 rounded-full transition-all ${
-                      likedImages.has(selectedImage.id)
-                        ? 'bg-rose-500 text-white'
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (selectedImage.image_url) {
-                        window.open(selectedImage.image_url, '_blank')
-                      }
-                    }}
-                    className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: selectedImage.title || 'Fresh Nails',
-                          text: selectedImage.description || 'Mira esta increíble transformación ✨',
-                          url: selectedImage.image_url
-                        })
-                      }
-                    }}
-                    className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </button>
+              </div>
+
+              <div className={`pt-6 border-t flex items-center justify-between gap-4 ${
+                isDark ? 'border-neutral-800' : 'border-neutral-100'
+              }`}>
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase text-neutral-400 dark:text-neutral-500 font-sans tracking-widest">Inversión Look</span>
+                  <span className="text-2xl font-mono font-medium text-[#FF2A75]">{selectedImage.price || '$45.00'}</span>
                 </div>
+                <button 
+                  onClick={() => { setSelectedImage(null); alert('Redireccionando al agendamiento oficial...'); }}
+                  className="px-6 py-3 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-full text-xs uppercase font-sans tracking-widest font-medium hover:bg-[#FF2A75] dark:hover:bg-[#FF2A75] hover:text-white dark:hover:text-white transition-all duration-300 flex items-center gap-2 shadow-md"
+                >
+                  <Calendar className="w-3.5 h-3.5 stroke-[1.2]" /> Reservar Hora
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL SUBIR FOTO */}
+      {/* MODAL DE SUBIDA CON TODOS LOS CAMPOS */}
       {showUploadModal && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
-          onClick={() => {
-            if (!uploading) {
-              setShowUploadModal(false)
-              setUploadStatus({ type: null, message: '' })
-            }
-          }}
-        >
-          <div 
-            className={`max-w-md w-full rounded-3xl p-6 border shadow-2xl ${
-              isDark 
-                ? 'bg-[#141211] border-stone-800/50' 
-                : 'bg-white border-stone-200'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${
-                  isDark ? 'bg-rose-500/10' : 'bg-rose-50'
-                }`}>
-                  <Upload className="w-5 h-5 text-rose-500" />
-                </div>
-                <h3 className={`text-lg font-serif italic ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
-                  Subir foto
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  if (!uploading) {
-                    setShowUploadModal(false)
-                    setUploadStatus({ type: null, message: '' })
-                  }
-                }}
-                className={`p-1 rounded-full transition-all ${
-                  uploading ? 'opacity-50 cursor-not-allowed' : isDark ? 'hover:bg-stone-800 text-stone-500' : 'hover:bg-stone-100 text-stone-400'
-                }`}
-                disabled={uploading}
-              >
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+          <div className={`w-full max-w-lg rounded-3xl overflow-hidden p-6 space-y-4 shadow-2xl border max-h-[90vh] overflow-y-auto ${
+            isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-[#FDFBF7] border-neutral-200'
+          }`}>
+            
+            <div className={`flex items-center justify-between border-b pb-2 sticky top-0 ${
+              isDark ? 'border-neutral-800 bg-neutral-900' : 'border-neutral-200 bg-[#FDFBF7]'
+            }`}>
+              <span className="text-xs font-sans font-medium tracking-widest uppercase text-[#C9A96E]">Publicar Nuevo Look</span>
+              <button onClick={() => setShowUploadModal(false)} className={`p-1 ${
+                isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-400 hover:text-neutral-600'
+              }`}>
+                <X className="w-4 h-4 stroke-[1.5]" />
               </button>
             </div>
 
-            {/* ESTADO DE LA SUBIDA */}
-            {uploadStatus.type && (
-              <div className={`mb-4 p-3 rounded-xl border flex items-center gap-2 ${
-                uploadStatus.type === 'success' 
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : uploadStatus.type === 'error'
-                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                    : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-              }`}>
-                {uploadStatus.type === 'success' && <CheckCircle className="w-4 h-4" />}
-                {uploadStatus.type === 'error' && <AlertCircle className="w-4 h-4" />}
-                {uploadStatus.type === 'info' && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span className="text-xs">{uploadStatus.message}</span>
-              </div>
-            )}
-
-            {/* Preview */}
-            {previewUrl && (
-              <div className="relative mb-4 rounded-xl overflow-hidden border border-stone-700/30">
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-full h-48 object-cover"
-                />
-                <button
-                  onClick={() => {
-                    if (!uploading) {
-                      setUploadFile(null)
-                      setPreviewUrl(null)
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = ''
-                      }
-                      setUploadStatus({ type: null, message: '' })
-                    }
-                  }}
-                  className={`absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500/80 transition-all ${
-                    uploading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={uploading}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Drop zone */}
-            <div 
-              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                previewUrl ? 'hidden' : ''
-              } ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-rose-500/50'}`}
-              onClick={!uploading ? triggerFileInput : undefined}
-            >
-              <Camera className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-stone-600' : 'text-stone-400'}`} />
-              <p className={`text-sm ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-                {uploading ? 'Subiendo...' : 'Haz clic para seleccionar una foto'}
-              </p>
-              <p className={`text-[10px] mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                PNG, JPG, WEBP hasta 10MB
-              </p>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                disabled={uploading}
-              />
-            </div>
-
-            {/* Info del archivo */}
-            {uploadFile && previewUrl && !uploading && (
-              <div className={`text-center text-[10px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                <p>📸 {uploadFile.name} ({(uploadFile.size / 1024).toFixed(0)} KB)</p>
-                <button
-                  onClick={triggerFileInput}
-                  className="text-rose-500 hover:text-rose-400 transition-colors mt-1"
-                  disabled={uploading}
-                >
-                  Cambiar foto
-                </button>
-              </div>
-            )}
-
-            <div className="mt-4 space-y-3">
-              <input
-                type="text"
-                placeholder="Título de la foto"
+            {/* Título */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Nombre del Diseño *</label>
+              <input 
+                type="text" 
                 value={uploadTitle}
                 onChange={(e) => setUploadTitle(e.target.value)}
-                disabled={uploading}
-                className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-500/50 transition-all ${
-                  isDark 
-                    ? 'bg-stone-900/30 border-stone-800 text-stone-200 placeholder-stone-500' 
-                    : 'bg-white border-stone-200 text-stone-900 placeholder-stone-400'
-                } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="Ej: Glossy Chrome Effect" 
+                className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:border-[#C9A96E] text-sm ${
+                  isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
+                }`}
               />
-              <textarea
-                placeholder="Descripción (opcional)"
+            </div>
+
+            {/* Descripción */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Descripción</label>
+              <textarea 
                 value={uploadDescription}
                 onChange={(e) => setUploadDescription(e.target.value)}
-                disabled={uploading}
+                placeholder="Detalles del esmaltado, técnicas usadas..." 
                 rows={2}
-                className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-rose-500/50 transition-all resize-none ${
-                  isDark 
-                    ? 'bg-stone-900/30 border-stone-800 text-stone-200 placeholder-stone-500' 
-                    : 'bg-white border-stone-200 text-stone-900 placeholder-stone-400'
-                } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:border-[#C9A96E] resize-none text-sm ${
+                  isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
+                }`}
               />
-              
-              {uploading && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] text-stone-400">
-                    <span>Subiendo...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+            </div>
 
-              <button
-                onClick={handleUpload}
-                disabled={uploading || !uploadFile}
-                className={`w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                  uploading ? 'opacity-70' : ''
+            {/* Imagen PRINCIPAL (Resultado Final) */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Imagen Final (Resultado) *</label>
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className={`border border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[100px] flex flex-col items-center justify-center relative overflow-hidden transition-colors ${
+                  isDark ? 'border-neutral-700 hover:bg-neutral-800' : 'border-neutral-300 hover:bg-neutral-50'
                 }`}
               >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Subiendo...
-                  </>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setUploadFile(e.target.files[0])
+                      const reader = new FileReader()
+                      reader.onload = (event) => setPreviewUrl(event.target?.result as string)
+                      reader.readAsDataURL(e.target.files[0])
+                    }
+                  }} 
+                  className="hidden" 
+                  accept="image/*" 
+                />
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Subir foto
-                  </>
+                  <div className="space-y-1">
+                    <Camera className="w-5 h-5 mx-auto text-neutral-400 dark:text-neutral-600 stroke-[1.2]" />
+                    <p className={`text-xs font-light ${
+                      isDark ? 'text-neutral-500' : 'text-neutral-500'
+                    }`}>Subir foto del resultado final</p>
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
+
+            {/* Imagen de ANTES (Opcional) */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Imagen de Antes (Opcional)</label>
+              <div 
+                onClick={() => beforeInputRef.current?.click()}
+                className={`border border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[80px] flex flex-col items-center justify-center relative overflow-hidden transition-colors ${
+                  isDark ? 'border-neutral-700 hover:bg-neutral-800' : 'border-neutral-300 hover:bg-neutral-50'
+                }`}
+              >
+                <input 
+                  ref={beforeInputRef}
+                  type="file" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setUploadBeforeFile(e.target.files[0])
+                      const reader = new FileReader()
+                      reader.onload = (event) => setUploadBeforePreview(event.target?.result as string)
+                      reader.readAsDataURL(e.target.files[0])
+                    }
+                  }} 
+                  className="hidden" 
+                  accept="image/*" 
+                />
+                {uploadBeforePreview ? (
+                  <img src={uploadBeforePreview} alt="Antes Preview" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="space-y-1">
+                    <Camera className="w-4 h-4 mx-auto text-neutral-400 dark:text-neutral-600 stroke-[1.2]" />
+                    <p className={`text-[10px] font-light ${
+                      isDark ? 'text-neutral-500' : 'text-neutral-500'
+                    }`}>Subir foto antes del tratamiento</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Precio */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Precio</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-sans">$</span>
+                <input 
+                  type="number" 
+                  value={uploadPrice}
+                  onChange={(e) => setUploadPrice(e.target.value)}
+                  placeholder="45.00" 
+                  step="0.01"
+                  min="0"
+                  className={`w-full pl-7 pr-3 py-2 rounded-lg border focus:outline-none focus:border-[#C9A96E] text-sm ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Esmaltado usado */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Productos/Esmaltados Usados</label>
+              <input 
+                type="text" 
+                value={uploadPolish}
+                onChange={(e) => setUploadPolish(e.target.value)}
+                placeholder="Ej: OPI Neon Pink + Chrome Powder" 
+                className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:border-[#C9A96E] text-sm ${
+                  isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
+                }`}
+              />
+            </div>
+
+            {/* Categoría Sensorial */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block font-sans">Categoría Sensorial</label>
+              <select 
+                value={uploadCategory} 
+                onChange={(e) => setUploadCategory(e.target.value as any)}
+                className={`w-full px-3 py-2 rounded-lg border focus:outline-none text-sm ${
+                  isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
+                }`}
+              >
+                <option value="glossy">✨ Efecto Glossy</option>
+                <option value="3d">💎 Textura 3D</option>
+                <option value="minimal">🌿 Minimalismo</option>
+                <option value="abstract">🎨 Arte Abstracto</option>
+              </select>
+            </div>
+
+            {uploadStatus.type && (
+              <div className={`p-2.5 rounded-lg text-[10px] text-center font-sans animate-slide-down ${
+                uploadStatus.type === 'success' 
+                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300' 
+                  : 'bg-red-50 dark:bg-red-950/30 text-red-500'
+              }`}>
+                {uploadStatus.message}
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={handleUpload}
+              className="w-full py-3 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-sans tracking-widest text-xs uppercase font-medium rounded-lg hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+            >
+              {uploading ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              {uploading ? 'Publicando...' : 'Publicar en Portfolio'}
+            </button>
+
           </div>
         </div>
       )}
+
+    </div>
+  )
+}
+
+export function SidebarGalleryWidget() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  
+  return (
+    <div className={`p-4 rounded-xl border text-xs font-sans font-light shadow-xs space-y-2 transition-colors duration-300 ${
+      isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200/40'
+    }`}>
+      <div className="flex items-center gap-1.5 text-[#FF2A75] font-medium tracking-wide">
+        <Sparkles className="w-3.5 h-3.5" /> Universo Fresh Nails
+      </div>
+      <p className={`leading-relaxed text-[11px] ${
+        isDark ? 'text-neutral-400' : 'text-neutral-500'
+      }`}>
+        Explora el porfolio interactivo de alta costura y mantén al día tu bitácora privada de cuidado.
+      </p>
     </div>
   )
 }

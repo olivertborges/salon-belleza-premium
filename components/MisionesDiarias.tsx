@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { CheckCircle2, Circle, Flame, Trophy } from 'lucide-react'
+import { CheckCircle2, Circle, Flame, Trophy, Sparkles } from 'lucide-react'
 
 interface Mision {
   id: string
@@ -174,57 +174,108 @@ export default function MisionesDiarias() {
   const porcentaje = misiones.length > 0 ? Math.round((completadas / misiones.length) * 100) : 0
 
   return (
-    <div className={`border p-6 sm:p-8 rounded-3xl transition-all duration-300 shadow-md ${
-      isDark ? 'bg-[#141211] border-stone-850' : 'bg-white border-stone-200'
+    <div className={`p-6 md:p-8 rounded-3xl border transition-all duration-500 shadow-xl relative overflow-hidden ${
+      isDark ? 'bg-stone-900/60 border-pink-950/30 backdrop-blur-md' : 'bg-white border-pink-100/70'
     } space-y-6`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6 dark:border-stone-900">
+      
+      {/* Elemento sutil decorativo en la esquina */}
+      <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 dark:bg-pink-500/10 rounded-bl-full pointer-events-none"></div>
+
+      {/* ENCABEZADO CHIC */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 border-pink-100/40 dark:border-stone-800">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 border rounded-xl flex items-center justify-center bg-orange-50 dark:bg-orange-500/10 dark:border-orange-500/20">
-            <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500 to-amber-400 text-white shadow-md shadow-pink-500/20">
+            <Flame className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h2 className={`text-xl font-extralight tracking-tight ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
-              Misiones <span className="font-serif italic font-normal text-rose-600 dark:text-rose-300">Diarias</span>
+            <h2 className="text-xl font-black tracking-tight text-stone-800 dark:text-white">
+              Misiones <span className="font-serif italic font-normal text-pink-500 dark:text-pink-400">Diarias</span>
             </h2>
-            <div className="flex flex-wrap items-center gap-3 mt-1">
-              <p className="text-[10px] font-mono font-semibold text-rose-500">✨ Estética: {puntosGlow} pts</p>
-              <p className="text-[10px] font-mono font-semibold text-amber-500">💇 Peluquería: {puntosHair} pts</p>
+            <div className="flex flex-wrap items-center gap-3 mt-1.5">
+              <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/10">
+                ✨ Glow: {puntosGlow}
+              </span>
+              <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/10">
+                💇 Hair: {puntosHair}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* METRO DE PROGRESO PREMIUM */}
       <div className="space-y-2">
-        <div className="flex justify-between text-[11px] font-mono tracking-wider text-stone-400">
-          <span className="flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-500" /> Progreso</span>
-          <span>{completadas}/{misiones.length} • {porcentaje}%</span>
+        <div className="flex justify-between text-[11px] font-black tracking-widest uppercase text-stone-500 dark:text-stone-400">
+          <span className="flex items-center gap-1">
+            <Trophy className="w-3 h-3 text-amber-500 animate-bounce" /> META DIARIA
+          </span>
+          <span className="font-mono text-pink-500 dark:text-pink-400">
+            {completadas}/{misiones.length} • {porcentaje}%
+          </span>
         </div>
-        <div className="h-2 w-full rounded-full bg-stone-100 dark:bg-stone-950 border dark:border-stone-900 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-500" style={{ width: `${porcentaje}%` }} />
+        <div className="h-3 w-full rounded-full bg-stone-100 dark:bg-stone-950 p-0.5 border border-pink-100/30 dark:border-stone-850 overflow-hidden">
+          <div 
+            className="h-full rounded-full bg-gradient-to-r from-pink-500 via-pink-400 to-amber-400 transition-all duration-700 ease-out shadow-sm" 
+            style={{ width: `${porcentaje}%` }} 
+          />
         </div>
       </div>
 
+      {/* LISTADO DE MISIONES GLAMOUR */}
       <div className="space-y-3">
-        {misiones.map((mision) => (
-          <div 
-            key={mision.id}
-            className={`flex items-center justify-between p-4 rounded-xl border ${
-              mision.completed ? 'opacity-60 bg-stone-900/10' : 'cursor-pointer hover:border-stone-500 bg-stone-900/30'
-            }`}
-            onClick={() => { if (!mision.completed) completarMision(mision.id) }}
-          >
-            <div className="flex items-center gap-3">
-              {mision.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5 text-stone-600" />}
-              <div>
-                <p className={`text-xs md:text-sm font-light ${mision.completed ? 'line-through text-stone-500' : ''}`}>{mision.title}</p>
-                <p className="text-[9px] text-stone-500">{mision.description}</p>
+        {misiones.map((mision) => {
+          const esHair = mision.category === 'hair'
+          return (
+            <div 
+              key={mision.id}
+              className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${
+                mision.completed 
+                  ? 'opacity-50 bg-stone-100/50 dark:bg-stone-950/30 border-stone-200 dark:border-stone-850' 
+                  : `cursor-pointer bg-gradient-to-r from-white to-stone-50/50 dark:from-stone-950 dark:to-stone-900/60 shadow-sm border-pink-100/60 dark:border-stone-800/80 hover:border-pink-400 dark:hover:border-pink-500/40 hover:-translate-y-0.5`
+              }`}
+              onClick={() => { if (!mision.completed) completarMision(mision.id) }}
+            >
+              {/* Barra lateral sutil de categoría */}
+              {!mision.completed && (
+                <div className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${
+                  esHair ? 'from-amber-400 to-amber-500' : 'from-pink-500 to-pink-400'
+                }`} />
+              )}
+
+              <div className="flex items-center gap-3.5 pl-1.5">
+                <div className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300">
+                  {mision.completed ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  ) : (
+                    <Circle className={`w-5 h-5 ${esHair ? 'text-amber-400' : 'text-pink-400'}`} />
+                  )}
+                </div>
+                <div>
+                  <p className={`text-xs md:text-sm font-black text-stone-800 dark:text-stone-200 ${
+                    mision.completed ? 'line-through text-stone-400 dark:text-stone-500 font-normal' : ''
+                  }`}>
+                    {mision.title}
+                  </p>
+                  <p className="text-[10px] font-bold text-stone-400 dark:text-stone-500 mt-0.5">
+                    {mision.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className={`text-xs font-black tracking-tight font-mono px-2.5 py-1 rounded-xl shadow-sm ${
+                  mision.completed
+                    ? 'bg-stone-200 text-stone-500 dark:bg-stone-800 dark:text-stone-400'
+                    : esHair 
+                      ? 'bg-amber-500 text-white' 
+                      : 'bg-pink-500 text-white'
+                }`}>
+                  +{mision.points} Pts
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-amber-400 font-bold">+{mision.points}</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

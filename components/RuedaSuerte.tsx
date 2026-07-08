@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { X, Sparkles, Award, AlertCircle, Loader2 } from 'lucide-react'
+import { X, Sparkles, Award, AlertCircle, Loader2, Database } from 'lucide-react'
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -13,13 +13,14 @@ interface RuletaModalProps {
   tenantIdActivo?: string
 }
 
+// Colores Premium adaptados a la paleta Chic (Rosas, Oros, Carbón)
 const PREMIOS = [
-  { id: 1, text: '50 Pts Peluquería', value: 50, type: 'hair', color: '#f59e0b' },
-  { id: 2, text: '10 Pts Estética', value: 10, type: 'glow', color: '#ec4899' },
-  { id: 3, text: 'Sigue Intentando', value: 0, type: 'none', color: '#6b7280' },
-  { id: 4, text: '100 Pts Peluquería', value: 100, type: 'hair', color: '#d97706' },
-  { id: 5, text: '50 Pts Estética', value: 50, type: 'glow', color: '#db2777' },
-  { id: 6, text: 'Suerte Próxima', value: 0, type: 'none', color: '#4b5563' },
+  { id: 1, text: '50 Pts Peluquería', value: 50, type: 'hair', color: '#d97706' }, // Oro profundo
+  { id: 2, text: '10 Pts Estética', value: 10, type: 'glow', color: '#db2777' },   // Rosa vibrante
+  { id: 3, text: 'Sigue Intentando', value: 0, type: 'none', color: '#292524' },   // Carbón estético
+  { id: 4, text: '100 Pts Peluquería', value: 100, type: 'hair', color: '#f59e0b' }, // Oro brillante
+  { id: 5, text: '50 Pts Estética', value: 50, type: 'glow', color: '#ec4899' },    // Rosa glow
+  { id: 6, text: 'Suerte Próxima', value: 0, type: 'none', color: '#44403c' },     // Stone oscuro
 ]
 
 export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuarioActivo, tenantIdActivo }: RuletaModalProps) {
@@ -144,14 +145,13 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
       if (premioGanado.value > 0) {
         setDebugDBWriteStatus('💾 Insertando historial con tipos estrictos...')
         
-        // CORRECCIÓN EXACTA BASADA EN EL SCHEMA VERIFICADO
         const { error: txError } = await supabase.from('loyalty_transactions').insert({
           client_id: clientId,
           tenant_id: resolvedTenantId,
           points: premioGanado.value,
-          type: 'earned',       // VALOR VERIFICADO EN EL CHECK
-          wallet_type: premioGanado.type, // VALOR VERIFICADO EN EL CHECK ('hair' o 'glow')
-          category: 'manual',    // VALOR VERIFICADO EN EL CHECK
+          type: 'earned',       
+          wallet_type: premioGanado.type, 
+          category: 'manual',    
           description: `Premio obtenido en Ruleta Diaria: ${premioGanado.text}`
         })
 
@@ -227,54 +227,64 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-stone-950/80 backdrop-blur-md" onClick={!isSpinning ? onClose : undefined} />
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 antialiased">
+      {/* Fondo traslúcido estilizado */}
+      <div className="fixed inset-0 bg-stone-950/70 backdrop-blur-md transition-opacity duration-300" onClick={!isSpinning ? onClose : undefined} />
 
-      <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 p-6 text-center shadow-2xl z-10">
+      <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-gradient-to-b from-stone-900 to-stone-950 border border-pink-950/40 p-6 text-center shadow-2xl z-10 transition-all">
         
-        {/* PANEL DE AUDITORÍA */}
-        <div className="mb-4 p-3 bg-black/60 rounded-xl border border-dashed border-stone-700 text-left text-[11px] font-mono space-y-1 text-stone-300">
-          <p className="text-amber-400 font-bold border-b border-stone-800 pb-0.5 mb-1">🔍 AUDITORÍA DE BASE DE DATOS:</p>
-          <p>• LocalStorage: <span className="font-bold text-white">{debugTokenExists}</span></p>
-          <p>• Auth User UID: <span className="font-bold text-white">{debugRawUser}</span></p>
-          <p>• Fila en Clients: <span className="font-bold text-white">{debugClientTable}</span></p>
-          <p className="border-t border-stone-800/80 pt-1 mt-1 text-cyan-400">• Operación DB: <span className="font-bold text-white">{debugDBWriteStatus}</span></p>
+        {/* PANEL DE AUDITORÍA CON ESTILO TERMINAL MINIMALISTA */}
+        <div className="mb-5 p-3.5 bg-stone-950/80 rounded-2xl border border-stone-800 text-left text-[10px] font-mono space-y-1 text-stone-400 shadow-inner">
+          <div className="flex items-center gap-1.5 text-pink-400 font-black border-b border-stone-900 pb-1 mb-1.5 uppercase tracking-wider">
+            <Database className="w-3 h-3" /> Monitor de Procesos Supabase
+          </div>
+          <p>• LocalStorage: <span className="font-bold text-stone-200">{debugTokenExists}</span></p>
+          <p>• Auth User UID: <span className="font-bold text-stone-200">{debugRawUser}</span></p>
+          <p>• Tabla Clients: <span className="font-bold text-stone-200">{debugClientTable}</span></p>
+          <p className="border-t border-stone-900 pt-1 mt-1.5 text-amber-400">• Estado Transacción: <span className="font-bold text-stone-100">{debugDBWriteStatus}</span></p>
         </div>
 
         {!isSpinning && (
-          <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-white p-1 rounded-full hover:bg-stone-800 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="absolute top-4 right-4 text-stone-500 hover:text-pink-400 p-1.5 rounded-xl hover:bg-stone-900 transition-all">
+            <X className="w-4 h-4" />
           </button>
         )}
 
         {isValidating ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-            <p className="text-stone-300 font-mono text-sm tracking-wide animate-pulse">Consultando base de datos...</p>
+            <div className="relative flex items-center justify-center">
+              <Loader2 className="w-10 h-10 text-pink-500 animate-spin" />
+              <Sparkles className="w-4 h-4 text-amber-400 absolute animate-pulse" />
+            </div>
+            <p className="text-stone-400 font-mono text-[11px] uppercase tracking-widest animate-pulse">Sincronizando con el Atelier...</p>
           </div>
         ) : errorMessage ? (
           <div className="py-8 flex flex-col items-center space-y-4">
             <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
               <AlertCircle className="w-8 h-8 text-red-400" />
             </div>
-            <h3 className="text-white font-medium text-base">Estado de la cuenta</h3>
+            <h3 className="text-white font-black text-base tracking-tight">Estado de la cuenta</h3>
             <p className="text-stone-400 text-xs px-4 leading-relaxed">{errorMessage}</p>
-            <button onClick={onClose} className="mt-2 px-5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-white text-xs font-medium">Cerrar</button>
+            <button onClick={onClose} className="mt-2 px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-850 border border-stone-800 text-white text-xs font-black tracking-widest uppercase">Cerrar</button>
           </div>
         ) : (
           <div className="space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-amber-400 text-[10px] uppercase tracking-wider font-medium mb-2">
-                <Sparkles className="w-3 h-3" /> Club VIP Activo
+              <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-500/10 to-amber-500/10 border border-pink-500/20 px-3 py-1 rounded-full text-pink-400 text-[10px] uppercase tracking-widest font-black mb-2">
+                <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" /> Fresh Luck VIP
               </div>
-              <h3 className="text-xl font-light tracking-tight text-white">
-                Gira y gana <span className="font-serif italic text-amber-500">Puntos</span>
+              <h3 className="text-2xl font-black tracking-tight text-white">
+                Gira y gana <span className="font-serif italic font-normal text-pink-400">Premios</span>
               </h3>
             </div>
 
+            {/* ENTORNO COMPLETO DE LA RULETA */}
             <div className="relative w-64 h-64 mx-auto my-4 flex items-center justify-center">
-              <div className="absolute -top-2 z-30 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[24px] border-t-rose-500 filter drop-shadow-md" />
-              <div className="absolute inset-0 rounded-full border-4 border-amber-500/40 shadow-2xl shadow-amber-500/10" />
+              {/* Marcador superior estilizado */}
+              <div className="absolute -top-2.5 z-30 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[22px] border-t-pink-500 filter drop-shadow-[0_2px_4px_rgba(236,72,153,0.4)]" />
+              
+              {/* Anillo de contención premium */}
+              <div className="absolute inset-0 rounded-full border-[6px] border-stone-950 shadow-2xl shadow-pink-500/5 z-10 pointer-events-none" />
 
               <div
                 ref={ruletaRef}
@@ -282,21 +292,21 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
                   transform: `rotate(${rotationDegrees}deg)`,
                   transition: isSpinning ? 'transform 3.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none',
                 }}
-                className="w-full h-full rounded-full overflow-hidden relative border-2 border-stone-900"
+                className="w-full h-full rounded-full overflow-hidden relative border border-stone-950"
               >
                 {PREMIOS.map((premio, idx) => {
                   const angle = 60 * idx
                   return (
                     <div
                       key={premio.id}
-                      className="absolute top-0 left-0 w-full h-full origin-center flex items-center justify-center text-white"
+                      className="absolute top-0 left-0 w-full h-full origin-center flex items-center justify-center text-white select-none"
                       style={{
                         transform: `rotate(${angle}deg)`,
                         clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
                         backgroundColor: premio.color,
                       }}
                     >
-                      <span className="absolute top-8 font-mono text-[9px] font-bold tracking-tighter uppercase text-center w-24 whitespace-normal leading-3" style={{ transform: 'rotate(30deg)' }}>
+                      <span className="absolute top-7 font-mono text-[9px] font-black tracking-tight uppercase text-center w-20 whitespace-normal leading-3 text-stone-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" style={{ transform: 'rotate(30deg)' }}>
                         {premio.text.replace(' Pts ', '\n')}
                       </span>
                     </div>
@@ -304,11 +314,16 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
                 })}
               </div>
 
+              {/* Botón Núcleo Interactuable */}
               <button
                 onClick={ejecutarGiro}
                 disabled={isSpinning || yaGiroHoy}
-                className={`absolute w-16 h-16 rounded-full border-4 border-stone-900 shadow-xl flex flex-col items-center justify-center z-20 font-bold transition-all ${
-                  yaGiroHoy ? 'bg-stone-700 text-stone-400 cursor-not-allowed' : isSpinning ? 'bg-amber-600 text-white animate-pulse' : 'bg-gradient-to-br from-amber-400 to-amber-600 text-stone-950 hover:scale-105'
+                className={`absolute w-16 h-16 rounded-full border-4 border-stone-950 shadow-2xl flex flex-col items-center justify-center z-20 font-black transition-all ${
+                  yaGiroHoy 
+                    ? 'bg-stone-800 text-stone-500 cursor-not-allowed shadow-none' 
+                    : isSpinning 
+                      ? 'bg-pink-600 text-white animate-pulse' 
+                      : 'bg-gradient-to-br from-pink-400 via-pink-500 to-amber-500 text-white hover:scale-105 active:scale-95 shadow-pink-500/20'
                 }`}
               >
                 <span className="text-[10px] uppercase font-mono tracking-tighter">
@@ -317,18 +332,19 @@ export default function RuletaModal({ isOpen, onClose, onPremioProcesado, usuari
               </button>
             </div>
 
-            <div className="min-h-[48px] flex items-center justify-center px-4">
+            {/* FOOTER MENSAJE DE RESULTADO */}
+            <div className="min-h-[50px] flex items-center justify-center px-4 bg-stone-950/40 rounded-2xl border border-stone-900 py-3">
               {chosenPrize ? (
-                <div className="space-y-1">
-                  <p className="text-stone-400 text-xs font-light">¡Felicitaciones!</p>
-                  <p className="text-white text-sm font-medium flex items-center justify-center gap-1.5">
-                    <Award className="w-4 h-4 text-amber-500" /> Ganaste <span className="text-amber-400 font-bold">{chosenPrize.text}</span>
+                <div className="space-y-0.5">
+                  <p className="text-stone-500 text-[10px] uppercase tracking-widest font-black">¡Atelier Glamour!</p>
+                  <p className="text-white text-sm font-bold flex items-center justify-center gap-1.5">
+                    <Award className="w-4 h-4 text-amber-400" /> Reclamaste: <span className="text-pink-400 font-black">{chosenPrize.text}</span>
                   </p>
                 </div>
               ) : yaGiroHoy ? (
-                <p className="text-stone-500 text-xs italic font-light">Ya has jugado tu tiro de hoy. Vuelve mañana.</p>
+                <p className="text-stone-500 text-xs font-medium italic">Tu oportunidad dorada de hoy concluyó. ¡Vuelve mañana!</p>
               ) : (
-                <p className="text-stone-400 text-xs font-light leading-relaxed">Presiona el centro para iniciar la ruleta diaria.</p>
+                <p className="text-stone-400 text-xs font-medium leading-relaxed">Presiona el núcleo dorado para iniciar tu fortuna diaria.</p>
               )}
             </div>
           </div>

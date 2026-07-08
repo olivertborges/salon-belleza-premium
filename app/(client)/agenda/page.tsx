@@ -49,7 +49,6 @@ export default function ClientBookingPage() {
     '18:00', '18:30', '19:00', '19:30'
   ]
 
-  // DOMINGO = 0, LUNES = 1 (NO LABORABLES)
   const esNoLaborable = (fecha: Date) => {
     const dia = getDay(fecha)
     return dia === 0 || dia === 1
@@ -218,12 +217,8 @@ export default function ClientBookingPage() {
 
       if (appointmentError) throw appointmentError
 
-      // ============================================================
-      // SUMAR PUNTOS A LOYALTY_WALLETS
-      // ============================================================
       const PUNTOS_POR_CITA = 50
       
-      // Buscar o crear wallet
       const { data: walletData, error: walletError } = await supabase
         .from('loyalty_wallets')
         .select('glow_points')
@@ -236,7 +231,6 @@ export default function ClientBookingPage() {
       }
 
       if (!walletData) {
-        // Crear wallet si no existe
         await supabase
           .from('loyalty_wallets')
           .insert([{
@@ -246,9 +240,7 @@ export default function ClientBookingPage() {
             hair_points: 0,
             created_at: new Date().toISOString()
           }])
-        console.log(`✅ Wallet creada con +${PUNTOS_POR_CITA} puntos`)
       } else {
-        // Sumar puntos a wallet existente
         await supabase
           .from('loyalty_wallets')
           .update({
@@ -257,12 +249,8 @@ export default function ClientBookingPage() {
           })
           .eq('client_id', client_id)
           .eq('tenant_id', tenantId)
-        console.log(`✅ +${PUNTOS_POR_CITA} puntos agregados a wallet`)
       }
 
-      // ============================================================
-      // COMPLETAR MISIÓN "Agenda una cita"
-      // ============================================================
       const { data: misionData } = await supabase
         .from('missions')
         .select('id, points')
@@ -290,7 +278,6 @@ export default function ClientBookingPage() {
               completed_at: new Date().toISOString()
             }])
 
-          // También sumar puntos de la misión a la wallet
           const { data: walletActual } = await supabase
             .from('loyalty_wallets')
             .select('glow_points')
@@ -308,8 +295,6 @@ export default function ClientBookingPage() {
               .eq('client_id', client_id)
               .eq('tenant_id', tenantId)
           }
-
-          console.log(`✅ Misión "Agenda una cita" completada! +${misionData.points} puntos`)
         }
       }
 
@@ -338,90 +323,89 @@ export default function ClientBookingPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative">
-          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
-          <div className="absolute inset-0 w-12 h-12 border-4 border-rose-500/20 rounded-full animate-ping" />
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
+          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen bg-background text-foreground antialiased selection:bg-rose-500/20 pb-24 transition-colors duration-300 ${
-      isDark ? 'bg-[#0a0908]' : 'bg-[#fcfbfa]'
+    <div className={`min-h-screen antialiased selection:bg-pink-500/20 pb-24 transition-colors duration-500 ${
+      isDark ? 'bg-stone-950 text-stone-100' : 'bg-gradient-to-b from-pink-50/20 via-amber-50/10 to-stone-50/30 text-stone-900'
     }`}>
+      <div className="max-w-5xl mx-auto px-4">
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6">
-
-        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-500/[0.08] via-card to-card border border-rose-500/20 p-6 shadow-xl mt-6 ${
+        {/* 👑 HERO BANNER ATELIER PRESTIGE */}
+        <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-8 shadow-xl mt-4 transition-all duration-300 ${
           isDark 
-            ? 'bg-gradient-to-br from-rose-950/20 via-[#161311] to-[#0a0908]' 
-            : 'bg-gradient-to-br from-rose-50/50 via-white to-stone-50'
+            ? 'bg-gradient-to-br from-stone-950 via-pink-950/20 to-neutral-950 border-pink-950/40' 
+            : 'bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 border-pink-100'
         }`}>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className={`text-[10px] uppercase tracking-[0.3em] font-mono flex items-center gap-2 ${
-                isDark ? 'text-rose-400' : 'text-rose-600'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                📅 Agenda tu cita
-              </p>
-              <h2 className="text-2xl font-serif italic text-foreground mt-1">
-                Reserva tu <span className="text-shimmer">Experiencia</span>
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                <span className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>Atelier Digital Experience</span>
+              </div>
+              <h2 className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-white'}`}>
+                Reserva tu <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">Santuario</span>
               </h2>
-              <p className={`text-xs mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                Elige tu servicio, profesional y horario en pocos pasos.
+              <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-pink-100/90 font-medium'}`}>
+                Diseña tu sesión de belleza boutique seleccionando el ritual y el especialista ideal.
               </p>
             </div>
             {user && (
               <Link
                 href="/reservas"
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-mono transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border shadow-sm ${
                   isDark 
-                    ? 'bg-stone-800/40 border border-stone-700 text-stone-300 hover:bg-stone-700/40' 
-                    : 'bg-stone-100/60 border border-stone-200 text-stone-600 hover:bg-stone-200/60'
+                    ? 'bg-stone-900 border-stone-800 text-stone-300 hover:bg-stone-800' 
+                    : 'bg-stone-950 border-stone-900 text-white hover:bg-stone-900'
                 }`}
               >
-                <Calendar className="w-3 h-3" />
-                Ver mis reservas
+                <Calendar className="w-3.5 h-3.5 text-pink-400" />
+                Mis Citas VIP →
               </Link>
             )}
           </div>
         </div>
 
+        {/* 🧭 STEPPER GLAM */}
         {paso < 5 && (
-          <div className="flex items-center justify-center gap-2 mt-8 mb-6">
+          <div className={`flex items-center justify-between gap-2 mt-8 mb-8 p-4 rounded-2xl border ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white/60 border-pink-100/70 shadow-sm backdrop-blur-sm'}`}>
             {[1, 2, 3, 4].map((num) => {
               const isActive = paso === num
               const isCompleted = paso > num
-              const labels = ['Servicio', 'Profesional', 'Fecha', 'Confirmar']
+              const labels = ['Servicio', 'Profesional', 'Agenda', 'Confirmar']
 
               return (
-                <div key={num} className="flex items-center">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                <div key={num} className="flex-1 flex items-center group">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 mx-auto">
+                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300 border ${
                       isActive 
-                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-110' 
+                        ? 'bg-stone-950 text-white border-stone-900 dark:bg-white dark:text-stone-950 dark:border-white shadow-md scale-105' 
                         : isCompleted 
-                          ? 'bg-emerald-500 text-white' 
+                          ? 'bg-pink-500 text-white border-pink-500' 
                           : isDark 
-                            ? 'bg-stone-800 text-stone-500' 
-                            : 'bg-stone-200 text-stone-400'
+                            ? 'bg-stone-950 border-stone-800 text-stone-600' 
+                            : 'bg-stone-50 border-stone-200 text-stone-400'
                     }`}>
-                      {isCompleted ? <Check className="w-4 h-4" /> : num}
+                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : num}
                     </div>
-                    <span className={`text-[9px] mt-1 font-mono ${
-                      isActive ? 'text-rose-500 font-bold' : isDark ? 'text-stone-500' : 'text-stone-400'
+                    <span className={`text-[10px] font-black uppercase tracking-wider hidden sm:block ${
+                      isActive ? 'text-pink-600 dark:text-pink-400' : isDark ? 'text-stone-500' : 'text-stone-400'
                     }`}>
                       {labels[num - 1]}
                     </span>
                   </div>
                   {num < 4 && (
-                    <div className={`w-8 h-px mx-1 ${
-                      paso > num ? isDark ? 'bg-emerald-500' : 'bg-emerald-500' : isDark ? 'bg-stone-700' : 'bg-stone-300'
+                    <div className={`w-6 md:w-12 h-[2px] rounded-full mx-auto hidden xs:block ${
+                      paso > num ? 'bg-pink-500' : isDark ? 'bg-stone-800' : 'bg-pink-100/80'
                     }`} />
                   )}
                 </div>
@@ -430,16 +414,17 @@ export default function ClientBookingPage() {
           </div>
         )}
 
+        {/* 💼 MAIN GRID NUCLEUS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-4">
-
           <div className="lg:col-span-2 space-y-6">
 
+            {/* STEP 1: SERVICES RITUAL */}
             {paso === 1 && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium text-foreground">¿Qué servicio deseas?</h3>
-                  <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                    Selecciona el tratamiento que mejor se adapte a ti
+              <div className="space-y-4 animate-fade-in">
+                <div className="border-b border-pink-100/40 dark:border-stone-900 pb-2">
+                  <h3 className="text-lg font-black tracking-tight">¿Qué ritual deseas experimentar?</h3>
+                  <p className={`text-xs font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    Elige entre nuestras especialidades de alta gama y alta costura para tus uñas y cuidado.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -447,45 +432,33 @@ export default function ClientBookingPage() {
                     <button
                       key={serv.id}
                       onClick={() => { setSelectedService(serv); setPaso(2); }}
-                      className={`group relative rounded-2xl border p-5 text-left transition-all hover:-translate-y-1 shadow-sm ${
+                      className={`group relative rounded-2xl border p-5 text-left transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[145px] ${
                         isDark 
-                          ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                          : 'bg-white border-stone-200/90 hover:border-rose-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
+                          ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
+                          : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
                       }`}
                     >
                       {index === 0 && (
-                        <div className={`absolute top-3 right-3 text-[8px] font-mono uppercase px-2 py-0.5 rounded-full ${
-                          isDark 
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
-                            : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                        }`}>
-                          Popular
+                        <div className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          Recomendado
                         </div>
                       )}
 
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className={`font-medium transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 ${
-                            isDark ? 'text-stone-200' : 'text-stone-800'
-                          }`}>
-                            {serv.name}
-                          </h4>
-                          <p className={`text-xs mt-1 line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            {serv.description || 'Tratamiento profesional de alta calidad'}
-                          </p>
-                        </div>
-                        <ChevronRight className={`w-4 h-4 mt-1 transition-transform group-hover:translate-x-1 flex-shrink-0 ${
-                          isDark ? 'text-stone-600' : 'text-stone-300'
-                        }`} />
+                      <div className="space-y-1 pr-14">
+                        <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
+                          {serv.name}
+                        </h4>
+                        <p className={`text-xs line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                          {serv.description || 'Tratamiento boutique personalizado con productos orgánicos premium.'}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
-                        <span className={`text-sm font-mono font-bold ${
-                          isDark ? 'text-rose-400' : 'text-rose-600'
-                        }`}>
+
+                      <div className="flex items-center justify-between border-t border-dashed mt-4 pt-3 border-stone-200 dark:border-stone-800/80 w-full">
+                        <span className="text-sm font-black font-mono text-pink-600 dark:text-pink-400">
                           ${Number(serv.price).toLocaleString()}
                         </span>
-                        <span className={`text-[10px] font-mono flex items-center gap-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                          <Clock className="w-3 h-3" /> {serv.duration} min
+                        <span className={`text-[10px] font-black font-mono uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                          <Clock className="w-3 h-3 text-pink-500" /> {serv.duration} min
                         </span>
                       </div>
                     </button>
@@ -494,22 +467,18 @@ export default function ClientBookingPage() {
               </div>
             )}
 
+            {/* STEP 2: PROFESSIONAL STAFF CHIC */}
             {paso === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
                   <div>
-                    <h3 className="text-lg font-medium text-foreground">Elige a tu profesional</h3>
-                    <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      {selectedService?.name} — {selectedService?.duration} min
+                    <h3 className="text-lg font-black tracking-tight">Selecciona tu especialista</h3>
+                    <p className="text-xs font-serif italic text-pink-500 dark:text-pink-400">
+                      {selectedService?.name} — {selectedService?.duration} minutos de sesión
                     </p>
                   </div>
-                  <button 
-                    onClick={() => setPaso(1)} 
-                    className={`text-[10px] font-mono transition-colors flex items-center gap-1 ${
-                      isDark ? 'text-stone-400 hover:text-stone-200' : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    <X className="w-3 h-3" /> Cambiar servicio
+                  <button onClick={() => setPaso(1)} className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border px-3 py-1.5 rounded-xl transition ${isDark ? 'border-stone-800 hover:bg-stone-900 text-stone-400' : 'border-pink-100 bg-white hover:bg-pink-50/50 text-stone-600'}`}>
+                    <X className="w-3 h-3 text-pink-500" /> Cambiar ritual
                   </button>
                 </div>
 
@@ -518,89 +487,74 @@ export default function ClientBookingPage() {
                     <button
                       key={prof.id}
                       onClick={() => { setSelectedProfessional(prof); setPaso(3); }}
-                      className={`group rounded-2xl border p-4 text-left transition-all hover:-translate-y-1 shadow-sm ${
+                      className={`group rounded-2xl border p-4 text-left transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-between ${
                         isDark 
-                          ? 'bg-stone-900/40 border-stone-800/70 hover:border-rose-500/30 hover:shadow-[0_20px_30px_-10px_rgba(0,0,0,0.7)]' 
-                          : 'bg-white border-stone-200/90 hover:border-rose-500/40 hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.05)]'
+                          ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
+                          : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold relative ${
-                          isDark 
-                            ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' 
-                            : 'bg-rose-500/10 border border-rose-500/20 text-rose-600'
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm relative ${
+                          isDark ? 'bg-stone-950 border border-stone-800 text-pink-400' : 'bg-pink-50 border border-pink-100 text-pink-600 shadow-inner'
                         }`}>
                           {prof.name?.charAt(0).toUpperCase()}
                           {index === 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-[8px] text-white font-bold">
+                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-[7px] text-white font-bold shadow-sm">
                               ★
                             </span>
                           )}
                         </div>
-                        <div>
-                          <h4 className={`font-medium transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 ${
-                            isDark ? 'text-stone-200' : 'text-stone-800'
-                          }`}>
+                        <div className="space-y-0.5">
+                          <h4 className="font-black text-sm tracking-tight text-stone-800 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
                             {prof.name}
                           </h4>
-                          <p className={`text-[11px] ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            {prof.specialty || prof.role || 'Especialista'}
+                          <p className={`text-[11px] font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                            {prof.specialty || prof.role || 'Estilista Master'}
                           </p>
                         </div>
-                        <ChevronRight className={`w-4 h-4 ml-auto transition-transform group-hover:translate-x-1 ${
-                          isDark ? 'text-stone-600' : 'text-stone-300'
-                        }`} />
                       </div>
+                      <ChevronRight className={`w-4 h-4 text-stone-300 dark:text-stone-700 transition-transform group-hover:translate-x-1`} />
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* STEP 3: CALENDAR & SLOTS AGENDA */}
             {paso === 3 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
                   <div>
-                    <h3 className="text-lg font-medium text-foreground">Elige fecha y hora</h3>
-                    <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      {selectedProfessional?.name} — {selectedService?.name}
+                    <h3 className="text-lg font-black tracking-tight">Planifica tu cita</h3>
+                    <p className="text-xs font-serif italic text-pink-500 dark:text-pink-400">
+                      Con {selectedProfessional?.name} para {selectedService?.name}
                     </p>
                   </div>
-                  <button 
-                    onClick={() => setPaso(2)} 
-                    className={`text-[10px] font-mono transition-colors flex items-center gap-1 ${
-                      isDark ? 'text-stone-400 hover:text-stone-200' : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    <X className="w-3 h-3" /> Cambiar profesional
+                  <button onClick={() => setPaso(2)} className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border px-3 py-1.5 rounded-xl transition ${isDark ? 'border-stone-800 hover:bg-stone-900 text-stone-400' : 'border-pink-100 bg-white hover:bg-pink-50/50 text-stone-600'}`}>
+                    <X className="w-3 h-3 text-pink-500" /> Cambiar profesional
                   </button>
                 </div>
 
-                <div className={`border rounded-2xl p-6 shadow-sm ${
-                  isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
-                }`}>
+                {/* BOUTIQUE INTERACTIVE CALENDAR */}
+                <div className={`border rounded-2xl p-6 shadow-xl ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
                   <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-sm font-medium text-foreground capitalize">
+                    <h4 className="text-sm font-black tracking-widest uppercase font-mono text-stone-800 dark:text-stone-100">
                       {format(currentMonth, 'MMMM yyyy', { locale: es })}
                     </h4>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
                         disabled={isBefore(startOfMonth(currentMonth), new Date())}
-                        className={`p-2 rounded-xl border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                          isDark 
-                            ? 'border-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-800/30' 
-                            : 'border-stone-200 text-stone-500 hover:text-stone-800 hover:bg-stone-100'
+                        className={`p-2 rounded-xl border transition-all disabled:opacity-20 disabled:cursor-not-allowed ${
+                          isDark ? 'border-stone-800 text-stone-400 hover:bg-stone-800' : 'border-pink-100 text-stone-600 hover:bg-pink-50/40'
                         }`}
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
-                        className={`p-2 rounded-xl border transition-colors ${
-                          isDark 
-                            ? 'border-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-800/30' 
-                            : 'border-stone-200 text-stone-500 hover:text-stone-800 hover:bg-stone-100'
+                        className={`p-2 rounded-xl border transition-all ${
+                          isDark ? 'border-stone-800 text-stone-400 hover:bg-stone-800' : 'border-pink-100 text-stone-600 hover:bg-pink-50/40'
                         }`}
                       >
                         <ChevronRightIcon className="w-4 h-4" />
@@ -608,11 +562,9 @@ export default function ClientBookingPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1 text-center">
+                  <div className="grid grid-cols-7 gap-1.5 text-center">
                     {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => (
-                      <div key={d} className={`text-[10px] font-mono py-1 ${
-                        isDark ? 'text-stone-500' : 'text-stone-400'
-                      }`}>{d}</div>
+                      <div key={d} className={`text-[10px] font-black font-mono py-1 text-stone-400 dark:text-stone-500`}>{d}</div>
                     ))}
                     
                     {Array.from({ length: (getDay(diasDelMes[0]) + 6) % 7 }).map((_, i) => (
@@ -630,19 +582,19 @@ export default function ClientBookingPage() {
                           key={idx}
                           disabled={esPasado || noLaborable}
                           onClick={() => { setSelectedDate(diaStr); setSelectedTime(''); }}
-                          className={`py-2.5 rounded-xl text-sm font-mono transition-all ${
+                          className={`py-2 rounded-xl text-xs font-mono font-bold transition-all relative ${
                             esSeleccionado 
-                              ? 'bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20' 
+                              ? 'bg-stone-950 text-white border border-stone-950 dark:bg-white dark:text-stone-950 dark:border-white shadow-md font-black scale-105' 
                               : esPasado || noLaborable
-                                ? `text-stone-500/30 cursor-not-allowed ${isDark ? 'text-stone-700' : 'text-stone-300'}` 
+                                ? 'text-stone-300 dark:text-stone-800 cursor-not-allowed line-through opacity-30' 
                                 : isDark 
-                                  ? 'text-stone-300 hover:bg-stone-800/50' 
-                                  : 'text-stone-600 hover:bg-stone-100'
+                                  ? 'text-stone-300 hover:bg-stone-800 border border-transparent' 
+                                  : 'text-stone-600 hover:bg-pink-50/60 border border-transparent hover:border-pink-200'
                           }`}
                         >
                           {format(dia, 'd')}
                           {noLaborable && !esSeleccionado && !esPasado && (
-                            <div className="w-1 h-1 mx-auto mt-0.5 rounded-full bg-rose-400/50" />
+                            <div className="w-1 h-1 mx-auto mt-0.5 rounded-full bg-pink-400/60" />
                           )}
                         </button>
                       )
@@ -650,32 +602,26 @@ export default function ClientBookingPage() {
                   </div>
                 </div>
 
+                {/* TIME SLOTS LUXURY SELECTOR */}
                 {selectedDate && (
-                  <div className={`border rounded-2xl p-6 shadow-sm ${
-                    isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
-                  }`}>
-                    <p className={`text-xs font-mono border-b pb-3 mb-4 flex items-center justify-between ${
-                      isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-stone-200'
-                    }`}>
-                      <span>{format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                  <div className={`border rounded-2xl p-6 shadow-xl space-y-6 ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
+                    <p className={`text-xs font-black font-mono border-b pb-3 flex items-center justify-between ${isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-pink-100/80'}`}>
+                      <span className="capitalize font-sans font-black text-sm tracking-tight text-stone-800 dark:text-stone-200">
+                        {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
+                      </span>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full uppercase font-mono tracking-widest ${
                         esNoLaborable(parseISO(selectedDate))
-                          ? isDark 
-                            ? 'bg-rose-500/10 text-rose-400' 
-                            : 'bg-rose-500/10 text-rose-600'
-                          : isDark 
-                            ? 'bg-emerald-500/10 text-emerald-400' 
-                            : 'bg-emerald-500/10 text-emerald-600'
+                          ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' 
+                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                       }`}>
-                        {esNoLaborable(parseISO(selectedDate)) ? 'No laborable' : 'Laborable'}
+                        {esNoLaborable(parseISO(selectedDate)) ? 'Cerrado' : 'Disponible'}
                       </span>
                     </p>
 
-                    <div className="mb-4">
-                      <span className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                        🌅 Mañana
-                      </span>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                    {/* MORNING SLOTS */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">🌅 Turnos Mañana</span>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {horasMauna.map((hora) => {
                           const infoDisp = comprobarDisponibilidad(hora)
                           const seleccionado = selectedTime === hora
@@ -684,28 +630,27 @@ export default function ClientBookingPage() {
                               key={hora}
                               disabled={!infoDisp.disponible}
                               onClick={() => setSelectedTime(hora)}
-                              className={`py-2.5 rounded-xl text-xs font-mono transition-all border text-center ${
+                              className={`py-3 rounded-xl text-xs font-mono transition-all border text-center font-bold ${
                                 seleccionado
-                                  ? 'bg-rose-500 text-white font-bold border-rose-500 shadow-lg shadow-rose-500/20'
+                                  ? 'bg-pink-500 text-white font-black border-pink-500 shadow-md'
                                   : infoDisp.disponible
                                     ? isDark 
-                                      ? 'bg-stone-900/30 border-stone-800 text-stone-300 hover:border-rose-500/30 hover:text-rose-400' 
-                                      : 'bg-stone-50 border-stone-200 text-stone-600 hover:border-rose-500/30 hover:text-rose-600'
-                                    : `bg-muted/10 border-transparent text-muted-foreground/40 cursor-not-allowed line-through opacity-40`
+                                      ? 'bg-stone-950 border-stone-800 hover:border-pink-500/30 text-stone-300' 
+                                      : 'bg-stone-50 border-stone-200 hover:border-pink-400 text-stone-600 hover:bg-white shadow-inner'
+                                    : 'bg-stone-100/30 dark:bg-stone-900/20 border-transparent text-stone-400 dark:text-stone-700 cursor-not-allowed line-through opacity-20'
                               }`}
                             >
-                              {hora}
+                              {hora} hs
                             </button>
                           )
                         })}
                       </div>
                     </div>
 
-                    <div>
-                      <span className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                        🌆 Tarde
-                      </span>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                    {/* AFTERNOON SLOTS */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">🌆 Turnos Tarde</span>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {horasTarde.map((hora) => {
                           const infoDisp = comprobarDisponibilidad(hora)
                           const seleccionado = selectedTime === hora
@@ -714,17 +659,17 @@ export default function ClientBookingPage() {
                               key={hora}
                               disabled={!infoDisp.disponible}
                               onClick={() => setSelectedTime(hora)}
-                              className={`py-2.5 rounded-xl text-xs font-mono transition-all border text-center ${
+                              className={`py-3 rounded-xl text-xs font-mono transition-all border text-center font-bold ${
                                 seleccionado
-                                  ? 'bg-rose-500 text-white font-bold border-rose-500 shadow-lg shadow-rose-500/20'
+                                  ? 'bg-pink-500 text-white font-black border-pink-500 shadow-md'
                                   : infoDisp.disponible
                                     ? isDark 
-                                      ? 'bg-stone-900/30 border-stone-800 text-stone-300 hover:border-rose-500/30 hover:text-rose-400' 
-                                      : 'bg-stone-50 border-stone-200 text-stone-600 hover:border-rose-500/30 hover:text-rose-600'
-                                    : `bg-muted/10 border-transparent text-muted-foreground/40 cursor-not-allowed line-through opacity-40`
+                                      ? 'bg-stone-950 border-stone-800 hover:border-pink-500/30 text-stone-300' 
+                                      : 'bg-stone-50 border-stone-200 hover:border-pink-400 text-stone-600 hover:bg-white shadow-inner'
+                                    : 'bg-stone-100/30 dark:bg-stone-900/20 border-transparent text-stone-400 dark:text-stone-700 cursor-not-allowed line-through opacity-20'
                               }`}
                             >
-                              {hora}
+                              {hora} hs
                             </button>
                           )
                         })}
@@ -736,114 +681,86 @@ export default function ClientBookingPage() {
                 {selectedTime && (
                   <button
                     onClick={() => setPaso(4)}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white text-sm font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-xl bg-stone-950 text-white dark:bg-white dark:text-stone-950 font-black text-xs tracking-[0.2em] uppercase transition-all duration-300 transform active:scale-[0.99] flex items-center justify-center gap-2 shadow-lg"
                   >
-                    Continuar <ArrowRight className="w-4 h-4" />
+                    CONTINUAR REGISTRO <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
             )}
 
+            {/* STEP 4: CUSTOMER DATA CONCIERGE */}
             {paso === 4 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
                   <div>
-                    <h3 className="text-lg font-medium text-foreground">Completa tus datos</h3>
-                    <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      {selectedService?.name} — {format(parseISO(selectedDate), "d MMM")} a las {selectedTime}
+                    <h3 className="text-lg font-black tracking-tight">Completa tu ficha boutique</h3>
+                    <p className="text-xs font-serif italic text-pink-500 dark:text-pink-400">
+                      Reserva fijada para el {format(parseISO(selectedDate), "d MMM")} a las {selectedTime} hs
                     </p>
                   </div>
-                  <button 
-                    onClick={() => setPaso(3)} 
-                    className={`text-[10px] font-mono transition-colors flex items-center gap-1 ${
-                      isDark ? 'text-stone-400 hover:text-stone-200' : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    <X className="w-3 h-3" /> Cambiar horario
+                  <button onClick={() => setPaso(3)} className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border px-3 py-1.5 rounded-xl transition ${isDark ? 'border-stone-800 hover:bg-stone-900 text-stone-400' : 'border-pink-100 bg-white hover:bg-pink-50/50 text-stone-600'}`}>
+                    <X className="w-3 h-3 text-pink-500" /> Cambiar horario
                   </button>
                 </div>
 
-                <form onSubmit={handleFinalizarReserva} className={`border rounded-2xl p-6 shadow-sm space-y-4 ${
-                  isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
-                }`}>
-                  <div>
-                    <label className={`block text-[10px] font-mono uppercase tracking-wider mb-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>Nombre completo *</label>
-                    <div className="relative">
-                      <User className={`absolute left-3.5 top-3.5 w-4 h-4 ${isDark ? 'text-stone-500' : 'text-stone-400'}`} />
-                      <input
-                        type="text"
-                        required
-                        value={clientData.name}
-                        onChange={(e) => setClientData({...clientData, name: e.target.value})}
-                        className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-rose-500/50 transition-all ${
-                          isDark 
-                            ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                            : 'bg-white border-stone-200 text-stone-900'
-                        }`}
-                        placeholder="Tu nombre completo"
-                      />
+                <form onSubmit={handleFinalizarReserva} className={`border rounded-2xl p-6 shadow-xl space-y-5 ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">Nombre completo *</label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
+                        <input
+                          type="text"
+                          required
+                          value={clientData.name}
+                          onChange={(e) => setClientData({...clientData, name: e.target.value})}
+                          className={`w-full border rounded-xl pl-11 pr-4 py-3.5 text-xs font-bold focus:outline-none focus:border-pink-500/50 transition-all ${isDark ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-stone-50/50 border-pink-100 text-stone-900'}`}
+                          placeholder="Tu nombre completo"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">WhatsApp / Teléfono *</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
+                        <input
+                          type="tel"
+                          required
+                          value={clientData.phone}
+                          onChange={(e) => setClientData({...clientData, phone: e.target.value})}
+                          className={`w-full border rounded-xl pl-11 pr-4 py-3.5 text-xs font-bold focus:outline-none focus:border-pink-500/50 transition-all ${isDark ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-stone-50/50 border-pink-100 text-stone-900'}`}
+                          placeholder="Ej. 099123456"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className={`block text-[10px] font-mono uppercase tracking-wider mb-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>Teléfono *</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">Correo Electrónico</label>
                     <div className="relative">
-                      <Phone className={`absolute left-3.5 top-3.5 w-4 h-4 ${isDark ? 'text-stone-500' : 'text-stone-400'}`} />
-                      <input
-                        type="tel"
-                        required
-                        value={clientData.phone}
-                        onChange={(e) => setClientData({...clientData, phone: e.target.value})}
-                        className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-rose-500/50 transition-all ${
-                          isDark 
-                            ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                            : 'bg-white border-stone-200 text-stone-900'
-                        }`}
-                        placeholder="Ej. 099123456"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className={`block text-[10px] font-mono uppercase tracking-wider mb-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>Email</label>
-                    <div className="relative">
-                      <Mail className={`absolute left-3.5 top-3.5 w-4 h-4 ${isDark ? 'text-stone-500' : 'text-stone-400'}`} />
+                      <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
                       <input
                         type="email"
                         value={clientData.email}
                         onChange={(e) => setClientData({...clientData, email: e.target.value})}
-                        className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-rose-500/50 transition-all ${
-                          isDark 
-                            ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                            : 'bg-white border-stone-200 text-stone-900'
-                        }`}
-                        placeholder="tu@email.com"
+                        className={`w-full border rounded-xl pl-11 pr-4 py-3.5 text-xs font-bold focus:outline-none focus:border-pink-500/50 transition-all ${isDark ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-stone-50/50 border-pink-100 text-stone-900'}`}
+                        placeholder="tu@email.com (para confirmación digital)"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className={`block text-[10px] font-mono uppercase tracking-wider mb-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>Notas adicionales</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">Preferencias o Notas Especiales</label>
                     <div className="relative">
-                      <FileText className={`absolute left-3.5 top-3.5 w-4 h-4 ${isDark ? 'text-stone-500' : 'text-stone-400'}`} />
+                      <FileText className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
                       <textarea
                         value={clientData.notes}
                         onChange={(e) => setClientData({...clientData, notes: e.target.value})}
-                        rows={2}
-                        className={`w-full border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-rose-500/50 transition-all resize-none ${
-                          isDark 
-                            ? 'bg-stone-950 border-stone-800 text-stone-200' 
-                            : 'bg-white border-stone-200 text-stone-900'
-                        }`}
-                        placeholder="Alergias, preferencias, necesidades especiales..."
+                        rows={3}
+                        className={`w-full border rounded-xl pl-11 pr-4 py-3.5 text-xs font-bold focus:outline-none focus:border-pink-500/50 transition-all resize-none ${isDark ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-stone-50/50 border-pink-100 text-stone-900'}`}
+                        placeholder="Indícanos alergias, remoción de producto previo, o cualquier detalle para tu comodidad..."
                       />
                     </div>
                   </div>
@@ -851,96 +768,73 @@ export default function ClientBookingPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className={`w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 ${
-                      submitting ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-pink-500 to-pink-600 text-white font-black text-xs tracking-[0.2em] uppercase transition-all duration-300 transform active:scale-[0.99] shadow-xl shadow-pink-500/10 flex items-center justify-center gap-2"
                   >
                     {submitting ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Procesando...
+                        PROCESANDO REQUISICIÓN...
                       </>
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        Confirmar reserva
+                        CONSOLIDAR CITA VIP
                       </>
                     )}
                   </button>
 
-                  <p className={`text-[10px] text-center font-mono ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                    Al confirmar, aceptas nuestros términos y condiciones
+                  <p className="text-[10px] text-center font-mono text-stone-400 dark:text-stone-500 tracking-wide">
+                    Al procesar, declaras estar de acuerdo con nuestra política de puntualidad y cancelación.
                   </p>
                 </form>
               </div>
             )}
 
+            {/* STEP 5: SUCCESS ARCHITECTURE */}
             {paso === 5 && (
-              <div className={`border rounded-3xl p-8 text-center max-w-lg mx-auto shadow-xl relative overflow-hidden ${
-                isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
-              }`}>
-                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-rose-500 via-amber-500 to-rose-500" />
+              <div className={`border rounded-3xl p-8 text-center max-w-lg mx-auto shadow-2xl relative overflow-hidden animate-scale-up ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
+                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-pink-500 via-amber-400 to-pink-500" />
 
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {[...Array(12)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-2 h-2 rounded-full animate-bounce"
-                      style={{
-                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899'][i % 5],
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                        animationDuration: `${2 + Math.random() * 2}s`
-                      }}
-                    />
-                  ))}
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-inner">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 animate-pulse" />
                 </div>
 
-                <div className="relative z-10">
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto border-2 border-emerald-500/30">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                  </div>
-
-                  <h3 className="text-2xl font-serif italic text-foreground mt-4">¡Reserva confirmada!</h3>
-                  <p className={`text-sm mt-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                    Tu cita ha sido agendada exitosamente. Te esperamos.
-                  </p>
-                  <p className={`text-xs mt-1 text-emerald-500 font-medium`}>
-                    🎉 +50 puntos por agendar tu cita
-                  </p>
+                <h3 className="text-2xl font-black tracking-tight mt-5">¡Ritual Agendado!</h3>
+                <p className={`text-xs mt-1 font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                  Tu lugar en el santuario ha sido reservado de forma impecable.
+                </p>
+                
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 rounded-full border border-pink-500/20 text-pink-500 font-mono text-[10px] font-black uppercase tracking-widest mt-3 animate-bounce">
+                  🎉 +50 Puntos Glow Acreditados
                 </div>
 
-                <div className={`border rounded-xl p-4 text-left space-y-2 mt-6 relative z-10 ${
-                  isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-stone-50 border-stone-200'
-                }`}>
-                  <div className="flex justify-between text-sm">
-                    <span className={`${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Servicio</span>
-                    <span className="font-medium text-foreground">{selectedService?.name}</span>
+                {/* DIGEST CARD RECEIPT */}
+                <div className={`border rounded-2xl p-4 text-left space-y-3 mt-6 text-xs font-bold border-dashed ${isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-stone-50/60 border-pink-100'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px] font-mono">Ritual</span>
+                    <span className="text-stone-800 dark:text-stone-200">{selectedService?.name}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={`${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Profesional</span>
-                    <span className="font-medium text-foreground">{selectedProfessional?.name}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px] font-mono">Especialista</span>
+                    <span className="text-stone-800 dark:text-stone-200">{selectedProfessional?.name}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={`${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Fecha</span>
-                    <span className="font-medium text-foreground">
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px] font-mono">Fecha</span>
+                    <span className="text-stone-800 dark:text-stone-200 capitalize">
                       {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={`${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Hora</span>
-                    <span className="font-medium text-foreground">{selectedTime}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px] font-mono">Bloque Horario</span>
+                    <span className="px-2 py-0.5 bg-stone-950 dark:bg-stone-800 text-white rounded font-mono text-[11px]">{selectedTime} hs</span>
                   </div>
-                  <div className={`flex justify-between text-sm pt-2 mt-2 border-t ${
-                    isDark ? 'border-stone-800' : 'border-stone-200'
-                  }`}>
-                    <span className={`${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Total</span>
-                    <span className="font-bold text-rose-500">${Number(selectedService?.price).toLocaleString()}</span>
+                  <div className="flex justify-between items-center pt-2.5 border-t border-stone-200 dark:border-stone-800">
+                    <span className="text-stone-500 uppercase tracking-widest text-[10px] font-mono">Inversión Total</span>
+                    <span className="text-base font-black font-mono text-pink-600 dark:text-pink-400">${Number(selectedService?.price).toLocaleString()}</span>
                   </div>
                 </div>
 
-                <div className="space-y-3 mt-6 relative z-10">
+                <div className="space-y-3 mt-6">
                   <button
                     onClick={() => {
                       setPaso(1)
@@ -950,69 +844,54 @@ export default function ClientBookingPage() {
                       setClientData({ name: '', phone: '', email: '', notes: '' })
                       setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
                     }}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-medium transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-stone-950 text-white hover:bg-stone-900 text-xs font-black tracking-widest uppercase transition transform active:scale-95 shadow-md border border-stone-800"
                   >
-                    <Calendar className="w-4 h-4" />
-                    Agendar otra cita
+                    AGENDAR NUEVA EXPERIENCIA
                   </button>
 
                   <Link
                     href="/reservas"
-                    className={`block w-full py-3 rounded-xl text-sm font-medium transition-all text-center border ${
-                      isDark 
-                        ? 'border-stone-700 text-stone-300 hover:bg-stone-800/30' 
-                        : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+                    className={`block w-full py-3.5 rounded-xl text-xs font-black tracking-widest uppercase text-center border transition ${
+                      isDark ? 'border-stone-800 text-stone-300 hover:bg-stone-900' : 'border-pink-100 text-stone-600 bg-white hover:bg-pink-50/30'
                     }`}
                   >
-                    Ver mis reservas
+                    VER PANEL DE CITAS
                   </Link>
                 </div>
               </div>
             )}
-
           </div>
 
+          {/* 🎫 SIDEBAR RESUMEN STICKY CARD */}
           {paso < 5 && (
-            <div className={`border rounded-2xl p-5 space-y-5 lg:sticky lg:top-6 shadow-sm relative overflow-hidden ${
-              isDark ? 'bg-stone-900/30 border-stone-800/80' : 'bg-white border-stone-200'
-            }`}>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full pointer-events-none" />
+            <div className={`border rounded-2xl p-5 space-y-5 lg:sticky lg:top-6 shadow-xl relative overflow-hidden backdrop-blur-xl ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-pink-500/5 to-transparent rounded-bl-full pointer-events-none" />
 
-              <h3 className={`text-[10px] font-mono uppercase tracking-[0.2em] border-b pb-3 flex items-center gap-2 ${
-                isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-stone-200'
-              }`}>
-                <Bookmark className="w-3 h-3 text-rose-500" /> Resumen
+              <h3 className={`text-[10px] font-black font-mono uppercase tracking-[0.25em] border-b pb-3 flex items-center gap-2 ${isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-pink-100'}`}>
+                <Bookmark className="w-3.5 h-3.5 text-pink-500" /> RESUMEN DE RITUAL
               </h3>
 
               {selectedService ? (
-                <div className="space-y-1 relative z-10">
-                  <p className={`text-[10px] font-mono uppercase tracking-wider ${
-                    isDark ? 'text-rose-400' : 'text-rose-600'
-                  }`}>Servicio</p>
-                  <p className="text-sm font-medium text-foreground">{selectedService.name}</p>
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className={`text-xs font-mono flex items-center gap-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      <Clock className="w-3 h-3" /> {selectedService.duration} min
+                <div className="space-y-1 animate-fade-in">
+                  <p className="text-[9px] font-black font-mono uppercase tracking-widest text-pink-500 dark:text-pink-400">Tratamiento</p>
+                  <p className="text-sm font-black tracking-tight text-stone-800 dark:text-stone-100">{selectedService.name}</p>
+                  <div className="flex items-center gap-3 mt-1.5 font-mono text-[11px] font-bold">
+                    <span className="flex items-center gap-1 text-stone-400 dark:text-stone-500">
+                      <Clock className="w-3 h-3 text-pink-500" /> {selectedService.duration} min
                     </span>
-                    <span className={`text-xs font-mono font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                    <span className="text-pink-600 dark:text-pink-400">
                       ${Number(selectedService.price).toLocaleString()}
                     </span>
                   </div>
                 </div>
               ) : (
-                <p className={`text-xs font-mono italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                  Selecciona un servicio
-                </p>
+                <p className="text-xs font-serif italic text-stone-400 dark:text-stone-500">Por favor escoge un ritual de belleza...</p>
               )}
 
               {selectedProfessional && (
-                <div className={`space-y-1 pt-3 border-t ${
-                  isDark ? 'border-stone-800' : 'border-stone-200'
-                } relative z-10`}>
-                  <p className={`text-[10px] font-mono uppercase tracking-wider ${
-                    isDark ? 'text-rose-400' : 'text-rose-600'
-                  }`}>Profesional</p>
-                  <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <div className={`space-y-1 pt-3.5 border-t border-dashed animate-fade-in ${isDark ? 'border-stone-800' : 'border-pink-100'}`}>
+                  <p className="text-[9px] font-black font-mono uppercase tracking-widest text-pink-500 dark:text-pink-400">Master Asignado</p>
+                  <p className="text-xs font-black text-stone-800 dark:text-stone-200 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     {selectedProfessional.name}
                   </p>
@@ -1020,60 +899,38 @@ export default function ClientBookingPage() {
               )}
 
               {selectedTime && (
-                <div className={`space-y-1 pt-3 border-t ${
-                  isDark ? 'border-stone-800' : 'border-stone-200'
-                } relative z-10`}>
-                  <p className={`text-[10px] font-mono uppercase tracking-wider ${
-                    isDark ? 'text-rose-400' : 'text-rose-600'
-                  }`}>Fecha y Hora</p>
-                  <p className="text-sm font-medium text-foreground capitalize">
-                    {format(parseISO(selectedDate), "EEEE d", { locale: es })}
+                <div className={`space-y-1 pt-3.5 border-t border-dashed animate-fade-in ${isDark ? 'border-stone-800' : 'border-pink-100'}`}>
+                  <p className="text-[9px] font-black font-mono uppercase tracking-widest text-pink-500 dark:text-pink-400">Bloque Reservado</p>
+                  <p className="text-xs font-black text-stone-800 dark:text-stone-200 capitalize">
+                    {format(parseISO(selectedDate), "EEEE d 'de' MMMM", { locale: es })}
                   </p>
-                  <div className={`text-xs font-mono font-bold mt-1 w-fit px-2 py-0.5 rounded-md ${
-                    isDark 
-                      ? 'text-amber-300 bg-amber-950/20 border border-amber-900/20' 
-                      : 'text-rose-700 bg-rose-50 border border-rose-200'
-                  }`}>
-                    {selectedTime} hs
+                  <div className="text-[10px] font-mono font-black mt-1.5 w-fit px-2.5 py-0.5 rounded-lg bg-stone-950 dark:bg-stone-800 text-white tracking-widest">
+                    {selectedTime} HS
                   </div>
                 </div>
               )}
 
               {selectedService && (
-                <div className={`pt-4 border-t flex items-center justify-between ${
-                  isDark ? 'border-stone-800' : 'border-stone-200'
-                } relative z-10`}>
-                  <span className={`text-[10px] font-mono uppercase tracking-wide ${
-                    isDark ? 'text-stone-400' : 'text-stone-500'
-                  }`}>Total</span>
-                  <span className="text-lg font-mono font-bold text-shimmer">
+                <div className={`pt-4 border-t flex items-center justify-between ${isDark ? 'border-stone-800' : 'border-pink-100'}`}>
+                  <span className="text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">Total Neto</span>
+                  <span className="text-lg font-black font-mono text-pink-600 dark:text-pink-400">
                     ${Number(selectedService.price).toLocaleString()}
                   </span>
                 </div>
               )}
 
-              <div className={`pt-3 border-t flex items-center gap-2 text-[9px] font-mono ${
-                isDark ? 'text-stone-500 border-stone-800' : 'text-stone-400 border-stone-200'
-              } relative z-10`}>
-                <span className="flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${paso >= 1 ? 'bg-emerald-500' : isDark ? 'bg-stone-700' : 'bg-stone-300'}`} />
-                  Servicio
-                </span>
-                <span className="text-stone-500">→</span>
-                <span className="flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${paso >= 2 ? 'bg-emerald-500' : isDark ? 'bg-stone-700' : 'bg-stone-300'}`} />
-                  Staff
-                </span>
-                <span className="text-stone-500">→</span>
-                <span className="flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${paso >= 3 ? 'bg-emerald-500' : isDark ? 'bg-stone-700' : 'bg-stone-300'}`} />
-                  Agenda
-                </span>
+              {/* DYNAMIC PROGRESS RADAR FOOTER */}
+              <div className={`pt-3.5 border-t flex items-center gap-2 text-[9px] font-black font-mono tracking-wider ${isDark ? 'text-stone-600 border-stone-800' : 'text-stone-400 border-pink-100'}`}>
+                <span className={`flex items-center gap-1 ${paso >= 1 ? 'text-pink-500' : ''}`}>Ritual</span>
+                <span>→</span>
+                <span className={`flex items-center gap-1 ${paso >= 2 ? 'text-pink-500' : ''}`}>Staff</span>
+                <span>→</span>
+                <span className={`flex items-center gap-1 ${paso >= 3 ? 'text-pink-500' : ''}`}>Agenda</span>
               </div>
             </div>
           )}
-
         </div>
+
       </div>
     </div>
   )

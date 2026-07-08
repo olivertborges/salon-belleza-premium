@@ -28,7 +28,8 @@ interface RewardForm {
 }
 
 export default function AdminVIPConfigPage() {
-  const { tenantId } = useAuth()
+  // Extraemos tenantId y el estado loading del hook (si tu hook lo llama isLoading, cámbialo aquí)
+  const { tenantId, loading: authLoading } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   
@@ -49,30 +50,38 @@ export default function AdminVIPConfigPage() {
   useEffect(() => {
     if (tenantId) {
       fetchConfig()
+    } else if (authLoading === false || authLoading === undefined) {
+      // Si la autenticación ya terminó y el tenantId sigue ausente, apagamos la carga
+      setLoading(false)
     }
-  }, [tenantId, activeTab])
+  }, [tenantId, activeTab, authLoading])
 
   const fetchConfig = async () => {
     setLoading(true)
     try {
-      const { data: lvData } = await supabase
-        .from('vip_levels')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('wallet_type', activeTab)
-        .order('min_points', { ascending: true })
+      // Solicitudes en paralelo para evitar bloqueos en cascada
+      const [lvResponse, rwResponse] = await Promise.all([
+        supabase
+          .from('vip_levels')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('wallet_type', activeTab)
+          .order('min_points', { ascending: true }),
+        supabase
+          .from('reward_catalog')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('wallet_type', activeTab)
+          .order('points_required', { ascending: true })
+      ])
 
-      const { data: rwData } = await supabase
-        .from('reward_catalog')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('wallet_type', activeTab)
-        .order('points_required', { ascending: true })
+      if (lvResponse.error) throw lvResponse.error
+      if (rwResponse.error) throw rwResponse.error
 
-      setLevels(lvData || [])
-      setRewards(rwData || [])
+      setLevels(lvResponse.data || [])
+      setRewards(rwResponse.data || [])
     } catch (e) {
-      console.error(e)
+      console.error('Error cargando configuración VIP:', e)
     } finally {
       setLoading(false)
     }
@@ -159,7 +168,8 @@ export default function AdminVIPConfigPage() {
   const handleDeleteLevel = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar este rango?')) return
     try {
-      await supabase.from('vip_levels').delete().eq('id', id)
+      const { error } = await supabase.from('vip_levels').delete().eq('id', id)
+      if (error) throw error
       fetchConfig()
     } catch (e: any) {
       alert(e.message)
@@ -169,21 +179,36 @@ export default function AdminVIPConfigPage() {
   const handleDeleteReward = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar este premio?')) return
     try {
-      await supabase.from('reward_catalog').delete().eq('id', id)
+      const { error } = await supabase.from('reward_catalog').delete().eq('id', id)
+      if (error) throw error
       fetchConfig()
     } catch (e: any) {
       alert(e.message)
     }
   }
 
-  if (loading) {
+  // Render de carga inicial/espera de autenticación
+  if (authLoading || (loading && tenantId)) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="relative">
           <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
           <div className="absolute inset-0 w-8 h-8 border-3 border-amber-500/20 rounded-full animate-ping"></div>
         </div>
-        <span className="ml-4 text-xs font-mono text-amber-500 animate-pulse">Cargando configuración VIP...</span>
+        <span className="ml-4 text-xs font-mono text-amber-500 animate-pulse">Verificando credenciales VIP...</span>
+      </div>
+    )
+  }
+
+  // Render si definitivamente no se localiza un tenant_id válido en la sesión actual
+  if (!tenantId) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center text-center p-4">
+        <Crown className="w-8 h-8 text-stone-400 mb-2 stroke-[1.5]" />
+        <p className="text-sm font-mono text-stone-500">Acceso Restringido</p>
+        <p className="text-xs text-stone-400 mt-1 max-w-xs">
+          Tu cuenta de administrador actual no tiene asignado un identificador de negocio activo (<code className="bg-stone-100 dark:bg-stone-900 px-1 py-0.5 rounded text-red-500">tenant_id</code>).
+        </p>
       </div>
     )
   }
@@ -194,7 +219,7 @@ export default function AdminVIPConfigPage() {
     }`}>
       
       {/* HEADER CON CARD-GLOW */}
-      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl animate-fade-up ${
+      <div className={`card-glow relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.08] via-card to-card border border-amber-500/20 p-6 shadow-xl ${
         isDark 
           ? 'bg-gradient-to-br from-amber-950/20 via-[#161311] to-[#0a0908]' 
           : 'bg-gradient-to-br from-amber-50/50 via-white to-stone-50'
@@ -218,6 +243,7 @@ export default function AdminVIPConfigPage() {
             isDark ? 'bg-stone-900/40 border-stone-800/80' : 'bg-stone-100/80 border-stone-200/80'
           }`}>
             <button 
+              type="button"
               onClick={() => { setActiveTab('glow'); }} 
               className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center gap-1.5 ${
                 activeTab === 'glow' 
@@ -232,6 +258,7 @@ export default function AdminVIPConfigPage() {
               <Sparkles className="w-3.5 h-3.5" /> Estética & Glow
             </button>
             <button 
+              type="button"
               onClick={() => { setActiveTab('hair'); }} 
               className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-300 flex items-center gap-1.5 ${
                 activeTab === 'hair' 
@@ -350,8 +377,8 @@ export default function AdminVIPConfigPage() {
                           />
                         </div>
                         <div className="flex gap-2 justify-end pt-1">
-                          <button onClick={() => setEditingLevelId(null)} className="px-2.5 py-1 text-[11px] font-mono flex items-center gap-1 text-stone-400 hover:text-stone-600"><X className="w-3 h-3" /> Cancelar</button>
-                          <button onClick={() => l.id && handleSaveLevelEdit(l.id)} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-sm"><Check className="w-3 h-3" /> Guardar</button>
+                          <button type="button" onClick={() => setEditingLevelId(null)} className="px-2.5 py-1 text-[11px] font-mono flex items-center gap-1 text-stone-400 hover:text-stone-600"><X className="w-3 h-3" /> Cancelar</button>
+                          <button type="button" onClick={() => l.id && handleSaveLevelEdit(l.id)} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-sm"><Check className="w-3 h-3" /> Guardar</button>
                         </div>
                       </div>
                     ) : (
@@ -368,8 +395,8 @@ export default function AdminVIPConfigPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
-                          <button onClick={() => { setEditingLevelId(l.id || null); setEditLevelData(l); }} className={`p-2 rounded-xl transition-all ${isDark ? 'text-stone-400 hover:text-amber-400' : 'text-stone-400 hover:text-amber-500'}`}><Edit3 className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => l.id && handleDeleteLevel(l.id)} className={`p-2 rounded-xl transition-all ${isDark ? 'text-stone-400 hover:text-red-400' : 'text-stone-400 hover:text-red-500'}`}><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => { setEditingLevelId(l.id || null); setEditLevelData(l); }} className={`p-2 rounded-xl transition-all ${isDark ? 'text-stone-400 hover:text-amber-400' : 'text-stone-400 hover:text-amber-500'}`}><Edit3 className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => l.id && handleDeleteLevel(l.id)} className={`p-2 rounded-xl transition-all ${isDark ? 'text-stone-400 hover:text-red-400' : 'text-stone-400 hover:text-red-500'}`}><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                     )}
@@ -484,8 +511,8 @@ export default function AdminVIPConfigPage() {
                     
                     {!isEditing && (
                       <div className="absolute top-2.5 right-2.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all z-10">
-                        <button onClick={() => { setEditingRewardId(r.id || null); setEditRewardData(r); }} className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-stone-400 hover:text-amber-400' : 'text-stone-400 hover:text-amber-500'}`}><Edit3 className="w-3 h-3" /></button>
-                        <button onClick={() => r.id && handleDeleteReward(r.id)} className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-stone-400 hover:text-red-400' : 'text-stone-400 hover:text-red-500'}`}><Trash2 className="w-3 h-3" /></button>
+                        <button type="button" onClick={() => { setEditingRewardId(r.id || null); setEditRewardData(r); }} className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-stone-400 hover:text-amber-400' : 'text-stone-400 hover:text-amber-500'}`}><Edit3 className="w-3 h-3" /></button>
+                        <button type="button" onClick={() => r.id && handleDeleteReward(r.id)} className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-stone-400 hover:text-red-400' : 'text-stone-400 hover:text-red-500'}`}><Trash2 className="w-3 h-3" /></button>
                       </div>
                     )}
 
@@ -543,8 +570,8 @@ export default function AdminVIPConfigPage() {
                           />
                         </div>
                         <div className="flex gap-2 justify-end pt-1">
-                          <button onClick={() => setEditingRewardId(null)} className="px-2 py-1 text-[10px] font-mono text-stone-400 flex items-center gap-0.5"><X className="w-2.5 h-2.5" /> Cancelar</button>
-                          <button onClick={() => r.id && handleSaveRewardEdit(r.id)} className="px-2.5 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" /> Guardar</button>
+                          <button type="button" onClick={() => setEditingRewardId(null)} className="px-2 py-1 text-[10px] font-mono text-stone-400 flex items-center gap-0.5"><X className="w-2.5 h-2.5" /> Cancelar</button>
+                          <button type="button" onClick={() => r.id && handleSaveRewardEdit(r.id)} className="px-2.5 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" /> Guardar</button>
                         </div>
                       </div>
                     ) : (
@@ -589,14 +616,6 @@ export default function AdminVIPConfigPage() {
         </div>
 
       </div>
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      `}</style>
     </div>
   )
 }
