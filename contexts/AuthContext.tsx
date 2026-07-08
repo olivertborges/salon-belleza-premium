@@ -29,15 +29,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserDataAndRole = async (userId: string) => {
     try {
+      // 1. Obtenemos el rol y el tenant_id directo desde el perfil del usuario
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, tenant_id')
         .eq('id', userId)
         .maybeSingle()
 
       const userRole = profile?.role || 'client'
       setRole(userRole)
 
+      // 2. Si el perfil ya cuenta con un tenant_id (caso de administradores/staff), lo asignamos de inmediato
+      if (profile?.tenant_id) {
+        setTenantId(profile.tenant_id)
+      }
+
+      // 3. Si es cliente, buscamos sus datos adicionales en la tabla relacional
       if (userRole === 'client') {
         const { data: client } = await supabase
           .from('clients')
@@ -47,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (client) {
           setClientId(client.id)
+          // Si la tabla client sobreescribe o define un tenant_id, lo priorizamos
           if (client.tenant_id) setTenantId(client.tenant_id)
 
           const { data: wallet } = await supabase
@@ -112,8 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) return { error }
 
-      // FORZADO DE ESCRITURA: Si la autenticación fue correcta, obligamos al SDK 
-      // a escribir manualmente la sesión en el almacenamiento para asegurar persistencia instantánea.
       if (data?.session && typeof window !== 'undefined') {
         localStorage.setItem('freshnails-auth-token', JSON.stringify(data.session))
         setUser(data.user)
