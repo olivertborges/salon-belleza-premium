@@ -71,11 +71,19 @@ export default function ClientDashboardIndex() {
   const [codigoReferido, setCodigoReferido] = useState('X7K-9M2-P4R')
   const [clientId, setClientId] = useState<string | null>(null)
   const [isRuletaOpen, setIsRuletaOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   const isDark = theme === 'dark'
+  const primaryColor = settings?.primary_color
+  const secondaryColor = settings?.secondary_color
+
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(to right, ${primaryColor || '#DB5B9A'}, ${secondaryColor || '#E5A46E'})`
   }
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     const hour = new Date().getHours()
@@ -173,12 +181,58 @@ export default function ClientDashboardIndex() {
     loadDashboardData()
   }, [user])
 
-  if (loading) {
+  // Mostrar skeleton mientras se monta o carga
+  if (!isMounted || loading || !settings) {
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 border-4 rounded-full animate-spin" style={{ borderColor: `${settings?.primary_color || '#DB5B9A'}40`, borderTopColor: settings?.primary_color || '#DB5B9A' }} />
-          <Sparkles className="w-5 h-5 absolute animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+      <div className="max-w-5xl mx-auto w-full px-4 py-8">
+        <div className="space-y-6 animate-pulse">
+          {/* Skeleton Hero */}
+          <div className="rounded-3xl p-[1px] bg-gradient-to-r from-pink-200 to-amber-200">
+            <div className="rounded-[23px] p-6 md:p-8 bg-white dark:bg-[#0f0c1b]">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="space-y-4 w-full md:w-auto">
+                  <div className="w-32 h-4 bg-stone-200 dark:bg-stone-700 rounded-full" />
+                  <div className="w-48 h-8 bg-stone-200 dark:bg-stone-700 rounded" />
+                  <div className="flex gap-3">
+                    <div className="w-24 h-10 bg-stone-200 dark:bg-stone-700 rounded-xl" />
+                    <div className="w-24 h-10 bg-stone-200 dark:bg-stone-700 rounded-xl" />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-24 h-12 bg-stone-200 dark:bg-stone-700 rounded-xl" />
+                  <div className="w-32 h-12 bg-stone-200 dark:bg-stone-700 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[1,2,3,4].map((i) => (
+              <div key={i} className="rounded-2xl p-3 bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-stone-200 dark:bg-stone-700" />
+                  <div>
+                    <div className="w-12 h-3 bg-stone-200 dark:bg-stone-700 rounded" />
+                    <div className="w-8 h-4 bg-stone-200 dark:bg-stone-700 rounded mt-1" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Skeleton Citas */}
+          <div className="rounded-3xl p-6 bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950">
+            <div className="flex justify-between items-center mb-6">
+              <div className="w-32 h-6 bg-stone-200 dark:bg-stone-700 rounded" />
+              <div className="w-16 h-6 bg-stone-200 dark:bg-stone-700 rounded" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1,2].map((i) => (
+                <div key={i} className="h-20 bg-stone-200 dark:bg-stone-700 rounded-2xl" />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -197,15 +251,15 @@ export default function ClientDashboardIndex() {
         <div className={`relative z-10 rounded-[23px] p-6 md:p-8 transition-colors ${
           isDark ? 'bg-[#0f0c1b]' : 'bg-white'
         }`}>
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-56 h-56 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10` }} />
-          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${settings?.secondary_color || '#E5A46E'}10` }} />
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-56 h-56 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${primaryColor}10` }} />
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${secondaryColor}10` }} />
 
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-4 w-full md:w-auto">
               <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full backdrop-blur-sm border ${
                 isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-pink-50/50 border-pink-100/60'
               }`}>
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+                <Sparkles className="w-3.5 h-3.5 animate-pulse" style={{ color: primaryColor }} />
                 <span className={`text-[10px] uppercase tracking-widest font-extrabold ${
                   isDark ? 'text-pink-300' : 'text-stone-600'
                 }`}>
@@ -217,7 +271,6 @@ export default function ClientDashboardIndex() {
                 <span className={isDark ? 'text-white' : 'text-stone-900'}>
                   Hola,{' '}
                 </span>
-                {/* ✅ Nombre SIN fondo, solo texto con gradiente */}
                 <span 
                   className="font-serif italic font-normal bg-clip-text text-transparent"
                   style={brandGradient}
@@ -233,7 +286,7 @@ export default function ClientDashboardIndex() {
                 }`}>
                   <p className="text-2xl font-black tracking-tight flex items-center gap-1.5">
                     <span className={isDark ? 'text-white' : 'text-stone-900'}>{puntosGlow}</span>
-                    <Star className="w-3.5 h-3.5" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+                    <Star className="w-3.5 h-3.5" style={{ color: primaryColor }} />
                   </p>
                   <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${
                     isDark ? 'text-pink-400' : 'text-stone-500'
@@ -246,7 +299,7 @@ export default function ClientDashboardIndex() {
                 }`}>
                   <p className="text-2xl font-black tracking-tight flex items-center gap-1.5">
                     <span className={isDark ? 'text-white' : 'text-stone-900'}>{puntosHair}</span>
-                    <Star className="w-3.5 h-3.5" style={{ color: settings?.secondary_color || '#E5A46E' }} />
+                    <Star className="w-3.5 h-3.5" style={{ color: secondaryColor }} />
                   </p>
                   <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${
                     isDark ? 'text-amber-400' : 'text-stone-500'
@@ -268,7 +321,7 @@ export default function ClientDashboardIndex() {
                     : 'bg-stone-900 text-white hover:bg-stone-800 border-stone-800'
                 }`}
               >
-                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} style={{ color: settings?.primary_color || '#DB5B9A' }} /> 
+                <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} style={{ color: primaryColor }} /> 
                 Sincronizar
               </button>
 
@@ -279,12 +332,12 @@ export default function ClientDashboardIndex() {
                     ? 'bg-white text-stone-900 border-stone-100 hover:shadow-pink-500/20' 
                     : 'bg-stone-900 text-white border-stone-800 hover:shadow-pink-500/30'
                 }`}
-                style={isDark ? {} : { backgroundColor: settings?.primary_color || '#DB5B9A', borderColor: settings?.primary_color || '#DB5B9A' }}
+                style={isDark ? {} : { backgroundColor: primaryColor, borderColor: primaryColor }}
               >
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
                 <span className="relative flex h-2 w-2 flex-shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
-                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: primaryColor }} />
+                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: primaryColor }} />
                 </span>
                 <Calendar className="w-4 h-4 transition-transform group-hover:rotate-12 duration-300" />
                 <span>Agendar Cita</span>
@@ -305,8 +358,8 @@ export default function ClientDashboardIndex() {
         ].map((kpi, i) => (
           <div key={i} className={`rounded-2xl p-3 shadow-sm border ${
             isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
-          } flex items-center gap-3 transition-all hover:-translate-y-0.5 hover:shadow-lg`} style={{ boxShadow: `0 4px 12px ${settings?.primary_color || '#DB5B9A'}10` }}>
-            <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
+          } flex items-center gap-3 transition-all hover:-translate-y-0.5 hover:shadow-lg`} style={{ boxShadow: `0 4px 12px ${primaryColor}10` }}>
+            <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
               <kpi.icon className="w-4 h-4" />
             </div>
             <div>
@@ -317,7 +370,7 @@ export default function ClientDashboardIndex() {
         ))}
       </div>
 
-      {/* 📅 PRÓXIMAS CITAS - DISEÑO PREMIUM */}
+      {/* 📅 PRÓXIMAS CITAS */}
       <div className={`rounded-3xl border shadow-lg overflow-hidden ${
         isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
       }`}>
@@ -325,7 +378,7 @@ export default function ClientDashboardIndex() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-black tracking-tight">
               <span className={isDark ? 'text-white' : 'text-stone-900'}>Próximos </span>
-              <span className="font-serif italic font-normal" style={{ color: settings?.primary_color || '#DB5B9A' }}>Turnos</span>
+              <span className="font-serif italic font-normal" style={{ color: primaryColor }}>Turnos</span>
             </h2>
             <span className={`text-xs font-mono px-3 py-1 rounded-full font-bold border ${
               isDark ? 'bg-[#0f0c1b] text-pink-400 border-fuchsia-950' : 'bg-pink-50 text-pink-600 border-pink-100/60'
@@ -338,7 +391,7 @@ export default function ClientDashboardIndex() {
             <div className={`text-center py-12 border-2 border-dashed rounded-2xl ${
               isDark ? 'border-fuchsia-950' : 'border-pink-100/60'
             }`}>
-              <Clock className="w-8 h-8 mx-auto mb-3" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+              <Clock className="w-8 h-8 mx-auto mb-3" style={{ color: primaryColor }} />
               <p className={`text-sm font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                 Aún no tienes citas programadas
               </p>
@@ -362,7 +415,7 @@ export default function ClientDashboardIndex() {
                     <p className={`text-xs font-bold flex items-center gap-1.5 ${
                       isDark ? 'text-stone-400' : 'text-stone-500'
                     }`}>
-                      <Calendar className="w-3 h-3" style={{ color: settings?.primary_color || '#DB5B9A' }} /> 
+                      <Calendar className="w-3 h-3" style={{ color: primaryColor }} /> 
                       {cita.date} • {cita.time} hs
                     </p>
                   </div>
@@ -389,10 +442,6 @@ export default function ClientDashboardIndex() {
         <div className={`rounded-3xl border shadow-lg p-6 ${
           isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
         }`}>
-          <h3 className="text-sm font-black tracking-tight mb-4 flex items-center gap-2">
-            <Award className="w-4 h-4" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-            <span className={isDark ? 'text-white' : 'text-stone-900'}>Tus Logros</span>
-          </h3>
           <InsigniasLogros 
             citas={citas.length} 
             serviciosUnicos={serviciosUnicos} 
@@ -406,7 +455,7 @@ export default function ClientDashboardIndex() {
           isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
         }`}>
           <h3 className="text-sm font-black tracking-tight mb-4 flex items-center gap-2">
-            <Gem className="w-4 h-4" style={{ color: settings?.secondary_color || '#E5A46E' }} />
+            <Gem className="w-4 h-4" style={{ color: secondaryColor }} />
             <span className={isDark ? 'text-white' : 'text-stone-900'}>Misiones Diarias</span>
           </h3>
           <MisionesDiarias />
@@ -427,7 +476,7 @@ export default function ClientDashboardIndex() {
               <div>
                 <h3 className="text-lg font-black tracking-tight">
                   <span className={isDark ? 'text-white' : 'text-stone-900'}>¿Te sientes con </span>
-                  <span className="font-serif italic font-normal" style={{ color: settings?.primary_color || '#DB5B9A' }}>suerte</span>
+                  <span className="font-serif italic font-normal" style={{ color: primaryColor }}>suerte</span>
                   <span className={isDark ? 'text-white' : 'text-stone-900'}> hoy?</span>
                 </h3>
                 <p className={`text-xs font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
