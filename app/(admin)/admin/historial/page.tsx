@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { 
   History, ShoppingBag, CheckCircle2, Clock, Search,
-  ArrowRight, User, GraduationCap, DollarSign
+  ArrowRight, User, GraduationCap, DollarSign, Sparkles
 } from 'lucide-react'
 
 interface HistorialItem {
@@ -25,11 +25,11 @@ const TYPE_CONFIG: Record<string, {
   glow: string;
   icon: React.ComponentType<{ className?: string }> 
 }> = {
-  cita: { label: 'Cita', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/[0.08] dark:bg-emerald-500/[0.04]', border: 'border-emerald-500/20 hover:border-emerald-500/40', glow: 'hover:shadow-emerald-500/[0.03]', icon: CheckCircle2 },
-  venta: { label: 'Venta', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/[0.08] dark:bg-violet-500/[0.04]', border: 'border-violet-500/20 hover:border-violet-500/40', glow: 'hover:shadow-violet-500/[0.03]', icon: ShoppingBag },
+  cita: { label: 'Cita', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/[0.08] dark:bg-pink-500/[0.04]', border: 'border-pink-500/20 hover:border-pink-500/40', glow: 'hover:shadow-pink-500/[0.03]', icon: CheckCircle2 },
+  venta: { label: 'Venta', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/[0.08] dark:bg-rose-500/[0.04]', border: 'border-rose-500/20 hover:border-rose-500/40', glow: 'hover:shadow-rose-500/[0.03]', icon: ShoppingBag },
   curso: { label: 'Curso', color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-500/[0.08] dark:bg-fuchsia-500/[0.04]', border: 'border-fuchsia-500/20 hover:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/[0.03]', icon: GraduationCap },
-  cliente: { label: 'Cliente', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/[0.08] dark:bg-cyan-500/[0.04]', border: 'border-cyan-500/20 hover:border-cyan-500/40', glow: 'hover:shadow-cyan-500/[0.03]', icon: User },
-  pago: { label: 'Pago', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/[0.08] dark:bg-amber-500/[0.04]', border: 'border-amber-500/20 hover:border-amber-500/40', glow: 'hover:shadow-amber-500/[0.03]', icon: DollarSign }
+  cliente: { label: 'Cliente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/[0.08] dark:bg-amber-500/[0.04]', border: 'border-amber-500/20 hover:border-amber-500/40', glow: 'hover:shadow-amber-500/[0.03]', icon: User },
+  pago: { label: 'Pago', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/[0.08] dark:bg-emerald-500/[0.04]', border: 'border-emerald-500/20 hover:border-emerald-500/40', glow: 'hover:shadow-emerald-500/[0.03]', icon: DollarSign }
 }
 
 export default function HistorialPage() {
@@ -68,7 +68,7 @@ export default function HistorialPage() {
             id: c.id,
             type: 'cita',
             title: `Cita completada: ${c.clients?.name || 'Cliente'}`,
-            description: `Servicio: ${c.services?.name || 'N/A'} — Módulo horario: ${c.time}`,
+            description: `Servicio: ${c.services?.name || 'N/A'} — ${c.time}`,
             date: `${c.date}T12:00:00`,
             amount: c.total_price || 0,
             status: 'Completada'
@@ -89,8 +89,8 @@ export default function HistorialPage() {
           items.push({
             id: v.id,
             type: 'venta',
-            title: `Venta procesada con éxito`,
-            description: `Cierre de caja y salida de inventario`,
+            title: `Venta realizada con éxito`,
+            description: `Cierre de caja e inventario saliente`,
             date: v.created_at,
             amount: v.total || 0,
             status: 'Completada'
@@ -111,8 +111,8 @@ export default function HistorialPage() {
           items.push({
             id: c.id,
             type: 'curso',
-            title: `Curso dictado: ${c.title}`,
-            description: `Instructor: ${c.instructor} • Graduados: ${c.enrolled} alumnos`,
+            title: `Curso finalizado: ${c.title}`,
+            description: `Instructor: ${c.instructor} • ${c.enrolled} alumnos graduados`,
             date: c.start_date,
             amount: c.price || 0,
             status: 'Finalizado'
@@ -132,8 +132,8 @@ export default function HistorialPage() {
           items.push({
             id: c.id,
             type: 'cliente',
-            title: `Alta de nuevo cliente: ${c.name}`,
-            description: `Contacto: ${c.email || 'Sin Correo'} • Tel: ${c.phone || 'Sin Teléfono'}`,
+            title: `Nueva clienta registrada: ${c.name}`,
+            description: `Email: ${c.email || 'N/A'} • Tel: ${c.phone || 'N/A'}`,
             date: c.created_at,
             amount: 0,
             status: 'Registrado'
@@ -160,47 +160,59 @@ export default function HistorialPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center font-mono text-xs tracking-[0.25em] text-amber-500/80 gap-3">
-        <div className="w-5 h-5 border border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-        SYNC_ACTIVITY_LOGS...
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="text-pink-600/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Auditoría...</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto px-4 sm:px-0">
+    <div className="space-y-6 p-1">
       
-      {/* HEADER DE LUXE - AMBER BORDER & RADIAL GLOW */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/[0.06] via-card to-card border border-amber-500/20 p-6 shadow-xl shadow-amber-500/[0.01]">
-        <div className="absolute top-0 right-0 w-56 h-56 bg-amber-500/[0.04] rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-mono font-bold">📜 Auditoría General</p>
-            <h2 className="text-2xl font-serif italic text-foreground tracking-wide">Historial del Sistema</h2>
-            <p className="text-xs text-mutedForeground">Línea de tiempo consolidada con los flujos operativos de la academia y el salón.</p>
+      {/* BIENVENIDA / HEADER CON EL MISMO GLOW Y DEGRADADO CREATIVO */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
+        <div className="relative z-10 rounded-[23px] bg-[#fffdfd] dark:bg-[#0f0c1b] p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-pink-500 dark:text-pink-400 font-bold font-mono">📜 Registro Operativo General</p>
+              <h2 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
+                Historial del Sistema
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5">Auditoría cronológica de eventos, facturación y altas en Fresh Nails.</p>
+            </div>
           </div>
+
           <button 
             onClick={cargarHistorial}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-amber-500/20 hover:border-amber-500/40 text-amber-700 dark:text-amber-400 text-xs font-mono font-medium transition-all duration-300 shadow-md hover:shadow-amber-500/[0.05] self-start sm:self-auto active:scale-95"
+            className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 text-pink-600 dark:text-pink-400 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold self-start md:self-auto"
           >
             <History className="w-3.5 h-3.5" />
-            SINC_LOGS
+            Actualizar Registro
           </button>
         </div>
       </div>
 
-      {/* METRICAS AVANZADAS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* MÉTRICAS VIVAS COHERENTES */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {(['todos', 'cita', 'venta', 'cliente'] as const).map((type) => {
           const count = type === 'todos' ? historial.length : historial.filter(i => i.type === type).length
           const label = type === 'todos' ? 'Eventos Totales' : (TYPE_CONFIG[type]?.label + 's')
-          const colorClass = type === 'todos' ? 'text-amber-600 dark:text-amber-400' : TYPE_CONFIG[type].color
+          const colorGradient = type === 'todos' 
+            ? 'from-pink-600 to-rose-600 dark:from-pink-400 dark:to-pink-100' 
+            : type === 'cita' ? 'from-pink-500 to-pink-600'
+            : type === 'venta' ? 'from-rose-500 to-rose-600'
+            : 'from-amber-500 to-amber-600'
 
           return (
-            <div key={type} className="relative overflow-hidden rounded-xl bg-card border border-border/80 p-4 transition-all duration-300 hover:border-amber-500/20 hover:shadow-md hover:shadow-amber-500/[0.01] group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-border group-hover:bg-amber-500/20 transition-all duration-300" />
-              <p className="text-[9px] text-mutedForeground font-mono uppercase tracking-[0.15em] pl-1">{label}</p>
-              <span className={`text-2xl font-mono font-bold block mt-1 pl-1 tracking-tight ${colorClass}`}>
+            <div key={type} className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-pink-500/5 hover:-translate-y-0.5 transition-all group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.03] to-transparent rounded-bl-full" />
+              <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">{label}</p>
+              <span className={`text-3xl font-mono font-bold block bg-gradient-to-r ${colorGradient} bg-clip-text text-transparent mt-1`}>
                 {count.toString().padStart(2, '0')}
               </span>
             </div>
@@ -208,27 +220,27 @@ export default function HistorialPage() {
         })}
       </div>
 
-      {/* ÁREA DE CONTROLES Y FILTRADO */}
+      {/* FILTROS Y BUSCADOR */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex items-center bg-card border border-border rounded-xl px-3.5 py-2.5 flex-1 focus-within:border-amber-500/30 transition-all duration-300 shadow-sm">
-          <Search className="w-4 h-4 text-mutedForeground/60 shrink-0" />
+        <div className="flex items-center bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 rounded-xl px-3.5 py-2.5 flex-1 focus-within:border-pink-500/30 transition-all duration-300 shadow-sm">
+          <Search className="w-4 h-4 text-stone-400 shrink-0" />
           <input 
             type="text" 
-            placeholder="Filtrar por registros, nombres o referencias..." 
+            placeholder="Filtrar eventos por cliente, descripción..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-foreground placeholder-mutedForeground/50 w-full ml-3 font-sans"
+            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder-stone-400 w-full ml-3 font-sans"
           />
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-border/40 md:border-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {['todos', 'cita', 'venta', 'curso', 'cliente'].map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-3.5 py-2 rounded-xl text-[10px] font-mono font-medium border transition-all duration-300 whitespace-nowrap ${
+              className={`px-3.5 py-2 rounded-xl text-[10px] font-mono font-bold transition-all duration-300 whitespace-nowrap ${
                 filterType === type
-                  ? 'bg-amber-500/[0.08] border-amber-500/40 text-amber-700 dark:text-amber-400 shadow-sm shadow-amber-500/[0.03]'
-                  : 'bg-card border-border text-mutedForeground hover:text-foreground hover:border-border-strong'
+                  ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
+                  : 'bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-pink-200'
               }`}
             >
               {type === 'todos' ? 'VER_TODO' : TYPE_CONFIG[type]?.label.toUpperCase()}
@@ -237,17 +249,17 @@ export default function HistorialPage() {
         </div>
       </div>
 
-      {/* TIMELINE DE HISTORIAL RE-DISEÑADO */}
-      <div className="relative space-y-4 pl-2 sm:pl-6 before:absolute before:left-[18px] sm:before:left-[34px] before:top-3 before:bottom-3 before:w-[1px] before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
+      {/* LISTA LÍNEA DE TIEMPO CON GLOWS INDIVIDUALES */}
+      <div className="relative space-y-3 pl-2 sm:pl-6 before:absolute before:left-[18px] sm:before:left-[34px] before:top-3 before:bottom-3 before:w-[1px] before:bg-gradient-to-b before:from-pink-200 dark:before:from-fuchsia-950 before:to-transparent">
         {error && (
-          <div className="text-center py-4 border border-rose-500/20 bg-rose-500/[0.02] text-rose-600 dark:text-rose-400 rounded-xl font-mono text-xs shadow-inner">
-            EXEC_ERROR: {error}
+          <div className="text-center py-4 border border-rose-500/20 bg-rose-500/[0.02] text-rose-600 dark:text-rose-400 rounded-xl font-mono text-xs">
+            ERROR_LOG: {error}
           </div>
         )}
 
         {filtrados.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-border rounded-xl font-mono text-mutedForeground/60 text-xs tracking-wide bg-card/40">
-            NO_LOGS_FOUND: Criterio sin coincidencias en el bloque activo.
+          <div className="text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl font-mono text-stone-400 text-xs">
+            No se encontraron registros en este segmento.
           </div>
         ) : (
           filtrados.map((item, index) => {
@@ -257,35 +269,35 @@ export default function HistorialPage() {
             return (
               <div 
                 key={`${item.id}-${index}`} 
-                className={`relative bg-card border border-border/90 rounded-xl p-4 transition-all duration-300 hover:-translate-y-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm ${config.glow} hover:border-amber-500/20 group`}
+                className={`relative bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950/70 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs ${config.glow} hover:border-pink-300 group`}
               >
-                {/* Indicador de Línea de Tiempo Acoplado */}
-                <div className="absolute left-[-18px] sm:left-[-34px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-border border border-card group-hover:bg-amber-500 group-hover:scale-125 transition-all duration-300 z-10 hidden sm:block" />
+                {/* Timeline Node Ring */}
+                <div className="absolute left-[-18px] sm:left-[-34px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-pink-100 dark:bg-fuchsia-950 border border-[#fffdfd] dark:border-[#0f0c1b] group-hover:bg-pink-500 group-hover:scale-125 transition-all duration-300 hidden sm:block" />
 
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  {/* Avatar/Contenedor del Icono Estilizado */}
-                  <div className={`w-9 h-9 rounded-xl ${config.bg} border ${config.border.split(' ')[0]} flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-inner`}>
-                    <span className={config.color}><IconComponent className="w-4 h-4" /></span>
+                <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                  {/* Icon Wrapper matching Dashboard Card Actions */}
+                  <div className={`w-9 h-9 rounded-xl ${config.bg} border ${config.border.split(' ')[0]} flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105`}>
+                    <span className={config.color}><IconComponent className="w-4.5 h-4.5" /></span>
                   </div>
                   
-                  {/* Textos y Etiquetas */}
-                  <div className="flex-1 min-w-0 space-y-1">
+                  {/* Info Block */}
+                  <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <h4 className="text-xs font-semibold text-foreground tracking-wide truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{item.title}</h4>
+                      <h4 className="text-xs font-bold text-stone-800 dark:text-pink-100 truncate group-hover:text-pink-500 transition-colors">{item.title}</h4>
                       <span className={`text-[8px] font-mono font-bold px-2 py-0.5 rounded-md border ${config.bg} ${config.color} ${config.border} uppercase tracking-wider`}>
                         {config.label}
                       </span>
                     </div>
-                    <p className="text-xs text-mutedForeground truncate font-sans tracking-normal">{item.description}</p>
+                    <p className="text-xs text-stone-500 dark:text-pink-100/60 truncate font-sans">{item.description}</p>
                     
-                    {/* Timestamp Metadatos */}
-                    <div className="flex items-center gap-4 pt-1.5 text-[10px] text-mutedForeground font-mono">
-                      <span className="flex items-center gap-1.5 bg-muted/60 px-2 py-0.5 rounded-md border border-border/40">
-                        <Clock className="w-3 h-3 text-mutedForeground/60" />
+                    {/* Meta tags */}
+                    <div className="flex items-center gap-3 pt-1 text-[10px] text-stone-400 dark:text-stone-500 font-mono">
+                      <span className="flex items-center gap-1 bg-pink-50/50 dark:bg-fuchsia-950/20 px-1.5 py-0.5 rounded border border-pink-100/30 dark:border-fuchsia-950/40">
+                        <Clock className="w-3 h-3 text-stone-400" />
                         {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                       {item.amount !== undefined && item.amount > 0 && (
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02] border border-emerald-500/10 px-2 py-0.5 rounded-md">
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.04] px-1.5 py-0.5 rounded border border-emerald-500/10">
                           ${item.amount.toLocaleString()}
                         </span>
                       )}
@@ -293,13 +305,13 @@ export default function HistorialPage() {
                   </div>
                 </div>
 
-                {/* Acciones y Estatus Final */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 border-t border-border/40 sm:border-none pt-3 sm:pt-0">
-                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md border bg-muted/50 border-border text-mutedForeground tracking-wider uppercase">
+                {/* Sub-state Status Badge & Action */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 border-t border-pink-50 dark:border-fuchsia-950/40 pt-2.5 sm:pt-0">
+                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-pink-50/50 dark:bg-fuchsia-950/30 border border-pink-100/40 dark:border-fuchsia-950 text-stone-500 dark:text-pink-300 uppercase tracking-wider">
                     {item.status}
                   </span>
-                  <button className="p-1.5 rounded-xl bg-muted/40 border border-border/60 hover:border-amber-500/30 text-mutedForeground hover:text-amber-500 transition-all duration-300 shadow-sm">
-                    <ArrowRight className="w-4 h-4" />
+                  <button className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 hover:border-pink-300 text-stone-400 hover:text-pink-500 transition-all duration-300">
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -307,6 +319,7 @@ export default function HistorialPage() {
           })
         )}
       </div>
+
     </div>
   )
 }
