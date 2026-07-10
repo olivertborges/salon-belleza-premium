@@ -215,7 +215,6 @@ export default function AuthMobilDefinitivo() {
         initial={glowPulse.initial}
       />
       
-      {/* Iconos flotantes decorativos */}
       <motion.div className="absolute top-10 left-6 text-pink-300/20 dark:text-pink-400/10" animate={floatingIcons.animate}>
         <Sparkles className="w-6 h-6" />
       </motion.div>
@@ -274,10 +273,8 @@ export default function AuthMobilDefinitivo() {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20 dark:from-[#0a0908] dark:via-[#0f0c1b] dark:to-[#0a0908] flex items-center justify-center p-4 relative overflow-hidden font-sans">
       
-      {/* DECORACIONES */}
       <BackgroundDecorations />
 
-      {/* LÍNEA DECORATIVA SUPERIOR */}
       <motion.div 
         className="absolute top-0 left-0 right-0 h-[3px]"
         style={{ background: 'linear-gradient(90deg, #ec4899, #f59e0b, #a78bfa, #ec4899)' }}
@@ -295,7 +292,7 @@ export default function AuthMobilDefinitivo() {
         className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
       >
 
-        {/* ===== HEADER CON ANIMACIÓN ===== */}
+        {/* HEADER */}
         <motion.div variants={itemVariants} className="text-center mb-6 relative">
           <motion.div 
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-white shadow-xl shadow-pink-500/25 mb-3"
@@ -326,12 +323,12 @@ export default function AuthMobilDefinitivo() {
           </motion.p>
         </motion.div>
 
-        {/* ===== TABS ===== */}
+        {/* TABS */}
         <motion.div variants={itemVariants}>
           <Tabs />
         </motion.div>
 
-        {/* ===== MENSAJES CON ANIMACIÓN ===== */}
+        {/* MENSAJES */}
         <AnimatePresence mode="wait">
           {error && (
             <motion.div 
@@ -357,23 +354,20 @@ export default function AuthMobilDefinitivo() {
           )}
         </AnimatePresence>
 
-        {/* ===== CONTENIDO CON ANIMACIÓN ===== */}
+        {/* CONTENIDO CON ANIMACIÓN Y CLAVE ÚNICA PARA CADA TAB */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeTab}
+            key={`${activeTab}-content`}
             initial={{ opacity: 0, x: activeTab === 'login' ? -20 : 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: activeTab === 'login' ? 20 : -20 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
 
-            {/* ===== LOGIN ===== */}
+            {/* LOGIN */}
             {activeTab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-5">
-                <motion.div 
-                  variants={itemVariants}
-                  className="relative group"
-                >
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors duration-300">
                       <Mail className="w-4 h-4" />
@@ -387,16 +381,11 @@ export default function AuthMobilDefinitivo() {
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
                     />
-                    <motion.div 
-                      className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left"
-                    />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div 
-                  variants={itemVariants}
-                  className="relative group"
-                >
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors duration-300">
@@ -428,14 +417,11 @@ export default function AuthMobilDefinitivo() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <motion.div 
-                      className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left"
-                    />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.button
-                  variants={itemVariants}
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
@@ -459,12 +445,10 @@ export default function AuthMobilDefinitivo() {
                       </>
                     )}
                   </span>
-                  <motion.div 
-                    className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
-                  />
-                </motion.button>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </button>
 
-                <motion.div variants={itemVariants} className="text-center pt-4">
+                <div className="text-center pt-4">
                   <p className="text-xs text-stone-400 dark:text-stone-500">
                     ¿No tienes cuenta VIP? 
                     <button
@@ -475,14 +459,14 @@ export default function AuthMobilDefinitivo() {
                       Regístrate
                     </button>
                   </p>
-                </motion.div>
+                </div>
               </form>
             )}
 
-            {/* ===== REGISTER ===== */}
+            {/* REGISTER */}
             {activeTab === 'register' && (
               <form onSubmit={handleRegister} className="space-y-4">
-                <motion.div variants={itemVariants} className="relative group">
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
                       <User className="w-4 h-4" />
@@ -496,11 +480,11 @@ export default function AuthMobilDefinitivo() {
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
                     />
-                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div variants={itemVariants} className="relative group">
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
                       <Mail className="w-4 h-4" />
@@ -514,11 +498,11 @@ export default function AuthMobilDefinitivo() {
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
                     />
-                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div variants={itemVariants} className="relative group">
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
                       <Lock className="w-4 h-4" />
@@ -541,15 +525,12 @@ export default function AuthMobilDefinitivo() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
                 {referralCode && (
-                  <motion.div 
-                    variants={itemVariants}
-                    className="bg-gradient-to-r from-pink-500/10 to-amber-500/10 p-4 rounded-2xl border border-pink-200/30 dark:border-pink-900/30"
-                  >
+                  <div className="bg-gradient-to-r from-pink-500/10 to-amber-500/10 p-4 rounded-2xl border border-pink-200/30 dark:border-pink-900/30">
                     <div className="flex items-center gap-3">
                       <Gift className="w-5 h-5 text-pink-500" />
                       <div>
@@ -561,11 +542,10 @@ export default function AuthMobilDefinitivo() {
                         </p>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
 
-                <motion.button
-                  variants={itemVariants}
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
@@ -589,10 +569,10 @@ export default function AuthMobilDefinitivo() {
                       </>
                     )}
                   </span>
-                  <motion.div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                </motion.button>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </button>
 
-                <motion.div variants={itemVariants} className="text-center pt-4">
+                <div className="text-center pt-4">
                   <p className="text-xs text-stone-400 dark:text-stone-500">
                     ¿Ya tienes cuenta? 
                     <button
@@ -603,23 +583,23 @@ export default function AuthMobilDefinitivo() {
                       Ingresar
                     </button>
                   </p>
-                </motion.div>
+                </div>
               </form>
             )}
 
-            {/* ===== RECOVER ===== */}
+            {/* RECOVER */}
             {activeTab === 'recover' && (
               <form onSubmit={handleRecover} className="space-y-5">
-                <motion.div variants={itemVariants} className="text-center mb-2">
+                <div className="text-center mb-2">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 mb-3">
                     <Shield className="w-7 h-7" />
                   </div>
                   <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                     Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso.
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div variants={itemVariants} className="relative group">
+                <div className="relative group">
                   <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
                     <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
                       <Mail className="w-4 h-4" />
@@ -633,12 +613,11 @@ export default function AuthMobilDefinitivo() {
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none"
                       required
                     />
-                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.button
-                  variants={itemVariants}
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40"
@@ -662,25 +641,24 @@ export default function AuthMobilDefinitivo() {
                       </>
                     )}
                   </span>
-                  <motion.div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                </motion.button>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </button>
 
-                <motion.button
-                  variants={itemVariants}
+                <button
                   type="button"
                   onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
                   className="w-full text-center text-xs font-mono text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-white uppercase tracking-widest transition-colors focus:outline-none flex items-center justify-center gap-2"
                 >
                   <ArrowRight className="w-3.5 h-3.5 rotate-180" />
                   Volver al inicio
-                </motion.button>
+                </button>
               </form>
             )}
 
           </motion.div>
         </AnimatePresence>
 
-        {/* ===== FOOTER DECORATIVO ===== */}
+        {/* FOOTER DECORATIVO */}
         <motion.div 
           variants={itemVariants}
           className="mt-6 pt-4 border-t border-pink-100/30 dark:border-fuchsia-950/30 text-center"
