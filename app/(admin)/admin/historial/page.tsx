@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import { 
   History, ShoppingBag, CheckCircle2, Clock, Search,
-  ArrowRight, User, GraduationCap, DollarSign, Sparkles
+  ArrowRight, User, GraduationCap, DollarSign, Sparkles,
+  RefreshCw, X, TrendingUp, Calendar, Users, Package
 } from 'lucide-react'
 
 interface HistorialItem {
@@ -23,32 +24,40 @@ const TYPE_CONFIG: Record<string, {
   color: string; 
   bg: string; 
   border: string;
-  glow: string;
   icon: React.ComponentType<{ className?: string }> 
 }> = {
-  cita: { label: 'Cita', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/[0.08] dark:bg-pink-500/[0.04]', border: 'border-pink-500/20 hover:border-pink-500/40', glow: 'hover:shadow-pink-500/[0.03]', icon: CheckCircle2 },
-  venta: { label: 'Venta', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/[0.08] dark:bg-rose-500/[0.04]', border: 'border-rose-500/20 hover:border-rose-500/40', glow: 'hover:shadow-rose-500/[0.03]', icon: ShoppingBag },
-  curso: { label: 'Curso', color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-500/[0.08] dark:bg-fuchsia-500/[0.04]', border: 'border-fuchsia-500/20 hover:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/[0.03]', icon: GraduationCap },
-  cliente: { label: 'Cliente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/[0.08] dark:bg-amber-500/[0.04]', border: 'border-amber-500/20 hover:border-amber-500/40', glow: 'hover:shadow-amber-500/[0.03]', icon: User },
-  pago: { label: 'Pago', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/[0.08] dark:bg-emerald-500/[0.04]', border: 'border-emerald-500/20 hover:border-emerald-500/40', glow: 'hover:shadow-emerald-500/[0.03]', icon: DollarSign }
+  cita: { label: 'Cita', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/[0.08] dark:bg-pink-500/[0.04]', border: 'border-pink-500/20 hover:border-pink-500/40', icon: CheckCircle2 },
+  venta: { label: 'Venta', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500/[0.08] dark:bg-rose-500/[0.04]', border: 'border-rose-500/20 hover:border-rose-500/40', icon: ShoppingBag },
+  curso: { label: 'Curso', color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-500/[0.08] dark:bg-fuchsia-500/[0.04]', border: 'border-fuchsia-500/20 hover:border-fuchsia-500/40', icon: GraduationCap },
+  cliente: { label: 'Cliente', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/[0.08] dark:bg-amber-500/[0.04]', border: 'border-amber-500/20 hover:border-amber-500/40', icon: User },
+  pago: { label: 'Pago', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/[0.08] dark:bg-emerald-500/[0.04]', border: 'border-emerald-500/20 hover:border-emerald-500/40', icon: DollarSign }
 }
 
 export default function HistorialPage() {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { settings } = useSettings()
 
   const [historial, setHistorial] = useState<HistorialItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('todos')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const brandGradient = {
+    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+  }
 
   useEffect(() => {
     cargarHistorial()
   }, [])
 
-  const cargarHistorial = async () => {
-    setLoading(true)
+  const cargarHistorial = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
     setError(null)
 
     try {
@@ -147,12 +156,20 @@ export default function HistorialPage() {
 
       items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       setHistorial(items)
+      setSuccess('Historial actualizado correctamente')
+      setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
       console.error('Error cargando historial:', err)
       setError(err.message || 'Error de sincronización con la base de datos')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+
+  const handleRefresh = () => {
+    cargarHistorial(true)
   }
 
   const filtrados = historial.filter(item => {
@@ -162,105 +179,161 @@ export default function HistorialPage() {
     return matchSearch && matchType
   })
 
+  // Estadísticas para KPIs
+  const totalEventos = historial.length
+  const totalCitas = historial.filter(i => i.type === 'cita').length
+  const totalVentas = historial.filter(i => i.type === 'venta').length
+  const totalClientes = historial.filter(i => i.type === 'cliente').length
+  const totalIngresos = historial
+    .filter(i => i.amount && i.amount > 0)
+    .reduce((sum, i) => sum + (i.amount || 0), 0)
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="text-pink-600/80 dark:text-pink-400/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Auditoría...</p>
+        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: settings?.primary_color || '#DB5B9A' }}></div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+          Sincronizando Auditoría...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className={`space-y-6 p-1 max-w-6xl mx-auto ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
+    <div className="space-y-6 p-1 max-w-6xl mx-auto">
 
-      {/* BIENVENIDA / HEADER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
-        <div className={`relative z-10 rounded-[23px] p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
-          <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
-              <Sparkles className="w-6 h-6" />
+      {/* HEADER CON GRADIENTE CONFIGURABLE */}
+      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
+        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <History className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-pink-500 dark:text-pink-400 font-bold font-mono">📜 Registro Operativo General</p>
-              <h2 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+                📜 {settings?.business_name || 'Salón VIP'}
+              </p>
+              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
                 Historial del Sistema
               </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-200/60 mt-0.5">Auditoría cronológica de eventos, facturación y altas en Fresh Nails.</p>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
+                Auditoría cronológica de eventos, facturación y altas en Fresh Nails.
+              </p>
             </div>
           </div>
 
-          <button 
-            onClick={cargarHistorial}
-            className={`px-3 py-2 rounded-xl border hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold self-start md:self-auto ${
-              isDark 
-                ? 'bg-zinc-800/40 text-pink-400 border-zinc-700/60 hover:border-pink-500/40' 
-                : 'bg-pink-50 text-pink-600 border-pink-100/60 hover:bg-pink-100/50'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            Actualizar Registro
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ color: settings?.primary_color || '#DB5B9A' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MÉTRICAS VIVAS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {(['todos', 'cita', 'venta', 'cliente'] as const).map((type) => {
-          const count = type === 'todos' ? historial.length : historial.filter(i => i.type === type).length
-          const label = type === 'todos' ? 'Eventos Totales' : (TYPE_CONFIG[type]?.label + 's')
-          const colorGradient = type === 'todos' 
-            ? 'from-pink-600 to-rose-600 dark:from-pink-400 dark:to-pink-100' 
-            : type === 'cita' ? 'from-pink-500 to-pink-600'
-            : type === 'venta' ? 'from-rose-500 to-rose-600'
-            : 'from-amber-500 to-amber-600'
+      {/* MENSAJES DE ERROR/SUCCESS */}
+      {error && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <X className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+        </div>
+      )}
 
-          return (
-            <div 
-              key={type} 
-              className={`rounded-2xl border p-4 shadow-sm hover:shadow-pink-500/5 hover:-translate-y-0.5 transition-all group relative overflow-hidden ${
-                isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-              }`}
-            >
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.03] to-transparent rounded-bl-full" />
-              <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">{label}</p>
-              <span className={`text-3xl font-mono font-bold block bg-gradient-to-r ${colorGradient} bg-clip-text text-transparent mt-1`}>
-                {count.toString().padStart(2, '0')}
-              </span>
-            </div>
-          )
-        })}
+      {success && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+        </div>
+      )}
+
+      {/* KPIS MODERNOS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
+            <History className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total Eventos</p>
+            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalEventos}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-pink-500/10 text-pink-500 shrink-0">
+            <Calendar className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Citas</p>
+            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalCitas}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <Package className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Ventas</p>
+            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalVentas}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Ingresos</p>
+            <h3 className="text-sm font-mono font-black text-emerald-500">${totalIngresos.toLocaleString()}</h3>
+          </div>
+        </div>
       </div>
 
       {/* FILTROS Y BUSCADOR */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className={`flex items-center border rounded-xl px-3.5 py-2.5 flex-1 transition-all duration-300 shadow-sm ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80 focus-within:border-pink-500/40' : 'bg-white border-pink-100/60 focus-within:border-pink-500/30'
-        }`}>
-          <Search className="w-4 h-4 text-stone-400 shrink-0" />
+        <div className="flex items-center gap-3 p-3 rounded-2xl border flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 transition-all duration-300">
+          <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
           <input 
             type="text" 
             placeholder="Filtrar eventos por cliente, descripción..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder-stone-400 w-full ml-3 font-sans"
+            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
           />
+          {search && (
+            <button 
+              onClick={() => setSearch('')}
+              className="p-1 hover:bg-pink-100 dark:hover:bg-fuchsia-950/50 rounded-lg transition-colors shrink-0"
+            >
+              <X className="w-4 h-4 text-stone-400" />
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {['todos', 'cita', 'venta', 'curso', 'cliente'].map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
               className={`px-3.5 py-2 rounded-xl text-[10px] font-mono font-bold transition-all duration-300 whitespace-nowrap ${
                 filterType === type
-                  ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                  : isDark
-                    ? 'bg-zinc-900 border border-zinc-800 text-stone-400 hover:text-pink-200 hover:border-zinc-700'
-                    : 'bg-white border border-pink-100/60 text-stone-500 hover:text-stone-800 hover:border-pink-200'
+                  ? 'text-white shadow-md'
+                  : 'bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-pink-100 hover:border-pink-200'
               }`}
+              style={filterType === type ? brandGradient : {}}
             >
-              {type === 'todos' ? 'VER_TODO' : TYPE_CONFIG[type]?.label.toUpperCase()}
+              {type === 'todos' ? 'VER TODO' : TYPE_CONFIG[type]?.label.toUpperCase()}
             </button>
           ))}
         </div>
@@ -268,18 +341,10 @@ export default function HistorialPage() {
 
       {/* LISTA LÍNEA DE TIEMPO */}
       <div className={`relative space-y-3 pl-2 sm:pl-6 before:absolute before:left-[18px] sm:before:left-[34px] before:top-3 before:bottom-3 before:w-[1px] before:bg-gradient-to-b ${
-        isDark ? 'before:from-zinc-800' : 'before:from-pink-100'
+        'before:from-pink-200/60 dark:before:from-fuchsia-950/60'
       } before:to-transparent`}>
-        {error && (
-          <div className="text-center py-4 border border-rose-500/20 bg-rose-500/[0.02] text-rose-600 dark:text-rose-400 rounded-xl font-mono text-xs">
-            ERROR_LOG: {error}
-          </div>
-        )}
-
         {filtrados.length === 0 ? (
-          <div className={`text-center py-12 border border-dashed rounded-2xl font-mono text-stone-400 text-xs ${
-            isDark ? 'border-zinc-800' : 'border-pink-100'
-          }`}>
+          <div className="text-center py-12 border border-dashed rounded-2xl font-mono text-stone-400 text-xs bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
             No se encontraron registros en este segmento.
           </div>
         ) : (
@@ -290,18 +355,16 @@ export default function HistorialPage() {
             return (
               <div 
                 key={`${item.id}-${index}`} 
-                className={`relative border rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm group ${config.glow} ${
-                  isDark ? 'bg-zinc-900 border-zinc-800/80 hover:border-zinc-700' : 'bg-white border-pink-100/40 hover:border-pink-300'
-                }`}
+                className={`relative border rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800`}
               >
                 {/* Timeline Node Ring */}
-                <div className={`absolute left-[-18px] sm:left-[-34px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border group-hover:bg-pink-500 group-hover:scale-125 transition-all duration-300 hidden sm:block ${
-                  isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-pink-100 border-white'
+                <div className={`absolute left-[-18px] sm:left-[-34px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border transition-all duration-300 hidden sm:block ${
+                  'bg-white dark:bg-[#130f24] border-pink-300 dark:border-fuchsia-800 group-hover:bg-pink-500 group-hover:scale-125'
                 }`} />
 
                 <div className="flex items-start gap-3.5 flex-1 min-w-0">
                   {/* Icon Wrapper */}
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105 ${config.bg} ${config.border.split(' ')[0]}`}>
+                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-105 ${config.bg} ${config.border.split(' ')[0]} bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
                     <span className={config.color}><IconComponent className="w-4 h-4" /></span>
                   </div>
 
@@ -313,13 +376,11 @@ export default function HistorialPage() {
                         {config.label}
                       </span>
                     </div>
-                    <p className="text-xs text-stone-500 dark:text-pink-200/60 truncate font-sans">{item.description}</p>
+                    <p className="text-xs text-stone-500 dark:text-pink-200/60 truncate">{item.description}</p>
 
                     {/* Meta tags */}
                     <div className="flex items-center gap-3 pt-1 text-[10px] text-stone-400 dark:text-stone-500 font-mono">
-                      <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border ${
-                        isDark ? 'bg-zinc-800/40 border-zinc-700/50' : 'bg-pink-50/50 border-pink-100/30'
-                      }`}>
+                      <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
                         <Clock className="w-3 h-3 text-stone-400" />
                         {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
@@ -333,19 +394,11 @@ export default function HistorialPage() {
                 </div>
 
                 {/* Status Badge & Action */}
-                <div className={`flex items-center justify-between sm:justify-end gap-3 border-t pt-2.5 sm:pt-0 sm:border-t-0 ${
-                  isDark ? 'border-zinc-800/60' : 'border-pink-50'
-                }`}>
-                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
-                    isDark ? 'bg-zinc-800/40 border-zinc-700 text-pink-300' : 'bg-pink-50/50 border-pink-100/40 text-stone-500'
-                  }`}>
+                <div className={`flex items-center justify-between sm:justify-end gap-3 border-t pt-2.5 sm:pt-0 sm:border-t-0 border-pink-100/60 dark:border-fuchsia-950/50`}>
+                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-pink-300`}>
                     {item.status}
                   </span>
-                  <button className={`p-1.5 rounded-xl border transition-all duration-300 ${
-                    isDark 
-                      ? 'bg-zinc-800/20 border-zinc-800 hover:border-pink-500/40 text-stone-400 hover:text-pink-400' 
-                      : 'bg-pink-50/50 border-pink-100/60 hover:border-pink-300 text-stone-400 hover:text-pink-500'
-                  }`}>
+                  <button className={`p-1.5 rounded-xl border transition-all duration-300 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400`}>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
