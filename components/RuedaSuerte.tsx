@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { X, Sparkles, Award, AlertCircle, Loader2, Gift, Star, Zap } from 'lucide-react'
+import { X, Sparkles, Award, AlertCircle, Loader2, Gift, Star, Zap, Gem, Crown, Clock } from 'lucide-react'
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -15,14 +15,14 @@ interface RuletaModalProps {
   tenantIdActivo?: string
 }
 
-// Colores Premium
+// Premios con diseño mejorado
 const PREMIOS = [
-  { id: 1, text: '50 Pts Hair', value: 50, type: 'hair', color: '#F59E0B' },
-  { id: 2, text: '10 Pts Glow', value: 10, type: 'glow', color: '#DB2777' },
-  { id: 3, text: 'Sigue Intentando', value: 0, type: 'none', color: '#292524' },
-  { id: 4, text: '100 Pts Hair', value: 100, type: 'hair', color: '#FBBF24' },
-  { id: 5, text: '50 Pts Glow', value: 50, type: 'glow', color: '#EC4899' },
-  { id: 6, text: 'Suerte Próxima', value: 0, type: 'none', color: '#44403C' },
+  { id: 0, text: '50', icon: '💇‍♀️', value: 50, type: 'hair', color: '#F59E0B', bg: 'from-amber-400 to-amber-600' },
+  { id: 1, text: '10', icon: '✨', value: 10, type: 'glow', color: '#EC4899', bg: 'from-pink-400 to-pink-600' },
+  { id: 2, text: '🎯', icon: '🎯', value: 0, type: 'none', color: '#78716C', bg: 'from-stone-400 to-stone-600' },
+  { id: 3, text: '100', icon: '👑', value: 100, type: 'hair', color: '#FBBF24', bg: 'from-yellow-400 to-yellow-600' },
+  { id: 4, text: '50', icon: '💎', value: 50, type: 'glow', color: '#DB2777', bg: 'from-rose-400 to-rose-600' },
+  { id: 5, text: '🎰', icon: '🎰', value: 0, type: 'none', color: '#A8A29E', bg: 'from-stone-300 to-stone-500' },
 ]
 
 export default function RuletaModal({ 
@@ -45,6 +45,7 @@ export default function RuletaModal({
   const [clientId, setClientId] = useState<string | null>(null)
   const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null)
   const [yaGiroHoy, setYaGiroHoy] = useState(false)
+  const [proximoGiro, setProximoGiro] = useState<string | null>(null)
 
   const [isSpinning, setIsSpinning] = useState(false)
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
@@ -52,9 +53,10 @@ export default function RuletaModal({
   const ruletaRef = useRef<HTMLDivElement>(null)
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
   }
 
+  // Verificar si ya giró hoy (desde la base de datos)
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
@@ -63,6 +65,7 @@ export default function RuletaModal({
       setErrorMessage(null)
       setYaGiroHoy(false)
       setChosenPrize(null)
+      setProximoGiro(null)
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -90,18 +93,41 @@ export default function RuletaModal({
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
+        // 🔒 VERIFICACIÓN ESTRICTA: Buscar giro de hoy en la base de datos
         const hoyInicio = new Date()
         hoyInicio.setHours(0, 0, 0, 0)
+        hoyInicio.setMinutes(0, 0, 0)
 
-        const { data: transData } = await supabase
+        const mananaInicio = new Date(hoyInicio)
+        mananaInicio.setDate(mananaInicio.getDate() + 1)
+
+        const { data: transData, error: transError } = await supabase
           .from('loyalty_transactions')
-          .select('id')
+          .select('id, created_at')
           .eq('client_id', clientData.id)
+          .eq('tenant_id', finalTenantId)
           .ilike('description', '%Ruleta Diaria%')
           .gte('created_at', hoyInicio.toISOString())
+          .lt('created_at', mananaInicio.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (transError) {
+          console.error('Error verificando giro:', transError)
+        }
 
         if (transData && transData.length > 0) {
           setYaGiroHoy(true)
+          // Calcular tiempo restante para próximo giro
+          const ahora = new Date()
+          const manana = new Date(hoyInicio)
+          manana.setDate(manana.getDate() + 1)
+          const diffMs = manana.getTime() - ahora.getTime()
+          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+          setProximoGiro(`${diffHrs}h ${diffMin}m`)
+        } else {
+          setYaGiroHoy(false)
         }
 
         setIsValidating(false)
@@ -120,19 +146,23 @@ export default function RuletaModal({
     setIsSpinning(true)
     setChosenPrize(null)
 
+    // Seleccionar premio aleatorio
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
     const premioGanado = PREMIOS[randomIndex]
 
+    // Calcular rotación
     const gradosPorSeccion = 360 / PREMIOS.length
     const desfasePremio = randomIndex * gradosPorSeccion
     const totalGrados = 1800 + (360 - desfasePremio)
 
     setRotationDegrees(totalGrados)
 
+    // Esperar a que termine la animación
     setTimeout(async () => {
       setChosenPrize(premioGanado)
 
       if (premioGanado.value > 0) {
+        // 🔒 REGISTRAR EN BASE DE DATOS (IMPOSIBLE DE ELIMINAR CON COOKIES)
         const { error: txError } = await supabase.from('loyalty_transactions').insert({
           client_id: clientId,
           tenant_id: resolvedTenantId,
@@ -140,14 +170,16 @@ export default function RuletaModal({
           type: 'earned',
           wallet_type: premioGanado.type,
           category: 'manual',
-          description: `Ruleta Diaria: ${premioGanado.text}`
+          description: `Ruleta Diaria: ${premioGanado.icon} ${premioGanado.value} pts`
         })
 
         if (txError) {
+          console.error('Error guardando transacción:', txError)
           setIsSpinning(false)
           return
         }
 
+        // Actualizar billetera
         const columnaPuntos = premioGanado.type === 'hair' ? 'hair_points' : 'glow_points'
 
         const { data: wallet } = await supabase
@@ -178,19 +210,32 @@ export default function RuletaModal({
         if (onPremioProcesado) onPremioProcesado()
       }
 
+      // ✅ Marcar como girado HOY (persistente en DB)
       setYaGiroHoy(true)
+      
+      // Calcular tiempo para próximo giro
+      const hoyInicio = new Date()
+      hoyInicio.setHours(0, 0, 0, 0)
+      const manana = new Date(hoyInicio)
+      manana.setDate(manana.getDate() + 1)
+      const ahora = new Date()
+      const diffMs = manana.getTime() - ahora.getTime()
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      setProximoGiro(`${diffHrs}h ${diffMin}m`)
+
       setIsSpinning(false)
-    }, 3500)
+    }, 4000)
   }
 
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 antialiased">
-      {/* Fondo */}
+      {/* Fondo con blur elegante */}
       <div 
-        className="fixed inset-0 transition-opacity duration-300" 
-        style={{ backgroundColor: isDark ? 'rgba(15, 12, 27, 0.85)' : 'rgba(0, 0, 0, 0.5)' }}
+        className="fixed inset-0 transition-opacity duration-300 backdrop-blur-sm" 
+        style={{ backgroundColor: isDark ? 'rgba(15, 12, 27, 0.85)' : 'rgba(0, 0, 0, 0.6)' }}
         onClick={!isSpinning ? onClose : undefined} 
       />
 
@@ -204,8 +249,8 @@ export default function RuletaModal({
         {!isSpinning && (
           <button 
             onClick={onClose} 
-            className={`absolute top-4 right-4 p-1.5 rounded-xl transition-all ${
-              isDark ? 'text-stone-500 hover:text-pink-400 hover:bg-stone-900' : 'text-stone-400 hover:text-pink-500 hover:bg-pink-50'
+            className={`absolute top-3 right-3 p-2 rounded-xl transition-all ${
+              isDark ? 'hover:bg-stone-800/50 text-stone-500 hover:text-pink-400' : 'hover:bg-pink-50 text-stone-400 hover:text-pink-500'
             }`}
           >
             <X className="w-4 h-4" />
@@ -215,13 +260,11 @@ export default function RuletaModal({
         {isValidating ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-4">
             <div className="relative flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}40`, borderTopColor: primaryColor }} />
+              <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
               <Sparkles className="w-4 h-4 absolute animate-pulse" style={{ color: primaryColor }} />
             </div>
-            <p className={`text-[11px] uppercase tracking-widest font-mono animate-pulse ${
-              isDark ? 'text-stone-500' : 'text-stone-400'
-            }`}>
-              Cargando...
+            <p className={`text-[10px] uppercase tracking-widest font-mono ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+              Preparando tu experiencia...
             </p>
           </div>
         ) : errorMessage ? (
@@ -230,29 +273,29 @@ export default function RuletaModal({
               <AlertCircle className="w-8 h-8" style={{ color: primaryColor }} />
             </div>
             <h3 className={`font-black text-base tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>
-              Estado de la cuenta
+              Ups, algo pasó
             </h3>
             <p className={`text-xs px-4 leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
               {errorMessage}
             </p>
             <button 
               onClick={onClose} 
-              className={`px-5 py-2.5 rounded-xl text-white text-xs font-black tracking-widest uppercase transition hover:scale-105 active:scale-95 ${
-                isDark ? 'bg-stone-800 hover:bg-stone-700' : 'bg-stone-900 hover:bg-stone-800'
-              }`}
+              className={`px-6 py-2.5 rounded-xl text-white text-xs font-black tracking-widest uppercase transition hover:scale-105 active:scale-95`}
+              style={{ background: brandGradient.backgroundImage }}
             >
               Cerrar
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {/* Encabezado */}
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] uppercase tracking-widest font-black mb-2"
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[9px] uppercase tracking-[0.2em] font-black mb-2"
                 style={{ borderColor: `${primaryColor}30`, color: primaryColor }}
               >
                 <Sparkles className="w-3 h-3 animate-pulse" style={{ color: secondaryColor }} />
                 Ruleta VIP
+                <Gift className="w-3 h-3 animate-pulse" style={{ color: secondaryColor }} />
               </div>
               <h3 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>
                 Gira y gana{' '}
@@ -260,102 +303,164 @@ export default function RuletaModal({
                   Premios
                 </span>
               </h3>
+              {yaGiroHoy && proximoGiro && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-800/50 border border-stone-700/50">
+                  <Clock className="w-3 h-3 text-amber-400" />
+                  <span className="text-[9px] font-mono font-medium text-stone-400">
+                    Próximo giro en {proximoGiro}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Ruleta */}
-            <div className="relative w-64 h-64 mx-auto my-4 flex items-center justify-center">
-              {/* Marcador */}
-              <div className="absolute -top-2.5 z-30 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[22px]"
-                style={{ borderTopColor: primaryColor }}
-              />
-
-              {/* Anillo */}
-              <div className="absolute inset-0 rounded-full border-[6px] pointer-events-none"
-                style={{ borderColor: isDark ? '#1a1625' : '#f3f4f6' }}
-              />
-
-              <div
-                ref={ruletaRef}
-                style={{
-                  transform: `rotate(${rotationDegrees}deg)`,
-                  transition: isSpinning ? 'transform 3.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none',
-                }}
-                className="w-full h-full rounded-full overflow-hidden relative"
-              >
-                {PREMIOS.map((premio, idx) => {
-                  const angle = 60 * idx
-                  return (
-                    <div
-                      key={premio.id}
-                      className="absolute top-0 left-0 w-full h-full origin-center flex items-center justify-center text-white select-none"
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
-                        backgroundColor: premio.color,
-                      }}
-                    >
-                      <span className="absolute top-7 font-mono text-[8px] font-black tracking-tight uppercase text-center w-16 whitespace-normal leading-3 text-white drop-shadow-lg"
-                        style={{ transform: 'rotate(30deg)' }}
+            {/* 🎡 RULETA REDISEÑADA */}
+            <div className="relative w-64 h-64 mx-auto my-3">
+              {/* Anillo decorativo exterior */}
+              <div className="absolute -inset-2 rounded-full opacity-20 blur-xl" style={{ background: brandGradient.backgroundImage }} />
+              
+              {/* Anillo de luces */}
+              <div className="absolute -inset-1.5 rounded-full border-2" style={{ borderColor: `${primaryColor}30` }} />
+              
+              <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 60px ${primaryColor}20` }}>
+                {/* Fondo de la ruleta con gradiente */}
+                <div className="absolute inset-0" style={{ background: isDark ? '#1a1625' : '#faf7f5' }} />
+                
+                {/* Los segmentos */}
+                <div
+                  ref={ruletaRef}
+                  style={{
+                    transform: `rotate(${rotationDegrees}deg)`,
+                    transition: isSpinning ? 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none',
+                  }}
+                  className="w-full h-full rounded-full relative"
+                >
+                  {PREMIOS.map((premio, idx) => {
+                    const angle = (360 / PREMIOS.length) * idx
+                    return (
+                      <div
+                        key={premio.id}
+                        className="absolute top-0 left-0 w-full h-full"
+                        style={{
+                          transform: `rotate(${angle}deg)`,
+                          clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
+                        }}
                       >
-                        {premio.text.replace(' Pts ', '\n')}
-                      </span>
+                        <div 
+                          className="w-full h-full flex items-center justify-center"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${premio.color}dd, ${premio.color}aa)`,
+                            clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
+                          }}
+                        >
+                          <div className="absolute top-6 flex flex-col items-center" style={{ transform: 'rotate(30deg)' }}>
+                            <span className="text-lg leading-none">{premio.icon}</span>
+                            {premio.value > 0 && (
+                              <span className="text-[8px] font-black text-white drop-shadow-lg mt-0.5">
+                                {premio.value}pts
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Centro con gradiente y efectos */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-20 h-20 rounded-full border-4" style={{ borderColor: isDark ? '#1a1625' : '#faf7f5' }}>
+                    <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: brandGradient.backgroundImage }}>
+                      <Crown className="w-6 h-6 text-white/80" />
                     </div>
-                  )
-                })}
+                  </div>
+                </div>
+
+                {/* Marcador superior */}
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-20">
+                  <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[16px]" style={{ borderTopColor: primaryColor }} />
+                </div>
               </div>
 
-              {/* Botón central */}
+              {/* Botón de giro (sobrepuesto) */}
               <button
                 onClick={ejecutarGiro}
                 disabled={isSpinning || yaGiroHoy}
-                className={`absolute w-16 h-16 rounded-full border-4 flex flex-col items-center justify-center z-20 font-black transition-all ${
+                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
                   yaGiroHoy 
-                    ? 'bg-stone-700 text-stone-400 cursor-not-allowed' 
+                    ? 'cursor-not-allowed' 
                     : isSpinning 
-                      ? 'animate-pulse' 
-                      : 'hover:scale-105 active:scale-95'
+                      ? 'cursor-wait' 
+                      : 'cursor-pointer hover:scale-105 active:scale-95'
                 }`}
-                style={yaGiroHoy ? {} : isSpinning ? {
-                  background: brandGradient.backgroundImage,
-                  borderColor: isDark ? '#1a1625' : '#f3f4f6'
-                } : {
-                  background: brandGradient.backgroundImage,
-                  borderColor: isDark ? '#1a1625' : '#f3f4f6',
-                  boxShadow: `0 0 30px ${primaryColor}40`
-                }}
               >
-                <span className="text-[9px] uppercase font-mono tracking-tighter text-white">
-                  {yaGiroHoy ? 'Listo' : isSpinning ? '...' : 'Girar'}
-                </span>
-                {!yaGiroHoy && !isSpinning && (
-                  <Gift className="w-3 h-3 text-white/80" />
+                {yaGiroHoy ? (
+                  <div className="w-16 h-16 rounded-full bg-stone-700/80 border-2 border-stone-600 flex items-center justify-center backdrop-blur-sm">
+                    <Clock className="w-6 h-6 text-stone-400" />
+                  </div>
+                ) : isSpinning ? (
+                  <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center backdrop-blur-sm animate-pulse">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center border-2 backdrop-blur-sm transition-all duration-300 hover:shadow-xl"
+                    style={{ 
+                      background: brandGradient.backgroundImage,
+                      borderColor: isDark ? '#2a2435' : '#faf7f5',
+                      boxShadow: `0 0 40px ${primaryColor}50`
+                    }}
+                  >
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
                 )}
               </button>
             </div>
 
             {/* Resultado */}
-            <div className={`min-h-[50px] flex items-center justify-center px-4 rounded-2xl border py-3 ${
-              isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-stone-50/50 border-pink-100/60'
-            }`}>
+            <div className={`min-h-[52px] flex items-center justify-center px-4 rounded-xl border py-2.5 transition-all ${
+              chosenPrize ? 'border-opacity-100' : 'border-opacity-30'
+            }`}
+              style={chosenPrize ? {
+                borderColor: primaryColor,
+                backgroundColor: `${primaryColor}08`
+              } : {
+                borderColor: isDark ? '#2a2435' : '#e5e7eb',
+                backgroundColor: isDark ? 'rgba(15,12,27,0.5)' : 'transparent'
+              }}
+            >
               {chosenPrize ? (
-                <div className="space-y-0.5">
-                  <p className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                    ¡Premio!
-                  </p>
-                  <p className={`text-sm font-bold flex items-center justify-center gap-1.5 ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                    <Award className="w-4 h-4" style={{ color: primaryColor }} />
-                    <span style={{ color: primaryColor }}>{chosenPrize.text}</span>
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{chosenPrize.icon}</div>
+                  <div className="text-left">
+                    <p className={`text-[8px] uppercase tracking-widest font-black ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                      ¡Felicidades!
+                    </p>
+                    <p className={`text-sm font-bold flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                      Ganaste{' '}
+                      <span className="font-black" style={{ color: primaryColor }}>
+                        {chosenPrize.value > 0 ? `${chosenPrize.value} puntos` : '¡Suerte la próxima!'}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               ) : yaGiroHoy ? (
-                <p className={`text-xs font-medium italic ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                  ✨ Vuelve mañana para más premios
-                </p>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <p className={`text-xs font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    Ya giraste hoy. Vuelve mañana {proximoGiro && `en ${proximoGiro}`}
+                  </p>
+                </div>
               ) : (
                 <p className={`text-xs font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                  Presiona el centro para girar
+                  {isSpinning ? '🎡 Girando...' : '✨ Presiona el centro para girar'}
                 </p>
               )}
+            </div>
+
+            {/* Footer con restricción visible */}
+            <div className="text-center">
+              <p className={`text-[8px] uppercase tracking-[0.2em] font-mono ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>
+                {yaGiroHoy ? '🔒 Un giro por día' : '🎯 Un giro diario'}
+              </p>
             </div>
           </div>
         )}
