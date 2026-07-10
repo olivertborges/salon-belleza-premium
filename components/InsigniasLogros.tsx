@@ -60,6 +60,7 @@ export default function InsigniasLogros({
       id: 'primera_cita',
       titulo: 'Primera',
       subtitulo: 'Sesión',
+      desc: 'Tu debut en el salón',
       icon: Heart,
       desbloqueado: citas > 0,
       color: primaryColor
@@ -68,6 +69,7 @@ export default function InsigniasLogros({
       id: 'fiel',
       titulo: 'Cliente',
       subtitulo: 'Fiel',
+      desc: 'Más de 5 visitas registradas',
       icon: Crown,
       desbloqueado: citas >= 5,
       color: '#F59E0B'
@@ -76,6 +78,7 @@ export default function InsigniasLogros({
       id: 'racha_activa',
       titulo: 'Racha',
       subtitulo: 'Fresh',
+      desc: 'Mantienes tu racha activa',
       icon: Flame,
       desbloqueado: racha > 0,
       color: '#F97316'
@@ -84,6 +87,7 @@ export default function InsigniasLogros({
       id: 'embajador',
       titulo: 'Socio',
       subtitulo: 'Embajador',
+      desc: 'Invitaste amigos al ecosistema',
       icon: Sparkles,
       desbloqueado: referidos > 0,
       color: '#A855F7'
@@ -92,6 +96,7 @@ export default function InsigniasLogros({
       id: 'coleccionista',
       titulo: 'Explorador',
       subtitulo: 'De Estilos',
+      desc: 'Probaste 3 o más servicios',
       icon: Zap,
       desbloqueado: serviciosUnicos >= 3,
       color: '#06B6D4'
@@ -104,125 +109,118 @@ export default function InsigniasLogros({
   return (
     <div className="space-y-4">
 
-      {/* Encabezado */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div 
-            className="p-1.5 rounded-lg"
-            style={{ backgroundColor: `${primaryColor}15` }}
-          >
-            <Award className="w-4 h-4" style={{ color: primaryColor }} />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium tracking-tight">
-              <span className={isDark ? 'text-stone-200' : 'text-stone-700'}>
-                Logros
-              </span>
-              <span className="ml-1.5 text-xs font-normal" style={{ color: primaryColor }}>
-                {desbloqueadas}/{totalInsignias}
-              </span>
-            </h3>
-          </div>
+      {/* Encabezado estilo original */}
+      <div className="flex items-center gap-4">
+        <div 
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: `${primaryColor}15` }}
+        >
+          <Award className="w-5 h-5" style={{ color: primaryColor }} />
         </div>
-        
-        {/* Barra de progreso */}
-        <div className="flex items-center gap-2">
-          <div className="w-20 h-1.5 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
-            <div 
-              className="h-full rounded-full transition-all duration-700"
-              style={{ 
-                width: `${(desbloqueadas / totalInsignias) * 100}%`,
-                background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
-              }}
-            />
-          </div>
-          <span className="text-[10px] font-mono font-medium text-stone-400 dark:text-stone-500">
-            {Math.round((desbloqueadas / totalInsignias) * 100)}%
-          </span>
+        <div>
+          <h2 className={`text-base font-light tracking-tight ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
+            Insignias y <span className="font-serif italic font-normal" style={{ color: primaryColor }}>Reconocimientos</span>
+          </h2>
+          <p className={`text-[10px] uppercase tracking-[0.2em] font-medium mt-0.5 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+            Colecciona logros con cada visita
+          </p>
         </div>
       </div>
 
-      {/* Grid de Insignias */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+      {/* Barra de progreso */}
+      <div className="flex items-center justify-end gap-2">
+        <div className="w-20 h-1 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
+          <div 
+            className="h-full rounded-full transition-all duration-700"
+            style={{ 
+              width: `${(desbloqueadas / totalInsignias) * 100}%`,
+              background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+            }}
+          />
+        </div>
+        <span className="text-[10px] font-mono font-medium text-stone-400 dark:text-stone-500">
+          {Math.round((desbloqueadas / totalInsignias) * 100)}%
+        </span>
+      </div>
+
+      {/* Grid de Insignias estilo original */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {insignias.map((insignia) => {
           const Icon = insignia.icon
           return (
             <div 
               key={insignia.id}
-              className={`relative group flex flex-col items-center p-3 rounded-xl transition-all duration-300 ${
+              className={`relative flex flex-col items-center justify-between p-4 rounded-2xl border text-center transition-all duration-300 ${
                 insignia.desbloqueado 
-                  ? `hover:-translate-y-0.5`
-                  : 'opacity-50 hover:opacity-70'
+                  ? `hover:-translate-y-1`
+                  : 'opacity-40 hover:opacity-60'
               } ${
                 isDark 
-                  ? 'bg-[#1a1625] hover:bg-[#1f1a2e]' 
-                  : 'bg-stone-50/80 hover:bg-stone-100/80'
+                  ? 'bg-[#1a1625] border-fuchsia-950/30 hover:border-fuchsia-950/60' 
+                  : 'bg-white border-pink-100/60 hover:border-pink-300'
               }`}
+              style={insignia.desbloqueado ? {
+                boxShadow: `0 4px 12px ${insignia.color}15`
+              } : {}}
             >
               {/* Icono */}
               <div 
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  insignia.desbloqueado 
-                    ? 'group-hover:scale-110' 
-                    : ''
+                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 ${
+                  insignia.desbloqueado ? 'group-hover:scale-110' : ''
                 }`}
                 style={insignia.desbloqueado ? {
-                  background: `linear-gradient(135deg, ${insignia.color}20, ${insignia.color}08)`,
+                  background: `linear-gradient(135deg, ${insignia.color}20, ${insignia.color}05)`,
                   color: insignia.color
                 } : {
                   color: isDark ? '#4a4a5a' : '#c0c0c0'
                 }}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-5 h-5" />
               </div>
 
-              {/* Texto */}
-              <div className="text-center mt-1.5">
-                <p className={`text-[8px] font-semibold uppercase tracking-wide ${
+              {/* Textos */}
+              <div className="space-y-1 flex-1 flex flex-col justify-center">
+                <p className={`text-xs font-medium tracking-tight ${
                   insignia.desbloqueado 
-                    ? isDark ? 'text-stone-300' : 'text-stone-700'
+                    ? isDark ? 'text-stone-200' : 'text-stone-800' 
                     : isDark ? 'text-stone-600' : 'text-stone-400'
                 }`}>
-                  {insignia.titulo}
+                  {insignia.titulo} <span className={`font-serif italic block ${
+                    insignia.desbloqueado 
+                      ? isDark ? 'text-stone-400' : 'text-stone-500'
+                      : isDark ? 'text-stone-700' : 'text-stone-300'
+                  }`}>{insignia.subtitulo}</span>
                 </p>
-                <p className={`text-[7px] font-light tracking-wide ${
-                  insignia.desbloqueado 
-                    ? isDark ? 'text-stone-500' : 'text-stone-400'
-                    : isDark ? 'text-stone-700' : 'text-stone-300'
+                <p className={`text-[9px] font-light leading-tight mt-1 ${
+                  isDark ? 'text-stone-500' : 'text-stone-400'
                 }`}>
-                  {insignia.subtitulo}
+                  {insignia.desc}
                 </p>
               </div>
 
-              {/* Indicador de desbloqueo */}
-              {insignia.desbloqueado && (
-                <div className="absolute -top-1 -right-1">
-                  <div className="w-3 h-3 rounded-full flex items-center justify-center bg-white dark:bg-[#1a1625]">
-                    <CheckCircle2 className="w-2.5 h-2.5" style={{ color: insignia.color }} />
+              {/* Estado */}
+              <div className="mt-3 pt-1 flex items-center justify-center h-4 w-full">
+                {insignia.desbloqueado ? (
+                  <span className={`text-[8px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-full uppercase border ${
+                    isDark 
+                      ? 'text-emerald-400 bg-emerald-500/5 border-emerald-500/20' 
+                      : 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                  }`}>
+                    ✓ Logrado
+                  </span>
+                ) : (
+                  <div className={`flex items-center gap-1 transition-colors ${
+                    isDark ? 'text-stone-600 group-hover:text-stone-500' : 'text-stone-400 group-hover:text-stone-600'
+                  }`}>
+                    <Lock className="w-2.5 h-2.5" />
+                    <span className="text-[8px] font-mono uppercase tracking-widest">Por lograr</span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )
         })}
       </div>
-
-      {/* Mensaje */}
-      {desbloqueadas < totalInsignias && (
-        <p className={`text-[9px] text-center ${
-          isDark ? 'text-stone-500' : 'text-stone-400'
-        }`}>
-          {totalInsignias - desbloqueadas} logro{totalInsignias - desbloqueadas > 1 ? 's' : ''} por descubrir
-        </p>
-      )}
-
-      {desbloqueadas === totalInsignias && (
-        <div className="text-center">
-          <p className={`text-[9px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-            ✨ ¡Colección completa! ✨
-          </p>
-        </div>
-      )}
     </div>
   )
 }
