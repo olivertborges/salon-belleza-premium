@@ -18,7 +18,7 @@ import {
   Star,
   Award,
   Heart,
-  User,
+  User,  // ✅ Cambiado de Users a User
   TrendingUp,
   Zap,
   Gem,
@@ -296,7 +296,7 @@ export default function ClientDashboardIndex() {
         {[
           { icon: Calendar, label: 'Citas Hoy', value: citasProximas.filter(c => new Date(c.date).toDateString() === new Date().toDateString()).length },
           { icon: Trophy, label: 'Premios VIP', value: puntosTotales > 100 ? '⭐' : puntosTotales > 50 ? '💎' : '✨' },
-          { icon: Users, label: 'Referidos', value: referidos.length },
+          { icon: User, label: 'Referidos', value: referidos.length }, // ✅ Corregido: User en lugar de Users
           { icon: Zap, label: 'Servicios', value: serviciosUnicos }
         ].map((kpi, i) => (
           <div key={i} className={`rounded-2xl p-3 shadow-sm border ${
