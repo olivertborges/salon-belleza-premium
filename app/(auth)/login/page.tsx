@@ -3,7 +3,73 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase/client' // Unificamos el cliente persistente
+import { supabase } from '@/lib/supabase/client'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Sparkles, Mail, Lock, Eye, EyeOff, 
+  User, LogIn, Shield, Crown, Gem, 
+  ArrowRight, CheckCircle2, XCircle,
+  Heart, Star, Zap, Fingerprint, 
+  Flower2, Waves, Palette, Gift
+} from 'lucide-react'
+
+// ===== ANIMACIONES =====
+const containerVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.6,
+      ease: [0.16, 1, 0.3, 1],
+      staggerChildren: 0.08,
+      delayChildren: 0.15
+    }
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    transition: { duration: 0.4, ease: "easeInOut" }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { 
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+}
+
+const glowPulse = {
+  initial: { opacity: 0.3, scale: 1 },
+  animate: {
+    opacity: [0.3, 0.8, 0.3],
+    scale: [1, 1.2, 1],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+}
+
+const floatingIcons = {
+  animate: {
+    y: [0, -10, 0],
+    rotate: [0, 5, -5, 0],
+    transition: {
+      duration: 6,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+}
 
 export default function AuthMobilDefinitivo() {
   const router = useRouter()
@@ -14,6 +80,7 @@ export default function AuthMobilDefinitivo() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,7 +105,6 @@ export default function AuthMobilDefinitivo() {
     }
   }, [user, role, authLoading, mounted])
 
-  // LOGIN UTILIZANDO EL AUTHCONTEXT (FUEZA LA PERSISTENCIA EN EL TELÉFONO)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
@@ -47,14 +113,12 @@ export default function AuthMobilDefinitivo() {
     setSuccess('')
 
     try {
-      // Usamos el método unificado del contexto que escribe el localStorage
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto!')
       router.refresh()
 
-      // Traemos el perfil usando la misma instancia persistente para la redirección
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         const { data: profile } = await supabase
@@ -80,7 +144,6 @@ export default function AuthMobilDefinitivo() {
     }
   }
 
-  // REGISTRO UTILIZANDO EL AUTHCONTEXT
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
@@ -109,7 +172,6 @@ export default function AuthMobilDefinitivo() {
       setSuccess('✅ ¡Registro exitoso! Redirigiendo...')
       router.refresh()
 
-      // Forzar inicio de sesión usando el contexto unificado para que asiente la sesión local
       await signIn(email, password)
 
       setTimeout(() => {
@@ -134,221 +196,506 @@ export default function AuthMobilDefinitivo() {
 
   if (!mounted) return null
 
+  // ===== DECORACIONES DE FONDO =====
+  const BackgroundDecorations = () => (
+    <>
+      <motion.div 
+        className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-30"
+        style={{ background: 'linear-gradient(135deg, #f472b6, #f59e0b)' }}
+        animate={glowPulse.animate}
+        initial={glowPulse.initial}
+      />
+      <motion.div 
+        className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-20"
+        style={{ background: 'linear-gradient(135deg, #a78bfa, #ec4899)' }}
+        animate={{
+          ...glowPulse.animate,
+          transition: { ...glowPulse.animate.transition, delay: 1.5 }
+        }}
+        initial={glowPulse.initial}
+      />
+      
+      {/* Iconos flotantes decorativos */}
+      <motion.div className="absolute top-10 left-6 text-pink-300/20 dark:text-pink-400/10" animate={floatingIcons.animate}>
+        <Sparkles className="w-6 h-6" />
+      </motion.div>
+      <motion.div className="absolute bottom-20 right-6 text-amber-300/20 dark:text-amber-400/10" animate={{
+        ...floatingIcons.animate,
+        transition: { ...floatingIcons.animate.transition, delay: 1.2 }
+      }}>
+        <Gem className="w-5 h-5" />
+      </motion.div>
+      <motion.div className="absolute top-1/2 left-4 text-rose-300/15 dark:text-rose-400/10" animate={{
+        ...floatingIcons.animate,
+        transition: { ...floatingIcons.animate.transition, delay: 2.5 }
+      }}>
+        <Heart className="w-4 h-4" />
+      </motion.div>
+    </>
+  )
+
+  // ===== TABS DECORADOS =====
+  const Tabs = () => (
+    <div className="flex gap-1 p-1 rounded-2xl bg-pink-50/50 dark:bg-[#1a1520] border border-pink-100/30 dark:border-fuchsia-950/30 mb-6">
+      {[
+        { id: 'login', label: 'Ingresar', icon: LogIn },
+        { id: 'register', label: 'Registro', icon: User },
+        { id: 'recover', label: 'Ayuda', icon: Shield }
+      ].map((tab) => {
+        const Icon = tab.icon
+        const isActive = activeTab === tab.id
+        return (
+          <motion.button
+            key={tab.id}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => { 
+              setActiveTab(tab.id as any)
+              setError('')
+              setSuccess('')
+            }}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 ${
+              isActive
+                ? 'text-white shadow-lg shadow-pink-500/25'
+                : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-pink-300'
+            }`}
+            style={isActive ? { 
+              background: 'linear-gradient(135deg, #ec4899, #f59e0b)'
+            } : {}}
+          >
+            <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white/80' : ''}`} />
+            {tab.label}
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+
   return (
-    <div className="w-full min-h-screen bg-[#fcfbfa] dark:bg-[#0a0908] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      <div className="w-full max-w-md bg-white dark:bg-[#141211] border border-stone-200 dark:border-stone-800/60 rounded-[24px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)]">
+    <div className="w-full min-h-screen bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20 dark:from-[#0a0908] dark:via-[#0f0c1b] dark:to-[#0a0908] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      
+      {/* DECORACIONES */}
+      <BackgroundDecorations />
 
-        {activeTab === 'login' && (
-          <div>
-            <div className="text-center mb-8">
-              <span className="text-[9px] font-mono tracking-[0.3em] text-amber-600 dark:text-amber-500/80 font-bold uppercase">MEMBER PORTAL</span>
-              <h2 className="text-3xl font-light text-stone-900 dark:text-white tracking-tight mt-1">Te damos la bienvenida</h2>
-            </div>
+      {/* LÍNEA DECORATIVA SUPERIOR */}
+      <motion.div 
+        className="absolute top-0 left-0 right-0 h-[3px]"
+        style={{ background: 'linear-gradient(90deg, #ec4899, #f59e0b, #a78bfa, #ec4899)' }}
+        animate={{ 
+          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          transition: { duration: 6, repeat: Infinity, ease: "linear" }
+        }}
+      />
 
-            {error && <div className="mb-4 p-3 bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-400 text-xs rounded-xl font-mono text-center">{error}</div>}
-            {success && <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl font-mono text-center">{success}</div>}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
+      >
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Email de Acceso</span>
-                <input
-                  type="email"
-                  placeholder="ejemplo@salon.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
+        {/* ===== HEADER CON ANIMACIÓN ===== */}
+        <motion.div variants={itemVariants} className="text-center mb-6 relative">
+          <motion.div 
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-white shadow-xl shadow-pink-500/25 mb-3"
+            style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
+            whileHover={{ 
+              scale: 1.1, 
+              rotate: [0, -5, 5, 0],
+              transition: { duration: 0.5 }
+            }}
+          >
+            <Sparkles className="w-8 h-8" />
+          </motion.div>
+          
+          <motion.h2 
+            className="text-3xl font-serif font-extrabold text-stone-900 dark:text-white tracking-tight"
+            style={{ 
+              background: 'linear-gradient(135deg, #ec4899, #f59e0b)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Fresh Nails
+          </motion.h2>
+          <motion.p className="text-[10px] font-mono tracking-[0.3em] text-stone-400 dark:text-stone-500 font-bold uppercase mt-1">
+            {activeTab === 'login' && '✨ Bienvenida de vuelta'}
+            {activeTab === 'register' && '🌟 Únete al Club'}
+            {activeTab === 'recover' && '🔐 Recupera tu acceso'}
+          </motion.p>
+        </motion.div>
 
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">Contraseña</span>
-                  <button 
-                    type="button" 
-                    onClick={() => { setActiveTab('recover'); setError(''); setSuccess(''); }}
-                    className="text-[10px] font-mono text-amber-600 dark:text-amber-500/60 hover:text-amber-500 uppercase tracking-wider transition-colors focus:outline-none"
-                  >
-                    ¿La olvidaste?
-                  </button>
-                </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
+        {/* ===== TABS ===== */}
+        <motion.div variants={itemVariants}>
+          <Tabs />
+        </motion.div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full relative bg-stone-900 dark:bg-white text-white dark:text-black text-xs font-mono uppercase tracking-[0.25em] font-bold py-4 rounded-xl transition-all duration-300 shadow-md mt-4 active:scale-[0.98] hover:bg-stone-800 disabled:opacity-40"
-              >
-                {loading ? 'Procesando...' : 'Ingresar al Salón'}
-              </button>
-            </form>
+        {/* ===== MENSAJES CON ANIMACIÓN ===== */}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs rounded-xl font-mono text-center flex items-center justify-center gap-2"
+            >
+              <XCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl font-mono text-center flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <div className="text-center pt-6 border-t border-stone-100 dark:border-stone-900/60 mt-6">
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                ¿No tienes cuenta vip? 
-                <button
-                  type="button"
-                  onClick={() => { setActiveTab('register'); setError(''); setSuccess(''); }}
-                  className="ml-2 text-xs text-amber-600 dark:text-amber-500 hover:text-amber-500 font-bold uppercase font-mono tracking-wider transition-colors focus:outline-none"
+        {/* ===== CONTENIDO CON ANIMACIÓN ===== */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: activeTab === 'login' ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: activeTab === 'login' ? 20 : -20 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+
+            {/* ===== LOGIN ===== */}
+            {activeTab === 'login' && (
+              <form onSubmit={handleLogin} className="space-y-5">
+                <motion.div 
+                  variants={itemVariants}
+                  className="relative group"
                 >
-                  Regístrate
-                </button>
-              </p>
-            </div>
-          </div>
-        )}
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors duration-300">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Email</span>
+                    </div>
+                    <input
+                      type="email"
+                      placeholder="tuemail@ejemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                      required
+                    />
+                    <motion.div 
+                      className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left"
+                    />
+                  </div>
+                </motion.div>
 
-        {activeTab === 'register' && (
-          <div>
-            <div className="text-center mb-6">
-              <span className="text-[9px] font-mono tracking-[0.3em] text-amber-600 dark:text-amber-500/80 font-bold uppercase">JOIN THE CLUB</span>
-              <h2 className="text-3xl font-light text-stone-900 dark:text-white tracking-tight mt-1">Crear Cuenta</h2>
-              {referralCode && (
-                <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                  🎁 Registrándote con código: <span className="font-bold">{referralCode}</span>
-                </p>
-              )}
-            </div>
+                <motion.div 
+                  variants={itemVariants}
+                  className="relative group"
+                >
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors duration-300">
+                        <Lock className="w-4 h-4" />
+                        <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Contraseña</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => { setActiveTab('recover'); setError(''); setSuccess(''); }}
+                        className="text-[10px] font-mono text-pink-400 dark:text-pink-500/60 hover:text-pink-500 uppercase tracking-wider transition-colors focus:outline-none"
+                      >
+                        ¿Olvidaste?
+                      </button>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-stone-400 hover:text-pink-500 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <motion.div 
+                      className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left"
+                    />
+                  </div>
+                </motion.div>
 
-            {error && <div className="mb-4 p-3 bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-400 text-xs rounded-xl font-mono text-center">{error}</div>}
-            {success && <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl font-mono text-center">{success}</div>}
+                <motion.button
+                  variants={itemVariants}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Ingresando...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="w-4 h-4" />
+                        Ingresar al Salón
+                      </>
+                    )}
+                  </span>
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"
+                  />
+                </motion.button>
 
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Nombre y Apellido</span>
-                <input
-                  type="text"
-                  placeholder="Ej: Alex Gómez"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-transparent pt-1 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
-
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Número de Móvil</span>
-                <input
-                  type="tel"
-                  placeholder="11 2345 6789"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-transparent pt-1 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
-
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Correo Electrónico</span>
-                <input
-                  type="email"
-                  placeholder="nombre@correo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent pt-1 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
-
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Contraseña de Acceso</span>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent pt-1 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
-                  required
-                />
-              </div>
-
-              {referralCode && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800/30">
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    🎉 Registro con código: <span className="font-bold">{referralCode}</span>
+                <motion.div variants={itemVariants} className="text-center pt-4">
+                  <p className="text-xs text-stone-400 dark:text-stone-500">
+                    ¿No tienes cuenta VIP? 
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('register'); setError(''); setSuccess(''); }}
+                      className="ml-2 text-xs font-bold text-pink-500 hover:text-pink-600 uppercase font-mono tracking-wider transition-colors focus:outline-none"
+                    >
+                      Regístrate
+                    </button>
                   </p>
-                  <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
-                    Recibirás <span className="font-bold">500 puntos</span> adicionales
+                </motion.div>
+              </form>
+            )}
+
+            {/* ===== REGISTER ===== */}
+            {activeTab === 'register' && (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <motion.div variants={itemVariants} className="relative group">
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
+                      <User className="w-4 h-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Nombre Completo</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Ej: María González"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                      required
+                    />
+                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                  </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="relative group">
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Correo Electrónico</span>
+                    </div>
+                    <input
+                      type="email"
+                      placeholder="nombre@correo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                      required
+                    />
+                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                  </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="relative group">
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
+                      <Lock className="w-4 h-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Contraseña</span>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-stone-400 hover:text-pink-500 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                  </div>
+                </motion.div>
+
+                {referralCode && (
+                  <motion.div 
+                    variants={itemVariants}
+                    className="bg-gradient-to-r from-pink-500/10 to-amber-500/10 p-4 rounded-2xl border border-pink-200/30 dark:border-pink-900/30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-5 h-5 text-pink-500" />
+                      <div>
+                        <p className="text-xs font-bold text-stone-800 dark:text-pink-100">
+                          🎉 Registro con código: <span className="text-pink-500">{referralCode}</span>
+                        </p>
+                        <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
+                          Recibirás <span className="font-bold text-pink-500">500 puntos</span> adicionales
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                <motion.button
+                  variants={itemVariants}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Registrando...
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-4 h-4" />
+                        Crear Cuenta VIP
+                      </>
+                    )}
+                  </span>
+                  <motion.div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </motion.button>
+
+                <motion.div variants={itemVariants} className="text-center pt-4">
+                  <p className="text-xs text-stone-400 dark:text-stone-500">
+                    ¿Ya tienes cuenta? 
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
+                      className="ml-2 text-xs font-bold text-pink-500 hover:text-pink-600 uppercase font-mono tracking-wider transition-colors focus:outline-none"
+                    >
+                      Ingresar
+                    </button>
                   </p>
-                </div>
-              )}
+                </motion.div>
+              </form>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full relative bg-amber-600 dark:bg-amber-500 text-white dark:text-black text-xs font-mono uppercase tracking-[0.25em] font-bold py-4 rounded-xl transition-all duration-300 shadow-md mt-4 active:scale-[0.98] hover:bg-amber-700 disabled:opacity-40"
-              >
-                {loading ? 'Registrando...' : 'Confirmar Registro'}
-              </button>
-            </form>
+            {/* ===== RECOVER ===== */}
+            {activeTab === 'recover' && (
+              <form onSubmit={handleRecover} className="space-y-5">
+                <motion.div variants={itemVariants} className="text-center mb-2">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 mb-3">
+                    <Shield className="w-7 h-7" />
+                  </div>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+                    Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso.
+                  </p>
+                </motion.div>
 
-            <div className="text-center pt-6 border-t border-stone-100 dark:border-stone-900/60 mt-6">
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                ¿Ya tienes una cuenta? 
-                <button
+                <motion.div variants={itemVariants} className="relative group">
+                  <div className="relative border-b-2 border-stone-200 dark:border-stone-800 group-focus-within:border-pink-500 transition-colors duration-300 py-1">
+                    <div className="flex items-center gap-2 text-stone-400 dark:text-stone-500 group-focus-within:text-pink-500 transition-colors">
+                      <Mail className="w-4 h-4" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Tu Email</span>
+                    </div>
+                    <input
+                      type="email"
+                      placeholder="tuemail@ejemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none"
+                      required
+                    />
+                    <motion.div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
+                  </div>
+                </motion.div>
+
+                <motion.button
+                  variants={itemVariants}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #f472b6)' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="w-4 h-4" />
+                        Enviar Enlace
+                      </>
+                    )}
+                  </span>
+                  <motion.div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </motion.button>
+
+                <motion.button
+                  variants={itemVariants}
                   type="button"
                   onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
-                  className="ml-2 text-xs text-stone-900 dark:text-white hover:text-stone-700 font-bold uppercase font-mono tracking-wider transition-colors focus:outline-none"
+                  className="w-full text-center text-xs font-mono text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-white uppercase tracking-widest transition-colors focus:outline-none flex items-center justify-center gap-2"
                 >
-                  Ingresar
-                </button>
-              </p>
-            </div>
+                  <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                  Volver al inicio
+                </motion.button>
+              </form>
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ===== FOOTER DECORATIVO ===== */}
+        <motion.div 
+          variants={itemVariants}
+          className="mt-6 pt-4 border-t border-pink-100/30 dark:border-fuchsia-950/30 text-center"
+        >
+          <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
+            <span className="text-pink-400">✦</span> Fresh Nails Studio <span className="text-pink-400">✦</span>
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
-        )}
+        </motion.div>
 
-        {activeTab === 'recover' && (
-          <div>
-            <div className="text-center mb-8">
-              <span className="text-[9px] font-mono tracking-[0.3em] text-amber-600 dark:text-amber-500/80 font-bold uppercase">SECURITY ACCOUNT</span>
-              <h2 className="text-3xl font-light text-stone-900 dark:text-white tracking-tight mt-1">Recuperar Clave</h2>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-2">Ingresa tu email para recibir los accesos de seguridad.</p>
-            </div>
-
-            {error && <div className="mb-4 p-3 bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-400 text-xs rounded-xl font-mono text-center">{error}</div>}
-            {success && <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl font-mono text-center">{success}</div>}
-
-            <form onSubmit={handleRecover} className="space-y-6">
-              <div className="relative border-b border-stone-200 dark:border-stone-800 focus-within:border-amber-500 transition-colors duration-300 py-1">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Tu Correo Electrónico</span>
-                <input
-                  type="email"
-                  placeholder="tuemail@ejemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full relative bg-amber-600 dark:bg-amber-500 text-white dark:text-black text-xs font-mono uppercase tracking-[0.25em] font-bold py-4 rounded-xl transition-all duration-300 shadow-md mt-4 active:scale-[0.98] disabled:opacity-40"
-              >
-                {loading ? 'Enviando...' : 'Enviar Enlace'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
-                className="w-full text-center text-xs font-mono text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-white uppercase tracking-widest mt-4 transition-colors block focus:outline-none"
-              >
-                ← Volver Atrás
-              </button>
-            </form>
-          </div>
-        )}
-
-      </div>
+      </motion.div>
     </div>
   )
 }
