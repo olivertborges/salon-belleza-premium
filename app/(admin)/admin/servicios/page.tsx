@@ -168,9 +168,9 @@ export default function ServiciosPage() {
     }`}>
 
       {/* PANEL DE CONTROL ENCABEZADO CON CARD-GLOW */}
-      <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl shadow-pink-500/5 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400`}>
+      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl shadow-pink-500/5 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400">
         <div className={`relative z-10 rounded-[23px] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 ${
-          isDark ? 'bg-[#0f0c1b]' : 'bg-[#fffdfd]'
+          isDark ? 'bg-zinc-900' : 'bg-white'
         }`}>
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-pink-500/10 rounded-full blur-[80px] animate-pulse" />
           <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-amber-500/5 rounded-full blur-[80px] animate-pulse delay-1000" />
@@ -187,7 +187,7 @@ export default function ServiciosPage() {
               Administra y edita la oferta comercial, badges destacados y tiempos operativos de tus tratamientos integrales.
             </p>
           </div>
-          
+
           <button 
             onClick={() => { setEditingId(null); setFormData({ name: '', description: '', price: '', duration: '', badge: '', icon: 'Sparkles', category: 'Manicuría' }); setShowModal(true) }}
             className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 hover:opacity-95 text-white text-xs font-mono font-bold tracking-widest uppercase transition-all shadow-md shadow-pink-500/20 self-start md:self-auto active:scale-[0.99]"
@@ -201,7 +201,7 @@ export default function ServiciosPage() {
       {/* MÉTRICAS BOUTIQUE */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950/70' : 'bg-[#fffdfd] border-pink-100/60'
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
         }`}>
           <div className="space-y-1">
             <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Menú Activo</p>
@@ -213,7 +213,7 @@ export default function ServiciosPage() {
         </div>
 
         <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950/70' : 'bg-[#fffdfd] border-pink-100/60'
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
         }`}>
           <div className="space-y-1">
             <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Ticket Promedio</p>
@@ -223,7 +223,7 @@ export default function ServiciosPage() {
         </div>
 
         <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950/70' : 'bg-[#fffdfd] border-pink-100/60'
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
         }`}>
           <div className="space-y-1">
             <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Sincronización Cloud</p>
@@ -248,8 +248,8 @@ export default function ServiciosPage() {
             onChange={(e) => setSearch(e.target.value)} 
             className={`w-full border rounded-2xl pl-12 pr-4 py-3 text-sm placeholder-stone-400 focus:outline-none focus:border-pink-500/40 focus:ring-1 focus:ring-pink-500/20 transition-all font-sans shadow-sm ${
               isDark 
-                ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
-                : 'bg-[#fffdfd] border-pink-100/60 text-stone-800'
+                ? 'bg-zinc-900 border-zinc-800 text-pink-100' 
+                : 'bg-white border-pink-100/60 text-stone-800'
             }`} 
           />
         </div>
@@ -265,9 +265,9 @@ export default function ServiciosPage() {
                 onClick={() => setSelectedCategory(cat.name)}
                 className={`relative overflow-hidden p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border ${
                   esActivo 
-                    ? `bg-[#fffdfd] dark:bg-[#130f24] border-pink-500/40 shadow-sm ring-1 ring-pink-500/10` 
-                    : `border-pink-100/40 dark:border-fuchsia-950/50 hover:border-pink-300 ${
-                      isDark ? 'bg-[#130f24]/40' : 'bg-pink-50/20'
+                    ? `bg-white dark:bg-zinc-900 border-pink-500/40 shadow-sm ring-1 ring-pink-500/10` 
+                    : `border-pink-100/40 dark:border-zinc-800/50 hover:border-pink-300 ${
+                      isDark ? 'bg-zinc-900/40' : 'bg-pink-50/20'
                     }`
                 }`}
               >
@@ -279,7 +279,7 @@ export default function ServiciosPage() {
                   esActivo 
                     ? `bg-gradient-to-br ${cat.color} text-white shadow-xs scale-105` 
                     : `border text-stone-400 dark:text-stone-500 ${
-                      isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-pink-50/40 border-pink-100/40'
+                      isDark ? 'bg-zinc-950/40 border-zinc-800' : 'bg-pink-50/40 border-pink-100/40'
                     }`
                 }`}>
                   <IconComponent className="w-3.5 h-3.5" />
@@ -306,7 +306,7 @@ export default function ServiciosPage() {
           <div 
             key={servicio.id} 
             className={`rounded-2xl border p-6 flex flex-col justify-between hover:border-pink-500/40 hover:shadow-sm transition-all group duration-300 ${
-              isDark ? 'bg-[#130f24] border-fuchsia-950/70' : 'bg-[#fffdfd] border-pink-100/40'
+              isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
             }`}
           >
             <div className="space-y-3">
@@ -333,7 +333,7 @@ export default function ServiciosPage() {
             </div>
 
             <div className={`mt-5 pt-4 border-t flex justify-between items-center text-xs font-mono ${
-              isDark ? 'border-fuchsia-950/40' : 'border-pink-50'
+              isDark ? 'border-zinc-800/40' : 'border-pink-50'
             }`}>
               <div className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
                 <Clock className="w-3.5 h-3.5" />
@@ -349,7 +349,7 @@ export default function ServiciosPage() {
                 onClick={() => handleEdit(servicio)} 
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
                   isDark 
-                    ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-pink-400 hover:bg-[#130f24]' 
+                    ? 'bg-zinc-950/40 border-zinc-800 text-stone-400 hover:text-pink-400 hover:bg-zinc-900' 
                     : 'bg-pink-50/30 border-pink-100/40 text-stone-500 hover:text-pink-600 hover:bg-pink-50/70'
                 }`}
               >
@@ -359,7 +359,7 @@ export default function ServiciosPage() {
                 onClick={() => handleDelete(servicio.id)} 
                 className={`px-3 py-2.5 rounded-xl border transition-all ${
                   isDark 
-                    ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-rose-500 hover:border-rose-500/20' 
+                    ? 'bg-zinc-950/40 border-zinc-800 text-stone-400 hover:text-rose-500 hover:border-rose-500/20' 
                     : 'bg-pink-50/30 border-pink-100/40 text-stone-500 hover:text-rose-500 hover:border-rose-500/20'
                 }`}
               >
@@ -371,7 +371,7 @@ export default function ServiciosPage() {
 
         {filtrados.length === 0 && (
           <div className={`col-span-full py-20 text-center font-mono text-xs border border-dashed rounded-2xl ${
-            isDark ? 'text-stone-500 border-fuchsia-950 bg-[#130f24]/20' : 'text-stone-400 border-pink-100 bg-pink-50/10'
+            isDark ? 'text-stone-500 border-zinc-800 bg-zinc-900/20' : 'text-stone-400 border-pink-100 bg-pink-50/10'
           }`}>
             No se encontraron tratamientos registrados en este módulo.
           </div>
@@ -383,12 +383,12 @@ export default function ServiciosPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-up">
           <div className={`border rounded-[24px] p-6 max-w-md w-full shadow-2xl max-h-[92vh] overflow-y-auto scrollbar-none ${
             isDark 
-              ? 'bg-[#0f0c1b] border-fuchsia-950 text-pink-100' 
-              : 'bg-[#fffdfd] border-pink-100 text-stone-800'
+              ? 'bg-zinc-900 border-zinc-800 text-pink-100' 
+              : 'bg-white border-pink-100 text-stone-800'
           }`}>
 
             <div className={`flex items-center justify-between mb-6 pb-2 border-b ${
-              isDark ? 'border-fuchsia-950/60' : 'border-pink-50'
+              isDark ? 'border-zinc-800/60' : 'border-pink-50'
             }`}>
               <h3 className="text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2">
                 <Tag className="w-4 h-4 text-pink-500" /> 
@@ -410,7 +410,7 @@ export default function ServiciosPage() {
                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
                   className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors placeholder-stone-400 dark:placeholder-stone-600 ${
                     isDark 
-                      ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                      ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                       : 'bg-transparent border-pink-100 text-stone-800'
                   }`} 
                   placeholder="Ej: Esmaltado Semipermanente Glam"
@@ -428,7 +428,7 @@ export default function ServiciosPage() {
                   rows={3} 
                   className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors placeholder-stone-400 dark:placeholder-stone-600 leading-relaxed resize-none font-sans ${
                     isDark 
-                      ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                      ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                       : 'bg-transparent border-pink-100 text-stone-800'
                   }`} 
                   placeholder="Detalla los materiales utilizados o especificaciones particulares del servicio..." 
@@ -446,7 +446,7 @@ export default function ServiciosPage() {
                     onChange={(e) => setFormData({...formData, price: e.target.value})} 
                     className={`w-full border font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
                       isDark 
-                        ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                         : 'bg-transparent border-pink-100 text-stone-800'
                     }`} 
                     placeholder="0.00"
@@ -463,7 +463,7 @@ export default function ServiciosPage() {
                     onChange={(e) => setFormData({...formData, duration: e.target.value})} 
                     className={`w-full border font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
                       isDark 
-                        ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                         : 'bg-transparent border-pink-100 text-stone-800'
                     }`} 
                     placeholder="60"
@@ -482,12 +482,12 @@ export default function ServiciosPage() {
                     onChange={(e) => setFormData({...formData, category: e.target.value})} 
                     className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
                       isDark 
-                        ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                         : 'bg-transparent border-pink-100 text-stone-800'
                     }`}
                   >
                     {categoriasConfig.filter(c => c.name !== 'Todos').map(cat => (
-                      <option key={cat.name} value={cat.name} className={isDark ? 'bg-[#0f0c1b] text-pink-100' : 'bg-[#fffdfd] text-stone-800'}>
+                      <option key={cat.name} value={cat.name} className={isDark ? 'bg-zinc-900 text-pink-100' : 'bg-white text-stone-800'}>
                         {cat.name}
                       </option>
                     ))}
@@ -503,7 +503,7 @@ export default function ServiciosPage() {
                     onChange={(e) => setFormData({...formData, badge: e.target.value})} 
                     className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors uppercase placeholder-stone-400 dark:placeholder-stone-600 ${
                       isDark 
-                        ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' 
+                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
                         : 'bg-transparent border-pink-100 text-stone-800'
                     }`} 
                     placeholder="Ej: TOP, NUEVO" 
@@ -512,14 +512,14 @@ export default function ServiciosPage() {
               </div>
 
               <div className={`flex gap-3 pt-6 mt-4 border-t ${
-                isDark ? 'border-fuchsia-950/60' : 'border-pink-50'
+                isDark ? 'border-zinc-800/60' : 'border-pink-50'
               }`}>
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)} 
                   className={`flex-1 px-4 py-3 border rounded-xl text-[10px] font-mono font-bold tracking-widest uppercase transition-colors ${
                     isDark 
-                      ? 'border-fuchsia-950 text-stone-400 hover:bg-[#130f24]' 
+                      ? 'border-zinc-800 text-stone-400 hover:bg-zinc-900' 
                       : 'border-pink-100 text-stone-500 hover:bg-pink-50/40'
                   }`}
                 >
