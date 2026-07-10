@@ -16,12 +16,22 @@ interface RuletaModalProps {
 }
 
 const PREMIOS = [
-  { id: 0, label: '50 Pts', emoji: '💇‍♀️', value: 50, type: 'hair', color: '#F59E0B', bg: '#F59E0B' },
-  { id: 1, label: '10 Pts', emoji: '✨', value: 10, type: 'glow', color: '#EC4899', bg: '#EC4899' },
-  { id: 2, label: 'Suerte', emoji: '🍀', value: 0, type: 'none', color: '#22C55E', bg: '#22C55E' },
-  { id: 3, label: '100 Pts', emoji: '👑', value: 100, type: 'hair', color: '#FBBF24', bg: '#FBBF24' },
-  { id: 4, label: '50 Pts', emoji: '💎', value: 50, type: 'glow', color: '#DB2777', bg: '#DB2777' },
-  { id: 5, label: 'Suerte', emoji: '⭐', value: 0, type: 'none', color: '#8B5CF6', bg: '#8B5CF6' },
+  { id: 0, label: '50', emoji: '💇', value: 50, type: 'hair' },
+  { id: 1, label: '10', emoji: '✨', value: 10, type: 'glow' },
+  { id: 2, label: '🎯', emoji: '🎯', value: 0, type: 'none' },
+  { id: 3, label: '100', emoji: '👑', value: 100, type: 'hair' },
+  { id: 4, label: '50', emoji: '💎', value: 50, type: 'glow' },
+  { id: 5, label: '🔄', emoji: '🔄', value: 0, type: 'none' },
+]
+
+// Colores vibrantes para los segmentos
+const COLORS = [
+  '#FF6B6B', // Rojo
+  '#4ECDC4', // Turquesa
+  '#FFD93D', // Amarillo
+  '#6C5CE7', // Morado
+  '#FF8A5C', // Naranja
+  '#A29BFE', // Lila
 ]
 
 export default function RuletaModal({ 
@@ -48,92 +58,77 @@ export default function RuletaModal({
 
   const [isSpinning, setIsSpinning] = useState(false)
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
-  const [currentRotation, setCurrentRotation] = useState(0)
+  const [rotation, setRotation] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [prizeIndex, setPrizeIndex] = useState<number | null>(null)
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // Dibujar la ruleta en canvas con colores vibrantes
-  useEffect(() => {
-    if (!canvasRef.current) return
-    drawWheel(0)
-  }, [isDark, primaryColor, secondaryColor])
-
-  const drawWheel = (rotation: number) => {
+  // Función para dibujar la ruleta
+  const drawWheel = (rotate: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
+    
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const size = canvas.width
-    const centerX = size / 2
-    const centerY = size / 2
-    const radius = size / 2 - 8
+    const width = canvas.width
+    const height = canvas.height
+    const centerX = width / 2
+    const centerY = height / 2
+    const radius = Math.min(width, height) / 2 - 10
 
-    ctx.clearRect(0, 0, size, size)
+    // Limpiar canvas
+    ctx.clearRect(0, 0, width, height)
 
-    const segmentAngle = (2 * Math.PI) / PREMIOS.length
+    const numSegments = PREMIOS.length
+    const segmentAngle = (2 * Math.PI) / numSegments
 
     // Dibujar cada segmento
-    PREMIOS.forEach((premio, i) => {
-      const startAngle = i * segmentAngle + rotation
+    for (let i = 0; i < numSegments; i++) {
+      const startAngle = i * segmentAngle + rotate
       const endAngle = startAngle + segmentAngle
 
-      // Segmento con color
+      // Dibujar segmento
       ctx.beginPath()
       ctx.moveTo(centerX, centerY)
       ctx.arc(centerX, centerY, radius, startAngle, endAngle)
       ctx.closePath()
 
-      // Colores vibrantes alternados
-      const colors = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD',
-        '#FF8A5C', '#A29BFE', '#FD79A8', '#00B894', '#FDCB6E', '#6C5CE7'
-      ]
-      ctx.fillStyle = colors[i % colors.length]
+      // Color del segmento
+      ctx.fillStyle = COLORS[i % COLORS.length]
       ctx.fill()
-      
+
       // Borde del segmento
-      ctx.strokeStyle = isDark ? '#1a1625' : '#ffffff'
+      ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 2
       ctx.stroke()
 
-      // Dibujar texto dentro del segmento
+      // Dibujar texto en el segmento
       ctx.save()
       ctx.translate(centerX, centerY)
       ctx.rotate(startAngle + segmentAngle / 2)
       
-      // Emoji grande
-      ctx.font = '28px Arial'
+      // Emoji
+      ctx.font = 'bold 24px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'
+      ctx.shadowBlur = 10
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(PREMIOS[i].emoji, radius * 0.65, -8)
+      
+      // Label
+      ctx.shadowBlur = 0
+      ctx.font = 'bold 12px Arial'
       ctx.fillStyle = '#ffffff'
       ctx.shadowColor = 'rgba(0,0,0,0.5)'
-      ctx.shadowBlur = 8
-      ctx.fillText(premio.emoji, radius * 0.6, -12)
-      
-      // Texto del premio
-      ctx.shadowBlur = 0
-      ctx.font = 'bold 11px Arial'
-      ctx.fillStyle = '#ffffff'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'
       ctx.shadowBlur = 4
-      ctx.fillText(premio.label, radius * 0.6, 20)
+      ctx.fillText(PREMIOS[i].label, radius * 0.65, 18)
       
       ctx.restore()
-    })
+    }
 
-    // Círculo exterior decorativo
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
-    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-    ctx.lineWidth = 3
-    ctx.stroke()
-
-    // Círculo central con gradiente
+    // Círculo central
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30)
     gradient.addColorStop(0, secondaryColor)
     gradient.addColorStop(1, primaryColor)
@@ -154,15 +149,21 @@ export default function RuletaModal({
     ctx.stroke()
     
     // Icono en el centro
-    ctx.shadowBlur = 0
-    ctx.font = '22px Arial'
+    ctx.shadowBlur = 10
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.font = '20px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#ffffff'
-    ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.shadowBlur = 10
     ctx.fillText('🎯', centerX, centerY + 1)
   }
+
+  // Dibujar cuando se abre o cambia el tema
+  useEffect(() => {
+    if (isOpen && canvasRef.current) {
+      drawWheel(rotation)
+    }
+  }, [isOpen, isDark])
 
   // Verificar giro del día
   useEffect(() => {
@@ -244,104 +245,82 @@ export default function RuletaModal({
     setChosenPrize(null)
 
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
-    setPrizeIndex(randomIndex)
     const premioGanado = PREMIOS[randomIndex]
 
-    // Calcular rotación para que caiga en el premio
+    // Calcular rotación
     const segmentAngle = (2 * Math.PI) / PREMIOS.length
     const targetAngle = (2 * Math.PI) - (randomIndex * segmentAngle + segmentAngle / 2)
-    const spins = 8
+    const spins = 5
     const totalRotation = spins * 2 * Math.PI + targetAngle
     
-    const newRotation = currentRotation + totalRotation
-    setCurrentRotation(newRotation)
+    const newRotation = rotation + totalRotation
+    setRotation(newRotation)
+    drawWheel(newRotation)
 
-    // Animar con 20 frames para suavidad
-    let currentFrame = 0
-    const totalFrames = 60
-    const startRotation = currentRotation
-    const endRotation = newRotation
-    
-    const animate = () => {
-      currentFrame++
-      const progress = currentFrame / totalFrames
-      const eased = 1 - Math.pow(1 - progress, 3)
-      const current = startRotation + (endRotation - startRotation) * eased
-      drawWheel(current)
-      
-      if (currentFrame < totalFrames) {
-        requestAnimationFrame(animate)
-      } else {
-        drawWheel(endRotation)
-        setTimeout(async () => {
-          setChosenPrize(premioGanado)
+    setTimeout(async () => {
+      setChosenPrize(premioGanado)
 
-          if (premioGanado.value > 0) {
-            const { error: txError } = await supabase.from('loyalty_transactions').insert({
-              client_id: clientId,
-              tenant_id: resolvedTenantId,
-              points: premioGanado.value,
-              type: 'earned',
-              wallet_type: premioGanado.type,
-              category: 'manual',
-              description: `Ruleta Diaria: ${premioGanado.emoji} ${premioGanado.value} pts`
-            })
+      if (premioGanado.value > 0) {
+        const { error: txError } = await supabase.from('loyalty_transactions').insert({
+          client_id: clientId,
+          tenant_id: resolvedTenantId,
+          points: premioGanado.value,
+          type: 'earned',
+          wallet_type: premioGanado.type,
+          category: 'manual',
+          description: `Ruleta Diaria: ${premioGanado.emoji} ${premioGanado.value} pts`
+        })
 
-            if (!txError) {
-              const columnaPuntos = premioGanado.type === 'hair' ? 'hair_points' : 'glow_points'
-              const { data: wallet } = await supabase
-                .from('loyalty_wallets')
-                .select('*')
-                .eq('client_id', clientId)
-                .eq('tenant_id', resolvedTenantId)
-                .maybeSingle()
+        if (!txError) {
+          const columnaPuntos = premioGanado.type === 'hair' ? 'hair_points' : 'glow_points'
+          const { data: wallet } = await supabase
+            .from('loyalty_wallets')
+            .select('*')
+            .eq('client_id', clientId)
+            .eq('tenant_id', resolvedTenantId)
+            .maybeSingle()
 
-              if (wallet) {
-                await supabase
-                  .from('loyalty_wallets')
-                  .update({ [columnaPuntos]: (wallet[columnaPuntos] || 0) + premioGanado.value })
-                  .eq('client_id', clientId)
-                  .eq('tenant_id', resolvedTenantId)
-              } else {
-                await supabase
-                  .from('loyalty_wallets')
-                  .insert({
-                    client_id: clientId,
-                    tenant_id: resolvedTenantId,
-                    hair_points: premioGanado.type === 'hair' ? premioGanado.value : 0,
-                    glow_points: premioGanado.type === 'glow' ? premioGanado.value : 0
-                  })
-              }
-
-              if (refreshUserData) await refreshUserData()
-              if (onPremioProcesado) onPremioProcesado()
-            }
+          if (wallet) {
+            await supabase
+              .from('loyalty_wallets')
+              .update({ [columnaPuntos]: (wallet[columnaPuntos] || 0) + premioGanado.value })
+              .eq('client_id', clientId)
+              .eq('tenant_id', resolvedTenantId)
+          } else {
+            await supabase
+              .from('loyalty_wallets')
+              .insert({
+                client_id: clientId,
+                tenant_id: resolvedTenantId,
+                hair_points: premioGanado.type === 'hair' ? premioGanado.value : 0,
+                glow_points: premioGanado.type === 'glow' ? premioGanado.value : 0
+              })
           }
 
-          setYaGiroHoy(true)
-          const hoyInicio = new Date()
-          hoyInicio.setHours(0, 0, 0, 0)
-          const mananaInicio = new Date(hoyInicio)
-          mananaInicio.setDate(mananaInicio.getDate() + 1)
-          const ahora = new Date()
-          const diffMs = mananaInicio.getTime() - ahora.getTime()
-          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
-          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-          setProximoGiro(`${diffHrs}h ${diffMin}m`)
-
-          setIsSpinning(false)
-        }, 500)
+          if (refreshUserData) await refreshUserData()
+          if (onPremioProcesado) onPremioProcesado()
+        }
       }
-    }
-    
-    animate()
+
+      setYaGiroHoy(true)
+      const hoyInicio = new Date()
+      hoyInicio.setHours(0, 0, 0, 0)
+      const mananaInicio = new Date(hoyInicio)
+      mananaInicio.setDate(mananaInicio.getDate() + 1)
+      const ahora = new Date()
+      const diffMs = mananaInicio.getTime() - ahora.getTime()
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      setProximoGiro(`${diffHrs}h ${diffMin}m`)
+
+      setIsSpinning(false)
+    }, 4000)
   }
 
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-      {/* Fondo */}
       <div 
         className="fixed inset-0 backdrop-blur-sm transition-opacity duration-300" 
         style={{ backgroundColor: isDark ? 'rgba(15, 12, 27, 0.85)' : 'rgba(0, 0, 0, 0.6)' }}
@@ -352,7 +331,6 @@ export default function RuletaModal({
         isDark ? 'bg-[#0f0c1b] border-fuchsia-950/40' : 'bg-white border-pink-100/60'
       }`}>
 
-        {/* Cerrar */}
         {!isSpinning && (
           <button 
             onClick={onClose} 
@@ -395,7 +373,6 @@ export default function RuletaModal({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Título */}
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[8px] uppercase tracking-[0.2em] font-black mb-1.5"
                 style={{ borderColor: `${primaryColor}30`, color: primaryColor }}
@@ -419,16 +396,13 @@ export default function RuletaModal({
               )}
             </div>
 
-            {/* Canvas de la ruleta */}
             <div className="relative w-[260px] h-[260px] mx-auto">
-              {/* Flecha indicadora */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                 <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[16px]" 
                   style={{ borderTopColor: primaryColor }} 
                 />
               </div>
 
-              {/* Decoración exterior */}
               <div className="absolute -inset-2 rounded-full opacity-20 blur-xl" style={{ background: brandGradient }} />
 
               <canvas
@@ -439,7 +413,6 @@ export default function RuletaModal({
                 style={{ boxShadow: `0 0 50px ${primaryColor}30` }}
               />
 
-              {/* Botón girar sobre el canvas */}
               {!yaGiroHoy && (
                 <button
                   onClick={ejecutarGiro}
@@ -472,7 +445,6 @@ export default function RuletaModal({
               )}
             </div>
 
-            {/* Resultado */}
             <div className={`min-h-[44px] flex items-center justify-center px-4 rounded-xl border py-2 transition-all ${
               chosenPrize ? 'border-opacity-100' : 'border-opacity-30'
             }`}
@@ -513,7 +485,6 @@ export default function RuletaModal({
               )}
             </div>
 
-            {/* Footer */}
             <p className={`text-[7px] uppercase tracking-[0.2em] ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>
               {yaGiroHoy ? '🔒 Un giro por día' : '🎯 Un giro diario'}
             </p>
