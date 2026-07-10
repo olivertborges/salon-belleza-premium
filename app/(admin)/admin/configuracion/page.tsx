@@ -43,7 +43,7 @@ export default function ConfiguracionPage() {
     panel_dark: '#130f24',
     text_title_color: '#1c1917',
     social: { instagram: '', facebook: '', tiktok: '' },
-    currency: '€',
+    currency: '$U',
     appointment_duration: 60,
     appointment_gap: 15,
     notifications: { email: true, whatsapp: true },
@@ -80,7 +80,8 @@ export default function ConfiguracionPage() {
             bg_light: data.bg_light || prev.bg_light,
             bg_dark: data.bg_dark || prev.bg_dark,
             panel_dark: data.panel_dark || prev.panel_dark,
-            text_title_color: data.text_title_color || prev.text_title_color
+            text_title_color: data.text_title_color || prev.text_title_color,
+            currency: data.currency || prev.currency
           }))
         }
       } catch (err: any) {
@@ -272,9 +273,15 @@ export default function ConfiguracionPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Divisa Base</label>
-                  <select value={config.currency} onChange={(e) => setConfig({...config, currency: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none" style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}>
+                  <select 
+                    value={config.currency} 
+                    onChange={(e) => setConfig({...config, currency: e.target.value})} 
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  >
+                    <option value="$U">$U Peso Uruguayo</option>
+                    <option value="USD">USD Dólar</option>
                     <option value="€">€ Euro</option>
-                    <option value="$">$ Dólar</option>
                   </select>
                 </div>
               </div>
