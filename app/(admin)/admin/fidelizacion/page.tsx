@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Crown, Gift, Plus, Trash2, Sparkles, Scissors, 
   Percent, Layers, Edit3, Check, X
@@ -28,6 +29,8 @@ interface RewardForm {
 
 export default function AdminVIPConfigPage() {
   const { tenantId, loading: authLoading } = useAuth()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   const [activeTab, setActiveTab] = useState<'glow' | 'hair'>('glow')
   const [levels, setLevels] = useState<LevelForm[]>([])
@@ -185,32 +188,34 @@ export default function AdminVIPConfigPage() {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
         <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="text-pink-600/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Beneficios...</p>
+        <p className="text-pink-600/80 dark:text-pink-400/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Beneficios...</p>
       </div>
     )
   }
 
   if (!tenantId) {
     return (
-      <div className="flex h-[70vh] flex-col items-center justify-center text-center p-6 max-w-md mx-auto">
-        <div className="w-12 h-12 rounded-2xl border border-pink-100 dark:border-fuchsia-950 flex items-center justify-center mb-4 shadow-sm bg-[#fffdfd] dark:bg-[#130f24]">
+      <div className={`flex h-[70vh] flex-col items-center justify-center text-center p-6 max-w-md mx-auto ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
+        <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-4 shadow-sm ${
+          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-pink-100'
+        }`}>
           <Crown className="w-5 h-5 text-pink-500 stroke-[1.5]" />
         </div>
         <p className="text-xs font-mono uppercase tracking-[0.2em] text-pink-500 font-bold">Acceso Restringido</p>
         <p className="text-[11px] text-stone-500 dark:text-pink-100/60 mt-2 leading-relaxed">
-          Tu cuenta de administrador no cuenta con un identificador de negocio asignado (<code className="font-mono text-pink-500 px-1 py-0.5 rounded bg-pink-50 dark:bg-fuchsia-950/40">tenant_id</code>) en la base de datos de perfiles.
+          Tu cuenta de administrador no cuenta con un identificador de negocio asignado (<code className="font-mono text-pink-500 px-1 py-0.5 rounded bg-pink-50 dark:bg-zinc-800">tenant_id</code>) en la base de datos de perfiles.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 p-1">
+    <div className={`space-y-8 p-1 max-w-6xl mx-auto ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
 
       {/* CABECERA CON DEGRADADO ORIGINAL */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
         <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
-        <div className="relative z-10 rounded-[23px] bg-[#fffdfd] dark:bg-[#0f0c1b] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className={`relative z-10 rounded-[23px] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
           <div className="flex items-center gap-4">
             <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
               <Crown className="w-6 h-6" />
@@ -220,12 +225,14 @@ export default function AdminVIPConfigPage() {
               <h1 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
                 Club VIP & Beneficios
               </h1>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5">Configure las escalas transaccionales y el catálogo exclusivo de recompensas.</p>
+              <p className="text-xs text-stone-500 dark:text-pink-200/60 mt-0.5">Configure las escalas transaccionales y el catálogo exclusivo de recompensas.</p>
             </div>
           </div>
 
           {/* SELECTOR DE PLATAFORMA / WALLET ESTILO FRESH */}
-          <div className="flex rounded-xl p-1 border bg-pink-50/50 border-pink-100/60 dark:bg-[#130f24] dark:border-fuchsia-950 shrink-0 self-start md:self-auto">
+          <div className={`flex rounded-xl p-1 border shrink-0 self-start md:self-auto ${
+            isDark ? 'bg-zinc-950/40 border-zinc-800' : 'bg-pink-50/50 border-pink-100/60'
+          }`}>
             <button 
               type="button"
               onClick={() => setActiveTab('glow')} 
@@ -263,14 +270,18 @@ export default function AdminVIPConfigPage() {
           </div>
 
           {/* Formulario Nivel */}
-          <form onSubmit={handleAddLevel} className="rounded-2xl p-5 space-y-4 bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 shadow-xs">
+          <form onSubmit={handleAddLevel} className={`rounded-2xl p-5 space-y-4 border shadow-sm ${
+            isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
+          }`}>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
                 <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre del Rango</label>
                 <input 
                   type="text" placeholder="Ej: Platinum" required
                   value={newLevel.name} onChange={e => setNewLevel({...newLevel, name: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder-stone-400 focus:outline-none focus:border-pink-300 transition-colors font-sans"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 placeholder-stone-400 focus:outline-none transition-colors font-sans ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
               <div>
@@ -278,7 +289,9 @@ export default function AdminVIPConfigPage() {
                 <input 
                   type="text" placeholder="✨" required
                   value={newLevel.emoji} onChange={e => setNewLevel({...newLevel, emoji: e.target.value})}
-                  className="w-full px-3 py-2 text-xs text-center rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 transition-colors"
+                  className={`w-full px-3 py-2 text-xs text-center rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none transition-colors ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
             </div>
@@ -288,7 +301,9 @@ export default function AdminVIPConfigPage() {
                 type="number" 
                 value={newLevel.min_points} 
                 onChange={e => setNewLevel({...newLevel, min_points: e.target.value === '' ? 0 : Number(e.target.value)})}
-                className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 transition-colors"
+                className={`w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none transition-colors ${
+                  isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                }`}
               />
             </div>
             <button type="submit" className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-1.5 transition-all shadow-md shadow-pink-500/10">
@@ -299,31 +314,41 @@ export default function AdminVIPConfigPage() {
           {/* Lista de Niveles */}
           <div className="space-y-2.5">
             {levels.length === 0 ? (
-              <div className="text-center py-6 border border-dashed rounded-2xl border-pink-100 dark:border-fuchsia-950 font-mono text-stone-400 text-xs">
+              <div className={`text-center py-6 border border-dashed rounded-2xl font-mono text-stone-400 text-xs ${
+                isDark ? 'border-zinc-800' : 'border-pink-100'
+              }`}>
                 No se registran rangos de corte activos.
               </div>
             ) : (
               levels.map((l) => {
                 const isEditing = editingLevelId === l.id;
                 return (
-                  <div key={l.id} className="rounded-xl p-4 bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950/70 shadow-xs transition-all hover:border-pink-300 group">
+                  <div key={l.id} className={`rounded-xl p-4 border shadow-sm transition-all hover:border-pink-300 group ${
+                    isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
+                  }`}>
                     {isEditing && editLevelData ? (
                       <div className="space-y-3">
                         <div className="grid grid-cols-3 gap-2">
                           <input 
                             type="text" value={editLevelData.name} onChange={e => setEditLevelData({...editLevelData, name: e.target.value})}
-                            className="col-span-2 p-2 text-xs rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100"
+                            className={`col-span-2 p-2 text-xs rounded-lg border bg-transparent text-stone-800 dark:text-pink-100 ${
+                              isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                            }`}
                           />
                           <input 
                             type="text" value={editLevelData.emoji} onChange={e => setEditLevelData({...editLevelData, emoji: e.target.value})}
-                            className="p-2 text-xs text-center rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100"
+                            className={`p-2 text-xs text-center rounded-lg border bg-transparent text-stone-800 dark:text-pink-100 ${
+                              isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                            }`}
                           />
                         </div>
                         <div>
                           <label className="text-[8px] font-mono uppercase text-stone-400 block mb-1">Mínimo Requerido</label>
                           <input 
-                            type="number" value={editLevelData.min_points} onChange={e => setEditLevelData({...editLevelData, min_points: Number(e.target.value)})}
-                            className="w-full p-2 text-xs font-mono rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100"
+                            type="number" value={editLevelData.min_points} onChange={e => setEditLevelData({...editLevelData, min_points: e.target.value === '' ? 0 : Number(e.target.value)})}
+                            className={`w-full p-2 text-xs font-mono rounded-lg border bg-transparent text-stone-800 dark:text-pink-100 ${
+                              isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                            }`}
                           />
                         </div>
                         <div className="flex gap-2 justify-end pt-1">
@@ -334,7 +359,9 @@ export default function AdminVIPConfigPage() {
                     ) : (
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl border flex items-center justify-center text-sm bg-pink-5050 dark:bg-fuchsia-950/20 border-pink-100/60 dark:border-fuchsia-950 shadow-inner">
+                          <div className={`w-9 h-9 rounded-xl border flex items-center justify-center text-sm shadow-inner ${
+                            isDark ? 'bg-zinc-800/40 border-zinc-800' : 'bg-pink-50/50 border-pink-100/60'
+                          }`}>
                             {l.emoji}
                           </div>
                           <div>
@@ -343,8 +370,12 @@ export default function AdminVIPConfigPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button type="button" onClick={() => { setEditingLevelId(l.id || null); setEditLevelData(l); }} className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-pink-500 transition-colors"><Edit3 className="w-3.5 h-3.5 stroke-[1.5]" /></button>
-                          <button type="button" onClick={() => l.id && handleDeleteLevel(l.id)} className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-rose-500 transition-colors"><Trash2 className="w-3.5 h-3.5 stroke-[1.5]" /></button>
+                          <button type="button" onClick={() => { setEditingLevelId(l.id || null); setEditLevelData(l); }} className={`p-1.5 rounded-xl border transition-colors ${
+                            isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-pink-400' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-pink-500'
+                          }`}><Edit3 className="w-3.5 h-3.5 stroke-[1.5]" /></button>
+                          <button type="button" onClick={() => l.id && handleDeleteLevel(l.id)} className={`p-1.5 rounded-xl border transition-colors ${
+                            isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-rose-400' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-rose-500'
+                          }`}><Trash2 className="w-3.5 h-3.5 stroke-[1.5]" /></button>
                         </div>
                       </div>
                     )}
@@ -363,22 +394,28 @@ export default function AdminVIPConfigPage() {
           </div>
 
           {/* Formulario Recompensas */}
-          <form onSubmit={handleAddReward} className="rounded-2xl p-5 space-y-4 bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 shadow-xs">
+          <form onSubmit={handleAddReward} className={`rounded-2xl p-5 space-y-4 border shadow-sm ${
+            isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
+          }`}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre del Premio</label>
                 <input 
                   type="text" placeholder="Ej: Set Nail Care Premium" required
                   value={newReward.name} onChange={e => setNewReward({...newReward, name: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder-stone-400 focus:outline-none focus:border-pink-300 transition-colors"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 placeholder-stone-400 focus:outline-none transition-colors ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
               <div>
                 <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Costo (Puntos requeridos)</label>
                 <input 
                   type="number" placeholder="Ej: 1500" required
-                  value={newReward.points_required || ''} onChange={e => setNewReward({...newReward, points_required: Number(e.target.value)})}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 transition-colors"
+                  value={newReward.points_required || ''} onChange={e => setNewReward({...newReward, points_required: e.target.value === '' ? 0 : Number(e.target.value)})}
+                  className={`w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none transition-colors ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
             </div>
@@ -388,7 +425,9 @@ export default function AdminVIPConfigPage() {
               <textarea 
                 placeholder="Indique qué servicios incluye o limitaciones del premio canjeado..." required
                 value={newReward.description} onChange={e => setNewReward({...newReward, description: e.target.value})}
-                className="w-full px-3 py-2 text-xs rounded-xl border h-16 bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 resize-none transition-colors font-sans"
+                className={`w-full px-3 py-2 text-xs rounded-xl border h-16 bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none resize-none transition-colors font-sans ${
+                  isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                }`}
               />
             </div>
 
@@ -398,7 +437,9 @@ export default function AdminVIPConfigPage() {
                 <input 
                   type="text" placeholder="Ej: Oro / Todos" required
                   value={newReward.tier} onChange={e => setNewReward({...newReward, tier: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 transition-colors"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none transition-colors ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
               <div>
@@ -407,9 +448,11 @@ export default function AdminVIPConfigPage() {
                 </label>
                 <input 
                   type="number" placeholder="Ej: 15 (Opcional)"
-                  value={newReward.discount_percentage} 
+                  value={newReward.discount_percentage || ''} 
                   onChange={e => setNewReward({...newReward, discount_percentage: e.target.value === '' ? 0 : Number(e.target.value)})}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:border-pink-300 transition-colors"
+                  className={`w-full px-3 py-2 text-xs font-mono rounded-xl border bg-transparent text-stone-800 dark:text-pink-100 focus:outline-none transition-colors ${
+                    isDark ? 'border-zinc-800 focus:border-pink-500/40' : 'border-pink-100/60 focus:border-pink-300'
+                  }`}
                 />
               </div>
             </div>
@@ -422,19 +465,27 @@ export default function AdminVIPConfigPage() {
           {/* Grid de Cards de Premios */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {rewards.length === 0 ? (
-              <div className="col-span-full text-center py-8 border border-dashed rounded-2xl border-pink-100 dark:border-fuchsia-950 font-mono text-stone-400 text-xs">
+              <div className={`col-span-full text-center py-8 border border-dashed rounded-2xl font-mono text-stone-400 text-xs ${
+                isDark ? 'border-zinc-800' : 'border-pink-100'
+              }`}>
                 No hay premios creados en esta billetera.
               </div>
             ) : (
               rewards.map((r) => {
                 const isEditing = editingRewardId === r.id;
                 return (
-                  <div key={r.id} className="group relative p-4 rounded-xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950/70 flex flex-col justify-between min-h-[140px] shadow-xs transition-all hover:border-pink-300">
+                  <div key={r.id} className={`group relative p-4 rounded-xl border flex flex-col justify-between min-h-[140px] shadow-sm transition-all hover:border-pink-300 ${
+                    isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
+                  }`}>
 
                     {!isEditing && (
                       <div className="absolute top-3 right-3 flex items-center gap-0.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button type="button" onClick={() => { setEditingRewardId(r.id || null); setEditRewardData(r); }} className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-pink-500 transition-colors"><Edit3 className="w-3 h-3 stroke-[1.5]" /></button>
-                        <button type="button" onClick={() => r.id && handleDeleteReward(r.id)} className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-rose-500 transition-colors"><Trash2 className="w-3 h-3 stroke-[1.5]" /></button>
+                        <button type="button" onClick={() => { setEditingRewardId(r.id || null); setEditRewardData(r); }} className={`p-1.5 rounded-xl border transition-colors ${
+                          isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-pink-400' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-pink-500'
+                        }`}><Edit3 className="w-3 h-3 stroke-[1.5]" /></button>
+                        <button type="button" onClick={() => r.id && handleDeleteReward(r.id)} className={`p-1.5 rounded-xl border transition-colors ${
+                          isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-rose-400' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-rose-500'
+                        }`}><Trash2 className="w-3 h-3 stroke-[1.5]" /></button>
                       </div>
                     )}
 
@@ -442,25 +493,33 @@ export default function AdminVIPConfigPage() {
                       <div className="space-y-2.5 w-full text-left">
                         <input 
                           type="text" value={editRewardData.name} onChange={e => setEditRewardData({...editRewardData, name: e.target.value})}
-                          className="w-full p-2 text-xs rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 font-bold"
+                          className={`w-full p-2 text-xs rounded-lg border bg-transparent text-stone-800 dark:text-pink-100 font-bold ${
+                            isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                          }`}
                         />
                         <textarea 
                           value={editRewardData.description} onChange={e => setEditRewardData({...editRewardData, description: e.target.value})}
-                          className="w-full p-2 text-[11px] rounded-lg border h-14 resize-none bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-pink-100/60"
+                          className={`w-full p-2 text-[11px] rounded-lg border h-14 resize-none bg-transparent text-stone-500 dark:text-pink-100/60 ${
+                            isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                          }`}
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-[8px] font-mono uppercase text-stone-400">Rango</label>
                             <input 
                               type="text" value={editRewardData.tier} onChange={e => setEditRewardData({...editRewardData, tier: e.target.value})}
-                              className="w-full p-1.5 text-xs rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200"
+                              className={`w-full p-1.5 text-xs rounded-lg border bg-transparent text-stone-800 dark:text-pink-200 ${
+                                isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                              }`}
                             />
                           </div>
                           <div>
                             <label className="text-[8px] font-mono uppercase text-stone-400">Costo Pts</label>
                             <input 
-                              type="number" value={editRewardData.points_required} onChange={e => setEditRewardData({...editRewardData, points_required: Number(e.target.value)})}
-                              className="w-full p-1.5 text-xs font-mono rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200"
+                              type="number" value={editRewardData.points_required} onChange={e => setEditRewardData({...editRewardData, points_required: e.target.value === '' ? 0 : Number(e.target.value)})}
+                              className={`w-full p-1.5 text-xs font-mono rounded-lg border bg-transparent text-stone-800 dark:text-pink-200 ${
+                                isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                              }`}
                             />
                           </div>
                         </div>
@@ -468,7 +527,9 @@ export default function AdminVIPConfigPage() {
                           <label className="text-[8px] font-mono uppercase text-stone-400">Descuento %</label>
                           <input 
                             type="number" value={editRewardData.discount_percentage} onChange={e => setEditRewardData({...editRewardData, discount_percentage: e.target.value === '' ? 0 : Number(e.target.value)})}
-                            className="w-full p-1.5 text-xs font-mono rounded-lg border bg-transparent border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200"
+                            className={`w-full p-1.5 text-xs font-mono rounded-lg border bg-transparent text-stone-800 dark:text-pink-200 ${
+                              isDark ? 'border-zinc-800' : 'border-pink-100/60'
+                            }`}
                           />
                         </div>
                         <div className="flex gap-2 justify-end pt-1">
@@ -480,7 +541,9 @@ export default function AdminVIPConfigPage() {
                       <>
                         <div className="space-y-1 pr-8">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border border-pink-100 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500 tracking-wider">
+                            <span className={`text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border tracking-wider ${
+                              isDark ? 'border-zinc-800 text-stone-500' : 'border-pink-100 text-stone-400'
+                            }`}>
                               {r.tier}
                             </span>
                             {r.discount_percentage > 0 && (
@@ -493,7 +556,9 @@ export default function AdminVIPConfigPage() {
                           <p className="text-[11px] leading-relaxed line-clamp-2 text-stone-500 dark:text-pink-100/60 font-sans">{r.description}</p>
                         </div>
 
-                        <div className="pt-2.5 mt-3 border-t border-pink-50 dark:border-fuchsia-950/40 flex items-center justify-between">
+                        <div className={`pt-2.5 mt-3 border-t flex items-center justify-between ${
+                          isDark ? 'border-zinc-800/60' : 'border-pink-50'
+                        }`}>
                           <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500">Valor de canje</span>
                           <strong className={`text-xs font-mono font-extrabold ${
                             activeTab === 'glow' ? 'text-pink-500' : 'text-rose-500'
