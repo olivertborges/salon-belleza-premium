@@ -11,7 +11,8 @@ import {
   ChevronLeft, ChevronRight, LayoutGrid,
   Clock, Calendar, Tag, Users, Edit3,
   Check, Eye, EyeOff, User, DollarSign,
-  Palette, Scissors, TrendingUp, Heart
+  Palette, Scissors, TrendingUp, Heart,
+  FileImage, FolderOpen
 } from 'lucide-react'
 
 type Photo = {
@@ -75,6 +76,7 @@ export default function GaleriaAdminPage() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('Todas')
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
@@ -85,6 +87,9 @@ export default function GaleriaAdminPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -103,6 +108,133 @@ export default function GaleriaAdminPage() {
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+  }
+
+  // Subir archivo a Supabase Storage
+  const uploadFile = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
+    const filePath = `gallery/${tenantId}/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('gallery')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        onProgress: (progress) => {
+          const percent = (progress.loaded / progress.total) * 100
+          setUploadProgress(Math.round(percent))
+        }
+      })
+
+    if (uploadError) throw uploadError
+
+    const { data: urlData } = supabase.storage
+      .from('gallery')
+      .getPublicUrl(filePath)
+
+    return urlData.publicUrl
+  }
+
+  // Manejar selección de archivo
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      setError('⚠️ Por favor selecciona una imagen válida (JPEG, PNG, WebP, etc.)')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('⚠️ La imagen no puede superar los 10MB')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    setSelectedFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Subir foto con archivo
+  const handleUploadWithFile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tenantId) return
+    setError(null)
+    setSuccess(null)
+
+    try {
+      setUploading(true)
+      setUploadProgress(0)
+
+      let imageUrl = formData.image_url
+
+      // Si hay archivo seleccionado, subirlo a Storage
+      if (selectedFile) {
+        imageUrl = await uploadFile(selectedFile)
+      } else if (!imageUrl) {
+        setError('⚠️ Selecciona una imagen o ingresa una URL')
+        setUploading(false)
+        return
+      }
+
+      // Guardar en la base de datos
+      const { error } = await supabase
+        .from('gallery')
+        .insert({
+          tenant_id: tenantId,
+          image_url: imageUrl,
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          is_active: formData.is_active,
+          sort_order: formData.sort_order,
+          is_public: formData.is_public
+        })
+
+      if (error) throw error
+
+      setSuccess('✨ ¡Foto subida y agregada a la galería!')
+      setTimeout(() => setSuccess(null), 3000)
+      
+      // Resetear formulario
+      setShowModal(false)
+      setEditingPhoto(null)
+      setSelectedFile(null)
+      setPreviewUrl(null)
+      setUploadProgress(0)
+      setFormData({
+        title: '',
+        category: 'Nail Art',
+        description: '',
+        image_url: '',
+        is_active: true,
+        is_public: true,
+        sort_order: 0,
+        price: '',
+        polish_used: '',
+        sensory_category: '',
+        before_image_url: '',
+        after_image_url: ''
+      })
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      
+      fetchPhotos(false)
+    } catch (err: any) {
+      console.error('Error subiendo foto:', err)
+      setError(err.message || 'Error al subir la foto')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
   }
 
   // Cargar fotos de AMBAS tablas
@@ -178,15 +310,11 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedClientPhotos]
       }
 
-      // Ordenar todas las fotos por fecha (más recientes primero)
       allPhotos.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
 
       setPhotos(allPhotos)
-      setSuccess(`📸 ${allPhotos.length} fotos cargadas (${adminPhotos?.length || 0} admin, ${clientPhotos?.length || 0} clientes)`)
-      setTimeout(() => setSuccess(null), 3000)
-
     } catch (err: any) {
       console.error('Error cargando galería:', err)
       setError(err.message || 'Error al cargar la galería')
@@ -200,103 +328,6 @@ export default function GaleriaAdminPage() {
   useEffect(() => {
     if (tenantId) fetchPhotos()
   }, [tenantId])
-
-  // Abrir modal para editar (solo fotos de admin)
-  const handleEdit = (photo: Photo, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation()
-    if (photo.source === 'client') {
-      setError('⚠️ Las fotos de clientes no se pueden editar desde el panel de admin')
-      setTimeout(() => setError(null), 3000)
-      return
-    }
-    setEditingPhoto(photo)
-    setFormData({
-      title: photo.title || '',
-      category: photo.category || 'Nail Art',
-      description: photo.description || '',
-      image_url: photo.image_url || '',
-      is_active: photo.is_active,
-      is_public: photo.is_public !== undefined ? photo.is_public : true,
-      sort_order: photo.sort_order || 0,
-      price: photo.price?.toString() || '',
-      polish_used: photo.polish_used || '',
-      sensory_category: photo.sensory_category || '',
-      before_image_url: photo.before_image_url || '',
-      after_image_url: photo.after_image_url || ''
-    })
-    setShowModal(true)
-  }
-
-  // Guardar cambios (solo fotos de admin)
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!tenantId) return
-    setError(null)
-    setSuccess(null)
-
-    try {
-      if (editingPhoto) {
-        if (editingPhoto.source === 'client') {
-          setError('No se pueden editar fotos de clientes')
-          return
-        }
-
-        const { error } = await supabase
-          .from('gallery')
-          .update({
-            title: formData.title,
-            category: formData.category,
-            description: formData.description,
-            is_active: formData.is_active,
-            sort_order: formData.sort_order
-          })
-          .eq('id', editingPhoto.id)
-
-        if (error) throw error
-        setSuccess('📝 Foto actualizada correctamente')
-      } else {
-        const imageUrl = formData.image_url || `https://picsum.photos/seed/${Date.now()}/800/800`
-        
-        const { error } = await supabase
-          .from('gallery')
-          .insert({
-            tenant_id: tenantId,
-            image_url: imageUrl,
-            title: formData.title,
-            category: formData.category,
-            description: formData.description,
-            is_active: formData.is_active,
-            sort_order: formData.sort_order
-          })
-
-        if (error) throw error
-        setSuccess('✨ ¡Foto agregada a la galería!')
-      }
-
-      setTimeout(() => setSuccess(null), 2500)
-      setShowModal(false)
-      setEditingPhoto(null)
-      setFormData({
-        title: '',
-        category: 'Nail Art',
-        description: '',
-        image_url: '',
-        is_active: true,
-        is_public: true,
-        sort_order: 0,
-        price: '',
-        polish_used: '',
-        sensory_category: '',
-        before_image_url: '',
-        after_image_url: ''
-      })
-      fetchPhotos(false)
-    } catch (err: any) {
-      console.error('Error guardando:', err)
-      setError(err.message || 'Error al guardar')
-      setTimeout(() => setError(null), 3000)
-    }
-  }
 
   // Eliminar foto (solo admin)
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
@@ -483,12 +514,33 @@ export default function GaleriaAdminPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => { setEditingPhoto(null); setFormData({ title: '', category: 'Nail Art', description: '', image_url: '', is_active: true, is_public: true, sort_order: 0, price: '', polish_used: '', sensory_category: '', before_image_url: '', after_image_url: '' }); setShowModal(true) }}
+                onClick={() => { 
+                  setEditingPhoto(null)
+                  setSelectedFile(null)
+                  setPreviewUrl(null)
+                  setUploadProgress(0)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                  setFormData({
+                    title: '',
+                    category: 'Nail Art',
+                    description: '',
+                    image_url: '',
+                    is_active: true,
+                    is_public: true,
+                    sort_order: 0,
+                    price: '',
+                    polish_used: '',
+                    sensory_category: '',
+                    before_image_url: '',
+                    after_image_url: ''
+                  })
+                  setShowModal(true)
+                }}
                 className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
                 style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
               >
                 <UploadCloud className="w-4 h-4" />
-                <span className="hidden sm:inline">Agregar Foto</span>
+                <span className="hidden sm:inline">Subir Foto</span>
                 <span className="sm:hidden">+</span>
               </motion.button>
             </div>
@@ -651,7 +703,6 @@ export default function GaleriaAdminPage() {
                     </span>
                   </div>
 
-                  {/* Precio en fotos de cliente */}
                   {isClient && photo.price && (
                     <div className="absolute top-3 right-3">
                       <span className="bg-emerald-500/80 backdrop-blur-md text-white text-[8px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -677,7 +728,6 @@ export default function GaleriaAdminPage() {
                     transition={{ duration: 0.3 }}
                   />
 
-                  {/* Badge de categoría */}
                   <motion.div 
                     className="absolute top-3 right-3"
                     initial={{ opacity: 0, y: -10 }}
@@ -693,7 +743,6 @@ export default function GaleriaAdminPage() {
                     </span>
                   </motion.div>
 
-                  {/* Título en hover */}
                   {photo.title && (
                     <motion.div 
                       className="absolute bottom-12 left-3 right-3"
@@ -710,7 +759,6 @@ export default function GaleriaAdminPage() {
                     </motion.div>
                   )}
 
-                  {/* Botones de acción */}
                   <motion.div 
                     className="absolute bottom-3 right-3 flex gap-2"
                     initial={{ opacity: 0, y: 10 }}
@@ -737,7 +785,28 @@ export default function GaleriaAdminPage() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={(e) => handleEdit(photo, e)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingPhoto(photo)
+                            setFormData({
+                              title: photo.title || '',
+                              category: photo.category || 'Nail Art',
+                              description: photo.description || '',
+                              image_url: photo.image_url || '',
+                              is_active: photo.is_active,
+                              is_public: photo.is_public !== undefined ? photo.is_public : true,
+                              sort_order: photo.sort_order || 0,
+                              price: photo.price?.toString() || '',
+                              polish_used: photo.polish_used || '',
+                              sensory_category: photo.sensory_category || '',
+                              before_image_url: photo.before_image_url || '',
+                              after_image_url: photo.after_image_url || ''
+                            })
+                            setSelectedFile(null)
+                            setPreviewUrl(null)
+                            if (fileInputRef.current) fileInputRef.current.value = ''
+                            setShowModal(true)
+                          }}
                           className="p-2 bg-white/20 backdrop-blur-md hover:bg-blue-500/60 text-white rounded-xl transition-all"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -889,7 +958,29 @@ export default function GaleriaAdminPage() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={(e) => handleEdit(selectedPhoto, e)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingPhoto(selectedPhoto)
+                            setFormData({
+                              title: selectedPhoto.title || '',
+                              category: selectedPhoto.category || 'Nail Art',
+                              description: selectedPhoto.description || '',
+                              image_url: selectedPhoto.image_url || '',
+                              is_active: selectedPhoto.is_active,
+                              is_public: selectedPhoto.is_public !== undefined ? selectedPhoto.is_public : true,
+                              sort_order: selectedPhoto.sort_order || 0,
+                              price: selectedPhoto.price?.toString() || '',
+                              polish_used: selectedPhoto.polish_used || '',
+                              sensory_category: selectedPhoto.sensory_category || '',
+                              before_image_url: selectedPhoto.before_image_url || '',
+                              after_image_url: selectedPhoto.after_image_url || ''
+                            })
+                            setSelectedFile(null)
+                            setPreviewUrl(null)
+                            if (fileInputRef.current) fileInputRef.current.value = ''
+                            setShowModal(true)
+                            setShowLightbox(false)
+                          }}
                           className="p-2 bg-blue-500/20 hover:bg-blue-500/80 text-white rounded-xl transition-all"
                         >
                           <Edit3 className="w-4 h-4" />
@@ -907,7 +998,6 @@ export default function GaleriaAdminPage() {
                   </div>
                 </div>
 
-                {/* Información adicional para fotos de clientes */}
                 {selectedPhoto.source === 'client' && (
                   <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-white/10">
                     {selectedPhoto.client_name && (
@@ -960,7 +1050,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL PARA EDITAR/CREAR */}
+      {/* MODAL CON SUBIDA DE ARCHIVOS */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -979,7 +1069,13 @@ export default function GaleriaAdminPage() {
               className="relative w-full max-w-lg rounded-3xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false)
+                  setSelectedFile(null)
+                  setPreviewUrl(null)
+                  setUploadProgress(0)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }}
                 className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
               >
                 <X className="w-5 h-5" />
@@ -990,11 +1086,84 @@ export default function GaleriaAdminPage() {
                   {editingPhoto ? <Edit3 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
                 </div>
                 <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
-                  {editingPhoto ? 'Editar Foto' : 'Agregar Foto'}
+                  {editingPhoto ? 'Editar Foto' : 'Subir Foto'}
                 </h3>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-4">
+              <form onSubmit={editingPhoto ? handleEditPhoto : handleUploadWithFile} className="space-y-4">
+                {/* ÁREA DE SUBIDA DE ARCHIVO */}
+                {!editingPhoto && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      Seleccionar Imagen *
+                    </label>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all hover:border-pink-500/50 ${
+                        previewUrl 
+                          ? 'border-pink-500/50 bg-pink-50/10' 
+                          : 'border-stone-300 dark:border-fuchsia-950 hover:bg-pink-50/5'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      
+                      {previewUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={previewUrl} 
+                            alt="Vista previa" 
+                            className="max-h-48 mx-auto rounded-lg object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedFile(null)
+                              setPreviewUrl(null)
+                              if (fileInputRef.current) fileInputRef.current.value = ''
+                            }}
+                            className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-4">
+                          <FileImage className="w-12 h-12 mx-auto text-stone-400 dark:text-stone-600 mb-3" />
+                          <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+                            Haz clic para seleccionar
+                          </p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
+                            JPEG, PNG, WebP • Máx. 10MB
+                          </p>
+                        </div>
+                      )}
+
+                      {uploading && uploadProgress > 0 && (
+                        <div className="mt-3">
+                          <div className="w-full bg-stone-200 dark:bg-fuchsia-950/50 rounded-full h-2 overflow-hidden">
+                            <motion.div 
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${uploadProgress}%` }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </div>
+                          <p className="text-xs text-stone-400 mt-1">{uploadProgress}% subido</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Título */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Título
@@ -1009,6 +1178,7 @@ export default function GaleriaAdminPage() {
                   />
                 </div>
 
+                {/* Categoría */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Categoría
@@ -1025,6 +1195,7 @@ export default function GaleriaAdminPage() {
                   </select>
                 </div>
 
+                {/* Descripción */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Descripción
@@ -1039,22 +1210,23 @@ export default function GaleriaAdminPage() {
                   />
                 </div>
 
-                {!editingPhoto && (
+                {/* Solo para edición: mostrar URL actual */}
+                {editingPhoto && (
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                      URL de la imagen (opcional)
+                      Imagen actual
                     </label>
-                    <input
-                      type="text"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
-                      placeholder="https://... (dejar vacío para usar imagen de ejemplo)"
-                    />
+                    <div className="relative rounded-xl overflow-hidden border border-pink-100/60 dark:border-fuchsia-950">
+                      <img 
+                        src={formData.image_url} 
+                        alt="Imagen actual" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
                   </div>
                 )}
 
+                {/* Checkboxes */}
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1093,18 +1265,29 @@ export default function GaleriaAdminPage() {
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setShowModal(false)}
+                    onClick={() => {
+                      setShowModal(false)
+                      setSelectedFile(null)
+                      setPreviewUrl(null)
+                      setUploadProgress(0)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
                     className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                    disabled={uploading}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
                     style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
                   >
-                    <Check className="w-4 h-4" />
-                    {editingPhoto ? 'Actualizar' : 'Guardar'}
+                    {uploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    {uploading ? 'Subiendo...' : (editingPhoto ? 'Actualizar' : 'Guardar')}
                   </button>
                 </div>
               </form>
