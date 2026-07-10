@@ -98,7 +98,6 @@ export default function GaleriaAdminPage() {
     description: '',
     image_url: '',
     is_active: true,
-    is_public: true,
     sort_order: 0,
     price: '',
     polish_used: '',
@@ -221,13 +220,13 @@ export default function GaleriaAdminPage() {
       if (editingPhoto) {
         addDebugLog(`✏️ Editando foto ID: ${editingPhoto.id}`)
         
+        // ⚠️ SOLO columnas que existen en la tabla 'gallery'
         const updateData = {
           title: formData.title || null,
           category: formData.category || 'Nail Art',
           description: formData.description || null,
           is_active: formData.is_active,
-          sort_order: formData.sort_order || 0,
-          is_public: formData.is_public
+          sort_order: formData.sort_order || 0
         }
 
         addDebugLog(`📝 Datos a actualizar: ${JSON.stringify(updateData)}`)
@@ -255,6 +254,7 @@ export default function GaleriaAdminPage() {
           return
         }
 
+        // ⚠️ SOLO columnas que existen en la tabla 'gallery'
         const insertData = {
           tenant_id: tenantId,
           image_url: imageUrl,
@@ -262,8 +262,7 @@ export default function GaleriaAdminPage() {
           category: formData.category || 'Nail Art',
           description: formData.description || null,
           is_active: formData.is_active,
-          sort_order: formData.sort_order || 0,
-          is_public: formData.is_public
+          sort_order: formData.sort_order || 0
         }
 
         addDebugLog(`📝 Datos a insertar: ${JSON.stringify(insertData)}`)
@@ -293,7 +292,6 @@ export default function GaleriaAdminPage() {
         description: '',
         image_url: '',
         is_active: true,
-        is_public: true,
         sort_order: 0,
         price: '',
         polish_used: '',
@@ -644,7 +642,6 @@ export default function GaleriaAdminPage() {
                     description: '',
                     image_url: '',
                     is_active: true,
-                    is_public: true,
                     sort_order: 0,
                     price: '',
                     polish_used: '',
@@ -960,7 +957,6 @@ export default function GaleriaAdminPage() {
                               description: photo.description || '',
                               image_url: photo.image_url || '',
                               is_active: photo.is_active,
-                              is_public: photo.is_public !== undefined ? photo.is_public : true,
                               sort_order: photo.sort_order || 0,
                               price: photo.price?.toString() || '',
                               polish_used: photo.polish_used || '',
@@ -1134,7 +1130,6 @@ export default function GaleriaAdminPage() {
                               description: selectedPhoto.description || '',
                               image_url: selectedPhoto.image_url || '',
                               is_active: selectedPhoto.is_active,
-                              is_public: selectedPhoto.is_public !== undefined ? selectedPhoto.is_public : true,
                               sort_order: selectedPhoto.sort_order || 0,
                               price: selectedPhoto.price?.toString() || '',
                               polish_used: selectedPhoto.polish_used || '',
@@ -1395,7 +1390,7 @@ export default function GaleriaAdminPage() {
                   </div>
                 )}
 
-                {/* Checkboxes */}
+                {/* Checkboxes - SOLO is_active (is_public NO existe en gallery) */}
                 <div className="flex items-center gap-4 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1405,16 +1400,6 @@ export default function GaleriaAdminPage() {
                       className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
                     />
                     <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Visible</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_public}
-                      onChange={(e) => setFormData({...formData, is_public: e.target.checked})}
-                      className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
-                    />
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Público</span>
                   </label>
 
                   <div className="flex-1 min-w-[80px]">
