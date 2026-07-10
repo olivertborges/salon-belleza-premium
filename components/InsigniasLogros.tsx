@@ -32,7 +32,6 @@ export default function InsigniasLogros({
       id: 'primera_cita',
       titulo: 'Primera',
       subtitulo: 'Sesión',
-      desc: 'Tu debut en el salón',
       icon: Heart,
       desbloqueado: citas > 0,
       color: primaryColor
@@ -41,7 +40,6 @@ export default function InsigniasLogros({
       id: 'fiel',
       titulo: 'Cliente',
       subtitulo: 'Fiel',
-      desc: '5+ visitas',
       icon: Crown,
       desbloqueado: citas >= 5,
       color: '#F59E0B'
@@ -50,7 +48,6 @@ export default function InsigniasLogros({
       id: 'racha_activa',
       titulo: 'Racha',
       subtitulo: 'Fresh',
-      desc: 'Mantén tu racha',
       icon: Flame,
       desbloqueado: racha > 0,
       color: '#F97316'
@@ -59,7 +56,6 @@ export default function InsigniasLogros({
       id: 'embajador',
       titulo: 'Socio',
       subtitulo: 'Embajador',
-      desc: 'Invitaste amigos',
       icon: Sparkles,
       desbloqueado: referidos > 0,
       color: '#A855F7'
@@ -68,7 +64,6 @@ export default function InsigniasLogros({
       id: 'coleccionista',
       titulo: 'Explorador',
       subtitulo: 'De Estilos',
-      desc: '3+ servicios',
       icon: Zap,
       desbloqueado: serviciosUnicos >= 3,
       color: '#06B6D4'
@@ -79,101 +74,104 @@ export default function InsigniasLogros({
   const desbloqueadas = insignias.filter(i => i.desbloqueado).length
 
   return (
-    <div className={`space-y-4 ${
-      isDark ? 'text-white' : 'text-stone-900'
-    }`}>
+    <div className="space-y-4">
 
-      {/* Encabezado con progreso */}
+      {/* Encabezado simple */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${primaryColor}20` }}>
-            <Award className="w-3.5 h-3.5" style={{ color: primaryColor }} />
+        <div className="flex items-center gap-2.5">
+          <div 
+            className="p-1.5 rounded-lg"
+            style={{ backgroundColor: `${primaryColor}15` }}
+          >
+            <Award className="w-4 h-4" style={{ color: primaryColor }} />
           </div>
           <div>
-            <h3 className="text-xs font-black tracking-tight">
-              <span className={isDark ? 'text-white' : 'text-stone-900'}>Logros </span>
-              <span className="font-serif italic" style={{ color: primaryColor }}>
+            <h3 className="text-sm font-medium tracking-tight">
+              <span className={isDark ? 'text-stone-200' : 'text-stone-700'}>
+                Logros
+              </span>
+              <span className="ml-1.5 text-xs font-normal" style={{ color: primaryColor }}>
                 {desbloqueadas}/{totalInsignias}
               </span>
             </h3>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-16 h-1 rounded-full bg-stone-200 dark:bg-stone-800 overflow-hidden">
+        
+        {/* Barra de progreso minimalista */}
+        <div className="flex items-center gap-2">
+          <div className="w-20 h-1.5 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
             <div 
-              className="h-full rounded-full transition-all duration-500"
+              className="h-full rounded-full transition-all duration-700"
               style={{ 
                 width: `${(desbloqueadas / totalInsignias) * 100}%`,
                 background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
               }}
             />
           </div>
-          <span className="text-[8px] font-mono font-bold text-stone-400 dark:text-stone-400">
+          <span className="text-[10px] font-mono font-medium text-stone-400 dark:text-stone-500">
             {Math.round((desbloqueadas / totalInsignias) * 100)}%
           </span>
         </div>
       </div>
 
-      {/* Grid de Insignias Compacto */}
+      {/* Grid de Insignias - Diseño más ligero */}
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
         {insignias.map((insignia) => {
           const Icon = insignia.icon
           return (
             <div 
               key={insignia.id}
-              className={`relative group flex flex-col items-center p-2.5 rounded-xl border transition-all duration-300 ${
+              className={`relative group flex flex-col items-center p-3 rounded-xl transition-all duration-300 ${
                 insignia.desbloqueado 
-                  ? `hover:-translate-y-0.5 hover:shadow-md cursor-default`
-                  : 'opacity-40 hover:opacity-60'
+                  ? `hover:-translate-y-0.5`
+                  : 'opacity-50 hover:opacity-70'
               } ${
                 isDark 
-                  ? 'bg-[#130f24] border-fuchsia-950' 
-                  : 'bg-white border-pink-100/60'
+                  ? 'bg-[#1a1625] hover:bg-[#1f1a2e]' 
+                  : 'bg-stone-50/80 hover:bg-stone-100/80'
               }`}
-              style={insignia.desbloqueado ? {
-                borderColor: `${insignia.color}40`,
-                boxShadow: `0 4px 12px ${insignia.color}15`
-              } : {}}
             >
               {/* Icono */}
               <div 
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   insignia.desbloqueado 
-                    ? 'bg-gradient-to-br' 
-                    : 'bg-stone-100 dark:bg-stone-800'
+                    ? 'group-hover:scale-110' 
+                    : ''
                 }`}
                 style={insignia.desbloqueado ? {
-                  background: `linear-gradient(135deg, ${insignia.color}25, ${insignia.color}08)`,
+                  background: `linear-gradient(135deg, ${insignia.color}20, ${insignia.color}08)`,
                   color: insignia.color
                 } : {
-                  color: isDark ? '#6B7280' : '#9CA3AF'
+                  color: isDark ? '#4a4a5a' : '#c0c0c0'
                 }}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4" />
               </div>
 
               {/* Texto */}
               <div className="text-center mt-1.5">
-                <p className={`text-[7px] font-black uppercase tracking-wider ${
+                <p className={`text-[8px] font-semibold uppercase tracking-wide ${
                   insignia.desbloqueado 
-                    ? isDark ? 'text-white' : 'text-stone-800'
-                    : isDark ? 'text-stone-500' : 'text-stone-400'
+                    ? isDark ? 'text-stone-300' : 'text-stone-700'
+                    : isDark ? 'text-stone-600' : 'text-stone-400'
                 }`}>
                   {insignia.titulo}
                 </p>
-                <p className={`text-[6px] font-serif italic ${
+                <p className={`text-[7px] font-light tracking-wide ${
                   insignia.desbloqueado 
-                    ? isDark ? 'text-stone-400' : 'text-stone-500'
-                    : isDark ? 'text-stone-600' : 'text-stone-400'
+                    ? isDark ? 'text-stone-500' : 'text-stone-400'
+                    : isDark ? 'text-stone-700' : 'text-stone-300'
                 }`}>
                   {insignia.subtitulo}
                 </p>
               </div>
 
-              {/* Badge de estado */}
+              {/* Indicador de desbloqueo */}
               {insignia.desbloqueado && (
                 <div className="absolute -top-1 -right-1">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: insignia.color }} />
+                  <div className="w-3 h-3 rounded-full flex items-center justify-center bg-white dark:bg-[#1a1625]">
+                    <CheckCircle2 className="w-2.5 h-2.5" style={{ color: insignia.color }} />
+                  </div>
                 </div>
               )}
             </div>
@@ -181,24 +179,19 @@ export default function InsigniasLogros({
         })}
       </div>
 
-      {/* Mensaje de motivación */}
+      {/* Mensaje sutil */}
       {desbloqueadas < totalInsignias && (
-        <p className={`text-[8px] font-medium text-center ${
-          isDark ? 'text-stone-400' : 'text-stone-400'
-        } italic`}>
-          {totalInsignias - desbloqueadas} logro{totalInsignias - desbloqueadas > 1 ? 's' : ''} por desbloquear
+        <p className={`text-[9px] text-center ${
+          isDark ? 'text-stone-500' : 'text-stone-400'
+        }`}>
+          {totalInsignias - desbloqueadas} logro{totalInsignias - desbloqueadas > 1 ? 's' : ''} por descubrir
         </p>
       )}
 
-      {/* Mensaje cuando todo está desbloqueado */}
       {desbloqueadas === totalInsignias && (
-        <div className={`text-center py-1 rounded-lg ${
-          isDark ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-emerald-50 border border-emerald-200'
-        }`}>
-          <p className={`text-[8px] font-bold uppercase tracking-wider ${
-            isDark ? 'text-emerald-400' : 'text-emerald-700'
-          }`}>
-            ✨ ¡Todos los logros desbloqueados! ✨
+        <div className="text-center">
+          <p className={`text-[9px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+            ✨ ¡Colección completa! ✨
           </p>
         </div>
       )}
