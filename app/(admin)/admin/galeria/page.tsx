@@ -10,24 +10,34 @@ import {
   Trash2, Loader2, Sparkles, X, ZoomIn,
   ChevronLeft, ChevronRight, LayoutGrid,
   Clock, Calendar, Tag, Users, Edit3,
-  Check, Eye, EyeOff
+  Check, Eye, EyeOff, User, DollarSign,
+  Palette, Scissors, TrendingUp, Heart
 } from 'lucide-react'
 
 type Photo = {
   id: string
-  tenant_id: string
   image_url: string
   title: string | null
   category: string | null
   description: string | null
-  sort_order: number
   is_active: boolean
+  is_public: boolean
   created_at: string
+  source: 'admin' | 'client'
+  client_name?: string | null
+  client_id?: string | null
+  before_image_url?: string | null
+  after_image_url?: string | null
+  price?: number | null
+  polish_used?: string | null
+  sensory_category?: string | null
+  views?: number
+  sort_order?: number
 }
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría']
+const sensoryCategories = ['Visual', 'Táctil', 'Olfativa', 'Auditiva', 'Gustativa']
 
-// Animaciones
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -76,21 +86,26 @@ export default function GaleriaAdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
 
-  // Formulario para editar/crear
   const [formData, setFormData] = useState({
     title: '',
     category: 'Nail Art',
     description: '',
     image_url: '',
     is_active: true,
-    sort_order: 0
+    is_public: true,
+    sort_order: 0,
+    price: '',
+    polish_used: '',
+    sensory_category: '',
+    before_image_url: '',
+    after_image_url: ''
   })
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // Cargar fotos - TODAS las fotos activas
+  // Cargar fotos de AMBAS tablas
   const fetchPhotos = async (showLoading = true) => {
     if (!tenantId) return
     if (showLoading) {
@@ -101,20 +116,79 @@ export default function GaleriaAdminPage() {
     setError(null)
 
     try {
-      const { data, error } = await supabase
+      let allPhotos: Photo[] = []
+
+      // 1. Obtener fotos de la tabla 'gallery' (admin)
+      const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      if (data) setPhotos(data as Photo[])
-      setSuccess('Galería actualizada')
-      setTimeout(() => setSuccess(null), 2000)
+      if (adminError) throw adminError
+
+      if (adminPhotos) {
+        const mappedAdminPhotos = adminPhotos.map((p: any) => ({
+          ...p,
+          source: 'admin' as const,
+          client_name: null,
+          client_id: null,
+          before_image_url: null,
+          after_image_url: null,
+          price: null,
+          polish_used: null,
+          sensory_category: null,
+          views: 0,
+          is_public: true
+        }))
+        allPhotos = [...allPhotos, ...mappedAdminPhotos]
+      }
+
+      // 2. Obtener fotos de la tabla 'client_gallery' (clientes)
+      const { data: clientPhotos, error: clientError } = await supabase
+        .from('client_gallery')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+
+      if (clientError) throw clientError
+
+      if (clientPhotos) {
+        const mappedClientPhotos = clientPhotos.map((p: any) => ({
+          id: p.id,
+          image_url: p.after_image_url || p.image_url || p.before_image_url || '',
+          title: p.title || 'Trabajo de cliente',
+          category: p.category || 'Nail Art',
+          description: p.description || '',
+          is_active: p.is_active !== undefined ? p.is_active : true,
+          is_public: p.is_public !== undefined ? p.is_public : true,
+          created_at: p.created_at,
+          source: 'client' as const,
+          client_name: p.client_name || 'Cliente',
+          client_id: p.client_id || null,
+          before_image_url: p.before_image_url || null,
+          after_image_url: p.after_image_url || null,
+          price: p.price || null,
+          polish_used: p.polish_used || null,
+          sensory_category: p.sensory_category || null,
+          views: p.views || 0,
+          sort_order: p.sort_order || 0
+        }))
+        allPhotos = [...allPhotos, ...mappedClientPhotos]
+      }
+
+      // Ordenar todas las fotos por fecha (más recientes primero)
+      allPhotos.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      setPhotos(allPhotos)
+      setSuccess(`📸 ${allPhotos.length} fotos cargadas (${adminPhotos?.length || 0} admin, ${clientPhotos?.length || 0} clientes)`)
+      setTimeout(() => setSuccess(null), 3000)
+
     } catch (err: any) {
-      console.error('Error cargando catálogo del salón:', err)
+      console.error('Error cargando galería:', err)
       setError(err.message || 'Error al cargar la galería')
       setTimeout(() => setError(null), 3000)
     } finally {
@@ -127,22 +201,33 @@ export default function GaleriaAdminPage() {
     if (tenantId) fetchPhotos()
   }, [tenantId])
 
-  // Abrir modal para editar
+  // Abrir modal para editar (solo fotos de admin)
   const handleEdit = (photo: Photo, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
+    if (photo.source === 'client') {
+      setError('⚠️ Las fotos de clientes no se pueden editar desde el panel de admin')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
     setEditingPhoto(photo)
     setFormData({
       title: photo.title || '',
       category: photo.category || 'Nail Art',
       description: photo.description || '',
-      image_url: photo.image_url,
+      image_url: photo.image_url || '',
       is_active: photo.is_active,
-      sort_order: photo.sort_order || 0
+      is_public: photo.is_public !== undefined ? photo.is_public : true,
+      sort_order: photo.sort_order || 0,
+      price: photo.price?.toString() || '',
+      polish_used: photo.polish_used || '',
+      sensory_category: photo.sensory_category || '',
+      before_image_url: photo.before_image_url || '',
+      after_image_url: photo.after_image_url || ''
     })
     setShowModal(true)
   }
 
-  // Guardar cambios
+  // Guardar cambios (solo fotos de admin)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -151,7 +236,11 @@ export default function GaleriaAdminPage() {
 
     try {
       if (editingPhoto) {
-        // Actualizar foto existente
+        if (editingPhoto.source === 'client') {
+          setError('No se pueden editar fotos de clientes')
+          return
+        }
+
         const { error } = await supabase
           .from('gallery')
           .update({
@@ -166,22 +255,13 @@ export default function GaleriaAdminPage() {
         if (error) throw error
         setSuccess('📝 Foto actualizada correctamente')
       } else {
-        // Crear nueva foto
-        const mockImages = [
-          'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1632345031435-8797b2d58045?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1596462502278-6d3be8bd3d3c?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1571781418606-70265b9f2ea0?w=800&auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800&auto=format&fit=crop&q=80'
-        ]
-        const randomImage = mockImages[Math.floor(Math.random() * mockImages.length)]
-
+        const imageUrl = formData.image_url || `https://picsum.photos/seed/${Date.now()}/800/800`
+        
         const { error } = await supabase
           .from('gallery')
           .insert({
             tenant_id: tenantId,
-            image_url: formData.image_url || randomImage,
+            image_url: imageUrl,
             title: formData.title,
             category: formData.category,
             description: formData.description,
@@ -202,7 +282,13 @@ export default function GaleriaAdminPage() {
         description: '',
         image_url: '',
         is_active: true,
-        sort_order: 0
+        is_public: true,
+        sort_order: 0,
+        price: '',
+        polish_used: '',
+        sensory_category: '',
+        before_image_url: '',
+        after_image_url: ''
       })
       fetchPhotos(false)
     } catch (err: any) {
@@ -212,56 +298,20 @@ export default function GaleriaAdminPage() {
     }
   }
 
-  // Subir foto rápida (placeholder)
-  const handleUploadPlaceholder = async () => {
-    if (!tenantId) return
-    setError(null)
-    setSuccess(null)
-    try {
-      setUploading(true)
-
-      const mockImages = [
-        'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1632345031435-8797b2d58045?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1596462502278-6d3be8bd3d3c?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1571781418606-70265b9f2ea0?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800&auto=format&fit=crop&q=80'
-      ]
-      const randomImage = mockImages[Math.floor(Math.random() * mockImages.length)]
-
-      const { error } = await supabase
-        .from('gallery')
-        .insert({
-          tenant_id: tenantId,
-          image_url: randomImage,
-          category: categoryFilter === 'Todas' ? 'Nail Art' : categoryFilter,
-          is_active: true,
-          sort_order: photos.length
-        })
-
-      if (error) throw error
-      setSuccess('✨ ¡Foto agregada a la galería!')
-      setTimeout(() => setSuccess(null), 2500)
-      fetchPhotos(false)
-    } catch (err: any) {
-      console.error('Error al subir foto al catálogo:', err)
-      setError(err.message || 'Error al subir la foto')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  // Eliminar foto (cambiar is_active a false)
-  const deletePhoto = async (id: string, e?: React.MouseEvent) => {
+  // Eliminar foto (solo admin)
+  const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
+    if (source === 'client') {
+      setError('⚠️ No se pueden eliminar fotos de clientes desde el panel de admin')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
     if (!confirm('¿Eliminar esta foto de la galería?')) return
     
     try {
       const { error } = await supabase
         .from('gallery')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id)
 
       if (error) throw error
@@ -273,15 +323,20 @@ export default function GaleriaAdminPage() {
       setSuccess('🗑️ Foto eliminada')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
-      console.error('Error al eliminar del catálogo:', err)
+      console.error('Error al eliminar:', err)
       setError(err.message || 'Error al eliminar la foto')
       setTimeout(() => setError(null), 3000)
     }
   }
 
-  // Toggle activo/inactivo
-  const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent) => {
+  // Toggle activo/inactivo (solo admin)
+  const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
+    if (source === 'client') {
+      setError('⚠️ No se puede cambiar el estado de fotos de clientes')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
     
     try {
       const { error } = await supabase
@@ -331,7 +386,6 @@ export default function GaleriaAdminPage() {
     categoryFilter === 'Todas' || p.category === categoryFilter
   )
 
-  // Keyboard events for lightbox
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!showLightbox) return
@@ -365,7 +419,7 @@ export default function GaleriaAdminPage() {
       className="space-y-6 p-1 max-w-7xl mx-auto"
     >
 
-      {/* HEADER ESPECTACULAR */}
+      {/* HEADER */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -395,7 +449,7 @@ export default function GaleriaAdminPage() {
                   className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" 
                   style={{ color: settings?.primary_color || '#DB5B9A' }}
                 >
-                  ✨ Portafolio Profesional
+                  ✨ Galería Unificada
                 </motion.p>
                 <motion.h2 
                   initial={{ x: -10, opacity: 0 }}
@@ -403,7 +457,7 @@ export default function GaleriaAdminPage() {
                   transition={{ delay: 0.3 }}
                   className="text-2xl md:text-4xl font-serif font-extrabold text-stone-900 dark:text-white mt-1"
                 >
-                  Galería de <span className="bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Trabajos</span>
+                  <span className="bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Todas</span> las Fotos
                 </motion.h2>
                 <motion.p 
                   initial={{ x: -10, opacity: 0 }}
@@ -411,7 +465,7 @@ export default function GaleriaAdminPage() {
                   transition={{ delay: 0.4 }}
                   className="text-xs text-stone-500 dark:text-pink-100/60 mt-1"
                 >
-                  {photos.length} obras • Gestión visual del catálogo profesional
+                  {photos.length} obras • Admin + Clientes
                 </motion.p>
               </div>
             </div>
@@ -429,7 +483,7 @@ export default function GaleriaAdminPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => { setEditingPhoto(null); setFormData({ title: '', category: 'Nail Art', description: '', image_url: '', is_active: true, sort_order: 0 }); setShowModal(true) }}
+                onClick={() => { setEditingPhoto(null); setFormData({ title: '', category: 'Nail Art', description: '', image_url: '', is_active: true, is_public: true, sort_order: 0, price: '', polish_used: '', sensory_category: '', before_image_url: '', after_image_url: '' }); setShowModal(true) }}
                 className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
                 style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
               >
@@ -473,7 +527,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* CATEGORÍAS CON ANIMACIÓN */}
+      {/* CATEGORÍAS */}
       <motion.div 
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -506,7 +560,7 @@ export default function GaleriaAdminPage() {
         ))}
       </motion.div>
 
-      {/* CONTADOR Y ESTADO */}
+      {/* CONTADOR */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -514,13 +568,17 @@ export default function GaleriaAdminPage() {
       >
         <p className="text-xs text-stone-400 dark:text-stone-500 font-mono">
           Mostrando <span className="font-bold text-stone-700 dark:text-pink-100">{photosFiltradas.length}</span> {photosFiltradas.length === 1 ? 'obra' : 'obras'}
+          <span className="ml-2 text-[10px]">
+            <span className="text-pink-500">●</span> Admin: {photos.filter(p => p.source === 'admin').length}
+            <span className="ml-2 text-amber-500">●</span> Clientes: {photos.filter(p => p.source === 'client').length}
+          </span>
         </p>
         {refreshing && (
           <Loader2 className="w-4 h-4 animate-spin" style={{ color: settings?.primary_color || '#DB5B9A' }} />
         )}
       </motion.div>
 
-      {/* GRID DE FOTOS CON ANIMACIONES STAGGER */}
+      {/* GRID DE FOTOS */}
       <motion.div 
         variants={containerVariants}
         initial="hidden"
@@ -554,53 +612,107 @@ export default function GaleriaAdminPage() {
               <p className="text-xs text-stone-400/60 mt-1">Agrega tus primeros trabajos al portafolio</p>
             </motion.div>
           ) : (
-            photosFiltradas.map((photo) => (
-              <motion.div
-                key={photo.id}
-                variants={itemVariants}
-                layoutId={`photo-${photo.id}`}
-                onHoverStart={() => setHoveredId(photo.id)}
-                onHoverEnd={() => setHoveredId(null)}
-                onClick={() => openLightbox(photo)}
-                className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 shadow-sm hover:shadow-2xl transition-shadow duration-500"
-              >
-                <motion.img 
-                  src={photo.image_url} 
-                  alt={photo.title || 'Muestra de trabajo'} 
-                  className="w-full h-full object-cover"
-                  animate={{ 
-                    scale: hoveredId === photo.id ? 1.08 : 1
-                  }}
-                  transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
-                />
-
-                <motion.div 
-                  className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-
-                {/* Badge de categoría */}
-                <motion.div 
-                  className="absolute top-3 left-3"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ 
-                    opacity: hoveredId === photo.id ? 1 : 0.6,
-                    y: hoveredId === photo.id ? 0 : -5
-                  }}
-                  transition={{ duration: 0.3 }}
+            photosFiltradas.map((photo) => {
+              const imageToShow = photo.after_image_url || photo.image_url || photo.before_image_url || ''
+              const isClient = photo.source === 'client'
+              
+              return (
+                <motion.div
+                  key={`${photo.source}-${photo.id}`}
+                  variants={itemVariants}
+                  layoutId={`photo-${photo.id}`}
+                  onHoverStart={() => setHoveredId(photo.id)}
+                  onHoverEnd={() => setHoveredId(null)}
+                  onClick={() => openLightbox(photo)}
+                  className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border shadow-sm hover:shadow-2xl transition-shadow duration-500 ${
+                    isClient 
+                      ? 'border-amber-300/40 dark:border-amber-800/40' 
+                      : 'border-pink-100/60 dark:border-fuchsia-950'
+                  } ${!photo.is_active ? 'opacity-60' : ''}`}
                 >
-                  <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
-                    <Tag className="w-2.5 h-2.5 inline mr-1" />
-                    {photo.category || 'Sin categoría'}
-                  </span>
-                </motion.div>
+                  <motion.img 
+                    src={imageToShow} 
+                    alt={photo.title || 'Muestra de trabajo'} 
+                    className="w-full h-full object-cover"
+                    animate={{ 
+                      scale: hoveredId === photo.id ? 1.08 : 1
+                    }}
+                    transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
+                  />
 
-                {/* Título en hover */}
-                {photo.title && (
+                  {/* Badge de origen */}
+                  <div className="absolute top-3 left-3">
+                    <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md ${
+                      isClient 
+                        ? 'bg-amber-500/80 text-white' 
+                        : 'bg-pink-500/80 text-white'
+                    }`}>
+                      {isClient ? '👤 Cliente' : '👑 Admin'}
+                    </span>
+                  </div>
+
+                  {/* Precio en fotos de cliente */}
+                  {isClient && photo.price && (
+                    <div className="absolute top-3 right-3">
+                      <span className="bg-emerald-500/80 backdrop-blur-md text-white text-[8px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <DollarSign className="w-2.5 h-2.5" />
+                        {photo.price}
+                      </span>
+                    </div>
+                  )}
+
+                  {isClient && photo.client_name && (
+                    <div className="absolute bottom-3 left-3">
+                      <span className="text-white/80 text-[8px] font-mono flex items-center gap-1 backdrop-blur-sm bg-black/30 px-2 py-0.5 rounded-full">
+                        <User className="w-2.5 h-2.5" />
+                        {photo.client_name}
+                      </span>
+                    </div>
+                  )}
+
                   <motion.div 
-                    className="absolute bottom-12 left-3 right-3"
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+
+                  {/* Badge de categoría */}
+                  <motion.div 
+                    className="absolute top-3 right-3"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ 
+                      opacity: hoveredId === photo.id ? 1 : 0.6,
+                      y: hoveredId === photo.id ? 0 : -5
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
+                      <Tag className="w-2.5 h-2.5 inline mr-1" />
+                      {photo.category || 'Sin categoría'}
+                    </span>
+                  </motion.div>
+
+                  {/* Título en hover */}
+                  {photo.title && (
+                    <motion.div 
+                      className="absolute bottom-12 left-3 right-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ 
+                        opacity: hoveredId === photo.id ? 1 : 0,
+                        y: hoveredId === photo.id ? 0 : 10
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <p className="text-white/90 text-xs font-bold truncate">
+                        {photo.title}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Botones de acción */}
+                  <motion.div 
+                    className="absolute bottom-3 right-3 flex gap-2"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ 
                       opacity: hoveredId === photo.id ? 1 : 0,
@@ -608,91 +720,81 @@ export default function GaleriaAdminPage() {
                     }}
                     transition={{ duration: 0.3 }}
                   >
-                    <p className="text-white/90 text-xs font-bold truncate">
-                      {photo.title}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openLightbox(photo)
+                      }}
+                      className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-xl transition-all"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </motion.button>
+
+                    {!isClient && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => handleEdit(photo, e)}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-blue-500/60 text-white rounded-xl transition-all"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => toggleActive(photo.id, photo.is_active, e, photo.source)}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-amber-500/60 text-white rounded-xl transition-all"
+                        >
+                          {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1, backgroundColor: '#ef4444' }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => deletePhoto(photo.id, e, photo.source)}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-red-500 text-white rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </>
+                    )}
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute bottom-3 left-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-white/80 font-mono text-[9px] flex items-center gap-1.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {new Date(photo.created_at).toLocaleDateString('es-ES', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
                     </p>
                   </motion.div>
-                )}
 
-                {/* Botones de acción en hover */}
-                <motion.div 
-                  className="absolute bottom-3 right-3 flex gap-2"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ 
-                    opacity: hoveredId === photo.id ? 1 : 0,
-                    y: hoveredId === photo.id ? 0 : 10
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      openLightbox(photo)
+                  <motion.div 
+                    className="absolute inset-0 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: hoveredId === photo.id 
+                        ? `inset 0 0 30px ${settings?.primary_color || '#DB5B9A'}20` 
+                        : 'inset 0 0 0px transparent'
                     }}
-                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-xl transition-all"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleEdit(photo, e)}
-                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-blue-500/60 text-white rounded-xl transition-all"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => toggleActive(photo.id, photo.is_active, e)}
-                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-amber-500/60 text-white rounded-xl transition-all"
-                  >
-                    {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1, backgroundColor: '#ef4444' }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => deletePhoto(photo.id, e)}
-                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-red-500 text-white rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </motion.button>
+                    transition={{ duration: 0.4 }}
+                  />
                 </motion.div>
-
-                <motion.div 
-                  className="absolute bottom-3 left-3"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <p className="text-white/80 font-mono text-[9px] flex items-center gap-1.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    {new Date(photo.created_at).toLocaleDateString('es-ES', { 
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </motion.div>
-
-                <motion.div 
-                  className="absolute inset-0 rounded-2xl pointer-events-none"
-                  animate={{
-                    boxShadow: hoveredId === photo.id 
-                      ? `inset 0 0 30px ${settings?.primary_color || '#DB5B9A'}20` 
-                      : 'inset 0 0 0px transparent'
-                  }}
-                  transition={{ duration: 0.4 }}
-                />
-              </motion.div>
-            ))
+              )
+            })
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* LIGHTBOX ESPECTACULAR */}
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {showLightbox && selectedPhoto && (
           <motion.div
@@ -748,7 +850,7 @@ export default function GaleriaAdminPage() {
               className="relative max-w-5xl w-full max-h-[85vh]"
             >
               <img 
-                src={selectedPhoto.image_url} 
+                src={selectedPhoto.after_image_url || selectedPhoto.image_url || selectedPhoto.before_image_url || ''} 
                 alt={selectedPhoto.title || 'Galería'} 
                 className="w-full h-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
               />
@@ -759,8 +861,15 @@ export default function GaleriaAdminPage() {
                 transition={{ delay: 0.4 }}
                 className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl"
               >
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center justify-between text-white gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      selectedPhoto.source === 'client' 
+                        ? 'bg-amber-500/80' 
+                        : 'bg-pink-500/80'
+                    }`}>
+                      {selectedPhoto.source === 'client' ? '👤 Cliente' : '👑 Admin'}
+                    </span>
                     {selectedPhoto.title && (
                       <span className="text-sm font-bold text-white/90">
                         {selectedPhoto.title}
@@ -770,37 +879,76 @@ export default function GaleriaAdminPage() {
                       <Tag className="w-3 h-3 inline mr-1.5" />
                       {selectedPhoto.category || 'Sin categoría'}
                     </span>
-                    <span className="text-xs text-white/60 font-mono flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(selectedPhoto.created_at).toLocaleDateString('es-ES', { 
-                        day: '2-digit', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-white/40 font-mono">
                       {photosFiltradas.findIndex(p => p.id === selectedPhoto.id) + 1} / {photosFiltradas.length}
                     </span>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => handleEdit(selectedPhoto, e)}
-                      className="p-2 bg-blue-500/20 hover:bg-blue-500/80 text-white rounded-xl transition-all"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => deletePhoto(selectedPhoto.id, e)}
-                      className="p-2 bg-red-500/20 hover:bg-red-500/80 text-white rounded-xl transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                    {selectedPhoto.source === 'admin' && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => handleEdit(selectedPhoto, e)}
+                          className="p-2 bg-blue-500/20 hover:bg-blue-500/80 text-white rounded-xl transition-all"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => deletePhoto(selectedPhoto.id, e, selectedPhoto.source)}
+                          className="p-2 bg-red-500/20 hover:bg-red-500/80 text-white rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {/* Información adicional para fotos de clientes */}
+                {selectedPhoto.source === 'client' && (
+                  <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-white/10">
+                    {selectedPhoto.client_name && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <User className="w-3 h-3" />
+                        {selectedPhoto.client_name}
+                      </span>
+                    )}
+                    {selectedPhoto.price && (
+                      <span className="text-xs text-emerald-400 flex items-center gap-1.5">
+                        <DollarSign className="w-3 h-3" />
+                        ${selectedPhoto.price}
+                      </span>
+                    )}
+                    {selectedPhoto.polish_used && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <Palette className="w-3 h-3" />
+                        {selectedPhoto.polish_used}
+                      </span>
+                    )}
+                    {selectedPhoto.sensory_category && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <Heart className="w-3 h-3" />
+                        {selectedPhoto.sensory_category}
+                      </span>
+                    )}
+                    {selectedPhoto.views !== undefined && (
+                      <span className="text-xs text-white/40 flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3" />
+                        {selectedPhoto.views} vistas
+                      </span>
+                    )}
+                    {selectedPhoto.before_image_url && selectedPhoto.after_image_url && (
+                      <span className="text-xs text-amber-400 flex items-center gap-1.5">
+                        <Scissors className="w-3 h-3" />
+                        Antes / Después
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {selectedPhoto.description && (
                   <p className="text-xs text-white/60 mt-2 line-clamp-2">
                     {selectedPhoto.description}
@@ -916,6 +1064,16 @@ export default function GaleriaAdminPage() {
                       className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
                     />
                     <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Visible</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_public}
+                      onChange={(e) => setFormData({...formData, is_public: e.target.checked})}
+                      className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
+                    />
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Público</span>
                   </label>
 
                   <div className="flex-1">
