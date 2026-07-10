@@ -1,14 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Calendar as CalendarIcon, Clock, User, Sparkles, 
   ChevronLeft, ChevronRight, CheckCircle2, 
   Play, Filter, DollarSign, Layers, Plus, Trash2, 
-  X, Edit, Save, FileText, TrendingUp, Users, 
-  Calendar, ChevronDown, Bell, Menu, Search,
-  Star, Award, Zap, Eye, MessageCircle, Ban,
-  RefreshCw, Scissors, Loader2, Building2
+  X, Edit, FileText, Users, ChevronDown, 
+  Award, Ban, RefreshCw, Scissors, Loader2, Building2
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -160,6 +158,19 @@ export default function AdminAgendaPage() {
       console.error('Error al actualizar en Supabase, revirtiendo...', err)
       setCitas(copiaCitasPrevias)
     }
+  }
+
+  const handleSlotClick = (dateStr: string, horaStr: string) => {
+    setNewCita({
+      clientId: '',
+      serviceId: '',
+      staffId: filtroStaff !== 'todos' ? filtroStaff : '',
+      date: dateStr,
+      time: `${horaStr}:00`,
+      notes: ''
+    })
+    setFormError(null)
+    setShowNewAppointment(true)
   }
 
   const fetchData = async () => {
@@ -421,9 +432,6 @@ export default function AdminAgendaPage() {
     }
   }
 
-  // ============================================================
-  // RENDER VISTA DÍA (FRESH NAILS STYLE)
-  // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = citas.filter(c => c.date === format(fechaSeleccionada, 'yyyy-MM-dd'))
     const citasOrdenadas = [...citasDelDia].sort((a, b) => (a.time || '').localeCompare(b.time || ''))
@@ -539,7 +547,6 @@ export default function AdminAgendaPage() {
                       onClick={() => abrirDetalleCita(cita)}
                       className={`relative overflow-hidden rounded-2xl border p-4.5 transition-all cursor-pointer hover:scale-[1.01] hover:shadow-xl hover:border-pink-300/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${cardBg}`}
                     >
-                      {/* Gradient Line Accent */}
                       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl ${
                         cita.status === 'pending' ? 'bg-amber-400' :
                         cita.status === 'confirmed' ? 'bg-emerald-400' :
@@ -595,9 +602,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER VISTA SEMANA (FRESH NAILS STYLE)
-  // ============================================================
   const renderVistaSemana = () => {
     const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
     const weekDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(fechaSeleccionada, { weekStartsOn: 1 }) })
@@ -627,7 +631,6 @@ export default function AdminAgendaPage() {
         }`}>
           <div className="min-w-[950px] flex flex-col">
 
-            {/* WEEK TIMELINE HEADERS */}
             <div className={`flex border-b ${
               isDark ? 'border-fuchsia-950 bg-zinc-950/80' : 'border-pink-100 bg-pink-50/20'
             }`}>
@@ -679,7 +682,6 @@ export default function AdminAgendaPage() {
               </div>
             </div>
 
-            {/* TIMELINE MATRIX HOURLY */}
             <div className="flex relative">
               <div 
                 className={`w-16 flex-shrink-0 border-r ${
@@ -701,16 +703,16 @@ export default function AdminAgendaPage() {
               <div className="flex-1 overflow-x-auto relative">
                 <div className="relative" style={{ height: `${totalHoras * HORA_ALTURA}px`, minWidth: '700px' }}>
 
-                  {/* DROP CELLS LAYERING BACKGROUND */}
                   <div className="absolute inset-0 grid grid-cols-7" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const dayStr = format(day, 'yyyy-MM-dd')
                       return horasCuadricula.map((hora, rowIdx) => {
                         const horaStr = String(hora).padStart(2, '0')
+                        const slotKey = `slot-${dayStr}-${horaStr}`
                         return (
                           <DroppableSlot
-                            key={`slot-${dayStr}-${horaStr}`}
-                            id={`slot-${dayStr}-${horaStr}`}
+                            key={slotKey}
+                            id={slotKey}
                             className={`border-r border-b ${
                               isDark ? 'border-fuchsia-950/30 hover:bg-fuchsia-950/10' : 'border-pink-50/60 hover:bg-pink-50/20'
                             } transition-colors`}
@@ -722,9 +724,9 @@ export default function AdminAgendaPage() {
                           >
                             <div
                               className="w-full h-full"
-                              onClick={() => {
-                                setNewCita({ ...newCita, date: dayStr, time: `${horaStr}:00` })
-                                setShowNewAppointment(true)
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleSlotClick(dayStr, horaStr)
                               }}
                             />
                           </DroppableSlot>
@@ -733,7 +735,6 @@ export default function AdminAgendaPage() {
                     })}
                   </div>
 
-                  {/* ABSOLUTE CARDS RENDER IN TIMELINE GRID */}
                   <div className="absolute inset-0 grid grid-cols-7 pointer-events-none" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
                     {weekDays.map((day, colIdx) => {
                       const citasDelDia = getCitasDelDia(day)
@@ -826,9 +827,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER VISTA MES (FRESH NAILS STYLE)
-  // ============================================================
   const renderVistaMes = () => {
     const monthStart = startOfMonth(fechaSeleccionada)
     const daysInMonth = getDaysInMonth(fechaSeleccionada)
@@ -951,9 +949,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // LOADING / ERROR
-  // ============================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
@@ -981,15 +976,11 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER PRINCIPAL
-  // ============================================================
   return (
     <div className={`min-h-screen pb-20 pt-4 antialiased space-y-6 max-w-6xl mx-auto px-4 ${
       isDark ? 'text-pink-100' : 'text-stone-800'
     }`}>
 
-      {/* HEADER DE MARCA PREMIUM */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-pink-100 dark:border-fuchsia-950">
         <div>
           <div className="flex items-center gap-2">
@@ -1034,7 +1025,6 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* CONTROLES DE VISTA Y FECHA */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex border border-pink-100 dark:border-fuchsia-950 bg-pink-50/20 dark:bg-fuchsia-950/10 rounded-xl p-1 self-start">
           {(['day', 'week', 'month'] as const).map((mode) => (
@@ -1071,7 +1061,6 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* FILTROS EXPANDIBLES */}
       {showMobileFilters && (
         <div className={`p-4 border rounded-2xl shadow-inner ${
           isDark ? 'bg-zinc-950/40 border-fuchsia-950' : 'bg-pink-50/20 border-pink-100'
@@ -1094,7 +1083,6 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* MINI CALENDARIO INTERACTIVO */}
       {showCalendar && (
         <div className={`border rounded-2xl p-4.5 shadow-xl shadow-pink-500/5 ${
           isDark ? 'bg-zinc-900/90 border-fuchsia-950' : 'bg-white border-pink-100'
@@ -1148,7 +1136,6 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* AVISO DE TURNOS EN ESPERA */}
       {citasPendientes > 0 && (
         <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2.5">
@@ -1177,7 +1164,6 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* METRICAS DE RENDIMIENTO */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className={`border rounded-2xl p-4 text-center relative overflow-hidden ${
           isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm'
@@ -1213,16 +1199,12 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* WORKSPACE VIEW ROUTER CONTAINER */}
       <div className="w-full">
         {viewMode === 'day' && renderVistaDia()}
         {viewMode === 'week' && renderVistaSemana()}
         {viewMode === 'month' && renderVistaMes()}
       </div>
 
-      {/* ============================================================
-          MODAL: NUEVA CITA VIP
-          ============================================================ */}
       {showNewAppointment && (
         <div className="fixed inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all transform scale-100 ${
@@ -1377,9 +1359,6 @@ export default function AdminAgendaPage() {
         </div>
       )}
 
-      {/* ============================================================
-          MODAL: CONTROL DETALLE DE TURNO (FICHA)
-          ============================================================ */}
       {showDetailModal && selectedCita && (
         <div className="fixed inset-0 bg-zinc-950/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className={`w-full max-w-md rounded-2xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto transform scale-100 transition-all ${
@@ -1474,7 +1453,6 @@ export default function AdminAgendaPage() {
                   )}
                 </div>
 
-                {/* FLUJO DE CAMBIO DE ESTADOS INTERACTIVO */}
                 <div className="space-y-1.5 pt-2">
                   <label className="text-[9px] font-mono uppercase tracking-widest text-stone-400 dark:text-pink-300/40 font-black block">Cambiar Estado de la Clienta</label>
                   <div className="grid grid-cols-3 gap-1.5">
@@ -1498,7 +1476,7 @@ export default function AdminAgendaPage() {
                   <button
                     onClick={() => setIsEditing(true)}
                     className={`flex-1 px-4 py-2.5 rounded-xl text-[11px] font-mono uppercase tracking-widest font-black flex items-center justify-center gap-1.5 border ${
-                      isDark ? 'border-fuchsia-950 text-pink-300 hover:bg-fuchsia-950/30' : 'border-pink-100 text-stone-700 hover:bg-pink-50'
+                      isDark ? 'border-fuchsia-950 text-pink-300 hover:bg-fuchsia-930/30' : 'border-pink-100 text-stone-700 hover:bg-pink-50'
                     }`}
                   >
                     <Edit className="w-3.5 h-3.5 text-pink-500" /> Editar Ficha
