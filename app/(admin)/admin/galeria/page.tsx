@@ -8,18 +8,23 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Camera, Image as ImageIcon, UploadCloud, 
   Trash2, Loader2, Sparkles, X, ZoomIn,
-  ChevronLeft, ChevronRight, Grid3x3, LayoutGrid,
-  Heart, Star, Clock, Calendar, Tag, ExternalLink
+  ChevronLeft, ChevronRight, LayoutGrid,
+  Clock, Calendar, Tag, Users
 } from 'lucide-react'
 
 type Photo = {
   id: string
   image_url: string
-  uploaded_by: 'admin'
+  uploaded_by: string
   category: string
   created_at: string
+  client_id?: string
+  client_name?: string
 }
 
+const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría']
+
+// Animaciones
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -50,8 +55,6 @@ const itemVariants = {
   }
 }
 
-const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría']
-
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
   const { tenantId, loading: authLoading } = useAuth()
@@ -72,6 +75,7 @@ export default function GaleriaAdminPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
+  // Cargar fotos - SOLO las subidas por admin
   const fetchPhotos = async (showLoading = true) => {
     if (!tenantId) return
     if (showLoading) {
@@ -83,7 +87,7 @@ export default function GaleriaAdminPage() {
 
     try {
       const { data, error } = await supabase
-        .from('gallery_photos')
+        .from('gallery')
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('uploaded_by', 'admin')
@@ -107,6 +111,7 @@ export default function GaleriaAdminPage() {
     if (tenantId) fetchPhotos()
   }, [tenantId])
 
+  // Subir foto (admin)
   const handleUploadPlaceholder = async () => {
     if (!tenantId) return
     setError(null)
@@ -125,7 +130,7 @@ export default function GaleriaAdminPage() {
       const randomImage = mockImages[Math.floor(Math.random() * mockImages.length)]
 
       const { error } = await supabase
-        .from('gallery_photos')
+        .from('gallery')
         .insert({
           tenant_id: tenantId,
           uploaded_by: 'admin',
@@ -146,12 +151,17 @@ export default function GaleriaAdminPage() {
     }
   }
 
+  // Eliminar foto
   const deletePhoto = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
     if (!confirm('¿Eliminar esta foto de la galería?')) return
     
     try {
-      const { error } = await supabase.from('gallery_photos').delete().eq('id', id)
+      const { error } = await supabase
+        .from('gallery')
+        .delete()
+        .eq('id', id)
+
       if (error) throw error
       setPhotos(photos.filter(p => p.id !== id))
       if (selectedPhoto?.id === id) {
@@ -288,7 +298,7 @@ export default function GaleriaAdminPage() {
                 onClick={() => setViewMode(viewMode === 'grid' ? 'masonry' : 'grid')}
                 className="p-2.5 rounded-xl border bg-white/50 dark:bg-[#1a1430]/40 border-pink-100/60 dark:border-fuchsia-950 text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
               >
-                {viewMode === 'grid' ? <LayoutGrid className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+                <LayoutGrid className="w-4 h-4" />
               </motion.button>
               
               <motion.button
@@ -424,7 +434,7 @@ export default function GaleriaAdminPage() {
               <p className="text-xs text-stone-400/60 mt-1">Agrega tus primeros trabajos al portafolio</p>
             </motion.div>
           ) : (
-            photosFiltradas.map((photo, index) => (
+            photosFiltradas.map((photo) => (
               <motion.div
                 key={photo.id}
                 variants={itemVariants}
@@ -434,7 +444,6 @@ export default function GaleriaAdminPage() {
                 onClick={() => openLightbox(photo)}
                 className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 shadow-sm hover:shadow-2xl transition-shadow duration-500"
               >
-                {/* Imagen con efecto de zoom */}
                 <motion.img 
                   src={photo.image_url} 
                   alt="Muestra de trabajo" 
@@ -445,7 +454,6 @@ export default function GaleriaAdminPage() {
                   transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
                 />
 
-                {/* Overlay con gradiente y glow */}
                 <motion.div 
                   className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
                   initial={{ opacity: 0 }}
@@ -453,7 +461,6 @@ export default function GaleriaAdminPage() {
                   transition={{ duration: 0.3 }}
                 />
 
-                {/* Badge de categoría */}
                 <motion.div 
                   className="absolute top-3 left-3"
                   initial={{ opacity: 0, y: -10 }}
@@ -469,7 +476,6 @@ export default function GaleriaAdminPage() {
                   </span>
                 </motion.div>
 
-                {/* Botones de acción en hover */}
                 <motion.div 
                   className="absolute bottom-3 right-3 flex gap-2"
                   initial={{ opacity: 0, y: 10 }}
@@ -500,7 +506,6 @@ export default function GaleriaAdminPage() {
                   </motion.button>
                 </motion.div>
 
-                {/* Info inferior */}
                 <motion.div 
                   className="absolute bottom-3 left-3"
                   initial={{ opacity: 0 }}
@@ -517,7 +522,6 @@ export default function GaleriaAdminPage() {
                   </p>
                 </motion.div>
 
-                {/* Efecto de brillo en borde */}
                 <motion.div 
                   className="absolute inset-0 rounded-2xl pointer-events-none"
                   animate={{
@@ -544,7 +548,6 @@ export default function GaleriaAdminPage() {
             className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
             onClick={closeLightbox}
           >
-            {/* Botón cerrar */}
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -556,7 +559,6 @@ export default function GaleriaAdminPage() {
               <X className="w-6 h-6" />
             </motion.button>
 
-            {/* Navegación */}
             {photosFiltradas.length > 1 && (
               <>
                 <motion.button
@@ -582,7 +584,6 @@ export default function GaleriaAdminPage() {
               </>
             )}
 
-            {/* Imagen con animación de zoom */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -597,7 +598,6 @@ export default function GaleriaAdminPage() {
                 className="w-full h-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
               />
 
-              {/* Info inferior en lightbox */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
