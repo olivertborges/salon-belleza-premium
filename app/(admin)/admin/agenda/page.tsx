@@ -7,7 +7,7 @@ import {
   Play, Filter, DollarSign, Layers, Plus, Trash2, 
   X, Edit, FileText, Users, ChevronDown, 
   Award, Ban, RefreshCw, Scissors, Loader2, Building2,
-  CalendarDays, Smartphone, Check
+  CalendarDays, Smartphone, Check, TrendingUp, Calendar as CalendarIconCheck
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -234,7 +234,7 @@ export default function AdminAgendaPage() {
     fetchData()
 
     const canalCitas = supabase
-      .channel('cambios-agenda-admin-v2')
+      .channel('cambios-agenda-admin-v3')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'appointments' },
@@ -297,11 +297,13 @@ export default function AdminAgendaPage() {
     return citas.filter(c => c.date === dateStr)
   }
 
+  // Cálculos de KPIs Dinámicos basados en la vista actual
   const totalIngresos = citas
     .filter(c => c.status === 'completed')
     .reduce((sum, c) => sum + Number(c.services?.price || 0), 0)
 
   const citasPendientes = citas.filter(c => c.status === 'pending').length
+  const totalCitasVista = citas.filter(c => c.status !== 'blocked' && c.status !== 'cancelled').length
 
   const abrirDetalleCita = (cita: any) => {
     setSelectedCita(cita)
@@ -520,7 +522,6 @@ export default function AdminAgendaPage() {
           }`}>
             {weekDays.map((day) => {
               const isSelected = isSameDay(day, fechaSeleccionada)
-              const isTodayDate = isToday(day)
               
               return (
                 <button
@@ -649,10 +650,7 @@ export default function AdminAgendaPage() {
               return (
                 <div 
                   key={idx} 
-                  onClick={() => {
-                    setFechaSeleccionada(day) // Setea la fecha de enfoque
-                    // El useEffect escuchará este cambio e invocará inmediatamente fetchData()
-                  }}
+                  onClick={() => setFechaSeleccionada(day)}
                   className={`p-2 min-h-[50px] md:min-h-[80px] flex flex-col justify-between cursor-pointer transition-all ${
                     isDark ? 'bg-zinc-950' : 'bg-white'
                   } ${isSelected ? 'bg-pink-500/10 dark:bg-fuchsia-950/30' : ''}`}
@@ -694,12 +692,54 @@ export default function AdminAgendaPage() {
             Agenda <span className="bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent italic font-normal">Fresh Nails</span>
           </h1>
         </div>
-        <button onClick={() => setShowNewAppointment(true)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-mono uppercase tracking-widest font-bold">
+        <button onClick={() => setShowNewAppointment(true)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-mono uppercase tracking-widest font-bold shadow-md shadow-pink-500/10">
           <Plus className="w-4 h-4" /> Nuevo Turno
         </button>
       </div>
 
-      {/* Selectores */}
+      {/* === SECCIÓN DE CAPIS / KPIS MODERNAS Y RESPONSIVAS === */}
+      <div className="grid grid-cols-3 gap-2.5 my-5">
+        {/* KPI 1: Total Atendidos/Citas */}
+        <div className={`p-3 rounded-2xl border transition-all ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm shadow-pink-500/5'
+        } flex items-center gap-3`}>
+          <div className="p-2 rounded-xl bg-pink-500/10 text-pink-500 hidden xs:block">
+            <CalendarIconCheck className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black truncate">Turnos</p>
+            <h3 className="text-sm md:text-base font-mono font-black text-stone-900 dark:text-pink-50">{totalCitasVista}</h3>
+          </div>
+        </div>
+
+        {/* KPI 2: En Espera / Pendientes */}
+        <div className={`p-3 rounded-2xl border transition-all ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm shadow-pink-500/5'
+        } flex items-center gap-3`}>
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 hidden xs:block">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black truncate">Espera</p>
+            <h3 className="text-sm md:text-base font-mono font-black text-amber-500">{citasPendientes}</h3>
+          </div>
+        </div>
+
+        {/* KPI 3: Ingresos Completados */}
+        <div className={`p-3 rounded-2xl border transition-all ${
+          isDark ? 'bg-zinc-900/40 border-fuchsia-950/60' : 'bg-white border-pink-100 shadow-sm shadow-pink-500/5'
+        } flex items-center gap-3`}>
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 hidden xs:block">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-pink-300/40 font-black truncate">Caja</p>
+            <h3 className="text-sm md:text-base font-mono font-black text-emerald-500">${totalIngresos.toLocaleString()}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Selectores de vista y fechas */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 my-4">
         <div className="flex border border-pink-100 dark:border-fuchsia-950 rounded-xl p-1 bg-pink-50/10">
           {(['day', 'week', 'month'] as const).map((mode) => (
@@ -716,14 +756,14 @@ export default function AdminAgendaPage() {
         </div>
       </div>
 
-      {/* Vistas */}
+      {/* Vistas principales */}
       <div className="w-full">
         {viewMode === 'day' && renderVistaDia()}
         {viewMode === 'week' && renderVistaSemana()}
         {viewMode === 'month' && renderVistaMes()}
       </div>
 
-      {/* Modales Clásicos Mantenedores */}
+      {/* Modales Clásicos */}
       {showNewAppointment && (
         <div className="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`w-full max-w-md rounded-2xl p-5 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
@@ -779,3 +819,4 @@ export default function AdminAgendaPage() {
     </div>
   )
 }
+
