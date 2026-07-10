@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { Award, Zap, Sparkles, Flame, Crown, Heart, Lock, CheckCircle2 } from 'lucide-react'
@@ -22,10 +22,38 @@ export default function InsigniasLogros({
 }: InsigniasLogrosProps) {
   const { theme } = useTheme()
   const { settings } = useSettings()
+  const [isMounted, setIsMounted] = useState(false)
+  
   const isDark = theme === 'dark'
+  const primaryColor = settings?.primary_color
+  const secondaryColor = settings?.secondary_color
 
-  const primaryColor = settings?.primary_color || '#DB5B9A'
-  const secondaryColor = settings?.secondary_color || '#E5A46E'
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Si no hay settings, mostrar loading
+  if (!isMounted || !settings) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-stone-200 dark:bg-stone-700 w-7 h-7" />
+            <div className="h-5 w-24 bg-stone-200 dark:bg-stone-700 rounded" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-20 h-1.5 rounded-full bg-stone-200 dark:bg-stone-700" />
+            <div className="h-3 w-8 bg-stone-200 dark:bg-stone-700 rounded" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {[1,2,3,4,5].map((i) => (
+            <div key={i} className="p-3 rounded-xl bg-stone-200 dark:bg-stone-700 h-20" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const insignias = [
     {
@@ -76,7 +104,7 @@ export default function InsigniasLogros({
   return (
     <div className="space-y-4">
 
-      {/* Encabezado simple */}
+      {/* Encabezado */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div 
@@ -97,7 +125,7 @@ export default function InsigniasLogros({
           </div>
         </div>
         
-        {/* Barra de progreso minimalista */}
+        {/* Barra de progreso */}
         <div className="flex items-center gap-2">
           <div className="w-20 h-1.5 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden">
             <div 
@@ -114,7 +142,7 @@ export default function InsigniasLogros({
         </div>
       </div>
 
-      {/* Grid de Insignias - Diseño más ligero */}
+      {/* Grid de Insignias */}
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
         {insignias.map((insignia) => {
           const Icon = insignia.icon
@@ -179,7 +207,7 @@ export default function InsigniasLogros({
         })}
       </div>
 
-      {/* Mensaje sutil */}
+      {/* Mensaje */}
       {desbloqueadas < totalInsignias && (
         <p className={`text-[9px] text-center ${
           isDark ? 'text-stone-500' : 'text-stone-400'
