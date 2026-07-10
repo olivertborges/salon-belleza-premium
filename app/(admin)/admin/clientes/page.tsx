@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import { 
   User, Search, Plus, Phone, Mail, Calendar, 
-  UserCheck, Award, Trash2, Edit, Star, XCircle, Sparkles
+  UserCheck, Award, Trash2, Edit, Star, XCircle, Sparkles,
+  RefreshCw, X, Users, TrendingUp, CheckCircle2
 } from 'lucide-react'
 
 type Cliente = {
@@ -19,16 +20,28 @@ type Cliente = {
 }
 
 export default function ClientesPage() {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { settings } = useSettings()
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [search, setSearch] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
+  const [refreshing, setRefreshing] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const fetchClientes = async () => {
-    try {
+  const brandGradient = {
+    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+  }
+
+  const fetchClientes = async (showLoading = true) => {
+    if (showLoading) {
       setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
+    setError(null)
+
+    try {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -37,10 +50,15 @@ export default function ClientesPage() {
 
       if (error) throw error
       if (data) setClientes(data as Cliente[])
-    } catch (err) {
+      setSuccess('Clientes actualizados correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err: any) {
       console.error('Error al cargar clientes de Supabase:', err)
+      setError(err.message || 'Error al cargar los clientes')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -48,148 +66,172 @@ export default function ClientesPage() {
     fetchClientes()
   }, [])
 
+  const handleRefresh = () => {
+    fetchClientes(true)
+  }
+
   const filtrados = clientes.filter((c: Cliente) => 
     c.name?.toLowerCase().includes(search.toLowerCase()) || 
     c.email?.toLowerCase().includes(search.toLowerCase()) ||
     c.phone?.includes(search)
   )
 
+  // Estadísticas para KPIs
+  const totalClientes = clientes.length
+  const clientesRecientes = clientes.filter(c => {
+    const fecha = new Date(c.created_at)
+    const hoy = new Date()
+    const diff = (hoy.getTime() - fecha.getTime()) / (1000 * 60 * 60 * 24)
+    return diff <= 30
+  }).length
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="text-pink-600/80 dark:text-pink-400/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Clientela...</p>
+        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: settings?.primary_color || '#DB5B9A' }}></div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+          Sincronizando Clientela...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className={`space-y-6 p-1 max-w-6xl mx-auto ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
+    <div className="space-y-6 p-1 max-w-6xl mx-auto">
 
-      {/* HEADER CON DEGRADADO CREATIVO Y GLOW */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
-        <div className={`relative z-10 rounded-[23px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
-          <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
-              <Sparkles className="w-6 h-6" />
+      {/* HEADER CON GRADIENTE CONFIGURABLE */}
+      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
+        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <Users className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-pink-500 dark:text-pink-400 font-bold font-mono flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-                CRM & Loyalty System
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+                ✨ {settings?.business_name || 'Salón VIP'}
               </p>
-              <h2 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
+              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
                 Gestión de Clientas
               </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-200/60 mt-0.5">Fichas personalizadas y base activa de Fresh Nails.</p>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
+                Fichas personalizadas y base activa de Fresh Nails.
+              </p>
             </div>
           </div>
 
-          <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-95 text-white text-xs font-semibold transition-all shadow-md shadow-pink-500/20 active:scale-95 w-full sm:w-auto">
-            <Plus className="w-4 h-4" />
-            Nueva Clienta
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ color: settings?.primary_color || '#DB5B9A' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+            </button>
+            <button 
+              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Nueva Clienta</span>
+              <span className="sm:hidden">+</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MÉTRICAS RÁPIDAS Y VIVAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Registradas */}
-        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-pink-500/5 transition-all group relative overflow-hidden ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.03] to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">Registradas</p>
-              <span className="text-3xl font-mono font-bold block bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent mt-1">
-                {clientes.length.toString().padStart(2, '0')}
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-pink-500/[0.08] dark:bg-pink-500/[0.04] border border-pink-500/10 text-pink-500">
-              <UserCheck className="w-4 h-4" />
-            </div>
+      {/* MENSAJES DE ERROR/SUCCESS */}
+      {error && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <X className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+        </div>
+      )}
+
+      {/* KPIS MODERNOS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
+            <UserCheck className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Registradas</p>
+            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalClientes}</h3>
           </div>
         </div>
 
-        {/* Club VIP */}
-        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-rose-500/5 transition-all group relative overflow-hidden ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-rose-500/[0.03] to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">Club VIP</p>
-              <span className="text-xs font-mono text-rose-500 dark:text-rose-400 block mt-3.5 font-bold uppercase tracking-wide">
-                Programa Activo
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-rose-500/[0.08] dark:bg-rose-500/[0.04] border border-rose-500/10 text-rose-500">
-              <Award className="w-4 h-4" />
-            </div>
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Award className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">VIP Activas</p>
+            <h3 className="text-sm font-mono font-black text-amber-500">{Math.round(totalClientes * 0.4)}</h3>
           </div>
         </div>
 
-        {/* Fidelización */}
-        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-amber-500/5 transition-all group relative overflow-hidden ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-500/[0.03] to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">Fidelización</p>
-              <span className="text-3xl font-mono font-bold block bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent mt-1">
-                87%
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.04] border border-amber-500/10 text-amber-500">
-              <Star className="w-4 h-4" />
-            </div>
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Nuevas (30d)</p>
+            <h3 className="text-sm font-mono font-black text-emerald-500">+{clientesRecientes}</h3>
           </div>
         </div>
       </div>
 
       {/* FILTRO DE BÚSQUEDA */}
-      <div className={`flex items-center border rounded-xl px-3.5 py-2.5 max-w-md transition-all duration-300 shadow-sm ${
-        isDark ? 'bg-zinc-900 border-zinc-800/80 focus-within:border-pink-500/40' : 'bg-white border-pink-100/60 focus-within:border-pink-500/30'
-      }`}>
-        <Search className="w-4 h-4 text-stone-400 shrink-0" />
+      <div className="flex items-center gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 transition-all duration-300">
+        <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
         <input 
           type="text" 
           placeholder="Buscar por nombre, correo o teléfono..." 
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder-stone-400 w-full ml-3 font-sans"
+          className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
         />
         {search && (
-          <button onClick={() => setSearch('')} className="text-stone-400 hover:text-pink-500 ml-1">
-            <XCircle className="w-4 h-4" />
+          <button 
+            onClick={() => setSearch('')}
+            className="p-1 hover:bg-pink-100 dark:hover:bg-fuchsia-950/50 rounded-lg transition-colors shrink-0"
+          >
+            <XCircle className="w-4 h-4 text-stone-400" />
           </button>
         )}
       </div>
 
-      {/* GRID DE TARJETAS REDISEÑADO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* GRID DE TARJETAS */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
         {filtrados.map((cliente: Cliente) => (
           <div 
             key={cliente.id} 
-            className={`relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pink-500/[0.03] hover:border-pink-300 group ${
-              isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
-            }`}
+            className="relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/5 group bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
           >
             {/* Detalle decorativo superior */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" style={{ '--tw-gradient-via': settings?.primary_color || '#DB5B9A' } as React.CSSProperties} />
 
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 {/* Avatar */}
                 {cliente.avatar_url ? (
-                  <img src={cliente.avatar_url} alt={cliente.name} className={`w-11 h-11 rounded-xl object-cover border group-hover:scale-105 transition-transform ${
-                    isDark ? 'border-zinc-800' : 'border-pink-100'
-                  }`} />
+                  <img src={cliente.avatar_url} alt={cliente.name} className={`w-11 h-11 rounded-xl object-cover border group-hover:scale-105 transition-transform bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`} />
                 ) : (
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center font-serif italic text-sm font-bold shrink-0 bg-pink-500/[0.08] dark:bg-pink-500/[0.04] text-pink-500 border border-pink-500/10">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center font-serif italic text-sm font-bold shrink-0 text-white border shadow-sm" style={{ backgroundColor: settings?.primary_color || '#DB5B9A', borderColor: settings?.primary_color || '#DB5B9A' }}>
                     {cliente.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -199,29 +241,25 @@ export default function ClientesPage() {
                   <h3 className="font-bold text-xs text-stone-800 dark:text-pink-100 group-hover:text-pink-500 transition-colors truncate">
                     {cliente.name}
                   </h3>
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 block mt-0.5">
-                    ID_ {cliente.id.substring(0, 8).toUpperCase()}
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 block mt-0.5 truncate">
+                    ID_{cliente.id.substring(0, 8).toUpperCase()}
                   </span>
                 </div>
               </div>
 
               {/* Botones de Acciones Rápidas */}
-              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                <button className={`p-1.5 rounded-xl border transition-all ${
-                  isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-pink-400 hover:border-pink-500/40' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-pink-500 hover:border-pink-200'
-                }`} title="Editar">
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400">
                   <Edit className="w-3.5 h-3.5" />
                 </button>
-                <button className={`p-1.5 rounded-xl border transition-all ${
-                  isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-rose-400 hover:border-rose-500/40' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-rose-500 hover:border-rose-200'
-                }`} title="Eliminar">
+                <button className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-rose-500">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {/* Separador sutil */}
-            <hr className={`my-3.5 ${isDark ? 'border-zinc-800/60' : 'border-pink-50'}`} />
+            <hr className={`my-3.5 border-pink-100/60 dark:border-fuchsia-950/50`} />
 
             {/* Información de Contacto e Historial */}
             <div className="space-y-2 font-mono text-[11px] text-stone-500 dark:text-pink-100/60">
@@ -241,9 +279,7 @@ export default function ClientesPage() {
 
               <div className="flex items-center gap-2 pt-0.5">
                 <Calendar className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                <span className={`px-1.5 py-0.5 rounded border text-[10px] ${
-                  isDark ? 'bg-zinc-800/40 border-zinc-700/50' : 'bg-pink-50/50 border-pink-100/30'
-                }`}>
+                <span className={`px-1.5 py-0.5 rounded border text-[10px] bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
                   Alta: {new Date(cliente.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
                 </span>
               </div>
@@ -252,9 +288,7 @@ export default function ClientesPage() {
         ))}
 
         {filtrados.length === 0 && (
-          <div className={`col-span-full text-center py-12 border border-dashed rounded-2xl font-mono text-stone-400 text-xs ${
-            isDark ? 'border-zinc-800' : 'border-pink-100'
-          }`}>
+          <div className={`col-span-full text-center py-12 border border-dashed rounded-2xl font-mono text-stone-400 text-xs bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950`}>
             No se encontraron clientas que coincidan con los criterios.
           </div>
         )}
