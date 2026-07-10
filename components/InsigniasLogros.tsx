@@ -80,13 +80,13 @@ export default function InsigniasLogros({
 
   return (
     <div className={`space-y-4 ${
-      isDark ? 'text-stone-100' : 'text-stone-900'
+      isDark ? 'text-white' : 'text-stone-900'
     }`}>
 
       {/* Encabezado con progreso */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${primaryColor}10` }}>
+          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${primaryColor}20` }}>
             <Award className="w-3.5 h-3.5" style={{ color: primaryColor }} />
           </div>
           <div>
@@ -108,7 +108,7 @@ export default function InsigniasLogros({
               }}
             />
           </div>
-          <span className="text-[8px] font-mono font-bold text-stone-400 dark:text-stone-500">
+          <span className="text-[8px] font-mono font-bold text-stone-400 dark:text-stone-400">
             {Math.round((desbloqueadas / totalInsignias) * 100)}%
           </span>
         </div>
@@ -131,8 +131,8 @@ export default function InsigniasLogros({
                   : 'bg-white border-pink-100/60'
               }`}
               style={insignia.desbloqueado ? {
-                borderColor: `${insignia.color}30`,
-                boxShadow: `0 4px 12px ${insignia.color}10`
+                borderColor: `${insignia.color}40`,
+                boxShadow: `0 4px 12px ${insignia.color}15`
               } : {}}
             >
               {/* Icono */}
@@ -143,10 +143,10 @@ export default function InsigniasLogros({
                     : 'bg-stone-100 dark:bg-stone-800'
                 }`}
                 style={insignia.desbloqueado ? {
-                  background: `linear-gradient(135deg, ${insignia.color}20, ${insignia.color}05)`,
+                  background: `linear-gradient(135deg, ${insignia.color}25, ${insignia.color}08)`,
                   color: insignia.color
                 } : {
-                  color: isDark ? '#4a4a4a' : '#a0a0a0'
+                  color: isDark ? '#6B7280' : '#9CA3AF'
                 }}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -157,14 +157,14 @@ export default function InsigniasLogros({
                 <p className={`text-[7px] font-black uppercase tracking-wider ${
                   insignia.desbloqueado 
                     ? isDark ? 'text-white' : 'text-stone-800'
-                    : 'text-stone-400 dark:text-stone-600'
+                    : isDark ? 'text-stone-500' : 'text-stone-400'
                 }`}>
                   {insignia.titulo}
                 </p>
                 <p className={`text-[6px] font-serif italic ${
                   insignia.desbloqueado 
-                    ? 'text-stone-500 dark:text-stone-400'
-                    : 'text-stone-400 dark:text-stone-600'
+                    ? isDark ? 'text-stone-400' : 'text-stone-500'
+                    : isDark ? 'text-stone-600' : 'text-stone-400'
                 }`}>
                   {insignia.subtitulo}
                 </p>
@@ -183,9 +183,24 @@ export default function InsigniasLogros({
 
       {/* Mensaje de motivación */}
       {desbloqueadas < totalInsignias && (
-        <p className="text-[8px] font-medium text-center text-stone-400 dark:text-stone-500 italic">
+        <p className={`text-[8px] font-medium text-center ${
+          isDark ? 'text-stone-400' : 'text-stone-400'
+        } italic`}>
           {totalInsignias - desbloqueadas} logro{totalInsignias - desbloqueadas > 1 ? 's' : ''} por desbloquear
         </p>
+      )}
+
+      {/* Mensaje cuando todo está desbloqueado */}
+      {desbloqueadas === totalInsignias && (
+        <div className={`text-center py-1 rounded-lg ${
+          isDark ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-emerald-50 border border-emerald-200'
+        }`}>
+          <p className={`text-[8px] font-bold uppercase tracking-wider ${
+            isDark ? 'text-emerald-400' : 'text-emerald-700'
+          }`}>
+            ✨ ¡Todos los logros desbloqueados! ✨
+          </p>
+        </div>
       )}
     </div>
   )
