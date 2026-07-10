@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext' 
+import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
@@ -57,19 +58,6 @@ const itemVariants = {
       damping: 25
     }
   })
-}
-
-const glowVariants = {
-  idle: { 
-    opacity: 0.3,
-    scale: 1,
-    transition: { duration: 2, repeat: Infinity, repeatType: "reverse" }
-  },
-  active: { 
-    opacity: 0.8,
-    scale: 1.2,
-    transition: { duration: 0.5 }
-  }
 }
 
 export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
@@ -231,18 +219,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                 }`}
                 whileHover={{ scale: 1.02, y: -2 }}
               >
-                {/* Efecto de brillo */}
-                <motion.div 
-                  className="absolute inset-0 pointer-events-none"
-                  animate={{
-                    background: [
-                      'radial-gradient(circle at 0% 0%, transparent 0%, transparent 100%)',
-                      'radial-gradient(circle at 100% 100%, transparent 0%, transparent 100%)',
-                    ]
-                  }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                
                 <motion.div 
                   className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-white shadow-sm shrink-0"
                   style={brandGradient}
@@ -303,7 +279,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                 style={isActive ? brandGradient : {}}
                 title={collapsed ? item.name : ''}
               >
-                {/* Indicador de actividad */}
                 {isActive && (
                   <motion.span 
                     className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-white/80"
@@ -312,7 +287,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   />
                 )}
 
-                {/* Efecto glow en hover */}
                 {isHovered && !isActive && (
                   <motion.span 
                     className="absolute inset-0 rounded-xl pointer-events-none"
@@ -347,7 +321,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   )}
                 </AnimatePresence>
 
-                {/* Punto de actividad */}
                 {isActive && !collapsed && (
                   <motion.span 
                     className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60"
@@ -406,10 +379,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             whileTap={{ scale: 0.95 }}
           >
             <motion.div
-              animate={{ 
-                rotate: [0, 0, 0],
-                scale: [1, 1, 1]
-              }}
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
             >
