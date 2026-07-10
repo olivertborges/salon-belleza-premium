@@ -12,7 +12,7 @@ import {
   Clock, Calendar, Tag, Users, Edit3,
   Check, Eye, EyeOff, User, DollarSign,
   Palette, Scissors, TrendingUp, Heart,
-  FileImage, FolderOpen
+  FileImage, FolderOpen, Bug
 } from 'lucide-react'
 
 type Photo = {
@@ -37,7 +37,6 @@ type Photo = {
 }
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría']
-const sensoryCategories = ['Visual', 'Táctil', 'Olfativa', 'Auditiva', 'Gustativa']
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -89,6 +88,8 @@ export default function GaleriaAdminPage() {
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [showDebug, setShowDebug] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
@@ -110,46 +111,62 @@ export default function GaleriaAdminPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
+  // Función para agregar logs
+  const addDebugLog = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    const timestamp = new Date().toLocaleTimeString()
+    const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔍'
+    setDebugLogs(prev => [`${emoji} [${timestamp}] ${message}`, ...prev].slice(0, 20))
+  }
+
   // Subir archivo a Supabase Storage
   const uploadFile = async (file: File): Promise<string> => {
+    addDebugLog(`📎 Iniciando subida: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`)
+    
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
     const filePath = `gallery/${tenantId}/${fileName}`
+
+    addDebugLog(`📁 Ruta: ${filePath}`)
 
     const { error: uploadError } = await supabase.storage
       .from('gallery')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false,
-        onProgress: (progress) => {
-          const percent = (progress.loaded / progress.total) * 100
-          setUploadProgress(Math.round(percent))
-        }
+        upsert: false
       })
 
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      addDebugLog(`❌ Error subiendo archivo: ${uploadError.message}`, 'error')
+      throw uploadError
+    }
 
     const { data: urlData } = supabase.storage
       .from('gallery')
       .getPublicUrl(filePath)
 
+    addDebugLog(`✅ Imagen subida exitosamente: ${urlData.publicUrl}`, 'success')
     return urlData.publicUrl
   }
 
   // Manejar selección de archivo
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      addDebugLog('⚠️ No se seleccionó ningún archivo', 'error')
+      return
+    }
 
-    // Validar tipo de archivo
+    addDebugLog(`📎 Archivo seleccionado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`)
+
     if (!file.type.startsWith('image/')) {
-      setError('⚠️ Por favor selecciona una imagen válida (JPEG, PNG, WebP, etc.)')
+      addDebugLog(`❌ Tipo de archivo no válido: ${file.type}`, 'error')
+      setError('⚠️ Por favor selecciona una imagen válida')
       setTimeout(() => setError(null), 3000)
       return
     }
 
-    // Validar tamaño (máximo 10MB)
     if (file.size > 10 * 1024 * 1024) {
+      addDebugLog(`❌ Archivo demasiado grande: ${(file.size / 1024 / 1024).toFixed(2)} MB (máx 10MB)`, 'error')
       setError('⚠️ La imagen no puede superar los 10MB')
       setTimeout(() => setError(null), 3000)
       return
@@ -159,51 +176,111 @@ export default function GaleriaAdminPage() {
     const reader = new FileReader()
     reader.onloadend = () => {
       setPreviewUrl(reader.result as string)
+      addDebugLog('✅ Vista previa cargada', 'success')
     }
     reader.readAsDataURL(file)
   }
 
-  // Subir foto con archivo
-  const handleUploadWithFile = async (e: React.FormEvent) => {
+  // HANDLE SUBMIT UNIFICADO - CON DEBUG EN PANTALLA
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!tenantId) return
+    addDebugLog('🚀 Iniciando handleSubmit')
+
+    if (!tenantId) {
+      addDebugLog('❌ No hay tenantId', 'error')
+      setError('⚠️ No se encontró el ID del negocio')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    addDebugLog(`📦 tenantId: ${tenantId}`)
+    addDebugLog(`📝 Modo: ${editingPhoto ? 'Edición' : 'Nueva foto'}`)
+    addDebugLog(`📝 Título: ${formData.title || '(vacío)'}`)
+    addDebugLog(`📝 Categoría: ${formData.category}`)
+
     setError(null)
     setSuccess(null)
 
     try {
-      setUploading(true)
-      setUploadProgress(0)
-
       let imageUrl = formData.image_url
 
       // Si hay archivo seleccionado, subirlo a Storage
       if (selectedFile) {
+        setUploading(true)
+        addDebugLog('📎 Subiendo archivo a Storage...')
         imageUrl = await uploadFile(selectedFile)
-      } else if (!imageUrl) {
+        addDebugLog(`✅ URL obtenida: ${imageUrl}`, 'success')
+      } else if (!imageUrl && !editingPhoto) {
+        addDebugLog('❌ No hay imagen seleccionada ni URL', 'error')
         setError('⚠️ Selecciona una imagen o ingresa una URL')
         setUploading(false)
         return
       }
 
-      // Guardar en la base de datos
-      const { error } = await supabase
-        .from('gallery')
-        .insert({
+      // Si es edición
+      if (editingPhoto) {
+        addDebugLog(`✏️ Editando foto ID: ${editingPhoto.id}`)
+        
+        const updateData = {
+          title: formData.title || null,
+          category: formData.category || 'Nail Art',
+          description: formData.description || null,
+          is_active: formData.is_active,
+          sort_order: formData.sort_order || 0,
+          is_public: formData.is_public
+        }
+
+        addDebugLog(`📝 Datos a actualizar: ${JSON.stringify(updateData)}`)
+
+        const { error } = await supabase
+          .from('gallery')
+          .update(updateData)
+          .eq('id', editingPhoto.id)
+
+        if (error) {
+          addDebugLog(`❌ Error actualizando: ${error.message}`, 'error')
+          throw error
+        }
+        
+        addDebugLog('✅ Foto actualizada correctamente', 'success')
+        setSuccess('📝 Foto actualizada correctamente')
+      } else {
+        // Si es nueva
+        addDebugLog('🆕 Creando nueva foto en la base de datos')
+        
+        if (!imageUrl) {
+          addDebugLog('❌ No hay URL de imagen para insertar', 'error')
+          setError('⚠️ No se pudo obtener la URL de la imagen')
+          setUploading(false)
+          return
+        }
+
+        const insertData = {
           tenant_id: tenantId,
           image_url: imageUrl,
-          title: formData.title,
-          category: formData.category,
-          description: formData.description,
+          title: formData.title || null,
+          category: formData.category || 'Nail Art',
+          description: formData.description || null,
           is_active: formData.is_active,
-          sort_order: formData.sort_order,
+          sort_order: formData.sort_order || 0,
           is_public: formData.is_public
-        })
+        }
 
-      if (error) throw error
+        addDebugLog(`📝 Datos a insertar: ${JSON.stringify(insertData)}`)
 
-      setSuccess('✨ ¡Foto subida y agregada a la galería!')
-      setTimeout(() => setSuccess(null), 3000)
-      
+        const { error } = await supabase
+          .from('gallery')
+          .insert(insertData)
+
+        if (error) {
+          addDebugLog(`❌ Error insertando: ${error.message}`, 'error')
+          throw error
+        }
+        
+        addDebugLog('✅ Foto insertada correctamente', 'success')
+        setSuccess('✨ ¡Foto subida y agregada a la galería!')
+      }
+
       // Resetear formulario
       setShowModal(false)
       setEditingPhoto(null)
@@ -226,31 +303,37 @@ export default function GaleriaAdminPage() {
       })
       if (fileInputRef.current) fileInputRef.current.value = ''
       
+      setTimeout(() => setSuccess(null), 3000)
+      addDebugLog('🔄 Recargando galería...')
       fetchPhotos(false)
+
     } catch (err: any) {
-      console.error('Error subiendo foto:', err)
-      setError(err.message || 'Error al subir la foto')
-      setTimeout(() => setError(null), 3000)
+      addDebugLog(`❌ ERROR GENERAL: ${err.message || 'Error desconocido'}`, 'error')
+      console.error('Error en handleSubmit:', err)
+      setError(err.message || 'Error al procesar la foto')
+      setTimeout(() => setError(null), 5000)
     } finally {
       setUploading(false)
       setUploadProgress(0)
     }
   }
 
-  // Cargar fotos de AMBAS tablas
+  // Cargar fotos
   const fetchPhotos = async (showLoading = true) => {
-    if (!tenantId) return
-    if (showLoading) {
-      setLoading(true)
-    } else {
-      setRefreshing(true)
+    if (!tenantId) {
+      addDebugLog('❌ No hay tenantId para cargar fotos', 'error')
+      return
     }
+
+    addDebugLog('🔄 Cargando fotos...')
+    if (showLoading) setLoading(true)
+    else setRefreshing(true)
     setError(null)
 
     try {
       let allPhotos: Photo[] = []
 
-      // 1. Obtener fotos de la tabla 'gallery' (admin)
+      // 1. Admin photos
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
@@ -258,7 +341,12 @@ export default function GaleriaAdminPage() {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
-      if (adminError) throw adminError
+      if (adminError) {
+        addDebugLog(`❌ Error cargando admin photos: ${adminError.message}`, 'error')
+        throw adminError
+      }
+
+      addDebugLog(`✅ ${adminPhotos?.length || 0} fotos de admin cargadas`, 'success')
 
       if (adminPhotos) {
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
@@ -277,14 +365,19 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. Obtener fotos de la tabla 'client_gallery' (clientes)
+      // 2. Client photos
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
 
-      if (clientError) throw clientError
+      if (clientError) {
+        addDebugLog(`❌ Error cargando client photos: ${clientError.message}`, 'error')
+        throw clientError
+      }
+
+      addDebugLog(`✅ ${clientPhotos?.length || 0} fotos de clientes cargadas`, 'success')
 
       if (clientPhotos) {
         const mappedClientPhotos = clientPhotos.map((p: any) => ({
@@ -315,8 +408,10 @@ export default function GaleriaAdminPage() {
       )
 
       setPhotos(allPhotos)
+      addDebugLog(`📸 Total: ${allPhotos.length} fotos cargadas`, 'success')
+
     } catch (err: any) {
-      console.error('Error cargando galería:', err)
+      addDebugLog(`❌ Error cargando galería: ${err.message}`, 'error')
       setError(err.message || 'Error al cargar la galería')
       setTimeout(() => setError(null), 3000)
     } finally {
@@ -326,18 +421,29 @@ export default function GaleriaAdminPage() {
   }
 
   useEffect(() => {
-    if (tenantId) fetchPhotos()
+    if (tenantId) {
+      addDebugLog(`🚀 Iniciando galería con tenantId: ${tenantId}`)
+      fetchPhotos()
+    } else {
+      addDebugLog('⏳ Esperando tenantId...')
+    }
   }, [tenantId])
 
-  // Eliminar foto (solo admin)
+  // Eliminar foto
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
+    addDebugLog(`🗑️ Intentando eliminar foto ID: ${id}, source: ${source}`)
+    
     if (source === 'client') {
-      setError('⚠️ No se pueden eliminar fotos de clientes desde el panel de admin')
+      addDebugLog('❌ No se pueden eliminar fotos de clientes', 'error')
+      setError('⚠️ No se pueden eliminar fotos de clientes')
       setTimeout(() => setError(null), 3000)
       return
     }
-    if (!confirm('¿Eliminar esta foto de la galería?')) return
+    if (!confirm('¿Eliminar esta foto de la galería?')) {
+      addDebugLog('❌ Eliminación cancelada por el usuario')
+      return
+    }
     
     try {
       const { error } = await supabase
@@ -345,7 +451,12 @@ export default function GaleriaAdminPage() {
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        addDebugLog(`❌ Error eliminando: ${error.message}`, 'error')
+        throw error
+      }
+      
+      addDebugLog(`✅ Foto eliminada correctamente`, 'success')
       setPhotos(photos.filter(p => p.id !== id))
       if (selectedPhoto?.id === id) {
         setShowLightbox(false)
@@ -354,17 +465,18 @@ export default function GaleriaAdminPage() {
       setSuccess('🗑️ Foto eliminada')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
-      console.error('Error al eliminar:', err)
+      addDebugLog(`❌ Error al eliminar: ${err.message}`, 'error')
       setError(err.message || 'Error al eliminar la foto')
       setTimeout(() => setError(null), 3000)
     }
   }
 
-  // Toggle activo/inactivo (solo admin)
+  // Toggle activo
   const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
     if (source === 'client') {
-      setError('⚠️ No se puede cambiar el estado de fotos de clientes')
+      addDebugLog('❌ No se puede cambiar estado de fotos de clientes', 'error')
+      setError('⚠️ No se puede cambiar estado de fotos de clientes')
       setTimeout(() => setError(null), 3000)
       return
     }
@@ -375,14 +487,19 @@ export default function GaleriaAdminPage() {
         .update({ is_active: !currentStatus })
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        addDebugLog(`❌ Error cambiando estado: ${error.message}`, 'error')
+        throw error
+      }
+      
+      addDebugLog(`✅ Estado cambiado: ${!currentStatus ? 'Activo' : 'Inactivo'}`, 'success')
       setPhotos(photos.map(p => 
         p.id === id ? { ...p, is_active: !currentStatus } : p
       ))
       setSuccess(currentStatus ? '👁️ Foto ocultada' : '👁️ Foto visible')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
-      console.error('Error al cambiar estado:', err)
+      addDebugLog(`❌ Error cambiando estado: ${err.message}`, 'error')
       setError(err.message || 'Error al cambiar estado')
       setTimeout(() => setError(null), 3000)
     }
@@ -515,6 +632,7 @@ export default function GaleriaAdminPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => { 
+                  addDebugLog('📷 Abriendo modal para subir foto')
                   setEditingPhoto(null)
                   setSelectedFile(null)
                   setPreviewUrl(null)
@@ -547,6 +665,54 @@ export default function GaleriaAdminPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* BOTÓN PARA MOSTRAR/OCULTAR DEBUG */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider border bg-white/50 dark:bg-[#1a1430]/40 border-pink-100/60 dark:border-fuchsia-950 text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+        >
+          <Bug className="w-3.5 h-3.5" />
+          {showDebug ? 'Ocultar Debug' : 'Mostrar Debug'}
+        </button>
+      </div>
+
+      {/* PANEL DE DEBUG EN PANTALLA */}
+      {showDebug && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-3 max-h-48 overflow-y-auto shadow-inner"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-pink-500 dark:text-pink-400 flex items-center gap-2">
+              <Bug className="w-3 h-3" />
+              Registro de Depuración
+            </p>
+            <button
+              onClick={() => setDebugLogs([])}
+              className="text-[9px] font-mono text-stone-400 hover:text-pink-500 transition-colors"
+            >
+              Limpiar
+            </button>
+          </div>
+          <div className="space-y-0.5 font-mono text-[9px] leading-relaxed">
+            {debugLogs.length === 0 ? (
+              <p className="text-stone-400 dark:text-stone-500 italic">Esperando acciones...</p>
+            ) : (
+              debugLogs.map((log, index) => (
+                <div key={index} className={`py-0.5 border-b border-pink-50/10 last:border-0 ${
+                  log.includes('❌') ? 'text-rose-500 dark:text-rose-400' :
+                  log.includes('✅') ? 'text-emerald-600 dark:text-emerald-400' :
+                  'text-stone-600 dark:text-stone-400'
+                }`}>
+                  {log}
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* MENSAJES */}
       <AnimatePresence>
@@ -692,7 +858,6 @@ export default function GaleriaAdminPage() {
                     transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
                   />
 
-                  {/* Badge de origen */}
                   <div className="absolute top-3 left-3">
                     <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md ${
                       isClient 
@@ -787,6 +952,7 @@ export default function GaleriaAdminPage() {
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
+                            addDebugLog(`✏️ Editando foto: ${photo.id}`)
                             setEditingPhoto(photo)
                             setFormData({
                               title: photo.title || '',
@@ -960,6 +1126,7 @@ export default function GaleriaAdminPage() {
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
+                            addDebugLog(`✏️ Editando desde lightbox: ${selectedPhoto.id}`)
                             setEditingPhoto(selectedPhoto)
                             setFormData({
                               title: selectedPhoto.title || '',
@@ -1050,7 +1217,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL CON SUBIDA DE ARCHIVOS */}
+      {/* MODAL CON SUBIDA DE ARCHIVOS Y DEBUG */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -1075,6 +1242,7 @@ export default function GaleriaAdminPage() {
                   setPreviewUrl(null)
                   setUploadProgress(0)
                   if (fileInputRef.current) fileInputRef.current.value = ''
+                  addDebugLog('📴 Modal cerrado')
                 }}
                 className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
               >
@@ -1090,7 +1258,7 @@ export default function GaleriaAdminPage() {
                 </h3>
               </div>
 
-              <form onSubmit={editingPhoto ? handleEditPhoto : handleUploadWithFile} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {/* ÁREA DE SUBIDA DE ARCHIVO */}
                 {!editingPhoto && (
                   <div>
@@ -1127,6 +1295,7 @@ export default function GaleriaAdminPage() {
                               setSelectedFile(null)
                               setPreviewUrl(null)
                               if (fileInputRef.current) fileInputRef.current.value = ''
+                              addDebugLog('🗑️ Vista previa eliminada')
                             }}
                             className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-all"
                           >
@@ -1227,7 +1396,7 @@ export default function GaleriaAdminPage() {
                 )}
 
                 {/* Checkboxes */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1248,7 +1417,7 @@ export default function GaleriaAdminPage() {
                     <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Público</span>
                   </label>
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[80px]">
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1">
                       Orden
                     </label>
@@ -1262,6 +1431,19 @@ export default function GaleriaAdminPage() {
                   </div>
                 </div>
 
+                {/* DEBUG EN EL MODAL */}
+                <div className="rounded-xl bg-stone-50 dark:bg-[#0f0c1b] border border-stone-200 dark:border-fuchsia-950/50 p-3 max-h-24 overflow-y-auto">
+                  <p className="text-[8px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1">🔍 Debug - Últimos pasos</p>
+                  <div className="space-y-0.5 font-mono text-[8px] text-stone-500 dark:text-stone-400 break-all">
+                    {debugLogs.slice(0, 5).map((log, i) => (
+                      <div key={i} className={`${log.includes('❌') ? 'text-rose-500' : log.includes('✅') ? 'text-emerald-500' : ''}`}>
+                        {log}
+                      </div>
+                    ))}
+                    {debugLogs.length === 0 && <p className="italic">Esperando acciones...</p>}
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -1271,6 +1453,7 @@ export default function GaleriaAdminPage() {
                       setPreviewUrl(null)
                       setUploadProgress(0)
                       if (fileInputRef.current) fileInputRef.current.value = ''
+                      addDebugLog('📴 Modal cerrado')
                     }}
                     className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
                   >
