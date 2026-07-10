@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { X, Sparkles, Gift, Clock, Loader2, Crown, Award } from 'lucide-react'
+import { X, Sparkles, Gift, Clock, Loader2, Award } from 'lucide-react'
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -24,7 +24,6 @@ const PREMIOS = [
   { id: 5, label: '🔄', emoji: '🔄', value: 0, type: 'none' },
 ]
 
-// Colores vibrantes para los segmentos
 const COLORS = [
   '#FF6B6B', // Rojo
   '#4ECDC4', // Turquesa
@@ -53,6 +52,8 @@ export default function RuletaModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
   const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null)
+  
+  // 🔓 VERSIÓN DE PRUEBA: SIEMPRE PERMITE GIRAR
   const [yaGiroHoy, setYaGiroHoy] = useState(false)
   const [proximoGiro, setProximoGiro] = useState<string | null>(null)
 
@@ -60,6 +61,7 @@ export default function RuletaModal({
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
   const [rotation, setRotation] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isCanvasReady, setIsCanvasReady] = useState(false)
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
@@ -77,53 +79,49 @@ export default function RuletaModal({
     const centerY = height / 2
     const radius = Math.min(width, height) / 2 - 10
 
-    // Limpiar canvas
     ctx.clearRect(0, 0, width, height)
 
+    // 🔓 SIEMPRE DIBUJAR LA RULETA COMPLETA (sin bloqueo)
     const numSegments = PREMIOS.length
     const segmentAngle = (2 * Math.PI) / numSegments
 
-    // Dibujar cada segmento
     for (let i = 0; i < numSegments; i++) {
       const startAngle = i * segmentAngle + rotate
       const endAngle = startAngle + segmentAngle
 
-      // Dibujar segmento
       ctx.beginPath()
       ctx.moveTo(centerX, centerY)
       ctx.arc(centerX, centerY, radius, startAngle, endAngle)
       ctx.closePath()
 
-      // Color del segmento
       ctx.fillStyle = COLORS[i % COLORS.length]
       ctx.fill()
-
-      // Borde del segmento
       ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 2
       ctx.stroke()
 
-      // Dibujar texto en el segmento
       ctx.save()
       ctx.translate(centerX, centerY)
       ctx.rotate(startAngle + segmentAngle / 2)
       
-      // Emoji
-      ctx.font = 'bold 24px Arial'
+      ctx.font = 'bold 28px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.shadowColor = 'rgba(0,0,0,0.5)'
-      ctx.shadowBlur = 10
+      ctx.shadowBlur = 8
       ctx.fillStyle = '#ffffff'
-      ctx.fillText(PREMIOS[i].emoji, radius * 0.65, -8)
+      ctx.fillText(PREMIOS[i].emoji, radius * 0.6, -10)
       
-      // Label
       ctx.shadowBlur = 0
-      ctx.font = 'bold 12px Arial'
+      ctx.font = 'bold 11px Arial'
       ctx.fillStyle = '#ffffff'
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'
+      ctx.shadowColor = 'rgba(0,0,0,0.8)'
       ctx.shadowBlur = 4
-      ctx.fillText(PREMIOS[i].label, radius * 0.65, 18)
+      if (PREMIOS[i].value > 0) {
+        ctx.fillText(PREMIOS[i].label + ' pts', radius * 0.6, 18)
+      } else {
+        ctx.fillText(PREMIOS[i].label, radius * 0.6, 18)
+      }
       
       ctx.restore()
     }
@@ -140,7 +138,6 @@ export default function RuletaModal({
     ctx.fillStyle = gradient
     ctx.fill()
     
-    // Borde del centro
     ctx.shadowBlur = 0
     ctx.beginPath()
     ctx.arc(centerX, centerY, 28, 0, 2 * Math.PI)
@@ -148,33 +145,34 @@ export default function RuletaModal({
     ctx.lineWidth = 3
     ctx.stroke()
     
-    // Icono en el centro
     ctx.shadowBlur = 10
     ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.font = '20px Arial'
+    ctx.font = '22px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#ffffff'
     ctx.fillText('🎯', centerX, centerY + 1)
+    
+    setIsCanvasReady(true)
   }
 
-  // Dibujar cuando se abre o cambia el tema
+  // Redibujar cuando cambia el estado
   useEffect(() => {
     if (isOpen && canvasRef.current) {
-      drawWheel(rotation)
+      setTimeout(() => {
+        drawWheel(rotation)
+      }, 100)
     }
-  }, [isOpen, isDark])
+  }, [isOpen, isDark, rotation])
 
-  // Verificar giro del día
+  // 🔓 VERSIÓN DE PRUEBA: No verifica giro diario
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
 
       setIsValidating(true)
       setErrorMessage(null)
-      setYaGiroHoy(false)
       setChosenPrize(null)
-      setProximoGiro(null)
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -202,31 +200,9 @@ export default function RuletaModal({
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
-        // Verificar giro de hoy en DB
-        const hoyInicio = new Date()
-        hoyInicio.setHours(0, 0, 0, 0)
-
-        const mananaInicio = new Date(hoyInicio)
-        mananaInicio.setDate(mananaInicio.getDate() + 1)
-
-        const { data: transData } = await supabase
-          .from('loyalty_transactions')
-          .select('id, created_at')
-          .eq('client_id', clientData.id)
-          .eq('tenant_id', finalTenantId)
-          .ilike('description', '%Ruleta Diaria%')
-          .gte('created_at', hoyInicio.toISOString())
-          .lt('created_at', mananaInicio.toISOString())
-          .limit(1)
-
-        if (transData && transData.length > 0) {
-          setYaGiroHoy(true)
-          const ahora = new Date()
-          const diffMs = mananaInicio.getTime() - ahora.getTime()
-          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
-          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-          setProximoGiro(`${diffHrs}h ${diffMin}m`)
-        }
+        // 🔓 SIEMPRE PERMITE GIRAR (sin verificación)
+        setYaGiroHoy(false)
+        setProximoGiro(null)
 
         setIsValidating(false)
       } catch (error: any) {
@@ -239,7 +215,7 @@ export default function RuletaModal({
   }, [isOpen, usuarioActivo, tenantIdActivo])
 
   const ejecutarGiro = async () => {
-    if (isSpinning || yaGiroHoy || !clientId || !resolvedTenantId) return
+    if (isSpinning || !clientId || !resolvedTenantId) return
 
     setIsSpinning(true)
     setChosenPrize(null)
@@ -247,7 +223,6 @@ export default function RuletaModal({
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
     const premioGanado = PREMIOS[randomIndex]
 
-    // Calcular rotación
     const segmentAngle = (2 * Math.PI) / PREMIOS.length
     const targetAngle = (2 * Math.PI) - (randomIndex * segmentAngle + segmentAngle / 2)
     const spins = 5
@@ -301,17 +276,6 @@ export default function RuletaModal({
           if (onPremioProcesado) onPremioProcesado()
         }
       }
-
-      setYaGiroHoy(true)
-      const hoyInicio = new Date()
-      hoyInicio.setHours(0, 0, 0, 0)
-      const mananaInicio = new Date(hoyInicio)
-      mananaInicio.setDate(mananaInicio.getDate() + 1)
-      const ahora = new Date()
-      const diffMs = mananaInicio.getTime() - ahora.getTime()
-      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
-      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-      setProximoGiro(`${diffHrs}h ${diffMin}m`)
 
       setIsSpinning(false)
     }, 4000)
@@ -386,14 +350,11 @@ export default function RuletaModal({
                   premios
                 </span>
               </h3>
-              {yaGiroHoy && proximoGiro && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-800/50 border border-stone-700/50">
-                  <Clock className="w-3 h-3 text-amber-400" />
-                  <span className="text-[8px] font-mono font-medium text-stone-400">
-                    Próximo en {proximoGiro}
-                  </span>
-                </div>
-              )}
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="text-[8px] font-mono font-medium text-emerald-400">
+                  🔓 MODO PRUEBA - Sin restricción diaria
+                </span>
+              </div>
             </div>
 
             <div className="relative w-[260px] h-[260px] mx-auto">
@@ -413,36 +374,26 @@ export default function RuletaModal({
                 style={{ boxShadow: `0 0 50px ${primaryColor}30` }}
               />
 
-              {!yaGiroHoy && (
-                <button
-                  onClick={ejecutarGiro}
-                  disabled={isSpinning}
-                  className="absolute inset-0 w-full h-full rounded-full flex items-center justify-center transition-all duration-300 z-20"
-                >
-                  {isSpinning ? (
-                    <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
-                    </div>
-                  ) : (
-                    <div className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/20"
-                      style={{ 
-                        background: brandGradient,
-                        boxShadow: `0 0 40px ${primaryColor}60`
-                      }}
-                    >
-                      <Gift className="w-6 h-6 text-white" />
-                    </div>
-                  )}
-                </button>
-              )}
-
-              {yaGiroHoy && (
-                <div className="absolute inset-0 w-full h-full rounded-full flex items-center justify-center z-20">
-                  <div className="w-14 h-14 rounded-full bg-stone-900/80 backdrop-blur-sm border-2 border-stone-700 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-stone-400" />
+              <button
+                onClick={ejecutarGiro}
+                disabled={isSpinning}
+                className="absolute inset-0 w-full h-full rounded-full flex items-center justify-center transition-all duration-300 z-20"
+              >
+                {isSpinning ? (
+                  <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/20"
+                    style={{ 
+                      background: brandGradient,
+                      boxShadow: `0 0 40px ${primaryColor}60`
+                    }}
+                  >
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                )}
+              </button>
             </div>
 
             <div className={`min-h-[44px] flex items-center justify-center px-4 rounded-xl border py-2 transition-all ${
@@ -471,13 +422,6 @@ export default function RuletaModal({
                     </p>
                   </div>
                 </div>
-              ) : yaGiroHoy ? (
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <p className={`text-xs font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                    Ya giraste hoy
-                  </p>
-                </div>
               ) : (
                 <p className={`text-xs font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                   {isSpinning ? '🎡 Girando...' : 'Toca el centro para girar'}
@@ -486,7 +430,7 @@ export default function RuletaModal({
             </div>
 
             <p className={`text-[7px] uppercase tracking-[0.2em] ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>
-              {yaGiroHoy ? '🔒 Un giro por día' : '🎯 Un giro diario'}
+              🎯 Un giro diario (restricción desactivada para pruebas)
             </p>
           </div>
         )}
