@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   User, Search, Plus, Phone, Mail, Calendar, 
   UserCheck, Award, Trash2, Edit, Star, XCircle, Sparkles
@@ -18,6 +19,9 @@ type Cliente = {
 }
 
 export default function ClientesPage() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [search, setSearch] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
@@ -54,18 +58,18 @@ export default function ClientesPage() {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
         <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="text-pink-600/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Clientela...</p>
+        <p className="text-pink-600/80 dark:text-pink-400/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Clientela...</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-1">
+    <div className={`space-y-6 p-1 max-w-6xl mx-auto ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
 
       {/* HEADER CON DEGRADADO CREATIVO Y GLOW */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 p-[1px] shadow-xl shadow-pink-500/10">
         <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-transparent to-amber-400/20 animate-pulse" />
-        <div className="relative z-10 rounded-[23px] bg-[#fffdfd] dark:bg-[#0f0c1b] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className={`relative z-10 rounded-[23px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}>
           <div className="flex items-center gap-4">
             <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-md shadow-pink-500/30">
               <Sparkles className="w-6 h-6" />
@@ -78,10 +82,10 @@ export default function ClientesPage() {
               <h2 className="text-2xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
                 Gestión de Clientas
               </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5">Fichas personalizadas y base activa de Fresh Nails.</p>
+              <p className="text-xs text-stone-500 dark:text-pink-200/60 mt-0.5">Fichas personalizadas y base activa de Fresh Nails.</p>
             </div>
           </div>
-          
+
           <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-95 text-white text-xs font-semibold transition-all shadow-md shadow-pink-500/20 active:scale-95 w-full sm:w-auto">
             <Plus className="w-4 h-4" />
             Nueva Clienta
@@ -92,7 +96,9 @@ export default function ClientesPage() {
       {/* MÉTRICAS RÁPIDAS Y VIVAS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Registradas */}
-        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-pink-500/5 transition-all group relative overflow-hidden">
+        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-pink-500/5 transition-all group relative overflow-hidden ${
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
+        }`}>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.03] to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
             <div>
@@ -108,12 +114,14 @@ export default function ClientesPage() {
         </div>
 
         {/* Club VIP */}
-        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-rose-500/5 transition-all group relative overflow-hidden">
+        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-rose-500/5 transition-all group relative overflow-hidden ${
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
+        }`}>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-rose-500/[0.03] to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
             <div>
               <p className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-wider">Club VIP</p>
-              <span className="text-xs font-mono text-rose-500 block mt-3.5 font-bold uppercase tracking-wide">
+              <span className="text-xs font-mono text-rose-500 dark:text-rose-400 block mt-3.5 font-bold uppercase tracking-wide">
                 Programa Activo
               </span>
             </div>
@@ -124,7 +132,9 @@ export default function ClientesPage() {
         </div>
 
         {/* Fidelización */}
-        <div className="rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-amber-500/5 transition-all group relative overflow-hidden">
+        <div className={`rounded-2xl border p-4 shadow-sm hover:shadow-amber-500/5 transition-all group relative overflow-hidden ${
+          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
+        }`}>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-500/[0.03] to-transparent rounded-bl-full" />
           <div className="flex items-center justify-between">
             <div>
@@ -141,7 +151,9 @@ export default function ClientesPage() {
       </div>
 
       {/* FILTRO DE BÚSQUEDA */}
-      <div className="flex items-center bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950 rounded-xl px-3.5 py-2.5 max-w-md focus-within:border-pink-500/30 transition-all duration-300 shadow-sm">
+      <div className={`flex items-center border rounded-xl px-3.5 py-2.5 max-w-md transition-all duration-300 shadow-sm ${
+        isDark ? 'bg-zinc-900 border-zinc-800/80 focus-within:border-pink-500/40' : 'bg-white border-pink-100/60 focus-within:border-pink-500/30'
+      }`}>
         <Search className="w-4 h-4 text-stone-400 shrink-0" />
         <input 
           type="text" 
@@ -162,16 +174,20 @@ export default function ClientesPage() {
         {filtrados.map((cliente: Cliente) => (
           <div 
             key={cliente.id} 
-            className="relative overflow-hidden rounded-2xl bg-[#fffdfd] dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950/70 p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pink-500/[0.03] hover:border-pink-300 group"
+            className={`relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pink-500/[0.03] hover:border-pink-300 group ${
+              isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
+            }`}
           >
             {/* Detalle decorativo superior */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
             <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {/* Avatar */}
                 {cliente.avatar_url ? (
-                  <img src={cliente.avatar_url} alt={cliente.name} className="w-11 h-11 rounded-xl object-cover border border-pink-100 dark:border-fuchsia-950 group-hover:scale-105 transition-transform" />
+                  <img src={cliente.avatar_url} alt={cliente.name} className={`w-11 h-11 rounded-xl object-cover border group-hover:scale-105 transition-transform ${
+                    isDark ? 'border-zinc-800' : 'border-pink-100'
+                  }`} />
                 ) : (
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center font-serif italic text-sm font-bold shrink-0 bg-pink-500/[0.08] dark:bg-pink-500/[0.04] text-pink-500 border border-pink-500/10">
                     {cliente.name?.charAt(0).toUpperCase()}
@@ -179,8 +195,8 @@ export default function ClientesPage() {
                 )}
 
                 {/* Nombre e ID */}
-                <div>
-                  <h3 className="font-bold text-xs text-stone-800 dark:text-pink-100 group-hover:text-pink-500 transition-colors line-clamp-1">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-xs text-stone-800 dark:text-pink-100 group-hover:text-pink-500 transition-colors truncate">
                     {cliente.name}
                   </h3>
                   <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 block mt-0.5">
@@ -191,37 +207,43 @@ export default function ClientesPage() {
 
               {/* Botones de Acciones Rápidas */}
               <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                <button className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-pink-500 hover:border-pink-200 transition-all" title="Editar">
+                <button className={`p-1.5 rounded-xl border transition-all ${
+                  isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-pink-400 hover:border-pink-500/40' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-pink-500 hover:border-pink-200'
+                }`} title="Editar">
                   <Edit className="w-3.5 h-3.5" />
                 </button>
-                <button className="p-1.5 rounded-xl bg-pink-50/50 dark:bg-fuchsia-950/20 border border-pink-100/60 dark:border-fuchsia-950/40 text-stone-400 hover:text-rose-500 hover:border-rose-200 transition-all" title="Eliminar">
+                <button className={`p-1.5 rounded-xl border transition-all ${
+                  isDark ? 'bg-zinc-800/40 border-zinc-700/60 text-stone-400 hover:text-rose-400 hover:border-rose-500/40' : 'bg-pink-50/50 border-pink-100/60 text-stone-400 hover:text-rose-500 hover:border-rose-200'
+                }`} title="Eliminar">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {/* Separador sutil */}
-            <hr className="my-3.5 border-pink-50 dark:border-fuchsia-950/40" />
+            <hr className={`my-3.5 ${isDark ? 'border-zinc-800/60' : 'border-pink-50'}`} />
 
             {/* Información de Contacto e Historial */}
             <div className="space-y-2 font-mono text-[11px] text-stone-500 dark:text-pink-100/60">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Mail className="w-3.5 h-3.5 text-stone-400 shrink-0" />
                 <span className="truncate hover:text-stone-800 dark:hover:text-pink-200 transition-colors" title={cliente.email}>
                   {cliente.email || 'sin_correo@nails.com'}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Phone className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                <span className="hover:text-stone-800 dark:hover:text-pink-200 transition-colors">
+                <span className="hover:text-stone-800 dark:hover:text-pink-200 transition-colors truncate">
                   {cliente.phone || 'Sin teléfono'}
                 </span>
               </div>
 
               <div className="flex items-center gap-2 pt-0.5">
                 <Calendar className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                <span className="bg-pink-50/50 dark:bg-fuchsia-950/20 px-1.5 py-0.5 rounded border border-pink-100/30 dark:border-fuchsia-950/40 text-[10px]">
+                <span className={`px-1.5 py-0.5 rounded border text-[10px] ${
+                  isDark ? 'bg-zinc-800/40 border-zinc-700/50' : 'bg-pink-50/50 border-pink-100/30'
+                }`}>
                   Alta: {new Date(cliente.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
                 </span>
               </div>
@@ -230,7 +252,9 @@ export default function ClientesPage() {
         ))}
 
         {filtrados.length === 0 && (
-          <div className="col-span-full text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl font-mono text-stone-400 text-xs">
+          <div className={`col-span-full text-center py-12 border border-dashed rounded-2xl font-mono text-stone-400 text-xs ${
+            isDark ? 'border-zinc-800' : 'border-pink-100'
+          }`}>
             No se encontraron clientas que coincidan con los criterios.
           </div>
         )}
