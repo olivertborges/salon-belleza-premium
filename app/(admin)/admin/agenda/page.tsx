@@ -7,7 +7,7 @@ import {
   Play, Filter, DollarSign, Layers, Plus, Trash2, 
   X, Edit, FileText, Users, ChevronDown, 
   Award, Ban, RefreshCw, Scissors, Loader2, Building2,
-  CalendarDays, Smartphone, Check, TrendingUp, Calendar as CalendarIconCheck
+  CalendarDays, Smartphone, Check, TrendingUp, Calendar as CalendarIconCheck, Save
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -38,6 +38,7 @@ export default function AdminAgendaPage() {
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date())
   const [filtroStaff, setFiltroStaff] = useState<string>('todos')
   const [viewMode, setViewMode] = useState<ViewMode>('week') 
@@ -182,8 +183,12 @@ export default function AdminAgendaPage() {
   }
 
   // Sincronización e Ingesta de Datos Centralizada
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    } else {
+      setIsRefreshing(true)
+    }
     setError(null)
 
     try {
@@ -233,12 +238,14 @@ export default function AdminAgendaPage() {
       setError(err.message || 'Error de conexión con el Studio')
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
       setRefreshing(false)
     }
   }
 
+  // useEffect principal - con fetchData(false) para cambios de fecha/filtro
   useEffect(() => {
-    fetchData()
+    fetchData(false)
 
     const canalCitas = supabase
       .channel('cambios-agenda-admin-v3')
@@ -271,7 +278,7 @@ export default function AdminAgendaPage() {
 
   const handleRefresh = () => {
     setRefreshing(true)
-    fetchData()
+    fetchData(true)
   }
 
   const cambiarDia = (offset: number) => {
@@ -635,7 +642,7 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // VISTA: Mes con interactividad corregida al presionar un día
+  // VISTA: Mes con interactividad mejorada
   const renderVistaMes = () => {
     const monthStart = startOfMonth(fechaSeleccionada)
     const daysInMonth = getDaysInMonth(fechaSeleccionada)
@@ -683,19 +690,24 @@ export default function AdminAgendaPage() {
                     {format(day, 'd')}
                   </span>
 
-                  <div className="flex justify-center gap-0.5 mt-1">
-                    {citasDelDia.slice(0, 3).map((_, i) => (
-                      <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
-                    ))}
-                  </div>
+                  {citasDelDia.length > 0 && (
+                    <div className="flex justify-center gap-0.5 mt-1">
+                      {citasDelDia.slice(0, 3).map((_, i) => (
+                        <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+                      ))}
+                      {citasDelDia.length > 3 && (
+                        <span className="text-[8px] font-mono text-stone-400 dark:text-stone-500">+{citasDelDia.length - 3}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* Listado dinámico vinculado */}
-        <div className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 shadow-sm">
+        {/* Listado dinámico vinculado con efecto de refresco sutil */}
+        <div className={`p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 shadow-sm transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           <p className="text-[10px] font-mono font-bold mb-3" style={{ color: settings?.primary_color || '#DB5B9A' }}>
             Turnos del {format(fechaSeleccionada, "d 'de' MMMM", { locale: es })}
           </p>
