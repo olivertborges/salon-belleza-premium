@@ -9,17 +9,20 @@ import {
   Camera, Image as ImageIcon, UploadCloud, 
   Trash2, Loader2, Sparkles, X, ZoomIn,
   ChevronLeft, ChevronRight, LayoutGrid,
-  Clock, Calendar, Tag, Users
+  Clock, Calendar, Tag, Users, Edit3,
+  Check, Eye, EyeOff
 } from 'lucide-react'
 
 type Photo = {
   id: string
+  tenant_id: string
   image_url: string
-  uploaded_by: string
-  category: string
+  title: string | null
+  category: string | null
+  description: string | null
+  sort_order: number
+  is_active: boolean
   created_at: string
-  client_id?: string
-  client_name?: string
 }
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría']
@@ -70,12 +73,24 @@ export default function GaleriaAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
+
+  // Formulario para editar/crear
+  const [formData, setFormData] = useState({
+    title: '',
+    category: 'Nail Art',
+    description: '',
+    image_url: '',
+    is_active: true,
+    sort_order: 0
+  })
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // Cargar fotos - SOLO las subidas por admin
+  // Cargar fotos - TODAS las fotos activas
   const fetchPhotos = async (showLoading = true) => {
     if (!tenantId) return
     if (showLoading) {
@@ -90,7 +105,8 @@ export default function GaleriaAdminPage() {
         .from('gallery')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('uploaded_by', 'admin')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -111,7 +127,92 @@ export default function GaleriaAdminPage() {
     if (tenantId) fetchPhotos()
   }, [tenantId])
 
-  // Subir foto (admin)
+  // Abrir modal para editar
+  const handleEdit = (photo: Photo, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    setEditingPhoto(photo)
+    setFormData({
+      title: photo.title || '',
+      category: photo.category || 'Nail Art',
+      description: photo.description || '',
+      image_url: photo.image_url,
+      is_active: photo.is_active,
+      sort_order: photo.sort_order || 0
+    })
+    setShowModal(true)
+  }
+
+  // Guardar cambios
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tenantId) return
+    setError(null)
+    setSuccess(null)
+
+    try {
+      if (editingPhoto) {
+        // Actualizar foto existente
+        const { error } = await supabase
+          .from('gallery')
+          .update({
+            title: formData.title,
+            category: formData.category,
+            description: formData.description,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order
+          })
+          .eq('id', editingPhoto.id)
+
+        if (error) throw error
+        setSuccess('📝 Foto actualizada correctamente')
+      } else {
+        // Crear nueva foto
+        const mockImages = [
+          'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1632345031435-8797b2d58045?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1596462502278-6d3be8bd3d3c?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1571781418606-70265b9f2ea0?w=800&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800&auto=format&fit=crop&q=80'
+        ]
+        const randomImage = mockImages[Math.floor(Math.random() * mockImages.length)]
+
+        const { error } = await supabase
+          .from('gallery')
+          .insert({
+            tenant_id: tenantId,
+            image_url: formData.image_url || randomImage,
+            title: formData.title,
+            category: formData.category,
+            description: formData.description,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order
+          })
+
+        if (error) throw error
+        setSuccess('✨ ¡Foto agregada a la galería!')
+      }
+
+      setTimeout(() => setSuccess(null), 2500)
+      setShowModal(false)
+      setEditingPhoto(null)
+      setFormData({
+        title: '',
+        category: 'Nail Art',
+        description: '',
+        image_url: '',
+        is_active: true,
+        sort_order: 0
+      })
+      fetchPhotos(false)
+    } catch (err: any) {
+      console.error('Error guardando:', err)
+      setError(err.message || 'Error al guardar')
+      setTimeout(() => setError(null), 3000)
+    }
+  }
+
+  // Subir foto rápida (placeholder)
   const handleUploadPlaceholder = async () => {
     if (!tenantId) return
     setError(null)
@@ -133,9 +234,10 @@ export default function GaleriaAdminPage() {
         .from('gallery')
         .insert({
           tenant_id: tenantId,
-          uploaded_by: 'admin',
           image_url: randomImage,
           category: categoryFilter === 'Todas' ? 'Nail Art' : categoryFilter,
+          is_active: true,
+          sort_order: photos.length
         })
 
       if (error) throw error
@@ -151,7 +253,7 @@ export default function GaleriaAdminPage() {
     }
   }
 
-  // Eliminar foto
+  // Eliminar foto (cambiar is_active a false)
   const deletePhoto = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
     if (!confirm('¿Eliminar esta foto de la galería?')) return
@@ -159,7 +261,7 @@ export default function GaleriaAdminPage() {
     try {
       const { error } = await supabase
         .from('gallery')
-        .delete()
+        .update({ is_active: false })
         .eq('id', id)
 
       if (error) throw error
@@ -173,6 +275,29 @@ export default function GaleriaAdminPage() {
     } catch (err: any) {
       console.error('Error al eliminar del catálogo:', err)
       setError(err.message || 'Error al eliminar la foto')
+      setTimeout(() => setError(null), 3000)
+    }
+  }
+
+  // Toggle activo/inactivo
+  const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    
+    try {
+      const { error } = await supabase
+        .from('gallery')
+        .update({ is_active: !currentStatus })
+        .eq('id', id)
+
+      if (error) throw error
+      setPhotos(photos.map(p => 
+        p.id === id ? { ...p, is_active: !currentStatus } : p
+      ))
+      setSuccess(currentStatus ? '👁️ Foto ocultada' : '👁️ Foto visible')
+      setTimeout(() => setSuccess(null), 2000)
+    } catch (err: any) {
+      console.error('Error al cambiar estado:', err)
+      setError(err.message || 'Error al cambiar estado')
       setTimeout(() => setError(null), 3000)
     }
   }
@@ -304,16 +429,11 @@ export default function GaleriaAdminPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={handleUploadPlaceholder}
-                disabled={uploading}
-                className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all disabled:opacity-50"
+                onClick={() => { setEditingPhoto(null); setFormData({ title: '', category: 'Nail Art', description: '', image_url: '', is_active: true, sort_order: 0 }); setShowModal(true) }}
+                className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
                 style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
               >
-                {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <UploadCloud className="w-4 h-4" />
-                )}
+                <UploadCloud className="w-4 h-4" />
                 <span className="hidden sm:inline">Agregar Foto</span>
                 <span className="sm:hidden">+</span>
               </motion.button>
@@ -446,7 +566,7 @@ export default function GaleriaAdminPage() {
               >
                 <motion.img 
                   src={photo.image_url} 
-                  alt="Muestra de trabajo" 
+                  alt={photo.title || 'Muestra de trabajo'} 
                   className="w-full h-full object-cover"
                   animate={{ 
                     scale: hoveredId === photo.id ? 1.08 : 1
@@ -461,6 +581,7 @@ export default function GaleriaAdminPage() {
                   transition={{ duration: 0.3 }}
                 />
 
+                {/* Badge de categoría */}
                 <motion.div 
                   className="absolute top-3 left-3"
                   initial={{ opacity: 0, y: -10 }}
@@ -472,10 +593,28 @@ export default function GaleriaAdminPage() {
                 >
                   <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
                     <Tag className="w-2.5 h-2.5 inline mr-1" />
-                    {photo.category}
+                    {photo.category || 'Sin categoría'}
                   </span>
                 </motion.div>
 
+                {/* Título en hover */}
+                {photo.title && (
+                  <motion.div 
+                    className="absolute bottom-12 left-3 right-3"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: hoveredId === photo.id ? 1 : 0,
+                      y: hoveredId === photo.id ? 0 : 10
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-white/90 text-xs font-bold truncate">
+                      {photo.title}
+                    </p>
+                  </motion.div>
+                )}
+
+                {/* Botones de acción en hover */}
                 <motion.div 
                   className="absolute bottom-3 right-3 flex gap-2"
                   initial={{ opacity: 0, y: 10 }}
@@ -495,6 +634,22 @@ export default function GaleriaAdminPage() {
                     className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-xl transition-all"
                   >
                     <ZoomIn className="w-3.5 h-3.5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => handleEdit(photo, e)}
+                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-blue-500/60 text-white rounded-xl transition-all"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => toggleActive(photo.id, photo.is_active, e)}
+                    className="p-2 bg-white/20 backdrop-blur-md hover:bg-amber-500/60 text-white rounded-xl transition-all"
+                  >
+                    {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.1, backgroundColor: '#ef4444' }}
@@ -594,7 +749,7 @@ export default function GaleriaAdminPage() {
             >
               <img 
                 src={selectedPhoto.image_url} 
-                alt="Galería" 
+                alt={selectedPhoto.title || 'Galería'} 
                 className="w-full h-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
               />
 
@@ -606,9 +761,14 @@ export default function GaleriaAdminPage() {
               >
                 <div className="flex items-center justify-between text-white">
                   <div className="flex items-center gap-4">
+                    {selectedPhoto.title && (
+                      <span className="text-sm font-bold text-white/90">
+                        {selectedPhoto.title}
+                      </span>
+                    )}
                     <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
                       <Tag className="w-3 h-3 inline mr-1.5" />
-                      {selectedPhoto.category}
+                      {selectedPhoto.category || 'Sin categoría'}
                     </span>
                     <span className="text-xs text-white/60 font-mono flex items-center gap-1.5">
                       <Calendar className="w-3 h-3" />
@@ -626,6 +786,14 @@ export default function GaleriaAdminPage() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
+                      onClick={(e) => handleEdit(selectedPhoto, e)}
+                      className="p-2 bg-blue-500/20 hover:bg-blue-500/80 text-white rounded-xl transition-all"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={(e) => deletePhoto(selectedPhoto.id, e)}
                       className="p-2 bg-red-500/20 hover:bg-red-500/80 text-white rounded-xl transition-all"
                     >
@@ -633,7 +801,155 @@ export default function GaleriaAdminPage() {
                     </motion.button>
                   </div>
                 </div>
+                {selectedPhoto.description && (
+                  <p className="text-xs text-white/60 mt-2 line-clamp-2">
+                    {selectedPhoto.description}
+                  </p>
+                )}
               </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL PARA EDITAR/CREAR */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-3xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+                  {editingPhoto ? <Edit3 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                </div>
+                <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
+                  {editingPhoto ? 'Editar Foto' : 'Agregar Foto'}
+                </h3>
+              </div>
+
+              <form onSubmit={handleSave} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Título
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    placeholder="Título de la obra"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Categoría
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  >
+                    {categories.filter(c => c !== 'Todas').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm resize-none"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    placeholder="Descripción de la obra..."
+                  />
+                </div>
+
+                {!editingPhoto && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      URL de la imagen (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                      placeholder="https://... (dejar vacío para usar imagen de ejemplo)"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                      className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
+                    />
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Visible</span>
+                  </label>
+
+                  <div className="flex-1">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1">
+                      Orden
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sort_order}
+                      onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-1.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                    style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                  >
+                    <Check className="w-4 h-4" />
+                    {editingPhoto ? 'Actualizar' : 'Guardar'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
