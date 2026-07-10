@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import { 
   Sparkles, Plus, Search, Clock, DollarSign, 
   Layers, Edit, Trash2, CheckCircle2, 
-  X, Save, Tag, Scissors, Star, Heart, Flame
+  X, Save, Tag, Scissors, Star, Heart, Flame,
+  RefreshCw, TrendingUp, Package
 } from 'lucide-react'
 
 type Servicio = {
@@ -23,13 +24,15 @@ type Servicio = {
 }
 
 export default function ServiciosPage() {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { settings } = useSettings()
 
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [search, setSearch] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
   const [loading, setLoading] = useState<boolean>(true)
+  const [refreshing, setRefreshing] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [showModal, setShowModal] = useState<boolean>(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -43,22 +46,32 @@ export default function ServiciosPage() {
     category: 'Manicuría'
   })
 
+  const brandGradient = {
+    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+  }
+
   const categoriasConfig = [
-    { name: 'Todos', icon: Star, color: 'from-amber-400 to-rose-500' },
-    { name: 'Manicuría', icon: Sparkles, color: 'from-pink-400 to-pink-600' },
-    { name: 'Sistemas', icon: Layers, color: 'from-rose-400 to-pink-500' },
-    { name: 'Esmaltado', icon: Flame, color: 'from-amber-400 to-rose-500' },
-    { name: 'Pedicuría', icon: Heart, color: 'from-pink-500 to-rose-500' },
-    { name: 'Nail Art', icon: Scissors, color: 'from-rose-400 to-amber-400' },
-    { name: 'Micropigmentación', icon: Tag, color: 'from-pink-500 to-amber-500' },
-    { name: 'Microblading', icon: CheckCircle2, color: 'from-rose-500 to-pink-600' },
-    { name: 'Pestañas', icon: Sparkles, color: 'from-amber-400 to-pink-500' },
-    { name: 'Cejas', icon: Scissors, color: 'from-rose-600 to-pink-500' },
+    { name: 'Todos', icon: Star },
+    { name: 'Manicuría', icon: Sparkles },
+    { name: 'Sistemas', icon: Layers },
+    { name: 'Esmaltado', icon: Flame },
+    { name: 'Pedicuría', icon: Heart },
+    { name: 'Nail Art', icon: Scissors },
+    { name: 'Micropigmentación', icon: Tag },
+    { name: 'Microblading', icon: CheckCircle2 },
+    { name: 'Pestañas', icon: Sparkles },
+    { name: 'Cejas', icon: Scissors },
   ]
 
-  const fetchServicios = async () => {
-    try {
+  const fetchServicios = async (showLoading = true) => {
+    if (showLoading) {
       setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
+    setError(null)
+
+    try {
       const { data, error } = await supabase
         .from('services')
         .select('*')
@@ -67,10 +80,15 @@ export default function ServiciosPage() {
 
       if (error) throw error
       if (data) setServicios(data as Servicio[])
-    } catch (err) {
+      setSuccess('Catálogo actualizado correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err: any) {
       console.error('Error al cargar servicios de Supabase:', err)
+      setError(err.message || 'Error al cargar los servicios')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -78,8 +96,14 @@ export default function ServiciosPage() {
     fetchServicios()
   }, [])
 
+  const handleRefresh = () => {
+    fetchServicios(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setSuccess(null)
 
     const payload = {
       name: formData.name,
@@ -99,20 +123,24 @@ export default function ServiciosPage() {
           .update(payload)
           .eq('id', editingId)
         if (error) throw error
+        setSuccess('Servicio actualizado correctamente')
       } else {
         const { error } = await supabase
           .from('services')
           .insert([payload])
         if (error) throw error
+        setSuccess('Servicio creado correctamente')
       }
 
       setShowModal(false)
       setEditingId(null)
       setFormData({ name: '', description: '', price: '', duration: '', badge: '', icon: 'Sparkles', category: 'Manicuría' })
-      fetchServicios()
-    } catch (err) {
+      setTimeout(() => setSuccess(null), 3000)
+      fetchServicios(false)
+    } catch (err: any) {
       console.error('Error guardando servicio:', err)
-      alert('Error al guardar el servicio')
+      setError(err.message || 'Error al guardar el servicio')
+      setTimeout(() => setError(null), 3000)
     }
   }
 
@@ -132,16 +160,22 @@ export default function ServiciosPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este servicio?')) return
+    setError(null)
+    setSuccess(null)
+
     try {
       const { error } = await supabase
         .from('services')
         .update({ is_active: false })
         .eq('id', id)
       if (error) throw error
-      fetchServicios()
-    } catch (err) {
+      setSuccess('Servicio eliminado correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+      fetchServicios(false)
+    } catch (err: any) {
       console.error('Error eliminando servicio:', err)
-      alert('Error al eliminar el servicio')
+      setError(err.message || 'Error al eliminar el servicio')
+      setTimeout(() => setError(null), 3000)
     }
   }
 
@@ -152,189 +186,207 @@ export default function ServiciosPage() {
   })
 
   const promedioPrecio = servicios.length > 0 ? servicios.reduce((sum, s) => sum + s.price, 0) / servicios.length : 0
+  const totalServicios = servicios.length
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center space-y-4 flex-col">
-        <div className="w-10 h-10 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <span className="text-pink-600/80 font-mono text-xs uppercase tracking-widest animate-pulse">Sincronizando Menú...</span>
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: settings?.primary_color || '#DB5B9A' }}></div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+          Sincronizando Menú...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className={`space-y-8 max-w-[1400px] mx-auto px-1 transition-colors duration-300 ${
-      isDark ? 'text-pink-100' : 'text-stone-800'
-    }`}>
+    <div className="space-y-6 p-1 max-w-6xl mx-auto">
 
-      {/* PANEL DE CONTROL ENCABEZADO CON CARD-GLOW */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl shadow-pink-500/5 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400">
-        <div className={`relative z-10 rounded-[23px] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 ${
-          isDark ? 'bg-zinc-900' : 'bg-white'
-        }`}>
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-pink-500/10 rounded-full blur-[80px] animate-pulse" />
-          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-amber-500/5 rounded-full blur-[80px] animate-pulse delay-1000" />
-
-          <div className="space-y-1 relative z-10">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-pink-500 dark:text-pink-400 font-mono font-bold block flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
-              💎 Fresh Nails Studio
-            </span>
-            <h2 className="text-2xl md:text-3xl font-serif font-extrabold bg-gradient-to-r from-stone-900 via-pink-900 to-rose-800 bg-clip-text text-transparent dark:from-white dark:to-pink-200 mt-0.5">
-              Catálogo de Servicios
-            </h2>
-            <p className={`text-xs max-w-xl ${isDark ? 'text-pink-100/60' : 'text-stone-500'}`}>
-              Administra y edita la oferta comercial, badges destacados y tiempos operativos de tus tratamientos integrales.
-            </p>
+      {/* HEADER CON GRADIENTE CONFIGURABLE */}
+      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
+        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <Package className="w-5 h-5 md:w-6 md:h-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+                💎 {settings?.business_name || 'Salón VIP'}
+              </p>
+              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
+                Catálogo de Servicios
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
+                Administra y edita la oferta comercial de tus tratamientos integrales.
+              </p>
+            </div>
           </div>
 
+          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ color: settings?.primary_color || '#DB5B9A' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+            </button>
+            <button 
+              onClick={() => { setEditingId(null); setFormData({ name: '', description: '', price: '', duration: '', badge: '', icon: 'Sparkles', category: 'Manicuría' }); setShowModal(true) }}
+              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Nuevo Servicio</span>
+              <span className="sm:hidden">+</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* MENSAJES DE ERROR/SUCCESS */}
+      {error && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <X className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+        </div>
+      )}
+
+      {/* KPIS MODERNOS */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
+            <Package className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Servicios</p>
+            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalServicios}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <DollarSign className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Ticket Promedio</p>
+            <h3 className="text-sm font-mono font-black text-emerald-500">${Math.round(promedioPrecio).toLocaleString()}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Categorías</p>
+            <h3 className="text-sm font-mono font-black text-amber-500">{categoriasConfig.length - 1}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTRO DE BÚSQUEDA */}
+      <div className="flex items-center gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 transition-all duration-300">
+        <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+        <input 
+          type="text" 
+          placeholder="Buscar por nombre o descripción..." 
+          value={search} 
+          onChange={(e) => setSearch(e.target.value)} 
+          className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
+        />
+        {search && (
           <button 
-            onClick={() => { setEditingId(null); setFormData({ name: '', description: '', price: '', duration: '', badge: '', icon: 'Sparkles', category: 'Manicuría' }); setShowModal(true) }}
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 hover:opacity-95 text-white text-xs font-mono font-bold tracking-widest uppercase transition-all shadow-md shadow-pink-500/20 self-start md:self-auto active:scale-[0.99]"
+            onClick={() => setSearch('')}
+            className="p-1 hover:bg-pink-100 dark:hover:bg-fuchsia-950/50 rounded-lg transition-colors shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            Nuevo Tratamiento
+            <X className="w-4 h-4 text-stone-400" />
           </button>
-        </div>
+        )}
       </div>
 
-      {/* MÉTRICAS BOUTIQUE */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="space-y-1">
-            <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Menú Activo</p>
-            <span className="text-3xl font-mono font-extrabold text-stone-800 dark:text-pink-100">
-              {servicios.length} <span className="text-xs font-sans text-stone-400 dark:text-stone-500 font-normal">items</span>
-            </span>
-          </div>
-          <div className="p-3 rounded-xl bg-pink-500/10 text-pink-500 border border-pink-500/20"><Sparkles className="w-4 h-4" /></div>
-        </div>
+      {/* CATEGORÍAS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-10 gap-2">
+        {categoriasConfig.map((cat) => {
+          const IconComponent = cat.icon
+          const esActivo = selectedCategory === cat.name
 
-        <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="space-y-1">
-            <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Ticket Promedio</p>
-            <span className="text-3xl font-mono font-extrabold text-stone-800 dark:text-pink-100">${Math.round(promedioPrecio).toLocaleString()}</span>
-          </div>
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20"><DollarSign className="w-4 h-4" /></div>
-        </div>
+          return (
+            <button
+              key={cat.name}
+              onClick={() => setSelectedCategory(cat.name)}
+              className={`relative p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border bg-white dark:bg-[#130f24] ${
+                esActivo 
+                  ? 'border-pink-500/40 shadow-sm ring-1 ring-pink-500/10' 
+                  : 'border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800'
+              }`}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
+                esActivo 
+                  ? 'text-white shadow-xs scale-105' 
+                  : 'text-stone-400 dark:text-stone-500 bg-white dark:bg-[#0f0c1b] border border-pink-100/60 dark:border-fuchsia-950'
+              }`} style={esActivo ? brandGradient : {}}>
+                <IconComponent className="w-3.5 h-3.5" />
+              </div>
 
-        <div className={`rounded-2xl border p-5 flex items-center justify-between shadow-xs hover:border-pink-500/40 transition-all ${
-          isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="space-y-1">
-            <p className="text-stone-400 dark:text-stone-500 text-[10px] font-mono uppercase tracking-wider">Sincronización Cloud</p>
-            <span className="text-xs font-mono text-emerald-500 block pt-2 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Sincronizado
-            </span>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"><CheckCircle2 className="w-4 h-4" /></div>
-        </div>
+              <span className={`text-[10px] font-mono tracking-tight transition-colors ${
+                esActivo ? 'text-pink-500 dark:text-pink-400 font-bold' : 'text-stone-400 dark:text-stone-500'
+              }`}>
+                {cat.name}
+              </span>
+
+              {esActivo && (
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+              )}
+            </button>
+          )
+        })}
       </div>
 
-      {/* FILTRADO Y BUSCADOR */}
-      <div className="space-y-5">
-        <div className="relative flex items-center max-w-xl group">
-          <Search className={`absolute left-4 w-4.5 h-4.5 transition-colors group-focus-within:text-pink-500 pointer-events-none ${
-            isDark ? 'text-stone-500' : 'text-stone-400'
-          }`} />
-          <input 
-            type="text" 
-            placeholder="Escribe el nombre de un tratamiento para buscar..." 
-            value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
-            className={`w-full border rounded-2xl pl-12 pr-4 py-3 text-sm placeholder-stone-400 focus:outline-none focus:border-pink-500/40 focus:ring-1 focus:ring-pink-500/20 transition-all font-sans shadow-sm ${
-              isDark 
-                ? 'bg-zinc-900 border-zinc-800 text-pink-100' 
-                : 'bg-white border-pink-100/60 text-stone-800'
-            }`} 
-          />
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-10 gap-2.5">
-          {categoriasConfig.map((cat) => {
-            const IconComponent = cat.icon
-            const esActivo = selectedCategory === cat.name
-
-            return (
-              <button
-                key={cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`relative overflow-hidden p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border ${
-                  esActivo 
-                    ? `bg-white dark:bg-zinc-900 border-pink-500/40 shadow-sm ring-1 ring-pink-500/10` 
-                    : `border-pink-100/40 dark:border-zinc-800/50 hover:border-pink-300 ${
-                      isDark ? 'bg-zinc-900/40' : 'bg-pink-50/20'
-                    }`
-                }`}
-              >
-                {esActivo && (
-                  <div className={`absolute -inset-1 opacity-[0.06] bg-gradient-to-br ${cat.color} blur-md`} />
-                )}
-
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
-                  esActivo 
-                    ? `bg-gradient-to-br ${cat.color} text-white shadow-xs scale-105` 
-                    : `border text-stone-400 dark:text-stone-500 ${
-                      isDark ? 'bg-zinc-950/40 border-zinc-800' : 'bg-pink-50/40 border-pink-100/40'
-                    }`
-                }`}>
-                  <IconComponent className="w-3.5 h-3.5" />
-                </div>
-
-                <span className={`text-[10px] font-mono tracking-tight transition-colors ${
-                  esActivo ? 'text-pink-500 dark:text-pink-400 font-bold' : 'text-stone-400 dark:text-stone-500'
-                }`}>
-                  {cat.name}
-                </span>
-
-                {esActivo && (
-                  <div className={`absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-gradient-to-r ${cat.color}`} />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* GRID DE TRATAMIENTOS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* GRID DE SERVICIOS */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
         {filtrados.map((servicio: Servicio) => (
           <div 
             key={servicio.id} 
-            className={`rounded-2xl border p-6 flex flex-col justify-between hover:border-pink-500/40 hover:shadow-sm transition-all group duration-300 ${
-              isDark ? 'bg-zinc-900 border-zinc-800/80' : 'bg-white border-pink-100/40'
-            }`}
+            className="rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/5 group bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
           >
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex justify-between items-center">
                 <span className="text-[9px] uppercase font-mono tracking-widest text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
-                  <Layers className="w-3 h-3 text-pink-500" /> {servicio.category || 'General'}
+                  <Layers className="w-3 h-3" style={{ color: settings?.primary_color || '#DB5B9A' }} /> 
+                  {servicio.category || 'General'}
                 </span>
                 {servicio.badge && (
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-pink-500/10 to-amber-500/10 text-pink-600 dark:text-pink-300 border border-pink-500/20 text-[9px] font-mono font-bold tracking-wider">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-white" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
                     {servicio.badge.toUpperCase()}
                   </span>
                 )}
               </div>
-              <h3 className={`text-sm font-bold transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400 ${
-                isDark ? 'text-pink-100' : 'text-stone-800'
-              }`}>
+
+              <h3 className={`text-sm font-bold transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400 text-stone-800 dark:text-pink-100`}>
                 {servicio.name}
               </h3>
-              <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] font-sans ${
-                isDark ? 'text-pink-100/60' : 'text-stone-500'
-              }`}>
+
+              <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] text-stone-500 dark:text-pink-100/60`}>
                 {servicio.description || 'Sin descripción detallada asignada todavía.'}
               </p>
             </div>
 
-            <div className={`mt-5 pt-4 border-t flex justify-between items-center text-xs font-mono ${
-              isDark ? 'border-zinc-800/40' : 'border-pink-50'
-            }`}>
+            <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono border-pink-100/60 dark:border-fuchsia-950/50`}>
               <div className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{servicio.duration || 60} min</span>
@@ -344,24 +396,16 @@ export default function ServiciosPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-4 mt-2">
+            <div className="flex gap-2 pt-3.5 mt-1">
               <button 
                 onClick={() => handleEdit(servicio)} 
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-                  isDark 
-                    ? 'bg-zinc-950/40 border-zinc-800 text-stone-400 hover:text-pink-400 hover:bg-zinc-900' 
-                    : 'bg-pink-50/30 border-pink-100/40 text-stone-500 hover:text-pink-600 hover:bg-pink-50/70'
-                }`}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-300 dark:hover:border-fuchsia-800"
               >
                 <Edit className="w-3.5 h-3.5 stroke-[1.5]" /> Editar
               </button>
               <button 
                 onClick={() => handleDelete(servicio.id)} 
-                className={`px-3 py-2.5 rounded-xl border transition-all ${
-                  isDark 
-                    ? 'bg-zinc-950/40 border-zinc-800 text-stone-400 hover:text-rose-500 hover:border-rose-500/20' 
-                    : 'bg-pink-50/30 border-pink-100/40 text-stone-500 hover:text-rose-500 hover:border-rose-500/20'
-                }`}
+                className="px-3 py-2 rounded-xl border transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500 hover:text-rose-500 hover:border-rose-500/20"
               >
                 <Trash2 className="w-3.5 h-3.5 stroke-[1.5]" />
               </button>
@@ -370,102 +414,95 @@ export default function ServiciosPage() {
         ))}
 
         {filtrados.length === 0 && (
-          <div className={`col-span-full py-20 text-center font-mono text-xs border border-dashed rounded-2xl ${
-            isDark ? 'text-stone-500 border-zinc-800 bg-zinc-900/20' : 'text-stone-400 border-pink-100 bg-pink-50/10'
-          }`}>
-            No se encontraron tratamientos registrados en este módulo.
+          <div className="col-span-full py-12 text-center font-mono text-xs border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500">
+            No se encontraron servicios que coincidan con los criterios.
           </div>
         )}
       </div>
 
-      {/* MODAL CORREGIDO - DISEÑO EXCLUSIVO FRESH NAILS */}
+      {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-up">
-          <div className={`border rounded-[24px] p-6 max-w-md w-full shadow-2xl max-h-[92vh] overflow-y-auto scrollbar-none ${
-            isDark 
-              ? 'bg-zinc-900 border-zinc-800 text-pink-100' 
-              : 'bg-white border-pink-100 text-stone-800'
-          }`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 rounded-xl transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <div className={`flex items-center justify-between mb-6 pb-2 border-b ${
-              isDark ? 'border-zinc-800/60' : 'border-pink-50'
-            }`}>
-              <h3 className="text-xs font-mono font-bold uppercase tracking-widest flex items-center gap-2">
-                <Tag className="w-4 h-4 text-pink-500" /> 
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+                <Tag className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
                 {editingId ? 'Modificar Tratamiento' : 'Registrar Tratamiento'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-xl text-stone-400 hover:text-pink-500 transition-colors">
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                   Nombre del Servicio *
                 </label>
                 <input 
                   type="text" 
                   value={formData.name} 
                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors placeholder-stone-400 dark:placeholder-stone-600 ${
-                    isDark 
-                      ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                      : 'bg-transparent border-pink-100 text-stone-800'
-                  }`} 
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm placeholder:text-stone-400"
+                  style={{ 
+                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                  } as React.CSSProperties}
                   placeholder="Ej: Esmaltado Semipermanente Glam"
                   required 
                 />
               </div>
 
               <div>
-                <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                   Descripción Operativa
                 </label>
                 <textarea 
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                   rows={3} 
-                  className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors placeholder-stone-400 dark:placeholder-stone-600 leading-relaxed resize-none font-sans ${
-                    isDark 
-                      ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                      : 'bg-transparent border-pink-100 text-stone-800'
-                  }`} 
-                  placeholder="Detalla los materiales utilizados o especificaciones particulares del servicio..." 
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm resize-none placeholder:text-stone-400"
+                  style={{ 
+                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                  } as React.CSSProperties}
+                  placeholder="Detalla los materiales utilizados o especificaciones particulares..." 
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Precio ($) *
                   </label>
                   <input 
                     type="number" 
                     value={formData.price} 
                     onChange={(e) => setFormData({...formData, price: e.target.value})} 
-                    className={`w-full border font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
-                      isDark 
-                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                        : 'bg-transparent border-pink-100 text-stone-800'
-                    }`} 
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm font-mono placeholder:text-stone-400"
+                    style={{ 
+                      '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                    } as React.CSSProperties}
                     placeholder="0.00"
                     required 
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Duración (Min) *
                   </label>
                   <input 
                     type="number" 
                     value={formData.duration} 
                     onChange={(e) => setFormData({...formData, duration: e.target.value})} 
-                    className={`w-full border font-mono rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
-                      isDark 
-                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                        : 'bg-transparent border-pink-100 text-stone-800'
-                    }`} 
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm font-mono placeholder:text-stone-400"
+                    style={{ 
+                      '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                    } as React.CSSProperties}
                     placeholder="60"
                     required 
                   />
@@ -474,60 +511,51 @@ export default function ServiciosPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
-                    Categoría de Menú
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Categoría
                   </label>
                   <select 
                     value={formData.category} 
                     onChange={(e) => setFormData({...formData, category: e.target.value})} 
-                    className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors ${
-                      isDark 
-                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                        : 'bg-transparent border-pink-100 text-stone-800'
-                    }`}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                    style={{ 
+                      '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                    } as React.CSSProperties}
                   >
                     {categoriasConfig.filter(c => c.name !== 'Todos').map(cat => (
-                      <option key={cat.name} value={cat.name} className={isDark ? 'bg-zinc-900 text-pink-100' : 'bg-white text-stone-800'}>
-                        {cat.name}
-                      </option>
+                      <option key={cat.name} value={cat.name}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
-                    Badge Promocional
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Badge
                   </label>
                   <input 
                     type="text" 
                     value={formData.badge} 
                     onChange={(e) => setFormData({...formData, badge: e.target.value})} 
-                    className={`w-full border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-pink-500/50 transition-colors uppercase placeholder-stone-400 dark:placeholder-stone-600 ${
-                      isDark 
-                        ? 'bg-zinc-950/40 border-zinc-800 text-pink-100' 
-                        : 'bg-transparent border-pink-100 text-stone-800'
-                    }`} 
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm uppercase placeholder:text-stone-400"
+                    style={{ 
+                      '--tw-ring-color': settings?.primary_color || '#DB5B9A'
+                    } as React.CSSProperties}
                     placeholder="Ej: TOP, NUEVO" 
                   />
                 </div>
               </div>
 
-              <div className={`flex gap-3 pt-6 mt-4 border-t ${
-                isDark ? 'border-zinc-800/60' : 'border-pink-50'
-              }`}>
+              <div className="flex gap-3 pt-4">
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)} 
-                  className={`flex-1 px-4 py-3 border rounded-xl text-[10px] font-mono font-bold tracking-widest uppercase transition-colors ${
-                    isDark 
-                      ? 'border-zinc-800 text-stone-400 hover:bg-zinc-900' 
-                      : 'border-pink-100 text-stone-500 hover:bg-pink-50/40'
-                  }`}
+                  className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
                 >
-                  Cerrar
+                  Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 text-white rounded-xl text-[10px] font-mono font-bold tracking-widest uppercase hover:opacity-95 shadow-md shadow-pink-500/10 flex items-center justify-center gap-2 active:scale-[0.99]"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md"
+                  style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
                 >
                   <Save className="w-4 h-4" /> Guardar
                 </button>
