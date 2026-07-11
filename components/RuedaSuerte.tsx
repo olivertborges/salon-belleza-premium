@@ -15,22 +15,40 @@ interface RuletaModalProps {
   tenantIdActivo?: string
 }
 
+// 🎯 10 PREMIOS con probabilidades ponderadas
+// Mientras más peso (weight), más probable es que salga
 const PREMIOS = [
-  { id: 0, label: '50', emoji: '💇', value: 50, type: 'hair', color: '#F59E0B' },
-  { id: 1, label: '10', emoji: '✨', value: 10, type: 'glow', color: '#EC4899' },
-  { id: 2, label: '🍀', emoji: '🍀', value: 0, type: 'none', color: '#10B981' },
-  { id: 3, label: '100', emoji: '👑', value: 100, type: 'hair', color: '#FBBF24' },
-  { id: 4, label: '50', emoji: '💎', value: 50, type: 'glow', color: '#DB2777' },
-  { id: 5, label: '⭐', emoji: '⭐', value: 0, type: 'none', color: '#8B5CF6' },
+  // PREMIOS PEQUEÑOS (más probables) - 60% de probabilidad
+  { id: 0, label: '10', emoji: '💫', value: 10, type: 'glow', weight: 25, color: '#EC4899' },
+  { id: 1, label: '15', emoji: '🌟', value: 15, type: 'hair', weight: 20, color: '#F59E0B' },
+  { id: 2, label: '20', emoji: '✨', value: 20, type: 'glow', weight: 15, color: '#14B8A6' },
+  
+  // PREMIOS MEDIOS (medianamente probables) - 25% de probabilidad
+  { id: 3, label: '30', emoji: '💎', value: 30, type: 'hair', weight: 10, color: '#8B5CF6' },
+  { id: 4, label: '40', emoji: '👑', value: 40, type: 'glow', weight: 8, color: '#FBBF24' },
+  { id: 5, label: '50', emoji: '🏆', value: 50, type: 'hair', weight: 7, color: '#EF4444' },
+  
+  // PREMIOS GRANDES (poco probables) - 10% de probabilidad
+  { id: 6, label: '75', emoji: '💎', value: 75, type: 'glow', weight: 5, color: '#DB2777' },
+  { id: 7, label: '100', emoji: '👑', value: 100, type: 'hair', weight: 4, color: '#FBBF24' },
+  
+  // PREMIOS ESPECIALES (muy raros) - 5% de probabilidad
+  { id: 8, label: '200', emoji: '💎', value: 200, type: 'glow', weight: 3, color: '#EC4899' },
+  { id: 9, label: '500', emoji: '👑', value: 500, type: 'hair', weight: 1, color: '#F59E0B' },
 ]
 
+// Colores para los segmentos
 const COLORS = [
-  '#EF4444', // Rojo
-  '#14B8A6', // Turquesa
-  '#22C55E', // Verde
-  '#F59E0B', // Ámbar
   '#EC4899', // Rosa
+  '#F59E0B', // Ámbar
+  '#14B8A6', // Turquesa
   '#8B5CF6', // Morado
+  '#FBBF24', // Amarillo
+  '#EF4444', // Rojo
+  '#DB2777', // Rosa fuerte
+  '#FBBF24', // Amarillo
+  '#EC4899', // Rosa
+  '#F59E0B', // Ámbar
 ]
 
 export default function RuletaModal({ 
@@ -52,25 +70,40 @@ export default function RuletaModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
   const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null)
-  
-  // 🔓 VERSIÓN DE PRUEBA: SIEMPRE PERMITE GIRAR
   const [yaGiroHoy, setYaGiroHoy] = useState(false)
   const [proximoGiro, setProximoGiro] = useState<string | null>(null)
 
   const [isSpinning, setIsSpinning] = useState(false)
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
   const [rotation, setRotation] = useState(0)
+  const [isDevMode, setIsDevMode] = useState(false)
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // 🔓 VERSIÓN DE PRUEBA: No verifica giro diario, siempre muestra la ruleta
+  // 🎯 Función para seleccionar premio con peso ponderado
+  const selectPrizeWithWeight = () => {
+    const totalWeight = PREMIOS.reduce((sum, p) => sum + p.weight, 0)
+    let random = Math.random() * totalWeight
+    
+    for (const premio of PREMIOS) {
+      random -= premio.weight
+      if (random <= 0) {
+        return premio
+      }
+    }
+    return PREMIOS[0]
+  }
+
+  // Verificar giro del día
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
 
       setIsValidating(true)
       setErrorMessage(null)
+      setYaGiroHoy(false)
       setChosenPrize(null)
+      setProximoGiro(null)
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -98,9 +131,29 @@ export default function RuletaModal({
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
-        // 🔓 SIEMPRE PERMITE GIRAR
-        setYaGiroHoy(false)
-        setProximoGiro(null)
+        const hoyInicio = new Date()
+        hoyInicio.setHours(0, 0, 0, 0)
+        const mananaInicio = new Date(hoyInicio)
+        mananaInicio.setDate(mananaInicio.getDate() + 1)
+
+        const { data: transData } = await supabase
+          .from('loyalty_transactions')
+          .select('id, created_at')
+          .eq('client_id', clientData.id)
+          .eq('tenant_id', finalTenantId)
+          .ilike('description', '%Ruleta Diaria%')
+          .gte('created_at', hoyInicio.toISOString())
+          .lt('created_at', mananaInicio.toISOString())
+          .limit(1)
+
+        if (transData && transData.length > 0) {
+          setYaGiroHoy(true)
+          const ahora = new Date()
+          const diffMs = mananaInicio.getTime() - ahora.getTime()
+          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+          setProximoGiro(`${diffHrs}h ${diffMin}m`)
+        }
 
         setIsValidating(false)
       } catch (error: any) {
@@ -113,16 +166,17 @@ export default function RuletaModal({
   }, [isOpen, usuarioActivo, tenantIdActivo])
 
   const ejecutarGiro = async () => {
-    if (isSpinning || !clientId || !resolvedTenantId) return
+    if (isSpinning || yaGiroHoy || !clientId || !resolvedTenantId) return
 
     setIsSpinning(true)
     setChosenPrize(null)
 
-    const randomIndex = Math.floor(Math.random() * PREMIOS.length)
-    const premioGanado = PREMIOS[randomIndex]
+    // 🎯 Seleccionar premio con peso ponderado
+    const premioGanado = selectPrizeWithWeight()
+    const winningIndex = PREMIOS.findIndex(p => p.id === premioGanado.id)
 
     const segmentAngle = 360 / PREMIOS.length
-    const targetAngle = 360 - (randomIndex * segmentAngle + segmentAngle / 2)
+    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2)
     const spins = 6
     const totalRotation = spins * 360 + targetAngle
     
@@ -172,6 +226,17 @@ export default function RuletaModal({
           if (onPremioProcesado) onPremioProcesado()
         }
       }
+
+      setYaGiroHoy(true)
+      const hoyInicio = new Date()
+      hoyInicio.setHours(0, 0, 0, 0)
+      const mananaInicio = new Date(hoyInicio)
+      mananaInicio.setDate(mananaInicio.getDate() + 1)
+      const ahora = new Date()
+      const diffMs = mananaInicio.getTime() - ahora.getTime()
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      setProximoGiro(`${diffHrs}h ${diffMin}m`)
 
       setIsSpinning(false)
     }, 4500)
@@ -231,8 +296,45 @@ export default function RuletaModal({
               Cerrar
             </button>
           </div>
+        ) : yaGiroHoy ? (
+          // VISTA BLOQUEADA
+          <div className="py-8 flex flex-col items-center space-y-6">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center" style={{ borderColor: `${primaryColor}30` }}>
+                <Clock className="w-12 h-12" style={{ color: primaryColor }} />
+              </div>
+              <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                Bloqueado
+              </div>
+            </div>
+            
+            <div className="text-center space-y-2">
+              <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                ¡Ya giraste hoy! 🎡
+              </h3>
+              <p className={`text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                Vuelve mañana para más premios
+              </p>
+              {proximoGiro && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-800/50 border border-stone-700/50">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className={`text-sm font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                    Próximo giro en {proximoGiro}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={onClose} 
+              className="px-8 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wide transition hover:scale-105 active:scale-95"
+              style={{ background: brandGradient }}
+            >
+              Entendido
+            </button>
+          </div>
         ) : (
-          // 🔓 RULETA SIEMPRE VISIBLE
+          // RULETA ACTIVA
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center">
@@ -249,11 +351,9 @@ export default function RuletaModal({
                   premios
                 </span>
               </h3>
-              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <span className="text-[8px] font-mono font-medium text-emerald-400">
-                  🔓 MODO PRUEBA - Sin restricción diaria
-                </span>
-              </div>
+              <p className={`text-xs mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                Un giro por día • 10 premios disponibles
+              </p>
             </div>
 
             {/* Ruleta con SVG */}
@@ -303,14 +403,14 @@ export default function RuletaModal({
                           d={`M 100 100 L ${x1} ${y1} A 85 85 0 0 1 ${x2} ${y2} Z`}
                           fill={COLORS[index % COLORS.length]}
                           stroke="#ffffff"
-                          strokeWidth="2"
+                          strokeWidth="1.5"
                         />
                         <text
                           x={textX}
                           y={textY - 8}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize="24"
+                          fontSize="22"
                           fill="white"
                           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}
                         >
@@ -318,10 +418,10 @@ export default function RuletaModal({
                         </text>
                         <text
                           x={textX}
-                          y={textY + 16}
+                          y={textY + 14}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize="10"
+                          fontSize="9"
                           fontWeight="bold"
                           fill="white"
                           style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}
@@ -390,6 +490,16 @@ export default function RuletaModal({
                   {isSpinning ? '🎡 Girando...' : 'Toca el centro para girar'}
                 </p>
               )}
+            </div>
+
+            {/* Leyenda de probabilidades */}
+            <div className="grid grid-cols-5 gap-1 text-center">
+              <div className="text-[8px] text-emerald-400">10-20 pts</div>
+              <div className="text-[8px] text-blue-400">30-50 pts</div>
+              <div className="text-[8px] text-purple-400">75-100 pts</div>
+              <div className="text-[8px] text-pink-400">200 pts</div>
+              <div className="text-[8px] text-amber-400">500 pts</div>
+              <div className="text-[7px] text-stone-500 col-span-5">⬆ Más común → Más raro ⬆</div>
             </div>
           </div>
         )}
