@@ -52,6 +52,8 @@ export default function RuletaModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
   const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null)
+  
+  // 🔓 VERSIÓN DE PRUEBA: SIEMPRE PERMITE GIRAR
   const [yaGiroHoy, setYaGiroHoy] = useState(false)
   const [proximoGiro, setProximoGiro] = useState<string | null>(null)
 
@@ -61,16 +63,14 @@ export default function RuletaModal({
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // Verificar giro del día
+  // 🔓 VERSIÓN DE PRUEBA: No verifica giro diario, siempre muestra la ruleta
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
 
       setIsValidating(true)
       setErrorMessage(null)
-      setYaGiroHoy(false)
       setChosenPrize(null)
-      setProximoGiro(null)
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -98,29 +98,9 @@ export default function RuletaModal({
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
-        const hoyInicio = new Date()
-        hoyInicio.setHours(0, 0, 0, 0)
-        const mananaInicio = new Date(hoyInicio)
-        mananaInicio.setDate(mananaInicio.getDate() + 1)
-
-        const { data: transData } = await supabase
-          .from('loyalty_transactions')
-          .select('id, created_at')
-          .eq('client_id', clientData.id)
-          .eq('tenant_id', finalTenantId)
-          .ilike('description', '%Ruleta Diaria%')
-          .gte('created_at', hoyInicio.toISOString())
-          .lt('created_at', mananaInicio.toISOString())
-          .limit(1)
-
-        if (transData && transData.length > 0) {
-          setYaGiroHoy(true)
-          const ahora = new Date()
-          const diffMs = mananaInicio.getTime() - ahora.getTime()
-          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
-          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-          setProximoGiro(`${diffHrs}h ${diffMin}m`)
-        }
+        // 🔓 SIEMPRE PERMITE GIRAR
+        setYaGiroHoy(false)
+        setProximoGiro(null)
 
         setIsValidating(false)
       } catch (error: any) {
@@ -133,7 +113,7 @@ export default function RuletaModal({
   }, [isOpen, usuarioActivo, tenantIdActivo])
 
   const ejecutarGiro = async () => {
-    if (isSpinning || yaGiroHoy || !clientId || !resolvedTenantId) return
+    if (isSpinning || !clientId || !resolvedTenantId) return
 
     setIsSpinning(true)
     setChosenPrize(null)
@@ -193,17 +173,6 @@ export default function RuletaModal({
         }
       }
 
-      setYaGiroHoy(true)
-      const hoyInicio = new Date()
-      hoyInicio.setHours(0, 0, 0, 0)
-      const mananaInicio = new Date(hoyInicio)
-      mananaInicio.setDate(mananaInicio.getDate() + 1)
-      const ahora = new Date()
-      const diffMs = mananaInicio.getTime() - ahora.getTime()
-      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
-      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-      setProximoGiro(`${diffHrs}h ${diffMin}m`)
-
       setIsSpinning(false)
     }, 4500)
   }
@@ -262,45 +231,8 @@ export default function RuletaModal({
               Cerrar
             </button>
           </div>
-        ) : yaGiroHoy ? (
-          // VISTA BLOQUEADA
-          <div className="py-8 flex flex-col items-center space-y-6">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center" style={{ borderColor: `${primaryColor}30` }}>
-                <Clock className="w-12 h-12" style={{ color: primaryColor }} />
-              </div>
-              <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
-                Bloqueado
-              </div>
-            </div>
-            
-            <div className="text-center space-y-2">
-              <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                ¡Ya giraste hoy! 🎡
-              </h3>
-              <p className={`text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                Vuelve mañana para más premios
-              </p>
-              {proximoGiro && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-800/50 border border-stone-700/50">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span className={`text-sm font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
-                    Próximo giro en {proximoGiro}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <button 
-              onClick={onClose} 
-              className="px-8 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wide transition hover:scale-105 active:scale-95"
-              style={{ background: brandGradient }}
-            >
-              Entendido
-            </button>
-          </div>
         ) : (
-          // RULETA ACTIVA - Con canvas para forma perfecta
+          // 🔓 RULETA SIEMPRE VISIBLE
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center">
@@ -317,12 +249,14 @@ export default function RuletaModal({
                   premios
                 </span>
               </h3>
-              <p className={`text-xs mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                Un giro por día • Premios exclusivos
-              </p>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="text-[8px] font-mono font-medium text-emerald-400">
+                  🔓 MODO PRUEBA - Sin restricción diaria
+                </span>
+              </div>
             </div>
 
-            {/* Ruleta con SVG para forma perfecta */}
+            {/* Ruleta con SVG */}
             <div className="relative w-[280px] h-[280px] mx-auto">
               {/* Flecha indicadora */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
