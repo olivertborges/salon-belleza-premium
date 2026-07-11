@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { X, Sparkles, Gift, Clock, Loader2, Award } from 'lucide-react'
+import { X, Sparkles, Gift, Clock, Loader2, Award, ChevronRight } from 'lucide-react'
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -16,21 +16,22 @@ interface RuletaModalProps {
 }
 
 const PREMIOS = [
-  { id: 0, label: '50', emoji: '💇', value: 50, type: 'hair' },
-  { id: 1, label: '10', emoji: '✨', value: 10, type: 'glow' },
-  { id: 2, label: '🎯', emoji: '🎯', value: 0, type: 'none' },
-  { id: 3, label: '100', emoji: '👑', value: 100, type: 'hair' },
-  { id: 4, label: '50', emoji: '💎', value: 50, type: 'glow' },
-  { id: 5, label: '🔄', emoji: '🔄', value: 0, type: 'none' },
+  { id: 0, label: '50 pts', emoji: '💇‍♀️', value: 50, type: 'hair', color: '#F59E0B' },
+  { id: 1, label: '10 pts', emoji: '✨', value: 10, type: 'glow', color: '#EC4899' },
+  { id: 2, label: 'Suerte', emoji: '🍀', value: 0, type: 'none', color: '#10B981' },
+  { id: 3, label: '100 pts', emoji: '👑', value: 100, type: 'hair', color: '#FBBF24' },
+  { id: 4, label: '50 pts', emoji: '💎', value: 50, type: 'glow', color: '#DB2777' },
+  { id: 5, label: 'Suerte', emoji: '⭐', value: 0, type: 'none', color: '#8B5CF6' },
 ]
 
-const COLORS = [
-  '#FF6B6B', // Rojo
-  '#4ECDC4', // Turquesa
-  '#FFD93D', // Amarillo
-  '#6C5CE7', // Morado
-  '#FF8A5C', // Naranja
-  '#A29BFE', // Lila
+// Colores elegantes para los segmentos
+const SEGMENT_COLORS = [
+  'from-rose-500 to-rose-600',
+  'from-teal-400 to-teal-500',
+  'from-emerald-400 to-emerald-500',
+  'from-amber-400 to-amber-500',
+  'from-pink-500 to-pink-600',
+  'from-violet-400 to-violet-500',
 ]
 
 export default function RuletaModal({ 
@@ -52,127 +53,26 @@ export default function RuletaModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
   const [resolvedTenantId, setResolvedTenantId] = useState<string | null>(null)
-  
-  // 🔓 VERSIÓN DE PRUEBA: SIEMPRE PERMITE GIRAR
   const [yaGiroHoy, setYaGiroHoy] = useState(false)
   const [proximoGiro, setProximoGiro] = useState<string | null>(null)
 
   const [isSpinning, setIsSpinning] = useState(false)
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
   const [rotation, setRotation] = useState(0)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isCanvasReady, setIsCanvasReady] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // Función para dibujar la ruleta
-  const drawWheel = (rotate: number) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const width = canvas.width
-    const height = canvas.height
-    const centerX = width / 2
-    const centerY = height / 2
-    const radius = Math.min(width, height) / 2 - 10
-
-    ctx.clearRect(0, 0, width, height)
-
-    // 🔓 SIEMPRE DIBUJAR LA RULETA COMPLETA (sin bloqueo)
-    const numSegments = PREMIOS.length
-    const segmentAngle = (2 * Math.PI) / numSegments
-
-    for (let i = 0; i < numSegments; i++) {
-      const startAngle = i * segmentAngle + rotate
-      const endAngle = startAngle + segmentAngle
-
-      ctx.beginPath()
-      ctx.moveTo(centerX, centerY)
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle)
-      ctx.closePath()
-
-      ctx.fillStyle = COLORS[i % COLORS.length]
-      ctx.fill()
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.stroke()
-
-      ctx.save()
-      ctx.translate(centerX, centerY)
-      ctx.rotate(startAngle + segmentAngle / 2)
-      
-      ctx.font = 'bold 28px Arial'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.shadowColor = 'rgba(0,0,0,0.5)'
-      ctx.shadowBlur = 8
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(PREMIOS[i].emoji, radius * 0.6, -10)
-      
-      ctx.shadowBlur = 0
-      ctx.font = 'bold 11px Arial'
-      ctx.fillStyle = '#ffffff'
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'
-      ctx.shadowBlur = 4
-      if (PREMIOS[i].value > 0) {
-        ctx.fillText(PREMIOS[i].label + ' pts', radius * 0.6, 18)
-      } else {
-        ctx.fillText(PREMIOS[i].label, radius * 0.6, 18)
-      }
-      
-      ctx.restore()
-    }
-
-    // Círculo central
-    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30)
-    gradient.addColorStop(0, secondaryColor)
-    gradient.addColorStop(1, primaryColor)
-    
-    ctx.shadowBlur = 20
-    ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, 28, 0, 2 * Math.PI)
-    ctx.fillStyle = gradient
-    ctx.fill()
-    
-    ctx.shadowBlur = 0
-    ctx.beginPath()
-    ctx.arc(centerX, centerY, 28, 0, 2 * Math.PI)
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
-    ctx.lineWidth = 3
-    ctx.stroke()
-    
-    ctx.shadowBlur = 10
-    ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.font = '22px Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText('🎯', centerX, centerY + 1)
-    
-    setIsCanvasReady(true)
-  }
-
-  // Redibujar cuando cambia el estado
-  useEffect(() => {
-    if (isOpen && canvasRef.current) {
-      setTimeout(() => {
-        drawWheel(rotation)
-      }, 100)
-    }
-  }, [isOpen, isDark, rotation])
-
-  // 🔓 VERSIÓN DE PRUEBA: No verifica giro diario
+  // Verificar giro del día
   useEffect(() => {
     async function validarAccesoRuleta() {
       if (!isOpen) return
 
       setIsValidating(true)
       setErrorMessage(null)
+      setYaGiroHoy(false)
       setChosenPrize(null)
+      setProximoGiro(null)
 
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -200,9 +100,29 @@ export default function RuletaModal({
         setClientId(clientData.id)
         setResolvedTenantId(finalTenantId)
 
-        // 🔓 SIEMPRE PERMITE GIRAR (sin verificación)
-        setYaGiroHoy(false)
-        setProximoGiro(null)
+        const hoyInicio = new Date()
+        hoyInicio.setHours(0, 0, 0, 0)
+        const mananaInicio = new Date(hoyInicio)
+        mananaInicio.setDate(mananaInicio.getDate() + 1)
+
+        const { data: transData } = await supabase
+          .from('loyalty_transactions')
+          .select('id, created_at')
+          .eq('client_id', clientData.id)
+          .eq('tenant_id', finalTenantId)
+          .ilike('description', '%Ruleta Diaria%')
+          .gte('created_at', hoyInicio.toISOString())
+          .lt('created_at', mananaInicio.toISOString())
+          .limit(1)
+
+        if (transData && transData.length > 0) {
+          setYaGiroHoy(true)
+          const ahora = new Date()
+          const diffMs = mananaInicio.getTime() - ahora.getTime()
+          const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+          const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+          setProximoGiro(`${diffHrs}h ${diffMin}m`)
+        }
 
         setIsValidating(false)
       } catch (error: any) {
@@ -215,24 +135,25 @@ export default function RuletaModal({
   }, [isOpen, usuarioActivo, tenantIdActivo])
 
   const ejecutarGiro = async () => {
-    if (isSpinning || !clientId || !resolvedTenantId) return
+    if (isSpinning || yaGiroHoy || !clientId || !resolvedTenantId) return
 
     setIsSpinning(true)
     setChosenPrize(null)
+    setSelectedIndex(null)
 
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
     const premioGanado = PREMIOS[randomIndex]
 
-    const segmentAngle = (2 * Math.PI) / PREMIOS.length
-    const targetAngle = (2 * Math.PI) - (randomIndex * segmentAngle + segmentAngle / 2)
+    // Calcular rotación (cada segmento son 60 grados)
+    const segmentAngle = 360 / PREMIOS.length
+    const targetAngle = 360 - (randomIndex * segmentAngle + segmentAngle / 2)
     const spins = 5
-    const totalRotation = spins * 2 * Math.PI + targetAngle
+    const totalRotation = spins * 360 + targetAngle
     
-    const newRotation = rotation + totalRotation
-    setRotation(newRotation)
-    drawWheel(newRotation)
+    setRotation(rotation + totalRotation)
 
     setTimeout(async () => {
+      setSelectedIndex(randomIndex)
       setChosenPrize(premioGanado)
 
       if (premioGanado.value > 0) {
@@ -277,8 +198,19 @@ export default function RuletaModal({
         }
       }
 
+      setYaGiroHoy(true)
+      const hoyInicio = new Date()
+      hoyInicio.setHours(0, 0, 0, 0)
+      const mananaInicio = new Date(hoyInicio)
+      mananaInicio.setDate(mananaInicio.getDate() + 1)
+      const ahora = new Date()
+      const diffMs = mananaInicio.getTime() - ahora.getTime()
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60))
+      const diffMin = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      setProximoGiro(`${diffHrs}h ${diffMin}m`)
+
       setIsSpinning(false)
-    }, 4000)
+    }, 4500)
   }
 
   if (!isOpen) return null
@@ -286,122 +218,211 @@ export default function RuletaModal({
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
       <div 
-        className="fixed inset-0 backdrop-blur-sm transition-opacity duration-300" 
-        style={{ backgroundColor: isDark ? 'rgba(15, 12, 27, 0.85)' : 'rgba(0, 0, 0, 0.6)' }}
+        className="fixed inset-0 backdrop-blur-md transition-opacity duration-300" 
+        style={{ backgroundColor: isDark ? 'rgba(15, 12, 27, 0.9)' : 'rgba(0, 0, 0, 0.7)' }}
         onClick={!isSpinning ? onClose : undefined} 
       />
 
-      <div className={`relative w-full max-w-sm transform overflow-hidden rounded-3xl border shadow-2xl p-5 text-center transition-all ${
-        isDark ? 'bg-[#0f0c1b] border-fuchsia-950/40' : 'bg-white border-pink-100/60'
+      <div className={`relative w-full max-w-md transform overflow-hidden rounded-3xl shadow-2xl p-6 transition-all ${
+        isDark ? 'bg-[#0f0c1b]' : 'bg-white'
       }`}>
 
         {!isSpinning && (
           <button 
             onClick={onClose} 
-            className={`absolute top-3 right-3 p-1.5 rounded-xl transition-all ${
-              isDark ? 'hover:bg-stone-800/50 text-stone-500 hover:text-pink-400' : 'hover:bg-pink-50 text-stone-400 hover:text-pink-500'
+            className={`absolute top-4 right-4 p-2 rounded-full transition-all z-10 ${
+              isDark ? 'hover:bg-stone-800 text-stone-500 hover:text-pink-400' : 'hover:bg-stone-100 text-stone-400 hover:text-pink-500'
             }`}
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         )}
 
         {isValidating ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-4">
+          <div className="py-16 flex flex-col items-center justify-center space-y-4">
             <div className="relative flex items-center justify-center">
               <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
               <Sparkles className="w-4 h-4 absolute animate-pulse" style={{ color: primaryColor }} />
             </div>
-            <p className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-              Cargando...
+            <p className={`text-xs uppercase tracking-widest font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+              Preparando tu experiencia
             </p>
           </div>
         ) : errorMessage ? (
-          <div className="py-8 flex flex-col items-center space-y-4">
-            <div className="p-3 rounded-full border" style={{ backgroundColor: `${primaryColor}10`, borderColor: `${primaryColor}20` }}>
-              <Award className="w-8 h-8" style={{ color: primaryColor }} />
+          <div className="py-12 flex flex-col items-center space-y-4">
+            <div className="p-4 rounded-full border" style={{ backgroundColor: `${primaryColor}10`, borderColor: `${primaryColor}20` }}>
+              <Award className="w-10 h-10" style={{ color: primaryColor }} />
             </div>
-            <h3 className={`font-black text-base ${isDark ? 'text-white' : 'text-stone-900'}`}>
-              Ups, algo pasó
+            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+              Algo salió mal
             </h3>
-            <p className={`text-xs px-4 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+            <p className={`text-sm px-6 text-center ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
               {errorMessage}
             </p>
             <button 
               onClick={onClose} 
-              className="px-6 py-2.5 rounded-xl text-white text-xs font-black uppercase transition hover:scale-105 active:scale-95"
+              className="px-8 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wide transition hover:scale-105 active:scale-95"
               style={{ background: brandGradient }}
             >
               Cerrar
             </button>
           </div>
+        ) : yaGiroHoy ? (
+          // VISTA BLOQUEADA - Diseño elegante
+          <div className="py-8 flex flex-col items-center space-y-6">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center" style={{ borderColor: `${primaryColor}30` }}>
+                <Clock className="w-12 h-12" style={{ color: primaryColor }} />
+              </div>
+              <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                Bloqueado
+              </div>
+            </div>
+            
+            <div className="text-center space-y-2">
+              <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                ¡Ya giraste hoy! 🎡
+              </h3>
+              <p className={`text-sm ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                Vuelve mañana para más premios
+              </p>
+              {proximoGiro && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-800/50 border border-stone-700/50">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className={`text-sm font-medium ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+                    Próximo giro en {proximoGiro}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={onClose} 
+              className="px-8 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-wide transition hover:scale-105 active:scale-95"
+              style={{ background: brandGradient }}
+            >
+              Entendido
+            </button>
+          </div>
         ) : (
-          <div className="space-y-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[8px] uppercase tracking-[0.2em] font-black mb-1.5"
+          // RULETA ACTIVA - Diseño profesional
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[10px] uppercase tracking-[0.2em] font-bold mb-2"
                 style={{ borderColor: `${primaryColor}30`, color: primaryColor }}
               >
                 <Sparkles className="w-3 h-3" style={{ color: secondaryColor }} />
                 Ruleta VIP
+                <Gift className="w-3 h-3" style={{ color: secondaryColor }} />
               </div>
-              <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>
+              <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
                 Gira y gana{' '}
-                <span className="font-serif italic font-normal" style={{ color: primaryColor }}>
+                <span className="font-serif italic" style={{ color: primaryColor }}>
                   premios
                 </span>
               </h3>
-              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <span className="text-[8px] font-mono font-medium text-emerald-400">
-                  🔓 MODO PRUEBA - Sin restricción diaria
-                </span>
-              </div>
+              <p className={`text-xs mt-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                Un giro por día • Premios exclusivos
+              </p>
             </div>
 
-            <div className="relative w-[260px] h-[260px] mx-auto">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[16px]" 
+            {/* Ruleta con CSS puro */}
+            <div className="relative w-[280px] h-[280px] mx-auto">
+              {/* Flecha indicadora */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px]" 
                   style={{ borderTopColor: primaryColor }} 
                 />
               </div>
 
-              <div className="absolute -inset-2 rounded-full opacity-20 blur-xl" style={{ background: brandGradient }} />
+              {/* Anillo decorativo */}
+              <div className="absolute -inset-3 rounded-full opacity-20 blur-2xl" style={{ background: brandGradient }} />
 
-              <canvas
-                ref={canvasRef}
-                width={260}
-                height={260}
-                className="w-full h-full rounded-full shadow-2xl relative z-10"
-                style={{ boxShadow: `0 0 50px ${primaryColor}30` }}
-              />
+              {/* La ruleta */}
+              <div 
+                className="w-full h-full rounded-full overflow-hidden shadow-2xl relative"
+                style={{ 
+                  boxShadow: `0 0 60px ${primaryColor}25`,
+                  transform: `rotate(${rotation}deg)`,
+                  transition: isSpinning ? 'transform 4.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none'
+                }}
+              >
+                {PREMIOS.map((premio, index) => {
+                  const angle = (360 / PREMIOS.length) * index
+                  return (
+                    <div
+                      key={premio.id}
+                      className="absolute top-0 left-0 w-full h-full flex items-center justify-center"
+                      style={{
+                        transform: `rotate(${angle}deg)`,
+                        clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
+                      }}
+                    >
+                      <div 
+                        className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-b ${SEGMENT_COLORS[index % SEGMENT_COLORS.length]}`}
+                        style={{
+                          clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
+                        }}
+                      >
+                        <span className="text-2xl drop-shadow-lg -mt-2">{premio.emoji}</span>
+                        <span className="text-[9px] font-bold text-white drop-shadow-lg mt-0.5">
+                          {premio.label}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
 
+              {/* Centro con botón */}
               <button
                 onClick={ejecutarGiro}
                 disabled={isSpinning}
-                className="absolute inset-0 w-full h-full rounded-full flex items-center justify-center transition-all duration-300 z-20"
+                className="absolute inset-0 w-full h-full rounded-full flex items-center justify-center z-10 transition-all duration-300"
               >
                 {isSpinning ? (
-                  <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border-2 border-white/20">
+                    <Loader2 className="w-7 h-7 text-white animate-spin" />
                   </div>
                 ) : (
-                  <div className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/20"
+                  <div 
+                    className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 border-2 border-white/20"
                     style={{ 
                       background: brandGradient,
-                      boxShadow: `0 0 40px ${primaryColor}60`
+                      boxShadow: `0 0 50px ${primaryColor}50`
                     }}
                   >
-                    <Gift className="w-6 h-6 text-white" />
+                    <Gift className="w-7 h-7 text-white" />
                   </div>
                 )}
               </button>
+
+              {/* Puntos decorativos alrededor */}
+              <div className="absolute -inset-1 pointer-events-none">
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1.5 h-1.5 rounded-full bg-white/20"
+                    style={{
+                      top: '50%',
+                      left: '50%',
+                      transform: `rotate(${i * 30}deg) translateX(-50%)`,
+                      marginLeft: '-4px',
+                      marginTop: '-4px',
+                    }}
+                  />
+                ))}
+              </div>
             </div>
 
-            <div className={`min-h-[44px] flex items-center justify-center px-4 rounded-xl border py-2 transition-all ${
+            {/* Resultado */}
+            <div className={`min-h-[52px] flex items-center justify-center px-4 rounded-xl border py-2.5 transition-all ${
               chosenPrize ? 'border-opacity-100' : 'border-opacity-30'
             }`}
               style={chosenPrize ? {
                 borderColor: primaryColor,
-                backgroundColor: `${primaryColor}10`
+                backgroundColor: `${primaryColor}08`
               } : {
                 borderColor: isDark ? '#2a2435' : '#e5e7eb',
               }}
@@ -410,10 +431,10 @@ export default function RuletaModal({
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{chosenPrize.emoji}</span>
                   <div className="text-left">
-                    <p className={`text-[7px] uppercase tracking-widest font-black ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                    <p className={`text-[8px] uppercase tracking-widest font-bold ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                       ¡Felicidades!
                     </p>
-                    <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
+                    <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-stone-900'}`}>
                       {chosenPrize.value > 0 ? (
                         <>Ganaste <span style={{ color: primaryColor }}>{chosenPrize.value} pts</span></>
                       ) : (
@@ -423,15 +444,11 @@ export default function RuletaModal({
                   </div>
                 </div>
               ) : (
-                <p className={`text-xs font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                   {isSpinning ? '🎡 Girando...' : 'Toca el centro para girar'}
                 </p>
               )}
             </div>
-
-            <p className={`text-[7px] uppercase tracking-[0.2em] ${isDark ? 'text-stone-600' : 'text-stone-400'}`}>
-              🎯 Un giro diario (restricción desactivada para pruebas)
-            </p>
           </div>
         )}
       </div>
