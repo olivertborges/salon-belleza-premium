@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
-import { X, Sparkles, Gift, Clock, Loader2, Award, ChevronRight } from 'lucide-react'
+import { X, Sparkles, Gift, Clock, Loader2, Award } from 'lucide-react'
 
 interface RuletaModalProps {
   isOpen: boolean
@@ -16,22 +16,21 @@ interface RuletaModalProps {
 }
 
 const PREMIOS = [
-  { id: 0, label: '50 pts', emoji: '💇‍♀️', value: 50, type: 'hair', color: '#F59E0B' },
-  { id: 1, label: '10 pts', emoji: '✨', value: 10, type: 'glow', color: '#EC4899' },
-  { id: 2, label: 'Suerte', emoji: '🍀', value: 0, type: 'none', color: '#10B981' },
-  { id: 3, label: '100 pts', emoji: '👑', value: 100, type: 'hair', color: '#FBBF24' },
-  { id: 4, label: '50 pts', emoji: '💎', value: 50, type: 'glow', color: '#DB2777' },
-  { id: 5, label: 'Suerte', emoji: '⭐', value: 0, type: 'none', color: '#8B5CF6' },
+  { id: 0, label: '50', emoji: '💇', value: 50, type: 'hair', color: '#F59E0B' },
+  { id: 1, label: '10', emoji: '✨', value: 10, type: 'glow', color: '#EC4899' },
+  { id: 2, label: '🍀', emoji: '🍀', value: 0, type: 'none', color: '#10B981' },
+  { id: 3, label: '100', emoji: '👑', value: 100, type: 'hair', color: '#FBBF24' },
+  { id: 4, label: '50', emoji: '💎', value: 50, type: 'glow', color: '#DB2777' },
+  { id: 5, label: '⭐', emoji: '⭐', value: 0, type: 'none', color: '#8B5CF6' },
 ]
 
-// Colores elegantes para los segmentos
-const SEGMENT_COLORS = [
-  'from-rose-500 to-rose-600',
-  'from-teal-400 to-teal-500',
-  'from-emerald-400 to-emerald-500',
-  'from-amber-400 to-amber-500',
-  'from-pink-500 to-pink-600',
-  'from-violet-400 to-violet-500',
+const COLORS = [
+  '#EF4444', // Rojo
+  '#14B8A6', // Turquesa
+  '#22C55E', // Verde
+  '#F59E0B', // Ámbar
+  '#EC4899', // Rosa
+  '#8B5CF6', // Morado
 ]
 
 export default function RuletaModal({ 
@@ -59,7 +58,6 @@ export default function RuletaModal({
   const [isSpinning, setIsSpinning] = useState(false)
   const [chosenPrize, setChosenPrize] = useState<typeof PREMIOS[0] | null>(null)
   const [rotation, setRotation] = useState(0)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
@@ -139,21 +137,18 @@ export default function RuletaModal({
 
     setIsSpinning(true)
     setChosenPrize(null)
-    setSelectedIndex(null)
 
     const randomIndex = Math.floor(Math.random() * PREMIOS.length)
     const premioGanado = PREMIOS[randomIndex]
 
-    // Calcular rotación (cada segmento son 60 grados)
     const segmentAngle = 360 / PREMIOS.length
     const targetAngle = 360 - (randomIndex * segmentAngle + segmentAngle / 2)
-    const spins = 5
+    const spins = 6
     const totalRotation = spins * 360 + targetAngle
     
     setRotation(rotation + totalRotation)
 
     setTimeout(async () => {
-      setSelectedIndex(randomIndex)
       setChosenPrize(premioGanado)
 
       if (premioGanado.value > 0) {
@@ -268,7 +263,7 @@ export default function RuletaModal({
             </button>
           </div>
         ) : yaGiroHoy ? (
-          // VISTA BLOQUEADA - Diseño elegante
+          // VISTA BLOQUEADA
           <div className="py-8 flex flex-col items-center space-y-6">
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center" style={{ borderColor: `${primaryColor}30` }}>
@@ -305,7 +300,7 @@ export default function RuletaModal({
             </button>
           </div>
         ) : (
-          // RULETA ACTIVA - Diseño profesional
+          // RULETA ACTIVA - Con canvas para forma perfecta
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center">
@@ -327,7 +322,7 @@ export default function RuletaModal({
               </p>
             </div>
 
-            {/* Ruleta con CSS puro */}
+            {/* Ruleta con SVG para forma perfecta */}
             <div className="relative w-[280px] h-[280px] mx-auto">
               {/* Flecha indicadora */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
@@ -339,40 +334,70 @@ export default function RuletaModal({
               {/* Anillo decorativo */}
               <div className="absolute -inset-3 rounded-full opacity-20 blur-2xl" style={{ background: brandGradient }} />
 
-              {/* La ruleta */}
+              {/* SVG de la ruleta */}
               <div 
-                className="w-full h-full rounded-full overflow-hidden shadow-2xl relative"
+                className="w-full h-full rounded-full shadow-2xl relative overflow-hidden"
                 style={{ 
                   boxShadow: `0 0 60px ${primaryColor}25`,
-                  transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? 'transform 4.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none'
                 }}
               >
-                {PREMIOS.map((premio, index) => {
-                  const angle = (360 / PREMIOS.length) * index
-                  return (
-                    <div
-                      key={premio.id}
-                      className="absolute top-0 left-0 w-full h-full flex items-center justify-center"
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
-                      }}
-                    >
-                      <div 
-                        className={`w-full h-full flex flex-col items-center justify-center bg-gradient-to-b ${SEGMENT_COLORS[index % SEGMENT_COLORS.length]}`}
-                        style={{
-                          clipPath: 'polygon(50% 50%, 50% 0%, 100% 28.87%, 100% 30%)',
-                        }}
-                      >
-                        <span className="text-2xl drop-shadow-lg -mt-2">{premio.emoji}</span>
-                        <span className="text-[9px] font-bold text-white drop-shadow-lg mt-0.5">
+                <svg
+                  viewBox="0 0 200 200"
+                  className="w-full h-full"
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    transition: isSpinning ? 'transform 4.5s cubic-bezier(0.1, 0.8, 0.1, 1)' : 'none'
+                  }}
+                >
+                  {PREMIOS.map((premio, index) => {
+                    const angle = (360 / PREMIOS.length) * index
+                    const rad = (angle * Math.PI) / 180
+                    const nextRad = ((angle + 360 / PREMIOS.length) * Math.PI) / 180
+                    
+                    const x1 = 100 + 85 * Math.cos(rad)
+                    const y1 = 100 + 85 * Math.sin(rad)
+                    const x2 = 100 + 85 * Math.cos(nextRad)
+                    const y2 = 100 + 85 * Math.sin(nextRad)
+                    
+                    const midAngle = rad + (nextRad - rad) / 2
+                    const textX = 100 + 55 * Math.cos(midAngle)
+                    const textY = 100 + 55 * Math.sin(midAngle)
+                    
+                    return (
+                      <g key={premio.id}>
+                        <path
+                          d={`M 100 100 L ${x1} ${y1} A 85 85 0 0 1 ${x2} ${y2} Z`}
+                          fill={COLORS[index % COLORS.length]}
+                          stroke="#ffffff"
+                          strokeWidth="2"
+                        />
+                        <text
+                          x={textX}
+                          y={textY - 8}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="24"
+                          fill="white"
+                          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}
+                        >
+                          {premio.emoji}
+                        </text>
+                        <text
+                          x={textX}
+                          y={textY + 16}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="10"
+                          fontWeight="bold"
+                          fill="white"
+                          style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}
+                        >
                           {premio.label}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+                        </text>
+                      </g>
+                    )
+                  })}
+                </svg>
               </div>
 
               {/* Centro con botón */}
@@ -397,23 +422,6 @@ export default function RuletaModal({
                   </div>
                 )}
               </button>
-
-              {/* Puntos decorativos alrededor */}
-              <div className="absolute -inset-1 pointer-events-none">
-                {[...Array(12)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 rounded-full bg-white/20"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      transform: `rotate(${i * 30}deg) translateX(-50%)`,
-                      marginLeft: '-4px',
-                      marginTop: '-4px',
-                    }}
-                  />
-                ))}
-              </div>
             </div>
 
             {/* Resultado */}
