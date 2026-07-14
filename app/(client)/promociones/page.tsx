@@ -833,4 +833,193 @@ function PromocionListItem({
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {promo.code && (
             <button
-              onClick={() => onCopy(promo.code!,
+              onClick={() => onCopy(promo.code!, promo)}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                copiedCode === promo.code
+                  ? 'bg-emerald-500 text-white'
+                  : isDark
+                    ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+              }`}
+            >
+              {copiedCode === promo.code ? '✓ Copiado' : `Usar ${promo.code}`}
+            </button>
+          )}
+          <button
+            onClick={() => onApply(promo)}
+            disabled={!!appliedPromo}
+            className={`px-6 py-2.5 rounded-xl text-white text-[10px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 ${
+              appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            style={{ background: brandGradient }}
+          >
+            {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ============================================================
+// COMPONENTE: Modal de Detalle
+// ============================================================
+function PromocionModal({ 
+  promo, 
+  onClose, 
+  onApply,
+  isDark,
+  primaryColor,
+  brandGradient,
+  appliedPromo
+}: { 
+  promo: Promocion
+  onClose: () => void
+  onApply: (promo: Promocion) => void
+  isDark: boolean
+  primaryColor: string
+  brandGradient: string
+  appliedPromo: string | null
+}) {
+  const isApplied = appliedPromo === promo.id
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
+          isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <X className="w-5 h-5 text-stone-400" />
+        </button>
+
+        {promo.image_url && (
+          <div className="rounded-2xl overflow-hidden mb-4 aspect-video">
+            <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-2xl font-bold text-stone-900 dark:text-white">
+              {promo.title}
+            </h3>
+            {promo.featured && (
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+            )}
+            {isApplied && (
+              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500 text-white">
+                ✓ Aplicada
+              </span>
+            )}
+          </div>
+
+          <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+            {promo.description}
+          </p>
+
+          {promo.discount_percent > 0 && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <Percent className="w-5 h-5 text-emerald-500" />
+              <span className="text-lg font-bold text-emerald-500">{promo.discount_percent}% de descuento</span>
+            </div>
+          )}
+
+          {promo.terms && (
+            <div className="p-3 rounded-xl bg-stone-100 dark:bg-[#130f24] border border-stone-200 dark:border-fuchsia-950">
+              <p className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                <span className="font-bold uppercase tracking-widest">Términos:</span> {promo.terms}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            {promo.code && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(promo.code!)
+                }}
+                className="flex-1 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95"
+                style={{ background: brandGradient }}
+              >
+                <Copy className="w-4 h-4 inline mr-2" /> Usar código {promo.code}
+              </button>
+            )}
+            
+            <button
+              onClick={() => onApply(promo)}
+              disabled={!!appliedPromo}
+              className={`flex-1 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95 ${
+                appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              style={{ background: brandGradient }}
+            >
+              {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar ahora'}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-500">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Válido hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </span>
+            {promo.uses_limit && (
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {promo.uses_count || 0}/{promo.uses_limit} usos
+              </span>
+            )}
+          </div>
+
+          {promo.uses_limit && promo.uses_count && promo.uses_count >= promo.uses_limit && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium text-center">
+              ⚠️ Esta promoción ya no está disponible (límite de usos alcanzado)
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case 'flash': return <Flame className="w-3 h-3" />
+    case 'premium': return <Diamond className="w-3 h-3" />
+    case 'welcome': return <Gift className="w-3 h-3" />
+    case 'seasonal': return <Sparkles className="w-3 h-3" />
+    default: return <Tag className="w-3 h-3" />
+  }
+}
+
+function getCategoryLabel(category: string) {
+  switch (category) {
+    case 'flash': return 'Flash'
+    case 'premium': return 'Premium'
+    case 'welcome': return 'Bienvenida'
+    case 'seasonal': return 'Temporada'
+    default: return 'Especial'
+  }
+}
