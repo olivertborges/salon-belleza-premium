@@ -30,8 +30,7 @@ import {
   Check,
   Loader,
   Diamond,
-  Gem,
-  PartyPopper
+  Bug
 } from 'lucide-react'
 
 interface Promocion {
@@ -101,6 +100,9 @@ export default function PromocionesCliente() {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [selectedPromo, setSelectedPromo] = useState<Promocion | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  // 🔍 DEBUG: Estado para mostrar información en pantalla
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   const brandGradient = `linear-gradient(135deg, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
 
@@ -110,7 +112,46 @@ export default function PromocionesCliente() {
 
   const loadPromociones = async () => {
     if (!tenantId) {
+      setDebugInfo('❌ No hay tenantId')
       setLoading(false)
+      return
+    }
+
+    setDebugInfo(`🔍 Tenant ID: ${tenantId}`)
+
+    try {
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0)
+
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .gte('valid_until', hoy.toISOString())
+        .order('featured', { ascending: false })
+        .order('valid_until', { ascending: true })
+
+      if (error) {
+        setDebugInfo(`❌ Error: ${error.message}`)
+        throw error
+      }
+
+      setDebugInfo(`✅ Promociones encontradas: ${data?.length || 0}`)
+      setPromociones(data || [])
+      setFilteredPromociones(data || [])
+    } catch (error) {
+      console.error('Error cargando promociones:', error)
+      setDebugInfo(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 🔍 Función para debug manual
+  const handleDebug = async () => {
+    if (!tenantId) {
+      alert('❌ No hay tenantId')
       return
     }
 
@@ -120,17 +161,15 @@ export default function PromocionesCliente() {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        .gte('valid_until', new Date().toISOString())
-        .order('featured', { ascending: false })
-        .order('valid_until', { ascending: true })
 
-      if (error) throw error
-      setPromociones(data || [])
-      setFilteredPromociones(data || [])
-    } catch (error) {
-      console.error('Error cargando promociones:', error)
-    } finally {
-      setLoading(false)
+      if (error) {
+        alert(`❌ Error: ${error.message}`)
+        return
+      }
+
+      alert(`📦 Promociones: ${data?.length || 0}\n\n${data?.map(p => `• ${p.title} (${p.discount_percent}%)`).join('\n') || 'No hay datos'}`)
+    } catch (e) {
+      alert(`❌ Error: ${e}`)
     }
   }
 
@@ -179,16 +218,6 @@ export default function PromocionesCliente() {
     }
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'flash': return 'from-red-500 to-red-600'
-      case 'premium': return 'from-amber-400 to-amber-600'
-      case 'welcome': return 'from-emerald-400 to-emerald-600'
-      case 'seasonal': return 'from-purple-400 to-purple-600'
-      default: return `from-[${primaryColor}] to-[${settings?.secondary_color || '#E5A46E'}]`
-    }
-  }
-
   const openModal = (promo: Promocion) => {
     setSelectedPromo(promo)
     setIsModalOpen(true)
@@ -203,7 +232,7 @@ export default function PromocionesCliente() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8">
         <div className="relative">
           <div className="w-16 h-16 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
           <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
@@ -211,6 +240,26 @@ export default function PromocionesCliente() {
         <p className="text-xs tracking-[0.2em] uppercase font-medium text-stone-400 dark:text-stone-500">
           Cargando experiencias exclusivas...
         </p>
+        
+        {/* 🔍 PANEL DE DEBUG VISIBLE */}
+        <div className="mt-6 p-4 bg-stone-100 dark:bg-stone-800 rounded-xl max-w-md w-full border border-stone-200 dark:border-stone-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Bug className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Debug</span>
+          </div>
+          <p className="text-xs font-mono text-stone-600 dark:text-stone-400 break-all">
+            Tenant ID: {tenantId || '❌ No hay tenant'}
+          </p>
+          <p className="text-xs font-mono text-stone-600 dark:text-stone-400 mt-1">
+            Estado: {debugInfo || 'Cargando...'}
+          </p>
+          <button
+            onClick={handleDebug}
+            className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest w-full"
+          >
+            🔍 Ver promociones
+          </button>
+        </div>
       </div>
     )
   }
@@ -219,6 +268,29 @@ export default function PromocionesCliente() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDark ? 'bg-[#0f0c1b]' : 'bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20'
     }`}>
+
+      {/* 🔍 PANEL DE DEBUG VISIBLE - SIEMPRE ARRIBA */}
+      <div className="sticky top-0 z-50 p-3 bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Bug className="w-4 h-4 text-amber-500" />
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              {debugInfo || '✅ Listo'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              📦 {promociones.length} promociones
+            </span>
+            <button
+              onClick={handleDebug}
+              className="px-3 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
+            >
+              Debug
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* HEADER */}
       <div className="relative overflow-hidden">
@@ -259,7 +331,7 @@ export default function PromocionesCliente() {
       </div>
 
       {/* FILTROS */}
-      <div className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
+      <div className={`sticky top-[52px] z-40 backdrop-blur-md border-b transition-colors ${
         isDark ? 'bg-[#0f0c1b]/90 border-fuchsia-950/30' : 'bg-white/80 border-pink-100/60'
       }`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -519,7 +591,6 @@ function PromocionCard({
     >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `${primaryColor}05` }} />
 
-      {/* Badge categoría */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-lg ${
           isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
@@ -536,7 +607,6 @@ function PromocionCard({
         )}
       </div>
 
-      {/* Botón compartir */}
       <button 
         className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
         onClick={() => {/* Share functionality */}}
@@ -544,7 +614,6 @@ function PromocionCard({
         <Share2 className="w-3.5 h-3.5" />
       </button>
 
-      {/* Imagen */}
       {promo.image_url ? (
         <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
           <img 
@@ -560,7 +629,6 @@ function PromocionCard({
         </div>
       )}
 
-      {/* Contenido */}
       <div className="p-5 space-y-3">
         <h3 className="text-lg font-bold tracking-tight line-clamp-1 text-stone-900 dark:text-white">
           {promo.title}
@@ -813,7 +881,6 @@ function PromocionModal({
             <button
               onClick={() => {
                 navigator.clipboard.writeText(promo.code!)
-                // Show toast or feedback
               }}
               className="w-full py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95"
               style={{ background: brandGradient }}
@@ -844,7 +911,9 @@ function PromocionModal({
   )
 }
 
-// Helpers
+// ============================================================
+// HELPERS
+// ============================================================
 function getCategoryIcon(category: string) {
   switch (category) {
     case 'flash': return <Flame className="w-3 h-3" />
