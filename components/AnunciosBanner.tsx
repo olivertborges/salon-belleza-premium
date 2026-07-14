@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { 
   Megaphone, 
@@ -47,6 +48,7 @@ export default function AnunciosBanner({
   className = ''
 }: AnunciosBannerProps) {
   const { theme } = useTheme()
+  const { tenantId } = useAuth()
   const isDark = theme === 'dark'
   const [anuncios, setAnuncios] = useState<Anuncio[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,13 +56,19 @@ export default function AnunciosBanner({
 
   useEffect(() => {
     loadAnuncios()
-  }, [position])
+  }, [position, tenantId])
 
   const loadAnuncios = async () => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
         .eq('position', position)
         .gte('valid_until', new Date().toISOString())
