@@ -33,7 +33,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   // Obtener rol con emoji
   const getRoleDisplay = () => {
     switch (role) {
-      case 'admin': return '⚡ Administrador'
+      case 'admin': return '⚡ Admin'
       case 'staff': return '💼 Staff'
       default: return '👤 Cliente'
     }
@@ -59,8 +59,8 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Logo Desktop */}
-          <div className="hidden lg:flex items-center gap-2">
+          {/* Logo Desktop - Tamaño reducido */}
+          <div className="hidden lg:flex items-center gap-2.5">
             <div 
               className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
               style={{ background: brandGradient }}
@@ -68,12 +68,12 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 className={`text-lg font-bold tracking-tight ${
+              <h1 className={`text-base font-bold tracking-tight leading-tight ${
                 isDark ? 'text-white' : 'text-stone-900'
               }`}>
                 Fresh<span className="font-light" style={{ color: primaryColor }}>Nails</span>
               </h1>
-              <p className={`text-[8px] uppercase tracking-[0.2em] font-medium ${
+              <p className={`text-[7px] uppercase tracking-[0.25em] font-medium leading-tight ${
                 isDark ? 'text-stone-500' : 'text-stone-400'
               }`}>
                 Studio Center
@@ -83,7 +83,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         </div>
 
         {/* Lado derecho - Acciones */}
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 md:gap-2.5">
           {/* Búsqueda */}
           <div className="hidden md:flex items-center">
             <button 
@@ -123,23 +123,23 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
           </button>
 
           {/* Perfil - Desktop */}
-          <div className="hidden lg:flex items-center gap-3 pl-2 border-l border-stone-200 dark:border-fuchsia-950/30">
+          <div className="hidden lg:flex items-center gap-3 pl-3 border-l border-stone-200 dark:border-fuchsia-950/30">
             <div className="text-right">
-              <p className={`text-xs font-semibold tracking-tight ${
-                isDark ? 'text-white' : 'text-stone-900'
+              <p className={`text-xs font-medium tracking-tight leading-tight ${
+                isDark ? 'text-white' : 'text-stone-800'
               }`}>
                 {user?.full_name || 'Usuario'}
               </p>
-              <p className={`text-[9px] uppercase tracking-widest font-medium ${
+              <p className={`text-[8px] uppercase tracking-[0.15em] font-medium leading-tight ${
                 isDark ? 'text-stone-500' : 'text-stone-400'
               }`}>
                 {getRoleDisplay()}
               </p>
             </div>
             
-            {/* Avatar con gradiente */}
+            {/* Avatar con gradiente - Tamaño reducido */}
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md transition-all duration-300 hover:scale-105 cursor-pointer"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-md transition-all duration-300 hover:scale-105 cursor-pointer"
               style={{ background: brandGradient }}
             >
               {getInitials()}
@@ -149,7 +149,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
           {/* Perfil - Mobile (solo avatar) */}
           <div className="lg:hidden">
             <div 
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-md transition-all duration-300 hover:scale-105 cursor-pointer"
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[10px] font-bold shadow-md transition-all duration-300 hover:scale-105 cursor-pointer"
               style={{ background: brandGradient }}
             >
               {getInitials()}
@@ -181,7 +181,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               } as React.CSSProperties}
               autoFocus
             />
-            <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[9px] font-mono ${
+            <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[8px] font-mono ${
               isDark ? 'bg-stone-800 text-stone-500' : 'bg-stone-100 text-stone-400'
             }`}>
               ⌘K
