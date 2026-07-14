@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -13,7 +13,6 @@ import {
   Clock, 
   Tag, 
   Percent, 
-  Crown,
   Flame,
   Eye,
   Share2,
@@ -29,8 +28,7 @@ import {
   Copy,
   Check,
   Loader,
-  Diamond,
-  Bug
+  Diamond
 } from 'lucide-react'
 
 interface Promocion {
@@ -97,12 +95,8 @@ export default function PromocionesCliente() {
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [selectedPromo, setSelectedPromo] = useState<Promocion | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  
-  // 🔍 DEBUG: Estado para mostrar información en pantalla
-  const [debugInfo, setDebugInfo] = useState<string>('')
 
   const brandGradient = `linear-gradient(135deg, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
 
@@ -112,12 +106,9 @@ export default function PromocionesCliente() {
 
   const loadPromociones = async () => {
     if (!tenantId) {
-      setDebugInfo('❌ No hay tenantId')
       setLoading(false)
       return
     }
-
-    setDebugInfo(`🔍 Tenant ID: ${tenantId}`)
 
     try {
       const hoy = new Date()
@@ -132,44 +123,13 @@ export default function PromocionesCliente() {
         .order('featured', { ascending: false })
         .order('valid_until', { ascending: true })
 
-      if (error) {
-        setDebugInfo(`❌ Error: ${error.message}`)
-        throw error
-      }
-
-      setDebugInfo(`✅ Promociones encontradas: ${data?.length || 0}`)
+      if (error) throw error
       setPromociones(data || [])
       setFilteredPromociones(data || [])
     } catch (error) {
       console.error('Error cargando promociones:', error)
-      setDebugInfo(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // 🔍 Función para debug manual
-  const handleDebug = async () => {
-    if (!tenantId) {
-      alert('❌ No hay tenantId')
-      return
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('promotions')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-
-      if (error) {
-        alert(`❌ Error: ${error.message}`)
-        return
-      }
-
-      alert(`📦 Promociones: ${data?.length || 0}\n\n${data?.map(p => `• ${p.title} (${p.discount_percent}%)`).join('\n') || 'No hay datos'}`)
-    } catch (e) {
-      alert(`❌ Error: ${e}`)
     }
   }
 
@@ -232,7 +192,7 @@ export default function PromocionesCliente() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
         <div className="relative">
           <div className="w-16 h-16 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
           <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
@@ -240,26 +200,6 @@ export default function PromocionesCliente() {
         <p className="text-xs tracking-[0.2em] uppercase font-medium text-stone-400 dark:text-stone-500">
           Cargando experiencias exclusivas...
         </p>
-        
-        {/* 🔍 PANEL DE DEBUG VISIBLE */}
-        <div className="mt-6 p-4 bg-stone-100 dark:bg-stone-800 rounded-xl max-w-md w-full border border-stone-200 dark:border-stone-700">
-          <div className="flex items-center gap-2 mb-2">
-            <Bug className="w-4 h-4 text-amber-500" />
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Debug</span>
-          </div>
-          <p className="text-xs font-mono text-stone-600 dark:text-stone-400 break-all">
-            Tenant ID: {tenantId || '❌ No hay tenant'}
-          </p>
-          <p className="text-xs font-mono text-stone-600 dark:text-stone-400 mt-1">
-            Estado: {debugInfo || 'Cargando...'}
-          </p>
-          <button
-            onClick={handleDebug}
-            className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest w-full"
-          >
-            🔍 Ver promociones
-          </button>
-        </div>
       </div>
     )
   }
@@ -268,29 +208,6 @@ export default function PromocionesCliente() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDark ? 'bg-[#0f0c1b]' : 'bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20'
     }`}>
-
-      {/* 🔍 PANEL DE DEBUG VISIBLE - SIEMPRE ARRIBA */}
-      <div className="sticky top-0 z-50 p-3 bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Bug className="w-4 h-4 text-amber-500" />
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              {debugInfo || '✅ Listo'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              📦 {promociones.length} promociones
-            </span>
-            <button
-              onClick={handleDebug}
-              className="px-3 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
-            >
-              Debug
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* HEADER */}
       <div className="relative overflow-hidden">
@@ -330,9 +247,9 @@ export default function PromocionesCliente() {
         </div>
       </div>
 
-      {/* FILTROS */}
-      <div className={`sticky top-[52px] z-40 backdrop-blur-md border-b transition-colors ${
-        isDark ? 'bg-[#0f0c1b]/90 border-fuchsia-950/30' : 'bg-white/80 border-pink-100/60'
+      {/* FILTROS - CORREGIDO: Fondo sólido y z-index correcto */}
+      <div className={`sticky top-0 z-50 border-b transition-colors ${
+        isDark ? 'bg-[#0f0c1b] border-fuchsia-950/30' : 'bg-white border-pink-100/60'
       }`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row gap-4 justify-between items-center">
           <div className="w-full md:max-w-md relative">
