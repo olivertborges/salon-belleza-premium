@@ -28,7 +28,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
-  // ✅ CARGAR NOTIFICACIONES NO LEÍDAS
   useEffect(() => {
     if (!user) return
 
@@ -143,37 +142,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* SIDEBAR - CON FLEX Y ALTURA COMPLETA */}
+      {/* SIDEBAR - TAMAÑO ORIGINAL CON EL BOTÓN DE CERRAR SIEMPRE VISIBLE */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:flex lg:flex-col shrink-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
         isDark ? 'bg-stone-950/80 border-stone-900 backdrop-blur-xl' : 'bg-white/95 border-pink-100/80 backdrop-blur-xl'
       }`}>
 
-        {/* LOGO AREA - FIJO ARRIBA */}
-        <div className={`p-5 border-b flex items-center justify-between shrink-0 ${
+        {/* LOGO AREA - TAMAÑO ORIGINAL */}
+        <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-stone-900/60' : 'border-pink-100/50'
         }`}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 dark:from-pink-600 dark:to-neutral-900 flex items-center justify-center shadow-lg shadow-pink-500/20">
-              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 dark:from-pink-600 dark:to-neutral-900 flex items-center justify-center shadow-lg shadow-pink-500/20">
+              <Sparkles className="w-4 h-4 text-white animate-pulse" />
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] block text-stone-800 dark:text-stone-100">
+              <span className="text-xs font-black uppercase tracking-[0.25em] block text-stone-800 dark:text-stone-100">
                 <span className="font-serif italic text-pink-500 dark:text-pink-400 lowercase tracking-normal font-normal text-sm">fresh</span> NAILS
               </span>
-              <span className="text-[7px] uppercase tracking-widest font-black font-mono block text-stone-400 dark:text-stone-500 mt-0.5">
+              <span className="text-[9px] uppercase tracking-widest font-black font-mono block text-stone-400 dark:text-stone-500 mt-0.5">
                 Studio Center
               </span>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 text-stone-400 hover:text-pink-500 transition-colors">
-            <X className="w-4 h-4" />
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-stone-400 hover:text-pink-500 transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* MENÚ - SE DESPLAZA Y OCUPA EL ESPACIO DISPONIBLE */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+        {/* MENÚ - TAMAÑO ORIGINAL */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -183,7 +182,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={index} 
                 href={item.href} 
                 onClick={() => setSidebarOpen(false)} 
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-300 group relative border ${
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 group relative border ${
                   isActive 
                     ? isDark 
                       ? 'bg-gradient-to-r from-pink-950/30 via-stone-900/40 to-transparent border-pink-500/30 text-white shadow-[0_4px_20px_rgba(236,72,153,0.05)]'
@@ -192,10 +191,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }`}
               >
                 {isActive && (
-                  <span className="absolute left-0 w-1 h-4 bg-pink-500 dark:bg-pink-400 rounded-r-full" />
+                  <span className="absolute left-0 w-1 h-5 bg-pink-500 dark:bg-pink-400 rounded-r-full" />
                 )}
 
-                <div className={`p-1.5 rounded-lg border transition-all duration-300 ${
+                <div className={`p-2 rounded-xl border transition-all duration-300 ${
                   isActive 
                     ? 'bg-white border-pink-200 text-pink-500 shadow-sm dark:bg-stone-900 dark:border-pink-500/20 dark:text-pink-400'
                     : 'bg-stone-50 border-stone-200 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-stone-900/60 dark:border-stone-800 dark:text-stone-500 dark:group-hover:border-stone-700 dark:group-hover:text-pink-400'
@@ -205,7 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="tracking-wide font-black">{item.label}</span>
 
                 {item.href === '/promociones' && (
-                  <span className="ml-auto text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20 animate-pulse">
+                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20 animate-pulse">
                     Nuevo
                   </span>
                 )}
@@ -215,23 +214,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* WIDGET DE GALERÍA - CON LÍMITE DE ALTURA Y SCROLL */}
-        <div className="shrink-0 px-2 max-h-[120px] overflow-y-auto border-t border-stone-200/30 dark:border-stone-800/30 pt-2">
+        <div className="shrink-0 px-2 max-h-[100px] overflow-y-auto border-t border-stone-200/30 dark:border-stone-800/30 pt-2">
           <SidebarGalleryWidget />
         </div>
 
-        {/* BOTÓN CERRAR SESIÓN - SIEMPRE VISIBLE AL FINAL */}
-        <div className={`p-3 border-t shrink-0 ${
+        {/* BOTÓN CERRAR SESIÓN - TAMAÑO ORIGINAL Y SIEMPRE VISIBLE */}
+        <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-stone-900/60 bg-stone-950/40' : 'border-pink-100/40 bg-pink-50/10'
         }`}>
           <button 
             onClick={handleLogoutClick}
-            className={`flex items-center gap-3 px-3.5 py-2.5 w-full rounded-xl text-[11px] font-bold transition-all border border-transparent group ${
+            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-2xl text-xs font-bold transition-all border border-transparent group ${
               isDark
                 ? 'text-stone-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/20'
                 : 'text-stone-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
             }`}
           >
-            <div className={`p-1.5 rounded-lg border transition-colors ${
+            <div className={`p-2 rounded-xl border transition-colors ${
               isDark
                 ? 'bg-stone-900 border-stone-800 text-stone-500 group-hover:text-rose-400 group-hover:border-rose-500/20'
                 : 'bg-stone-100 border-stone-200 text-stone-400 group-hover:text-rose-500 group-hover:border-rose-300'
@@ -245,23 +244,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
-        {/* HEADER */}
-        <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
+        {/* HEADER - TAMAÑO ORIGINAL */}
+        <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
           isDark ? 'bg-stone-950/80 border-stone-900' : 'bg-white/80 border-pink-100/60'
         }`}>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2 rounded-xl border transition-colors ${
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2.5 rounded-xl border transition-colors ${
               isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-white border-pink-100 text-stone-600 shadow-sm'
             }`}>
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5" />
             </button>
-            <div className="flex flex-col leading-tight">
-              <h1 className={`text-sm font-bold tracking-tight ${
+            <div className="flex flex-col">
+              <h1 className={`text-xl font-bold tracking-tight ${
                 isDark ? 'text-white' : 'text-stone-900'
               }`}>
                 Fresh<span className="font-light" style={{ color: '#DB5B9A' }}>Nails</span>
               </h1>
-              <span className={`text-[7px] uppercase tracking-[0.25em] font-medium ${
+              <span className={`text-[9px] uppercase tracking-[0.25em] font-medium ${
                 isDark ? 'text-stone-500' : 'text-stone-400'
               }`}>
                 Studio Center
@@ -269,12 +268,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3.5">
             <ThemeToggle />
 
             <Link 
               href="/notificaciones"
-              className={`relative p-2 rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+              className={`relative p-2.5 rounded-xl border transition-all hover:shadow-md ${
                 isDark
                   ? 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-100 hover:border-stone-700'
                   : 'bg-white border-pink-100 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
@@ -282,41 +281,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Bell className="w-4 h-4" />
               {notificaciones > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-pink-600 text-[8px] text-white font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-stone-950 shadow-md">
+                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-pink-600 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-stone-950 shadow-md">
                   {notificaciones > 99 ? '99+' : notificaciones}
                 </span>
               )}
             </Link>
 
-            <button className={`relative p-2 rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+            <button className={`relative p-2.5 rounded-xl border transition-all ${
               isDark
                 ? 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-100 hover:border-stone-700'
                 : 'bg-white border-pink-100 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
             }`}>
               <ShoppingCart className="w-4 h-4" />
               {carritoItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-[8px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-stone-950 shadow-sm">
+                <span className="absolute -top-1.5 -right-1.5 bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-[9px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-stone-950 shadow-sm">
                   {carritoItems}
                 </span>
               )}
             </button>
 
-            <div className={`h-6 w-[1px] mx-0.5 hidden sm:block ${isDark ? 'bg-stone-800' : 'bg-pink-100'}`}></div>
+            <div className={`h-6 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-stone-800' : 'bg-pink-100'}`}></div>
 
-            <div className="flex items-center gap-2 pl-0.5">
-              <div className="text-right hidden sm:block leading-tight">
-                <p className={`text-[11px] font-medium ${
+            <div className="flex items-center gap-3 pr-1">
+              <div className="text-right hidden xs:block">
+                <p className={`text-xs font-medium ${
                   isDark ? 'text-white' : 'text-stone-800'
                 }`}>
                   {primerNombre}
                 </p>
-                <span className={`text-[7px] font-medium tracking-[0.15em] uppercase ${
+                <span className={`text-[9px] font-medium tracking-[0.15em] uppercase ${
                   isDark ? 'text-stone-500' : 'text-stone-400'
                 }`}>
                   VIP
                 </span>
               </div>
-              <div className={`w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-[10px] shadow-sm transition-all hover:scale-105 ${
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs shadow-inner transition-colors ${
                 isDark
                   ? 'bg-stone-900 border-stone-800 text-pink-400'
                   : 'bg-pink-50/60 border-pink-100 text-pink-600'
@@ -327,7 +326,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 w-full p-4 md:p-6 overflow-y-auto">
+        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto">
           {children}
         </main>
       </div>
