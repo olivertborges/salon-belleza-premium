@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Sparkles, 
   Gift, 
@@ -26,7 +28,10 @@ import {
   Star,
   Copy,
   Check,
-  Loader
+  Loader,
+  Diamond,
+  Gem,
+  PartyPopper
 } from 'lucide-react'
 
 interface Promocion {
@@ -52,11 +57,39 @@ interface Promocion {
   accent_color?: string
 }
 
-export default function PromocionesPage() {
+// Variantes de animación
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 300, 
+      damping: 24 
+    }
+  }
+}
+
+export default function PromocionesCliente() {
   const { tenantId } = useAuth()
   const { theme } = useTheme()
+  const { settings } = useSettings()
   const isDark = theme === 'dark'
-  
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+
   const [promociones, setPromociones] = useState<Promocion[]>([])
   const [filteredPromociones, setFilteredPromociones] = useState<Promocion[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,38 +99,30 @@ export default function PromocionesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(false)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [selectedPromo, setSelectedPromo] = useState<Promocion | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Cursor interactivo premium
-  const [mousePos, setMousePos] = useState({ x: -100, y: -100 })
-  const [isHoveringCard, setIsHoveringCard] = useState(false)
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY })
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+  const brandGradient = `linear-gradient(135deg, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
 
   useEffect(() => {
     loadPromociones()
-  }, [])
+  }, [tenantId])
 
   const loadPromociones = async () => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('promotions')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
         .gte('valid_until', new Date().toISOString())
         .order('featured', { ascending: false })
         .order('valid_until', { ascending: true })
-      
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId)
-      }
-      
-      const { data, error } = await query
 
       if (error) throw error
       setPromociones(data || [])
@@ -117,11 +142,11 @@ export default function PromocionesPage() {
 
   useEffect(() => {
     let filtered = promociones
-    
+
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => p.category === selectedCategory)
     }
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(p => 
@@ -130,14 +155,14 @@ export default function PromocionesPage() {
         p.code?.toLowerCase().includes(term)
       )
     }
-    
+
     setFilteredPromociones(filtered)
   }, [selectedCategory, searchTerm, promociones])
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'flash': return <Flame className="w-3.5 h-3.5" />
-      case 'premium': return <Crown className="w-3.5 h-3.5" />
+      case 'premium': return <Diamond className="w-3.5 h-3.5" />
       case 'welcome': return <Gift className="w-3.5 h-3.5" />
       case 'seasonal': return <Sparkles className="w-3.5 h-3.5" />
       default: return <Tag className="w-3.5 h-3.5" />
@@ -147,433 +172,544 @@ export default function PromocionesPage() {
   const getCategoryLabel = (category: string) => {
     switch (category) {
       case 'flash': return 'Flash Sale'
-      case 'premium': return 'Premium Lounge'
+      case 'premium': return 'Premium'
       case 'welcome': return 'Bienvenida'
       case 'seasonal': return 'Temporada'
       default: return 'Especial'
     }
   }
 
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'flash': return 'from-red-500 to-red-600'
+      case 'premium': return 'from-amber-400 to-amber-600'
+      case 'welcome': return 'from-emerald-400 to-emerald-600'
+      case 'seasonal': return 'from-purple-400 to-purple-600'
+      default: return `from-[${primaryColor}] to-[${settings?.secondary_color || '#E5A46E'}]`
+    }
+  }
+
+  const openModal = (promo: Promocion) => {
+    setSelectedPromo(promo)
+    setIsModalOpen(true)
+    document.body.style.overflow = 'hidden'
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedPromo(null)
+    document.body.style.overflow = 'unset'
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
-        <Loader className="w-6 h-6 text-[#FF2A75] animate-spin stroke-[1.5]" />
-        <span className="text-xs tracking-[0.2em] uppercase text-[#B8965A] dark:text-[#C9A96E] font-medium font-sans">Sincronizando Ofertas Exclusivas...</span>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
+          <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
+        </div>
+        <p className="text-xs tracking-[0.2em] uppercase font-medium text-stone-400 dark:text-stone-500">
+          Cargando experiencias exclusivas...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#FDFBF7] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen relative overflow-x-hidden selection:bg-[#FF2A75]/20 font-sans transition-colors duration-300">
-      
-      {/* CURSOR INTERACTIVO EDITORIAL */}
-      <div 
-        className="hidden md:block fixed pointer-events-none z-50 rounded-full border transition-all duration-75 ease-out -translate-x-1/2 -translate-y-1/2 mix-blend-difference"
-        style={{
-          left: `${mousePos.x}px`,
-          top: `${mousePos.y}px`,
-          width: isHoveringCard ? '60px' : '30px',
-          height: isHoveringCard ? '60px' : '30px',
-          borderColor: isHoveringCard ? '#FF2A75' : '#C9A96E',
-          backgroundColor: isHoveringCard ? 'rgba(255, 42, 117, 0.1)' : 'transparent'
-        }}
-      >
-        {isHoveringCard && (
-          <div className="w-full h-full flex items-center justify-center text-[9px] font-light text-white font-mono">GET</div>
-        )}
-      </div>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark ? 'bg-[#0f0c1b]' : 'bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20'
+    }`}>
 
-      {/* HEADER EDITORIAL */}
-      <div className="relative border-b border-neutral-300 dark:border-neutral-800/60 overflow-hidden bg-white dark:bg-transparent">
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-100/30 dark:from-neutral-900/40 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 py-16 space-y-6">
+      {/* HEADER */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ background: brandGradient }} />
+        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
           <Link 
-            href="/dashboard" 
-            className="inline-flex items-center gap-2 text-[10px] tracking-widest font-semibold uppercase text-neutral-500 dark:text-neutral-400 hover:text-[#FF2A75] dark:hover:text-[#FF2A75] transition-colors"
+            href="/portal" 
+            className="inline-flex items-center gap-2 text-[10px] tracking-widest font-semibold uppercase text-stone-500 dark:text-stone-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors mb-6"
           >
-            <ArrowLeft className="w-3.5 h-3.5 stroke-[2]" /> Volver al Atelier
+            <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-7xl font-light tracking-[0.1em] uppercase font-serif leading-none text-neutral-900 dark:text-white">
-                Ofertas <span className="font-serif italic font-light text-[#B8965A] dark:text-[#C9A96E] normal-case">Exclusivas</span>
+            <div>
+              <h1 className="text-4xl md:text-6xl font-light tracking-tight">
+                <span className={isDark ? 'text-white' : 'text-stone-900'}>
+                  Ofertas{' '}
+                </span>
+                <span className="font-serif italic font-light" style={{ color: primaryColor }}>
+                  Exclusivas
+                </span>
               </h1>
-              <p className="text-xs font-sans tracking-[0.2em] text-neutral-500 dark:text-neutral-400 uppercase font-medium">
-                Oportunidades de diseño y vanguardia por tiempo limitado
+              <p className="text-xs tracking-[0.2em] text-stone-400 dark:text-stone-500 uppercase font-medium mt-2">
+                Oportunidades por tiempo limitado
               </p>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-[10px] tracking-[0.25em] font-bold uppercase px-4 py-2 rounded-full border bg-white dark:bg-neutral-900/40 border-neutral-300 dark:border-neutral-800 text-[#B8965A] dark:text-[#C9A96E] shadow-xs">
-                <Zap className="w-3 h-3 inline mr-1 text-[#FF2A75] fill-current" />
-                {promociones.filter(p => p.featured).length} Destacadas de la firma
-              </span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white/50 dark:bg-stone-900/50 border-pink-100/60 dark:border-fuchsia-950">
+                <Zap className="w-3 h-3" style={{ color: primaryColor }} />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-400">
+                  {promociones.filter(p => p.featured).length} Destacadas
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* BARRA DE FILTROS Y CONTROLES */}
-      <div className="sticky top-0 z-40 backdrop-blur-md bg-[#FDFBF7]/90 dark:bg-neutral-950/80 border-b border-neutral-300 dark:border-neutral-800/60 transition-colors duration-300 shadow-xs">
+      {/* FILTROS */}
+      <div className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
+        isDark ? 'bg-[#0f0c1b]/90 border-fuchsia-950/30' : 'bg-white/80 border-pink-100/60'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-          
-          {/* Campo de búsqueda */}
           <div className="w-full md:max-w-md relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-400 stroke-[1.5]" />
+            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
+              isDark ? 'text-stone-500' : 'text-stone-400'
+            }`} />
             <input
               type="text"
-              placeholder="Escriba estilo, código o categoría..."
+              placeholder="Buscar promociones..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 rounded-full border text-xs tracking-wider transition-all bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#B8965A] border-neutral-300 dark:border-neutral-800 focus:border-[#B8965A]"
+              className={`w-full pl-11 pr-10 py-3 rounded-full border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#130f24] border-fuchsia-950 text-white placeholder-stone-500' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-800"
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
               >
-                <X className="w-3.5 h-3.5 text-neutral-500" />
+                <X className="w-3.5 h-3.5 text-stone-400" />
               </button>
             )}
           </div>
 
-          {/* Filtros avanzados */}
           <div className="w-full md:w-auto flex items-center justify-end gap-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-5 py-3 rounded-full text-xs font-sans tracking-wider font-medium flex items-center gap-2 border transition-all ${
+              className={`px-5 py-3 rounded-full text-xs font-medium flex items-center gap-2 border transition-all ${
                 showFilters 
-                  ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 border-transparent shadow-md' 
-                  : 'bg-white dark:bg-neutral-900/60 border-neutral-300 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 shadow-xs'
+                  ? 'text-white border-transparent shadow-md'
+                  : isDark
+                    ? 'bg-[#130f24] border-fuchsia-950 text-stone-300 hover:bg-[#1a1430]'
+                    : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
               }`}
+              style={showFilters ? { background: brandGradient } : {}}
             >
-              <Filter className="w-3.5 h-3.5 stroke-[1.5]" />
+              <Filter className="w-3.5 h-3.5" />
               <span>Categorías</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform stroke-[1.5] ${showFilters ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Alternador de Layout */}
-            <div className="flex rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-1 shadow-xs">
+            <div className={`flex rounded-full overflow-hidden border p-1 ${
+              isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
+            }`}>
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-full transition-all ${
                   viewMode === 'grid'
-                    ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200'
+                    ? 'text-white shadow-md'
+                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
                 }`}
+                style={viewMode === 'grid' ? { background: brandGradient } : {}}
               >
-                <Grid3x3 className="w-3.5 h-3.5 stroke-[1.5]" />
+                <Grid3x3 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded-full transition-all ${
                   viewMode === 'list'
-                    ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200'
+                    ? 'text-white shadow-md'
+                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
                 }`}
+                style={viewMode === 'list' ? { background: brandGradient } : {}}
               >
-                <LayoutList className="w-3.5 h-3.5 stroke-[1.5]" />
+                <LayoutList className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Panel de Categorías Desplegable */}
-        {showFilters && (
-          <div className="max-w-7xl mx-auto px-4 pb-6 transition-all">
-            <div className="flex flex-wrap gap-2 bg-neutral-100/80 dark:bg-neutral-900/50 p-3 rounded-2xl border border-neutral-300 dark:border-neutral-800/50">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2 rounded-full text-xs font-sans tracking-wider font-medium transition-all ${
-                  selectedCategory === 'all'
-                    ? 'bg-[#FF2A75] text-white shadow-md'
-                    : 'bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700'
-                }`}
-              >
-                Todo el Universo
-              </button>
-              {['flash', 'premium', 'seasonal', 'welcome'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-xs font-sans tracking-wider font-medium transition-all flex items-center gap-1.5 ${
-                    selectedCategory === cat
-                      ? 'bg-[#FF2A75] text-white shadow-md'
-                      : 'bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700'
-                  }`}
-                >
-                  {getCategoryIcon(cat)}
-                  {getCategoryLabel(cat)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="max-w-7xl mx-auto px-4 pb-6">
+                <div className={`flex flex-wrap gap-2 p-3 rounded-2xl border ${
+                  isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-stone-50/50 border-pink-100/60'
+                }`}>
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      selectedCategory === 'all'
+                        ? 'text-white shadow-md'
+                        : isDark
+                          ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-stone-200'
+                          : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+                    }`}
+                    style={selectedCategory === 'all' ? { background: brandGradient } : {}}
+                  >
+                    Todas
+                  </button>
+                  {['flash', 'premium', 'seasonal', 'welcome'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        selectedCategory === cat
+                          ? 'text-white shadow-md'
+                          : isDark
+                            ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-stone-200'
+                            : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+                      }`}
+                      style={selectedCategory === cat ? { background: brandGradient } : {}}
+                    >
+                      {getCategoryIcon(cat)}
+                      {getCategoryLabel(cat)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* SECCIÓN PRINCIPAL DE CONTENIDOS */}
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-8">
-        
-        <div className="flex items-center justify-between text-[11px] font-sans tracking-widest uppercase text-neutral-500 dark:text-neutral-400 font-semibold">
-          <span>{filteredPromociones.length} Piezas Encontradas</span>
-          {filteredPromociones.length > 0 && <span>Curadas por Exclusividad</span>}
+      {/* CONTENIDO */}
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="flex items-center justify-between text-xs tracking-widest uppercase font-medium text-stone-400 dark:text-stone-500 mb-8">
+          <span>{filteredPromociones.length} promociones</span>
+          {filteredPromociones.length > 0 && <span>✦ Exclusivas</span>}
         </div>
 
-        {filteredPromociones.length === 0 ? (
-          <div className="text-center py-24 rounded-3xl border border-dashed border-neutral-300 dark:border-neutral-800 max-w-md mx-auto space-y-4 bg-white dark:bg-transparent">
-            <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto">
-              <Gift className="w-5 h-5 text-neutral-400 stroke-[1.5]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-xs font-sans tracking-wider uppercase font-semibold text-neutral-800 dark:text-white">Búsqueda sin Resultados</h3>
-              <p className="text-xs text-neutral-500 dark:text-neutral-500 font-light px-6">
-                No encontramos ofertas activas con esos criterios. Limpia los filtros para redescubrir el portfolio.
+        <AnimatePresence mode="wait">
+          {filteredPromociones.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center py-24 rounded-3xl border-2 border-dashed max-w-md mx-auto space-y-4"
+              style={{ borderColor: `${primaryColor}30` }}
+            >
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                isDark ? 'bg-[#130f24]' : 'bg-pink-50'
+              }`}>
+                <Gift className="w-8 h-8" style={{ color: primaryColor }} />
+              </div>
+              <h3 className="text-sm font-bold text-stone-800 dark:text-white">Sin resultados</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                No hay promociones activas con estos filtros.
               </p>
-            </div>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="px-5 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-widest uppercase font-semibold transition-all"
-              >
-                Restaurar Filtros
-              </button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
-            {filteredPromociones.map((promo) => (
-              <PromocionCard
-                key={promo.id}
-                promo={promo}
-                isDark={isDark}
-                copiedCode={copiedCode}
-                onCopy={copyCode}
-                hoveredId={hoveredId}
-                setHoveredId={setHoveredId}
-                setIsHoveringCard={setIsHoveringCard}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4 max-w-4xl mx-auto">
-            {filteredPromociones.map((promo) => (
-              <PromocionListItem
-                key={promo.id}
-                promo={promo}
-                isDark={isDark}
-                copiedCode={copiedCode}
-                onCopy={copyCode}
-              />
-            ))}
-          </div>
-        )}
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="px-6 py-2 rounded-full text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
+                  style={{ background: brandGradient }}
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </motion.div>
+          ) : viewMode === 'grid' ? (
+            <motion.div
+              key="grid"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredPromociones.map((promo) => (
+                <motion.div key={promo.id} variants={itemVariants}>
+                  <PromocionCard
+                    promo={promo}
+                    isDark={isDark}
+                    copiedCode={copiedCode}
+                    onCopy={copyCode}
+                    onOpenModal={openModal}
+                    primaryColor={primaryColor}
+                    brandGradient={brandGradient}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4 max-w-4xl mx-auto"
+            >
+              {filteredPromociones.map((promo) => (
+                <motion.div key={promo.id} variants={itemVariants}>
+                  <PromocionListItem
+                    promo={promo}
+                    isDark={isDark}
+                    copiedCode={copiedCode}
+                    onCopy={copyCode}
+                    primaryColor={primaryColor}
+                    brandGradient={brandGradient}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* MODAL DETALLE */}
+      <AnimatePresence>
+        {isModalOpen && selectedPromo && (
+          <PromocionModal
+            promo={selectedPromo}
+            onClose={closeModal}
+            isDark={isDark}
+            primaryColor={primaryColor}
+            brandGradient={brandGradient}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 // ============================================================
-// COMPONENTE: Tarjeta de Promoción Premium (Grid)
+// COMPONENTE: Tarjeta de Promoción (Grid)
 // ============================================================
 function PromocionCard({ 
   promo, 
   isDark, 
   copiedCode, 
   onCopy,
-  hoveredId,
-  setHoveredId,
-  setIsHoveringCard
+  onOpenModal,
+  primaryColor,
+  brandGradient
 }: { 
   promo: Promocion
   isDark: boolean
   copiedCode: string | null
   onCopy: (code: string) => void
-  hoveredId: string | null
-  setHoveredId: (id: string | null) => void
-  setIsHoveringCard: (hovering: boolean) => void
+  onOpenModal: (promo: Promocion) => void
+  primaryColor: string
+  brandGradient: string
 }) {
-  const isHovered = hoveredId === promo.id
   const isFlash = promo.category === 'flash'
   const isPremium = promo.category === 'premium'
 
-  const cardBgStyle = promo.background_color 
-    ? { backgroundImage: `linear-gradient(135deg, ${promo.background_color}cc, ${promo.accent_color || promo.background_color}ee)` }
-    : undefined;
-
-  const getGradientClass = () => {
-    if (isFlash) return 'bg-gradient-to-br from-white dark:from-neutral-900 via-red-50/40 dark:via-red-950/20 to-white dark:to-neutral-950 border-red-300 dark:border-red-900/40'
-    if (isPremium) return 'bg-gradient-to-br from-white dark:from-neutral-900 via-amber-50/50 dark:via-[#C9A96E]/10 to-white dark:to-neutral-950 border-[#B8965A]/40 dark:border-[#C9A96E]/30'
-    return 'bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-800/80'
-  }
-
   return (
-    <div
-      onMouseEnter={() => { setHoveredId(promo.id); setIsHoveringCard(true); }}
-      onMouseLeave={() => { setHoveredId(null); setIsHoveringCard(false); }}
-      className={`group relative rounded-2xl overflow-hidden border transition-all duration-500 ${getGradientClass()} ${
-        isHovered ? 'scale-[1.02] shadow-xl border-neutral-400 dark:border-neutral-600 z-10' : 'shadow-xs'
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
+        isDark 
+          ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
+          : 'bg-white border-pink-100/60 hover:border-pink-300'
       }`}
-      style={cardBgStyle}
     >
-      <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-[#FF2A75]/5 rounded-full blur-2xl transition-opacity group-hover:opacity-100" />
-      
-      <div className="p-6 space-y-5 relative z-10">
-        
-        <div className="flex justify-between items-start gap-2">
-          <div className="flex gap-1.5 flex-wrap">
-            {promo.featured && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-400/30 text-[8px] font-mono tracking-widest uppercase font-bold">
-                <Star className="w-2.5 h-2.5 fill-current" /> Destacado
-              </span>
-            )}
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[8px] font-mono tracking-widest uppercase font-bold border ${
-              promo.category === 'flash' ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30' :
-              promo.category === 'premium' ? 'bg-[#C9A96E]/10 text-[#8F6F35] dark:text-[#C9A96E] border-[#B8965A]/30' :
-              promo.category === 'welcome' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' :
-              'bg-[#FF2A75]/10 text-[#FF2A75] border-[#FF2A75]/30'
-            }`}>
-              {promo.category === 'flash' && <Flame className="w-2.5 h-2.5 fill-current" />}
-              {promo.category === 'premium' && <Crown className="w-2.5 h-2.5" />}
-              {promo.category === 'welcome' && <Gift className="w-2.5 h-2.5" />}
-              {promo.category === 'seasonal' && <Sparkles className="w-2.5 h-2.5" />}
-              {promo.category}
-            </span>
-          </div>
-          
-          <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-[#FF2A75]">
-            <Share2 className="w-3.5 h-3.5 stroke-[1.5]" />
-          </button>
-        </div>
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `${primaryColor}05` }} />
 
-        {promo.image_url ? (
-          <div className="rounded-xl overflow-hidden aspect-video w-full bg-neutral-100 dark:bg-neutral-950 relative border border-neutral-200 dark:border-neutral-800/40">
-            <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          </div>
-        ) : (
-          <div className="rounded-xl aspect-video w-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-950/40 border border-neutral-200 dynamic-border">
-            <Percent className="w-10 h-10 text-neutral-400 dark:text-neutral-700 stroke-[1.5]" />
-          </div>
+      {/* Badge categoría */}
+      <div className="absolute top-4 left-4 z-10 flex gap-2">
+        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-lg ${
+          isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
+          isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+          'bg-gradient-to-r from-purple-500 to-purple-600'
+        }`}>
+          {getCategoryIcon(promo.category)}
+          {getCategoryLabel(promo.category)}
+        </span>
+        {promo.featured && (
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest bg-amber-400 text-stone-900 shadow-lg">
+            <Star className="w-2.5 h-2.5 fill-current" /> Destacado
+          </span>
         )}
+      </div>
 
-        <div className="space-y-1">
-          <h3 className="text-lg font-serif font-medium tracking-wide text-neutral-900 dark:text-white line-clamp-1">
-            {promo.title}
-          </h3>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans font-light line-clamp-2 leading-relaxed">
-            {promo.description}
-          </p>
+      {/* Botón compartir */}
+      <button 
+        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+        onClick={() => {/* Share functionality */}}
+      >
+        <Share2 className="w-3.5 h-3.5" />
+      </button>
+
+      {/* Imagen */}
+      {promo.image_url ? (
+        <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
+          <img 
+            src={promo.image_url} 
+            alt={promo.title} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
         </div>
+      ) : (
+        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
+          <Percent className="w-16 h-16 text-stone-300 dark:text-stone-600" />
+        </div>
+      )}
 
-        <div className="flex items-center justify-between gap-4 pt-3 border-t border-neutral-200 dark:border-neutral-800/60">
+      {/* Contenido */}
+      <div className="p-5 space-y-3">
+        <h3 className="text-lg font-bold tracking-tight line-clamp-1 text-stone-900 dark:text-white">
+          {promo.title}
+        </h3>
+        <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+          {promo.description}
+        </p>
+
+        <div className="flex items-center justify-between pt-3 border-t border-stone-200 dark:border-fuchsia-950">
           <div>
             {promo.discount_percent > 0 && (
-              <div className="flex items-baseline gap-0.5">
-                <span className="text-3xl font-mono font-light tracking-tighter text-[#FF2A75]">{promo.discount_percent}%</span>
-                <span className="text-[9px] text-[#8F6F35] dark:text-[#C9A96E] font-bold tracking-widest uppercase">Off</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-bold" style={{ color: primaryColor }}>
+                  {promo.discount_percent}%
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Off</span>
               </div>
             )}
-            {promo.min_purchase && (
-              <p className="text-[8px] text-neutral-500 dark:text-neutral-500 font-mono font-semibold uppercase tracking-widest mt-0.5">
-                Mín: ${promo.min_purchase}
-              </p>
+          </div>
+
+          <div className="flex gap-2">
+            {promo.code && (
+              <button
+                onClick={() => onCopy(promo.code!)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                  copiedCode === promo.code
+                    ? 'bg-emerald-500 text-white'
+                    : isDark
+                      ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                }`}
+              >
+                {copiedCode === promo.code ? (
+                  <><Check className="w-3 h-3 inline mr-1" /> Copiado</>
+                ) : (
+                  <><Copy className="w-3 h-3 inline mr-1" /> {promo.code}</>
+                )}
+              </button>
             )}
-          </div>
-
-          {promo.code && (
+            
             <button
-              onClick={() => onCopy(promo.code!)}
-              className={`px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest uppercase transition-all duration-300 flex items-center gap-1.5 border shadow-2xs ${
-                copiedCode === promo.code
-                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-transparent'
-                  : 'bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-300 dark:border-neutral-800'
-              }`}
+              onClick={() => onOpenModal(promo)}
+              className="px-4 py-2 rounded-xl text-white text-[10px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
+              style={{ background: brandGradient }}
             >
-              {copiedCode === promo.code ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" /> Copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3 h-3 text-neutral-500 dark:text-neutral-400" /> {promo.code}
-                </>
-              )}
+              Ver más
             </button>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between text-[9px] font-mono text-neutral-500 dark:text-neutral-500 pt-1">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 stroke-[1.5]" />
-            <span>Validez: {new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
           </div>
-          {promo.uses_limit && (
-            <div className="flex items-center gap-1">
-              <Eye className="w-3 h-3 stroke-[1.5]" />
-              <span>{promo.uses_count || 0}/{promo.uses_limit} u.</span>
-            </div>
-          )}
         </div>
 
+        <div className="flex items-center justify-between text-[9px] text-stone-400 dark:text-stone-500">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
+              day: '2-digit', 
+              month: 'short',
+              year: 'numeric'
+            })}
+          </span>
+          {promo.uses_limit && (
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {promo.uses_count || 0}/{promo.uses_limit}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 // ============================================================
-// COMPONENTE: Promoción en Vista Lista Minimalista
+// COMPONENTE: Promoción en Vista Lista
 // ============================================================
 function PromocionListItem({ 
   promo, 
   isDark, 
   copiedCode, 
-  onCopy 
+  onCopy,
+  primaryColor,
+  brandGradient
 }: { 
   promo: Promocion
   isDark: boolean
   copiedCode: string | null
   onCopy: (code: string) => void
+  primaryColor: string
+  brandGradient: string
 }) {
   return (
-    <div className="group rounded-2xl p-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800/80 transition-all hover:border-neutral-400 dark:hover:border-neutral-700 hover:shadow-md">
+    <motion.div
+      whileHover={{ x: 4 }}
+      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      className={`group rounded-2xl border p-4 transition-all ${
+        isDark 
+          ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
+          : 'bg-white border-pink-100/60 hover:border-pink-300'
+      }`}
+    >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        
         {promo.image_url ? (
           <img 
             src={promo.image_url} 
             alt={promo.title} 
-            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-neutral-200 dark:border-neutral-800/40"
+            className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-stone-200 dark:border-fuchsia-950"
           />
         ) : (
-          <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 bg-neutral-100 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800/40">
-            <Percent className="w-6 h-6 text-neutral-400 dark:text-neutral-600 stroke-[1.5]" />
+          <div className={`w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            isDark ? 'bg-[#0f0c1b]' : 'bg-stone-100'
+          }`}>
+            <Percent className="w-8 h-8 text-stone-400 dark:text-stone-600" />
           </div>
         )}
 
-        <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-serif text-base font-medium tracking-wide text-neutral-900 dark:text-white">{promo.title}</h3>
+            <h3 className="text-base font-bold tracking-tight text-stone-900 dark:text-white">
+              {promo.title}
+            </h3>
             {promo.featured && (
-              <span className="text-[8px] font-mono uppercase tracking-widest font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-400/30">
+              <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/20">
                 Destacado
               </span>
             )}
-            <span className="text-[8px] font-mono uppercase tracking-widest font-bold px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
-              {promo.category}
+            <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+              promo.category === 'flash' ? 'bg-red-500/20 text-red-600 dark:text-red-400' :
+              promo.category === 'premium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' :
+              'bg-purple-500/20 text-purple-600 dark:text-purple-400'
+            }`}>
+              {getCategoryLabel(promo.category)}
             </span>
           </div>
-          
-          <p className="text-xs font-sans font-light text-neutral-600 dark:text-neutral-400 line-clamp-1">
+
+          <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-1 mt-1">
             {promo.description}
           </p>
 
-          <div className="flex items-center gap-4 pt-1">
+          <div className="flex items-center gap-4 mt-2">
             {promo.discount_percent > 0 && (
-              <span className="text-base font-mono font-medium text-[#FF2A75]">{promo.discount_percent}% Off</span>
+              <span className="text-lg font-bold" style={{ color: primaryColor }}>
+                {promo.discount_percent}% Off
+              </span>
             )}
-            <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-500 flex items-center gap-1">
-              <Clock className="w-3 h-3 stroke-[1.5]" />
-              Hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+            <span className="text-[10px] text-stone-400 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
+                day: '2-digit', 
+                month: 'short' 
+              })}
             </span>
           </div>
         </div>
@@ -581,16 +717,150 @@ function PromocionListItem({
         {promo.code && (
           <button
             onClick={() => onCopy(promo.code!)}
-            className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-[10px] font-mono tracking-widest uppercase transition-all duration-300 border flex-shrink-0 shadow-2xs ${
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
               copiedCode === promo.code
-                ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-transparent'
-                : 'bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-300 dark:border-neutral-800'
+                ? 'bg-emerald-500 text-white'
+                : isDark
+                  ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
+                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
             }`}
           >
             {copiedCode === promo.code ? '✓ Copiado' : `Usar ${promo.code}`}
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   )
+}
+
+// ============================================================
+// COMPONENTE: Modal de Detalle
+// ============================================================
+function PromocionModal({ 
+  promo, 
+  onClose, 
+  isDark,
+  primaryColor,
+  brandGradient
+}: { 
+  promo: Promocion
+  onClose: () => void
+  isDark: boolean
+  primaryColor: string
+  brandGradient: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
+          isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-100/60'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <X className="w-5 h-5 text-stone-400" />
+        </button>
+
+        {promo.image_url && (
+          <div className="rounded-2xl overflow-hidden mb-4 aspect-video">
+            <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-2xl font-bold text-stone-900 dark:text-white">
+              {promo.title}
+            </h3>
+            {promo.featured && (
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+            )}
+          </div>
+
+          <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+            {promo.description}
+          </p>
+
+          {promo.discount_percent > 0 && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <Percent className="w-5 h-5 text-emerald-500" />
+              <span className="text-lg font-bold text-emerald-500">{promo.discount_percent}% de descuento</span>
+            </div>
+          )}
+
+          {promo.terms && (
+            <div className="p-3 rounded-xl bg-stone-100 dark:bg-[#130f24] border border-stone-200 dark:border-fuchsia-950">
+              <p className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
+                <span className="font-bold uppercase tracking-widest">Términos:</span> {promo.terms}
+              </p>
+            </div>
+          )}
+
+          {promo.code && (
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(promo.code!)
+                // Show toast or feedback
+              }}
+              className="w-full py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95"
+              style={{ background: brandGradient }}
+            >
+              <Copy className="w-4 h-4 inline mr-2" /> Usar código {promo.code}
+            </button>
+          )}
+
+          <div className="flex items-center justify-between text-xs text-stone-400">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Válido hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </span>
+            {promo.uses_limit && (
+              <span className="flex items-center gap-1">
+                <Eye className="w-4 h-4" />
+                {promo.uses_count || 0}/{promo.uses_limit} usos
+              </span>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// Helpers
+function getCategoryIcon(category: string) {
+  switch (category) {
+    case 'flash': return <Flame className="w-3 h-3" />
+    case 'premium': return <Diamond className="w-3 h-3" />
+    case 'welcome': return <Gift className="w-3 h-3" />
+    case 'seasonal': return <Sparkles className="w-3 h-3" />
+    default: return <Tag className="w-3 h-3" />
+  }
+}
+
+function getCategoryLabel(category: string) {
+  switch (category) {
+    case 'flash': return 'Flash'
+    case 'premium': return 'Premium'
+    case 'welcome': return 'Bienvenida'
+    case 'seasonal': return 'Temporada'
+    default: return 'Especial'
+  }
 }
