@@ -54,7 +54,6 @@ interface Promocion {
   accent_color?: string
 }
 
-// Variantes de animación
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -247,9 +246,11 @@ export default function PromocionesCliente() {
         </div>
       </div>
 
-      {/* FILTROS - STICKY PEGADO AL BORDE */}
-      <div className={`sticky top-0 z-50 border-b transition-colors ${
-        isDark ? 'bg-[#0f0c1b] border-fuchsia-950/30' : 'bg-white border-pink-100/60'
+      {/* FILTROS - STICKY PEGADO AL BORDE (CORREGIDO) */}
+      <div className={`sticky top-0 z-50 border-b transition-all duration-300 backdrop-blur-md ${
+        isDark 
+          ? 'bg-[#0f0c1b]/95 border-fuchsia-950/30 shadow-[0_-1px_0_rgba(15,12,27,1)]' 
+          : 'bg-white/95 border-pink-100/60 shadow-[0_-1px_0_rgba(255,255,255,1)]'
       }`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-3 justify-between items-center">
           <div className="w-full md:max-w-md relative">
