@@ -27,7 +27,6 @@ import {
   Star,
   Copy,
   Check,
-  Loader,
   Diamond
 } from 'lucide-react'
 
@@ -66,7 +65,7 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
   visible: { 
     opacity: 1, 
     y: 0, 
@@ -157,41 +156,19 @@ export default function PromocionesCliente() {
     setFilteredPromociones(filtered)
   }, [selectedCategory, searchTerm, promociones])
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'flash': return <Flame className="w-3.5 h-3.5" />
-      case 'premium': return <Diamond className="w-3.5 h-3.5" />
-      case 'welcome': return <Gift className="w-3.5 h-3.5" />
-      case 'seasonal': return <Sparkles className="w-3.5 h-3.5" />
-      default: return <Tag className="w-3.5 h-3.5" />
-    }
-  }
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'flash': return 'Flash Sale'
-      case 'premium': return 'Premium'
-      case 'welcome': return 'Bienvenida'
-      case 'seasonal': return 'Temporada'
-      default: return 'Especial'
-    }
-  }
-
   const openModal = (promo: Promocion) => {
     setSelectedPromo(promo)
     setIsModalOpen(true)
-    document.body.style.overflow = 'hidden'
   }
 
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedPromo(null)
-    document.body.style.overflow = 'unset'
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <div className="h-full flex flex-col items-center justify-center gap-6">
         <div className="relative">
           <div className="w-16 h-16 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}30`, borderTopColor: primaryColor }} />
           <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
@@ -204,24 +181,31 @@ export default function PromocionesCliente() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-[#0f0c1b]' : 'bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20'
+    // Reemplazamos la altura por flex-col y h-full (el main del dashboard maneja el viewport)
+    <div className={`h-full flex flex-col -m-4 md:-m-8 transition-colors duration-300 ${
+      isDark ? 'bg-[#0f0c1b]' : 'bg-transparent'
     }`}>
 
-      {/* HEADER - REDUCIDO */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ background: brandGradient }} />
-        <div className="relative max-w-7xl mx-auto px-4 py-4 md:py-6">
-          <Link 
-            href="/portal" 
-            className="inline-flex items-center gap-2 text-[10px] tracking-widest font-semibold uppercase text-stone-500 dark:text-stone-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors mb-3"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
-          </Link>
+      {/* SECCIÓN FIJA: HEADER Y FILTROS (NUNCA SE MUEVEN) */}
+      <div className={`shrink-0 z-20 border-b px-4 md:px-8 pb-4 pt-4 md:pt-6 ${
+        isDark ? 'bg-[#0f0c1b] border-fuchsia-950/40' : 'bg-[#fcfaf8] border-pink-100/60'
+      }`}>
+        <div className="max-w-7xl mx-auto space-y-4">
+          
+          {/* Volver al inicio */}
+          <div>
+            <Link 
+              href="/portal" 
+              className="inline-flex items-center gap-2 text-[10px] tracking-widest font-bold uppercase text-stone-400 dark:text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
+            </Link>
+          </div>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          {/* Título */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
-              <h1 className="text-3xl md:text-5xl font-light tracking-tight">
+              <h1 className="text-2xl md:text-4xl font-light tracking-tight">
                 <span className={isDark ? 'text-white' : 'text-stone-900'}>
                   Ofertas{' '}
                 </span>
@@ -229,114 +213,102 @@ export default function PromocionesCliente() {
                   Exclusivas
                 </span>
               </h1>
-              <p className="text-[10px] tracking-[0.2em] text-stone-400 dark:text-stone-500 uppercase font-medium mt-1">
-                Oportunidades por tiempo limitado
-              </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-white/50 dark:bg-stone-900/50 border-pink-100/60 dark:border-fuchsia-950">
-                <Zap className="w-3 h-3" style={{ color: primaryColor }} />
-                <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-400">
-                  {promociones.filter(p => p.featured).length} Destacadas
-                </span>
+            <div className="flex items-center gap-2 self-start sm:self-auto px-3 py-1.5 rounded-full border bg-white/50 dark:bg-stone-900/50 border-pink-100/60 dark:border-fuchsia-950">
+              <Zap className="w-3 h-3 animate-bounce" style={{ color: primaryColor }} />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-400">
+                {promociones.filter(p => p.featured).length} Destacadas
+              </span>
+            </div>
+          </div>
+
+          {/* Barra de Búsqueda y Botones de Filtro */}
+          <div className="flex flex-col md:flex-row gap-3 justify-between items-center pt-2">
+            <div className="w-full md:max-w-md relative">
+              <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`} />
+              <input
+                type="text"
+                placeholder="Buscar promociones..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-11 pr-10 py-2.5 rounded-full border text-sm transition-all focus:outline-none focus:ring-2 ${
+                  isDark 
+                    ? 'bg-[#130f24] border-fuchsia-950 text-white placeholder-stone-500' 
+                    : 'bg-white border-pink-100/60 text-stone-900 placeholder-stone-400 shadow-sm'
+                }`}
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+                >
+                  <X className="w-3.5 h-3.5 text-stone-400" />
+                </button>
+              )}
+            </div>
+
+            <div className="w-full md:w-auto flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-4 py-2.5 rounded-full text-xs font-medium flex items-center gap-2 border transition-all ${
+                  showFilters 
+                    ? 'text-white border-transparent shadow-md'
+                    : isDark
+                      ? 'bg-[#130f24] border-fuchsia-950 text-stone-300 hover:bg-[#1a1430]'
+                      : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50 shadow-sm'
+                }`}
+                style={showFilters ? { background: brandGradient } : {}}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span>Categorías</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div className={`flex rounded-full overflow-hidden border p-1 ${
+                isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60 shadow-sm'
+              }`}>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-full transition-all ${
+                    viewMode === 'grid'
+                      ? 'text-white shadow-md'
+                      : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                  style={viewMode === 'grid' ? { background: brandGradient } : {}}
+                >
+                  <Grid3x3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-full transition-all ${
+                    viewMode === 'list'
+                      ? 'text-white shadow-md'
+                      : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                  }`}
+                  style={viewMode === 'list' ? { background: brandGradient } : {}}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* FILTROS - STICKY PEGADO AL BORDE (CORREGIDO) */}
-      <div className={`sticky top-0 z-50 border-b transition-all duration-300 backdrop-blur-md ${
-        isDark 
-          ? 'bg-[#0f0c1b]/95 border-fuchsia-950/30 shadow-[0_-1px_0_rgba(15,12,27,1)]' 
-          : 'bg-white/95 border-pink-100/60 shadow-[0_-1px_0_rgba(255,255,255,1)]'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-3 justify-between items-center">
-          <div className="w-full md:max-w-md relative">
-            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
-              isDark ? 'text-stone-500' : 'text-stone-400'
-            }`} />
-            <input
-              type="text"
-              placeholder="Buscar promociones..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-11 pr-10 py-2.5 rounded-full border text-sm transition-all focus:outline-none focus:ring-2 ${
-                isDark 
-                  ? 'bg-[#130f24] border-fuchsia-950 text-white placeholder-stone-500' 
-                  : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
-              }`}
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+          {/* Selector de categorías expandible */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
               >
-                <X className="w-3.5 h-3.5 text-stone-400" />
-              </button>
-            )}
-          </div>
-
-          <div className="w-full md:w-auto flex items-center justify-end gap-3">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2.5 rounded-full text-xs font-medium flex items-center gap-2 border transition-all ${
-                showFilters 
-                  ? 'text-white border-transparent shadow-md'
-                  : isDark
-                    ? 'bg-[#130f24] border-fuchsia-950 text-stone-300 hover:bg-[#1a1430]'
-                    : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
-              }`}
-              style={showFilters ? { background: brandGradient } : {}}
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Categorías</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-
-            <div className={`flex rounded-full overflow-hidden border p-1 ${
-              isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
-            }`}>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-full transition-all ${
-                  viewMode === 'grid'
-                    ? 'text-white shadow-md'
-                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
-                }`}
-                style={viewMode === 'grid' ? { background: brandGradient } : {}}
-              >
-                <Grid3x3 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-full transition-all ${
-                  viewMode === 'list'
-                    ? 'text-white shadow-md'
-                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
-                }`}
-                style={viewMode === 'list' ? { background: brandGradient } : {}}
-              >
-                <LayoutList className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden"
-            >
-              <div className="max-w-7xl mx-auto px-4 pb-4">
-                <div className={`flex flex-wrap gap-2 p-3 rounded-2xl border ${
-                  isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-stone-50/50 border-pink-100/60'
+                <div className={`flex flex-wrap gap-2 p-3 rounded-2xl border mt-2 ${
+                  isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60 shadow-sm'
                 }`}>
                   <button
                     onClick={() => setSelectedCategory('all')}
@@ -345,7 +317,7 @@ export default function PromocionesCliente() {
                         ? 'text-white shadow-md'
                         : isDark
                           ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-stone-200'
-                          : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+                          : 'bg-stone-50 border-pink-100/60 text-stone-600 hover:bg-pink-50'
                     }`}
                     style={selectedCategory === 'all' ? { background: brandGradient } : {}}
                   >
@@ -360,7 +332,7 @@ export default function PromocionesCliente() {
                           ? 'text-white shadow-md'
                           : isDark
                             ? 'bg-[#0f0c1b] border-fuchsia-950 text-stone-400 hover:text-stone-200'
-                            : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+                            : 'bg-stone-50 border-pink-100/60 text-stone-600 hover:bg-pink-50'
                       }`}
                       style={selectedCategory === cat ? { background: brandGradient } : {}}
                     >
@@ -369,93 +341,96 @@ export default function PromocionesCliente() {
                     </button>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* CONTENIDO */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between text-xs tracking-widest uppercase font-medium text-stone-400 dark:text-stone-500 mb-6">
-          <span>{filteredPromociones.length} promociones</span>
-          {filteredPromociones.length > 0 && <span>✦ Exclusivas</span>}
-        </div>
+      {/* SECCIÓN SCROLLABLE: TARJETAS DE PROMOCIÓN */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="flex items-center justify-between text-xs tracking-widest uppercase font-medium text-stone-400 dark:text-stone-500 mb-6">
+            <span>{filteredPromociones.length} promociones encontradas</span>
+            {filteredPromociones.length > 0 && <span className="animate-pulse">✦ Exclusivas</span>}
+          </div>
 
-        <AnimatePresence mode="wait">
-          {filteredPromociones.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="text-center py-24 rounded-3xl border-2 border-dashed max-w-md mx-auto space-y-4"
-              style={{ borderColor: `${primaryColor}30` }}
-            >
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
-                isDark ? 'bg-[#130f24]' : 'bg-pink-50'
-              }`}>
-                <Gift className="w-8 h-8" style={{ color: primaryColor }} />
-              </div>
-              <h3 className="text-sm font-bold text-stone-800 dark:text-white">Sin resultados</h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                No hay promociones activas con estos filtros.
-              </p>
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="px-6 py-2 rounded-full text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
-                  style={{ background: brandGradient }}
-                >
-                  Limpiar filtros
-                </button>
-              )}
-            </motion.div>
-          ) : viewMode === 'grid' ? (
-            <motion.div
-              key="grid"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredPromociones.map((promo) => (
-                <motion.div key={promo.id} variants={itemVariants}>
-                  <PromocionCard
-                    promo={promo}
-                    isDark={isDark}
-                    copiedCode={copiedCode}
-                    onCopy={copyCode}
-                    onOpenModal={openModal}
-                    primaryColor={primaryColor}
-                    brandGradient={brandGradient}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="list"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-4 max-w-4xl mx-auto"
-            >
-              {filteredPromociones.map((promo) => (
-                <motion.div key={promo.id} variants={itemVariants}>
-                  <PromocionListItem
-                    promo={promo}
-                    isDark={isDark}
-                    copiedCode={copiedCode}
-                    onCopy={copyCode}
-                    primaryColor={primaryColor}
-                    brandGradient={brandGradient}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {filteredPromociones.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="text-center py-24 rounded-3xl border-2 border-dashed max-w-md mx-auto space-y-4"
+                style={{ borderColor: `${primaryColor}30` }}
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                  isDark ? 'bg-[#130f24]' : 'bg-pink-50'
+                }`}>
+                  <Gift className="w-8 h-8" style={{ color: primaryColor }} />
+                </div>
+                <h3 className="text-sm font-bold text-stone-800 dark:text-white">Sin resultados</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  No hay promociones activas que coincidan con tu búsqueda.
+                </p>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="px-6 py-2 rounded-full text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
+                    style={{ background: brandGradient }}
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </motion.div>
+            ) : viewMode === 'grid' ? (
+              <motion.div
+                key="grid"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {filteredPromociones.map((promo) => (
+                  <motion.div key={promo.id} variants={itemVariants}>
+                    <PromocionCard
+                      promo={promo}
+                      isDark={isDark}
+                      copiedCode={copiedCode}
+                      onCopy={copyCode}
+                      onOpenModal={openModal}
+                      primaryColor={primaryColor}
+                      brandGradient={brandGradient}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-4 max-w-4xl mx-auto"
+              >
+                {filteredPromociones.map((promo) => (
+                  <motion.div key={promo.id} variants={itemVariants}>
+                    <PromocionListItem
+                      promo={promo}
+                      isDark={isDark}
+                      copiedCode={copiedCode}
+                      onCopy={copyCode}
+                      primaryColor={primaryColor}
+                      brandGradient={brandGradient}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* MODAL DETALLE */}
@@ -504,7 +479,7 @@ function PromocionCard({
       className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
         isDark 
           ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-          : 'bg-white border-pink-200 hover:border-pink-400 shadow-sm'
+          : 'bg-white border-pink-200 hover:border-pink-300 shadow-sm'
       }`}
     >
       <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
@@ -590,7 +565,7 @@ function PromocionCard({
                 )}
               </button>
             )}
-
+            
             <button
               onClick={() => onOpenModal(promo)}
               className="px-4 py-2 rounded-xl text-white text-[10px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
@@ -647,7 +622,7 @@ function PromocionListItem({
       className={`group rounded-2xl border p-4 transition-all ${
         isDark 
           ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-          : 'bg-white border-pink-200 hover:border-pink-400 shadow-sm'
+          : 'bg-white border-pink-200 hover:border-pink-300 shadow-sm'
       }`}
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
