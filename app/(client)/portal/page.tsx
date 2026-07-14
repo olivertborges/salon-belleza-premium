@@ -11,8 +11,8 @@ import InstagramFeed from '@/components/InstagramFeed'
 import QRReferido from '@/components/QRReferido'
 import RuletaModal from '@/components/RuedaSuerte'
 import MisionesDiarias from '@/components/MisionesDiarias'
-import PromocionesVolante from '@/components/PromocionesVolante'
 import AnunciosBanner from '@/components/AnunciosBanner'
+import PromocionesVolante from '@/components/PromocionesVolante'
 import FooterCliente from '@/components/FooterCliente'
 
 interface Cita {
@@ -231,21 +231,21 @@ export default function ClientDashboardIndex() {
         </div>
       </div>
 
-      {/* ANUNCIOS Y PROMOCIONES MEJORADOS */}
+      {/* 📢 ANUNCIOS Y PROMOCIONES - DESDE BASE DE DATOS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="transform transition hover:scale-[1.01]">
-          <AnunciosBanner position="hero" limit={2} />
-        </div>
-        <div className="transform transition hover:scale-[1.01]">
-          <PromocionesVolante limit={3} />
-        </div>
+        {/* Anuncios desde tabla 'announcements' */}
+        <AnunciosBanner position="hero" limit={2} />
+        
+        {/* Promociones desde tabla 'promotions' */}
+        <PromocionesVolante limit={3} />
       </div>
 
-      <div className="mt-6">
+      {/* Más promociones */}
+      <div className="mt-2">
         <PromocionesVolante limit={6} showTitle={true} />
       </div>
 
-      {/* 📅 SECCIÓN DE TURNOS STYLE */}
+      {/* 📅 SECCIÓN DE TURNOS */}
       <div className={`p-6 md:p-8 rounded-3xl border transition shadow-lg ${isDark ? 'bg-stone-900/60 border-pink-950/30 backdrop-blur-md' : 'bg-white border-pink-100/70'}`}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-black tracking-tight">Próximos <span className="font-serif italic font-normal text-pink-500">Turnos</span></h2>
@@ -287,7 +287,7 @@ export default function ClientDashboardIndex() {
         )}
       </div>
 
-      {/* COMPONENTES INTEGRADOS ORIGINALES */}
+      {/* 🎯 COMPONENTES INTEGRADOS */}
       <div className="space-y-4">
         <MisionesDiarias />
       </div>
@@ -317,13 +317,14 @@ export default function ClientDashboardIndex() {
         </button>
       </div>
 
-      {/* INSTAGRAM Y PIE DE PÁGINA */}
+      {/* 📸 INSTAGRAM Y PIE DE PÁGINA */}
       <div className="pt-4 border-t border-pink-100 dark:border-stone-900">
         <InstagramFeed />
       </div>
 
       <FooterCliente />
 
+      {/* 🎡 MODAL RULETA */}
       <RuletaModal
         isOpen={isRuletaOpen}
         onClose={() => { setIsRuletaOpen(false); if (clientId) refreshPuntos(clientId) }}
