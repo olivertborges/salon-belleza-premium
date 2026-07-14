@@ -13,7 +13,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { supabase } from '@/lib/supabase/client'
-import { SidebarGalleryWidget } from '@/app/(client)/galeria/page' 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -142,14 +141,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* SIDEBAR - TAMAÑO ORIGINAL CON EL BOTÓN DE CERRAR SIEMPRE VISIBLE */}
+      {/* SIDEBAR - SIN WIDGET, CERRAR SESIÓN SIEMPRE VISIBLE */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:flex lg:flex-col shrink-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
         isDark ? 'bg-stone-950/80 border-stone-900 backdrop-blur-xl' : 'bg-white/95 border-pink-100/80 backdrop-blur-xl'
       }`}>
 
-        {/* LOGO AREA - TAMAÑO ORIGINAL */}
+        {/* LOGO */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-stone-900/60' : 'border-pink-100/50'
         }`}>
@@ -171,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        {/* MENÚ - TAMAÑO ORIGINAL */}
+        {/* MENÚ - OCUPA TODO EL ESPACIO DISPONIBLE */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => {
             const Icon = item.icon
@@ -213,12 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* WIDGET DE GALERÍA - CON LÍMITE DE ALTURA Y SCROLL */}
-        <div className="shrink-0 px-2 max-h-[100px] overflow-y-auto border-t border-stone-200/30 dark:border-stone-800/30 pt-2">
-          <SidebarGalleryWidget />
-        </div>
-
-        {/* BOTÓN CERRAR SESIÓN - TAMAÑO ORIGINAL Y SIEMPRE VISIBLE */}
+        {/* ✅ BOTÓN CERRAR SESIÓN - SIEMPRE VISIBLE, SIN WIDGET */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-stone-900/60 bg-stone-950/40' : 'border-pink-100/40 bg-pink-50/10'
         }`}>
@@ -244,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
-        {/* HEADER - TAMAÑO ORIGINAL */}
+        {/* HEADER */}
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
           isDark ? 'bg-stone-950/80 border-stone-900' : 'bg-white/80 border-pink-100/60'
         }`}>
