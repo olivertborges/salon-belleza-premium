@@ -590,7 +590,7 @@ function PromocionCard({
                 )}
               </button>
             )}
-            
+
             <button
               onClick={() => onOpenModal(promo)}
               className="px-4 py-2 rounded-xl text-white text-[10px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95"
