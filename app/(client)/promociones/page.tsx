@@ -209,20 +209,20 @@ export default function PromocionesCliente() {
       isDark ? 'bg-[#0f0c1b]' : 'bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20'
     }`}>
 
-      {/* HEADER */}
+      {/* HEADER - REDUCIDO */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ background: brandGradient }} />
-        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
+        <div className="relative max-w-7xl mx-auto px-4 py-4 md:py-6">
           <Link 
             href="/portal" 
-            className="inline-flex items-center gap-2 text-[10px] tracking-widest font-semibold uppercase text-stone-500 dark:text-stone-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-[10px] tracking-widest font-semibold uppercase text-stone-500 dark:text-stone-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors mb-3"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Volver al inicio
           </Link>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-4xl md:text-6xl font-light tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-light tracking-tight">
                 <span className={isDark ? 'text-white' : 'text-stone-900'}>
                   Ofertas{' '}
                 </span>
@@ -230,15 +230,15 @@ export default function PromocionesCliente() {
                   Exclusivas
                 </span>
               </h1>
-              <p className="text-xs tracking-[0.2em] text-stone-400 dark:text-stone-500 uppercase font-medium mt-2">
+              <p className="text-[10px] tracking-[0.2em] text-stone-400 dark:text-stone-500 uppercase font-medium mt-1">
                 Oportunidades por tiempo limitado
               </p>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white/50 dark:bg-stone-900/50 border-pink-100/60 dark:border-fuchsia-950">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-white/50 dark:bg-stone-900/50 border-pink-100/60 dark:border-fuchsia-950">
                 <Zap className="w-3 h-3" style={{ color: primaryColor }} />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-400">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-400">
                   {promociones.filter(p => p.featured).length} Destacadas
                 </span>
               </div>
@@ -247,11 +247,11 @@ export default function PromocionesCliente() {
         </div>
       </div>
 
-      {/* FILTROS - CORREGIDO: Fondo sólido y z-index correcto */}
+      {/* FILTROS - STICKY PEGADO AL BORDE */}
       <div className={`sticky top-0 z-50 border-b transition-colors ${
         isDark ? 'bg-[#0f0c1b] border-fuchsia-950/30' : 'bg-white border-pink-100/60'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-3 justify-between items-center">
           <div className="w-full md:max-w-md relative">
             <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
               isDark ? 'text-stone-500' : 'text-stone-400'
@@ -261,7 +261,7 @@ export default function PromocionesCliente() {
               placeholder="Buscar promociones..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-11 pr-10 py-3 rounded-full border text-sm transition-all focus:outline-none focus:ring-2 ${
+              className={`w-full pl-11 pr-10 py-2.5 rounded-full border text-sm transition-all focus:outline-none focus:ring-2 ${
                 isDark 
                   ? 'bg-[#130f24] border-fuchsia-950 text-white placeholder-stone-500' 
                   : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
@@ -281,7 +281,7 @@ export default function PromocionesCliente() {
           <div className="w-full md:w-auto flex items-center justify-end gap-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-5 py-3 rounded-full text-xs font-medium flex items-center gap-2 border transition-all ${
+              className={`px-4 py-2.5 rounded-full text-xs font-medium flex items-center gap-2 border transition-all ${
                 showFilters 
                   ? 'text-white border-transparent shadow-md'
                   : isDark
@@ -333,7 +333,7 @@ export default function PromocionesCliente() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="max-w-7xl mx-auto px-4 pb-6">
+              <div className="max-w-7xl mx-auto px-4 pb-4">
                 <div className={`flex flex-wrap gap-2 p-3 rounded-2xl border ${
                   isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-stone-50/50 border-pink-100/60'
                 }`}>
@@ -375,8 +375,8 @@ export default function PromocionesCliente() {
       </div>
 
       {/* CONTENIDO */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between text-xs tracking-widest uppercase font-medium text-stone-400 dark:text-stone-500 mb-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between text-xs tracking-widest uppercase font-medium text-stone-400 dark:text-stone-500 mb-6">
           <span>{filteredPromociones.length} promociones</span>
           {filteredPromociones.length > 0 && <span>✦ Exclusivas</span>}
         </div>
@@ -474,7 +474,7 @@ export default function PromocionesCliente() {
 }
 
 // ============================================================
-// COMPONENTE: Tarjeta de Promoción (Grid) - CORREGIDO VISIBLE
+// COMPONENTE: Tarjeta de Promoción (Grid)
 // ============================================================
 function PromocionCard({ 
   promo, 
@@ -510,7 +510,6 @@ function PromocionCard({
         isDark ? 'bg-white/5' : 'bg-pink-50/50'
       }`} />
 
-      {/* Badge categoría */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-lg ${
           isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
@@ -527,7 +526,6 @@ function PromocionCard({
         )}
       </div>
 
-      {/* Botón compartir */}
       <button 
         className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
         onClick={() => {}}
@@ -535,7 +533,6 @@ function PromocionCard({
         <Share2 className="w-3.5 h-3.5" />
       </button>
 
-      {/* Imagen */}
       {promo.image_url ? (
         <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
           <img 
@@ -551,7 +548,6 @@ function PromocionCard({
         </div>
       )}
 
-      {/* Contenido - CORREGIDO PARA SER VISIBLE */}
       <div className="p-5 space-y-3">
         <h3 className="text-lg font-bold tracking-tight line-clamp-1 text-stone-900 dark:text-white">
           {promo.title}
@@ -626,7 +622,7 @@ function PromocionCard({
 }
 
 // ============================================================
-// COMPONENTE: Promoción en Vista Lista - CORREGIDO VISIBLE
+// COMPONENTE: Promoción en Vista Lista
 // ============================================================
 function PromocionListItem({ 
   promo, 
