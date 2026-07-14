@@ -474,7 +474,7 @@ export default function PromocionesCliente() {
 }
 
 // ============================================================
-// COMPONENTE: Tarjeta de Promoción (Grid)
+// COMPONENTE: Tarjeta de Promoción (Grid) - CORREGIDO VISIBLE
 // ============================================================
 function PromocionCard({ 
   promo, 
@@ -503,11 +503,14 @@ function PromocionCard({
       className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
         isDark 
           ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-          : 'bg-white border-pink-100/60 hover:border-pink-300'
+          : 'bg-white border-pink-200 hover:border-pink-400 shadow-sm'
       }`}
     >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `${primaryColor}05` }} />
+      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+        isDark ? 'bg-white/5' : 'bg-pink-50/50'
+      }`} />
 
+      {/* Badge categoría */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-lg ${
           isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
@@ -524,13 +527,15 @@ function PromocionCard({
         )}
       </div>
 
+      {/* Botón compartir */}
       <button 
         className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/20 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-        onClick={() => {/* Share functionality */}}
+        onClick={() => {}}
       >
         <Share2 className="w-3.5 h-3.5" />
       </button>
 
+      {/* Imagen */}
       {promo.image_url ? (
         <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
           <img 
@@ -546,11 +551,12 @@ function PromocionCard({
         </div>
       )}
 
+      {/* Contenido - CORREGIDO PARA SER VISIBLE */}
       <div className="p-5 space-y-3">
         <h3 className="text-lg font-bold tracking-tight line-clamp-1 text-stone-900 dark:text-white">
           {promo.title}
         </h3>
-        <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+        <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-2">
           {promo.description}
         </p>
 
@@ -561,7 +567,9 @@ function PromocionCard({
                 <span className="text-3xl font-bold" style={{ color: primaryColor }}>
                   {promo.discount_percent}%
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Off</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
+                  Off
+                </span>
               </div>
             )}
           </div>
@@ -596,7 +604,7 @@ function PromocionCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[9px] text-stone-400 dark:text-stone-500">
+        <div className="flex items-center justify-between text-[9px] text-stone-500 dark:text-stone-500">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
@@ -618,7 +626,7 @@ function PromocionCard({
 }
 
 // ============================================================
-// COMPONENTE: Promoción en Vista Lista
+// COMPONENTE: Promoción en Vista Lista - CORREGIDO VISIBLE
 // ============================================================
 function PromocionListItem({ 
   promo, 
@@ -642,7 +650,7 @@ function PromocionListItem({
       className={`group rounded-2xl border p-4 transition-all ${
         isDark 
           ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-          : 'bg-white border-pink-100/60 hover:border-pink-300'
+          : 'bg-white border-pink-200 hover:border-pink-400 shadow-sm'
       }`}
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -679,7 +687,7 @@ function PromocionListItem({
             </span>
           </div>
 
-          <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-1 mt-1">
+          <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-1 mt-1">
             {promo.description}
           </p>
 
@@ -689,7 +697,7 @@ function PromocionListItem({
                 {promo.discount_percent}% Off
               </span>
             )}
-            <span className="text-[10px] text-stone-400 flex items-center gap-1">
+            <span className="text-[10px] text-stone-500 dark:text-stone-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
                 day: '2-digit', 
@@ -748,7 +756,7 @@ function PromocionModal({
         exit={{ scale: 0.9, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
-          isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-100/60'
+          isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -806,7 +814,7 @@ function PromocionModal({
             </button>
           )}
 
-          <div className="flex items-center justify-between text-xs text-stone-400">
+          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-500">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               Válido hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', {
