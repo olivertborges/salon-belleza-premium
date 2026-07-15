@@ -22,7 +22,7 @@ import {
   Flame,
   Crown,
   Sparkles,
-  Star  // ✅ Agregado Star
+  Star  // ✅ ESTA ES LA LÍNEA QUE FALTABA
 } from 'lucide-react'
 
 export default function CrearPromocionPage() {
