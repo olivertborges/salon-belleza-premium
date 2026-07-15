@@ -1,3 +1,4 @@
+// app/(client)/promociones-cliente/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -32,7 +33,8 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertCircle,
-  Bug
+  Bug,
+  Users
 } from 'lucide-react'
 
 interface Promocion {
@@ -105,58 +107,42 @@ export default function PromocionesCliente() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  
-  // 🔍 LOGS VISIBLES EN PANTALLA
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const [showDebug, setShowDebug] = useState(false)
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
-  }
-
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString()
-    setDebugLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 20))
-    console.log(`🔍 [${timestamp}] ${message}`)
   }
 
   useEffect(() => {
     loadPromociones()
   }, [tenantId])
 
+  // ✅ CARGA DE PROMOCIONES - CORREGIDA
   const loadPromociones = async () => {
     if (!tenantId) {
-      addLog('❌ No hay tenantId')
       setLoading(false)
       return
     }
 
-    addLog(`🔍 Cargando promociones para tenant: ${tenantId}`)
-
     try {
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0)
-      const fechaISO = hoy.toISOString()
-
+      // 🔥 QUITAMOS EL FILTRO POR FECHA para que se vean todas las promociones activas
       const { data, error } = await supabase
         .from('promotions')
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        .gte('valid_until', fechaISO)
+        // ❌ ELIMINADO: .gte('valid_until', hoy.toISOString())
         .order('featured', { ascending: false })
-        .order('valid_until', { ascending: true })
+        .order('created_at', { ascending: false })
 
-      if (error) {
-        addLog(`❌ Error en consulta: ${error.message}`)
-        throw error
-      }
-
-      addLog(`✅ ${data?.length || 0} promociones cargadas`)
+      if (error) throw error
+      
+      console.log('📦 Promociones cargadas:', data?.length || 0)
+      console.log('📄 Datos:', data)
+      
       setPromociones(data || [])
       setFilteredPromociones(data || [])
-    } catch (error: any) {
-      addLog(`❌ Error cargando promociones: ${error.message}`)
+    } catch (error) {
+      console.error('Error cargando promociones:', error)
     } finally {
       setLoading(false)
     }
@@ -164,10 +150,6 @@ export default function PromocionesCliente() {
 
   // ✅ APLICAR PROMOCIÓN
   const applyPromotion = async (promo: Promocion) => {
-    addLog(`🎯 INICIO: Aplicando promoción "${promo.title}"`)
-    addLog(`👤 Usuario ID: ${user?.id || 'NO LOGUEADO'}`)
-    addLog(`👤 Usuario nombre: ${user?.name || user?.email || 'NO LOGUEADO'}`)
-
     if (!user) {
       setError('Debes iniciar sesión para usar esta promoción')
       setTimeout(() => setError(null), 3000)
@@ -188,7 +170,6 @@ export default function PromocionesCliente() {
         .eq('id', promo.id)
 
       if (updateError) throw updateError
-      addLog(`✅ Contador actualizado`)
 
       // 2. Registrar uso
       const { error: usageError } = await supabase
@@ -202,12 +183,10 @@ export default function PromocionesCliente() {
         })
 
       if (usageError) {
-        addLog(`❌ Error registrando uso: ${usageError.message}`)
-      } else {
-        addLog(`✅ Uso registrado en promotion_usage`)
+        console.error('Error registrando uso:', usageError)
       }
 
-      // 3. Crear notificación para admin
+      // 3. Notificar al admin
       try {
         const { data: adminUser } = await supabase
           .from('profiles')
@@ -228,13 +207,8 @@ export default function PromocionesCliente() {
               read: false,
               created_at: new Date().toISOString()
             })
-          addLog(`✅ Notificación creada para admin`)
-        } else {
-          addLog(`⚠️ No se encontró admin`)
         }
-      } catch (e) {
-        addLog(`⚠️ Error en notificación: ${e}`)
-      }
+      } catch (e) {}
 
       setAppliedPromo(promo.id)
       setSuccess(`¡Promoción "${promo.title}" aplicada con éxito!`)
@@ -245,9 +219,9 @@ export default function PromocionesCliente() {
         setAppliedPromo(null)
       }, 5000)
 
-    } catch (error: any) {
-      addLog(`❌ Error: ${error.message}`)
-      setError('Error al aplicar la promoción')
+    } catch (error) {
+      console.error('Error aplicando promoción:', error)
+      setError('Error al aplicar la promoción. Intenta nuevamente.')
       setTimeout(() => setError(null), 3000)
     }
   }
@@ -299,32 +273,6 @@ export default function PromocionesCliente() {
 
   return (
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
-      {/* BOTÓN DEBUG */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-mono bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-300 dark:hover:bg-stone-700 transition-colors"
-        >
-          <Bug className="w-3.5 h-3.5" />
-          {showDebug ? 'Ocultar Logs' : 'Ver Logs'}
-        </button>
-      </div>
-
-      {showDebug && (
-        <div className="rounded-2xl border p-4 bg-stone-950/90 text-green-400 font-mono text-[10px] max-h-60 overflow-y-auto">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-stone-400">🔍 LOG DE DEPURACIÓN</span>
-            <button onClick={() => setDebugLogs([])} className="text-stone-500 hover:text-stone-300 text-[9px]">Limpiar</button>
-          </div>
-          {debugLogs.length === 0 ? (
-            <p className="text-stone-500">Esperando acciones...</p>
-          ) : (
-            debugLogs.map((log, i) => (
-              <div key={i} className="py-0.5 border-b border-stone-800/50">{log}</div>
-            ))
-          )}
-        </div>
-      )}
 
       {/* HEADER */}
       <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
@@ -342,16 +290,26 @@ export default function PromocionesCliente() {
                 Ofertas Exclusivas
               </h2>
               <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                Promociones y descuentos especiales para ti.
+                {filteredPromociones.length} promociones disponibles
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
-            <button onClick={() => loadPromociones()} className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0" style={{ color: primaryColor }}>
-              <RefreshCw className="w-3.5 h-3.5" />
+            <button 
+              onClick={() => loadPromociones()} 
+              disabled={refreshing} 
+              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ color: primaryColor }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
-            <Link href="/portal" className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0" style={{ backgroundColor: primaryColor }}>
+            <Link 
+              href="/portal"
+              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ backgroundColor: primaryColor }}
+            >
               <ArrowLeft className="w-3.5 h-3.5" /> Volver
             </Link>
           </div>
@@ -360,14 +318,14 @@ export default function PromocionesCliente() {
 
       {/* MENSAJES */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3">
-          <AlertCircle className="w-4 h-4 text-rose-500" />
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
         </div>
       )}
       {success && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
         </div>
       )}
@@ -405,7 +363,7 @@ export default function PromocionesCliente() {
 
       {/* FILTROS */}
       <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
           <input 
             type="text" 
@@ -415,6 +373,7 @@ export default function PromocionesCliente() {
             className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
           />
         </div>
+
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -450,27 +409,36 @@ export default function PromocionesCliente() {
       )}
 
       {/* GRID DE TARJETAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredPromociones.map((promo) => (
-          <PromocionCard
-            key={promo.id}
-            promo={promo}
-            isDark={isDark}
-            copiedCode={copiedCode}
-            onCopy={copyCode}
-            onApply={applyPromotion}
-            onOpenModal={openModal}
-            primaryColor={primaryColor}
-            brandGradient={brandGradient}
-            appliedPromo={appliedPromo}
-          />
-        ))}
-        {filteredPromociones.length === 0 && (
-          <div className="col-span-full text-center py-12 border border-dashed rounded-2xl text-stone-400 text-xs bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-            No se encontraron promociones
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        {filteredPromociones.length === 0 ? (
+          <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
+            <Gift className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <p className="text-sm text-stone-500">No hay promociones disponibles</p>
+            <p className="text-xs text-stone-400 mt-1">Vuelve más tarde para nuevas ofertas</p>
           </div>
+        ) : (
+          filteredPromociones.map((promo) => (
+            <motion.div key={promo.id} variants={itemVariants}>
+              <PromocionCard
+                promo={promo}
+                isDark={isDark}
+                copiedCode={copiedCode}
+                onCopy={copyCode}
+                onApply={applyPromotion}
+                onOpenModal={openModal}
+                primaryColor={primaryColor}
+                brandGradient={brandGradient}
+                appliedPromo={appliedPromo}
+              />
+            </motion.div>
+          ))
         )}
-      </div>
+      </motion.div>
 
       {/* MODAL */}
       {isModalOpen && selectedPromo && (
@@ -517,189 +485,68 @@ function PromocionCard({
   const isApplied = appliedPromo === promo.id
   const style = promo.style || 'volante'
 
-  // 🎨 ESTILO TARJETA (Premium)
-  if (style === 'tarjeta') {
-    return (
-      <div 
-        className={`relative overflow-hidden rounded-2xl border-2 p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group cursor-pointer ${
-          isApplied 
-            ? 'border-emerald-500 shadow-emerald-500/30' 
-            : isDark 
-              ? 'bg-gradient-to-br from-[#1a1430] to-[#130f24] border-amber-500/30 hover:border-amber-500/60' 
-              : 'bg-gradient-to-br from-white to-pink-50/50 border-amber-400/40 hover:border-amber-400'
-        }`}
-        onClick={() => onOpenModal(promo)}
-      >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-pink-500 to-amber-400" />
-        
-        <div className="absolute top-4 right-4 z-10">
-          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-lg ${
-            isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
-            isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
-            'bg-gradient-to-r from-purple-500 to-purple-600'
-          }`}>
-            {getCategoryIcon(promo.category)}
-            {getCategoryLabel(promo.category)}
-          </span>
-        </div>
-
-        {isApplied && (
-          <div className="absolute top-4 left-4 z-10">
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest bg-emerald-500 text-white shadow-lg">
-              <CheckCircle2 className="w-2.5 h-2.5" /> Aplicada
-            </span>
-          </div>
-        )}
-
-        {promo.image_url ? (
-          <div className="relative mt-2 rounded-xl overflow-hidden aspect-video bg-stone-100 dark:bg-stone-800">
-            <img 
-              src={promo.image_url} 
-              alt={promo.title} 
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-            {promo.discount_percent > 0 && (
-              <div className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
-                -{promo.discount_percent}%
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="relative mt-2 rounded-xl aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
-            <Percent className="w-12 h-12 text-stone-300 dark:text-stone-600" />
-            {promo.discount_percent > 0 && (
-              <div className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
-                -{promo.discount_percent}%
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="mt-4 space-y-2">
-          <h3 className="font-serif text-lg font-bold tracking-tight text-stone-900 dark:text-white group-hover:text-pink-500 transition-colors line-clamp-1">
-            {promo.title}
-          </h3>
-          <p className="text-sm text-stone-600 dark:text-stone-400 line-clamp-2 font-light">
-            {promo.description}
-          </p>
-
-          <div className="flex items-center justify-between pt-3 border-t border-amber-200/30 dark:border-fuchsia-950">
-            <div className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500">
-              <Clock className="w-3 h-3" />
-              {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
-                day: '2-digit', 
-                month: 'short',
-                year: 'numeric'
-              })}
-            </div>
-            {promo.uses_limit && (
-              <span className="text-[9px] text-stone-400 dark:text-stone-500">
-                {promo.uses_count || 0}/{promo.uses_limit}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-amber-200/30 dark:border-fuchsia-950" onClick={(e) => e.stopPropagation()}>
-          {promo.code && (
-            <button
-              onClick={() => onCopy(promo.code!)}
-              className={`flex-1 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${
-                copiedCode === promo.code
-                  ? 'bg-emerald-500 text-white'
-                  : isDark
-                    ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-              }`}
-            >
-              {copiedCode === promo.code ? (
-                <><Check className="w-3 h-3 inline mr-1" /> Copiado</>
-              ) : (
-                <><Copy className="w-3 h-3 inline mr-1" /> {promo.code}</>
-              )}
-            </button>
-          )}
-          
-          <button
-            onClick={() => onApply(promo)}
-            disabled={!!appliedPromo}
-            className={`flex-1 px-3 py-2 rounded-xl text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 ${
-              appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            style={{ background: brandGradient.backgroundImage }}
-          >
-            {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar ahora'}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // 🎨 ESTILO VOLANTE (por defecto)
   return (
     <div 
-      className={`relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/5 group cursor-pointer ${
+      className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer ${
         isApplied 
           ? 'border-emerald-500 shadow-emerald-500/20' 
           : isDark 
             ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-            : 'bg-white border-pink-100/60 hover:border-pink-300'
+            : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-lg'
       }`}
       onClick={() => onOpenModal(promo)}
     >
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm ${
-            isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
-            isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
-            'bg-gradient-to-r from-purple-500 to-purple-600'
-          }`}>
-            {getCategoryIcon(promo.category)}
-            {getCategoryLabel(promo.category)}
-          </span>
-          {promo.featured && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-amber-400 text-stone-900 shadow-sm">
-              <Star className="w-2.5 h-2.5 fill-current" /> Destacado
-            </span>
-          )}
-          {isApplied && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-emerald-500 text-white shadow-sm">
-              <CheckCircle2 className="w-2.5 h-2.5" /> Aplicada
-            </span>
-          )}
-        </div>
-      </div>
-
+      {/* Imagen o placeholder */}
       {promo.image_url ? (
-        <div className="relative mt-3 rounded-xl overflow-hidden aspect-video bg-stone-100 dark:bg-stone-800">
+        <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
           <img 
             src={promo.image_url} 
             alt={promo.title} 
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           {promo.discount_percent > 0 && (
-            <div className="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-sm font-bold">
+            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
               -{promo.discount_percent}%
             </div>
           )}
         </div>
       ) : (
-        <div className="relative mt-3 rounded-xl aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
+        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
           <Percent className="w-12 h-12 text-stone-300 dark:text-stone-600" />
           {promo.discount_percent > 0 && (
-            <div className="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-white text-sm font-bold">
+            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
               -{promo.discount_percent}%
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-3 space-y-2">
-        <h3 className="font-bold text-sm text-stone-800 dark:text-pink-100 group-hover:text-pink-500 transition-colors line-clamp-1">
+      {/* Badges */}
+      <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
+        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm ${
+          isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
+          isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+          'bg-gradient-to-r from-purple-500 to-purple-600'
+        }`}>
+          {getCategoryIcon(promo.category)}
+          {getCategoryLabel(promo.category)}
+        </span>
+        {promo.featured && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-amber-400 text-stone-900 shadow-sm">
+            <Star className="w-2.5 h-2.5 fill-current" /> Destacado
+          </span>
+        )}
+        {isApplied && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-emerald-500 text-white shadow-sm">
+            <CheckCircle2 className="w-2.5 h-2.5" /> Aplicada
+          </span>
+        )}
+      </div>
+
+      {/* Contenido */}
+      <div className="p-4 space-y-2">
+        <h3 className="font-bold text-sm text-stone-800 dark:text-white line-clamp-1">
           {promo.title}
         </h3>
         <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
@@ -709,50 +556,48 @@ function PromocionCard({
         <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 dark:border-fuchsia-950">
           <div className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500">
             <Clock className="w-3 h-3" />
-            {new Date(promo.valid_until).toLocaleDateString('es-ES', { 
-              day: '2-digit', 
-              month: 'short',
-              year: 'numeric'
-            })}
+            {promo.valid_until ? new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : 'Sin fecha'}
           </div>
           {promo.uses_limit && (
-            <span className="text-[9px] text-stone-400 dark:text-stone-500">
+            <div className="flex items-center gap-1 text-[10px] text-stone-400">
+              <Users className="w-3 h-3" />
               {promo.uses_count || 0}/{promo.uses_limit}
-            </span>
+            </div>
           )}
         </div>
-      </div>
 
-      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-pink-100/60 dark:border-fuchsia-950" onClick={(e) => e.stopPropagation()}>
-        {promo.code && (
+        {/* Acciones */}
+        <div className="flex items-center gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+          {promo.code && (
+            <button
+              onClick={() => onCopy(promo.code!)}
+              className={`flex-1 px-2 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all ${
+                copiedCode === promo.code
+                  ? 'bg-emerald-500 text-white'
+                  : isDark
+                    ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+              }`}
+            >
+              {copiedCode === promo.code ? (
+                <><Check className="w-3 h-3" /> Copiado</>
+              ) : (
+                <><Copy className="w-3 h-3" /> {promo.code}</>
+              )}
+            </button>
+          )}
+          
           <button
-            onClick={() => onCopy(promo.code!)}
-            className={`flex-1 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${
-              copiedCode === promo.code
-                ? 'bg-emerald-500 text-white'
-                : isDark
-                  ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+            onClick={() => onApply(promo)}
+            disabled={!!appliedPromo}
+            className={`flex-1 px-2 py-1.5 rounded-lg text-white text-[8px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 ${
+              appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
             }`}
+            style={{ background: brandGradient.backgroundImage }}
           >
-            {copiedCode === promo.code ? (
-              <><Check className="w-3 h-3 inline mr-1" /> Copiado</>
-            ) : (
-              <><Copy className="w-3 h-3 inline mr-1" /> {promo.code}</>
-            )}
+            {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar'}
           </button>
-        )}
-        
-        <button
-          onClick={() => onApply(promo)}
-          disabled={!!appliedPromo}
-          className={`flex-1 px-3 py-1.5 rounded-xl text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 ${
-            appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-          style={{ background: brandGradient.backgroundImage }}
-        >
-          {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar ahora'}
-        </button>
+        </div>
       </div>
     </div>
   )
