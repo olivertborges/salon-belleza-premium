@@ -7,7 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
   Plus, 
   Search, 
@@ -28,9 +28,9 @@ import {
   Clock,
   Users,
   Loader2,
-  Calendar,
   Percent,
-  Copy
+  Copy,
+  Calendar
 } from 'lucide-react'
 
 interface Promocion {
@@ -288,6 +288,17 @@ export default function AdminPromocionesPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+            {/* ✅ BOTÓN DE USOS - NUEVO */}
+            <Link 
+              href="/admin/promociones/uso"
+              className="px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100/60 dark:border-purple-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ color: '#8B5CF6' }}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Usos</span>
+              <span className="sm:inline">📊</span>
+            </Link>
+
             <button 
               onClick={() => { setRefreshing(true); loadPromociones() }} 
               disabled={refreshing} 
@@ -296,6 +307,7 @@ export default function AdminPromocionesPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualizar</span>
+              <span className="sm:hidden">⟳</span>
             </button>
             <Link 
               href="/admin/promociones/crear"
@@ -304,6 +316,7 @@ export default function AdminPromocionesPage() {
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Nueva</span>
+              <span className="sm:inline">+</span>
             </Link>
           </div>
         </div>
@@ -323,7 +336,7 @@ export default function AdminPromocionesPage() {
         </div>
       )}
 
-      {/* FILTROS - RESPONSIVE */}
+      {/* FILTROS */}
       <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
         <div className="flex-1 flex items-center gap-3 min-w-0">
           <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
@@ -361,7 +374,7 @@ export default function AdminPromocionesPage() {
         </div>
       </div>
 
-      {/* KPIS - RESPONSIVE */}
+      {/* KPIS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
           <p className="text-2xl font-bold text-stone-900 dark:text-white">{promociones.length}</p>
@@ -381,7 +394,7 @@ export default function AdminPromocionesPage() {
         </div>
       </div>
 
-      {/* TARJETAS DE PROMOCIONES - GRID RESPONSIVE */}
+      {/* TARJETAS DE PROMOCIONES */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -411,7 +424,7 @@ export default function AdminPromocionesPage() {
                   : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-lg'
               }`}
             >
-              {/* Imagen o placeholder */}
+              {/* Imagen */}
               {promo.image_url ? (
                 <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
                   <img 
@@ -437,7 +450,7 @@ export default function AdminPromocionesPage() {
                 </div>
               )}
 
-              {/* Badges - arriba izquierda */}
+              {/* Badges */}
               <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm bg-gradient-to-r ${getCategoryColor(promo.category)}`}>
                   {getCategoryIcon(promo.category)}
@@ -470,7 +483,7 @@ export default function AdminPromocionesPage() {
                   </div>
                 </div>
 
-                {/* Código y acciones - BOTÓN DE ESTADO MOVIDO AQUÍ */}
+                {/* Acciones */}
                 <div className="flex items-center gap-2 pt-2">
                   {promo.code && (
                     <button
@@ -485,7 +498,6 @@ export default function AdminPromocionesPage() {
                     </button>
                   )}
 
-                  {/* ✅ BOTÓN DE ESTADO - MOVIDO AQUÍ PARA QUE NO SE SUPERPONGA */}
                   <button
                     onClick={() => handleToggleActive(promo.id, promo.is_active)}
                     className={`px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all ${
