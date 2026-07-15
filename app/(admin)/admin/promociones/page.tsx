@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, 
   Search, 
@@ -14,7 +15,6 @@ import {
   Edit, 
   Trash2, 
   Eye, 
-  Copy,
   Gift,
   Tag,
   Flame,
@@ -27,7 +27,10 @@ import {
   XCircle,
   Clock,
   Users,
-  Loader2
+  Loader2,
+  Calendar,
+  Percent,
+  Copy
 } from 'lucide-react'
 
 interface Promocion {
@@ -49,6 +52,31 @@ interface Promocion {
   uses_limit: number | null
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 300, 
+      damping: 24 
+    }
+  }
+}
+
 export default function AdminPromocionesPage() {
   const { tenantId } = useAuth()
   const { theme } = useTheme()
@@ -66,6 +94,7 @@ export default function AdminPromocionesPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
@@ -101,23 +130,16 @@ export default function AdminPromocionesPage() {
     }
   }
 
-  // ✅ FUNCIÓN ELIMINAR - CORREGIDA CON CASCADA
   const handleDelete = async (id: string) => {
-    // Contar cuántos usos tiene
-    const { count, error: countError } = await supabase
+    const { count } = await supabase
       .from('promotion_usage')
       .select('*', { count: 'exact', head: true })
       .eq('promotion_id', id)
 
-    if (countError) {
-      console.error('Error contando usos:', countError)
-    }
-
     const usoCount = count || 0
-    let confirmMessage = '¿Estás seguro de eliminar esta promoción? Esta acción no se puede deshacer.'
-    
+    let confirmMessage = '¿Estás seguro de eliminar esta promoción?'
     if (usoCount > 0) {
-      confirmMessage = `⚠️ Esta promoción tiene ${usoCount} uso${usoCount > 1 ? 's' : ''} registrado${usoCount > 1 ? 's' : ''}. Al eliminarla, también se eliminarán todos los registros de uso. ¿Continuar?`
+      confirmMessage = `⚠️ Esta promoción tiene ${usoCount} uso${usoCount > 1 ? 's' : ''}. Al eliminarla, también se eliminarán todos los registros de uso.`
     }
 
     if (!confirm(confirmMessage)) return
@@ -127,60 +149,30 @@ export default function AdminPromocionesPage() {
     setSuccess(null)
 
     try {
-      // 1. Primero eliminar los usos de promotion_usage
       if (usoCount > 0) {
-        const { error: deleteUsageError } = await supabase
-          .from('promotion_usage')
-          .delete()
-          .eq('promotion_id', id)
-
-        if (deleteUsageError) {
-          console.error('Error eliminando usos:', deleteUsageError)
-          throw new Error('No se pudieron eliminar los usos asociados')
-        }
+        await supabase.from('promotion_usage').delete().eq('promotion_id', id)
       }
 
-      // 2. Obtener la promoción para eliminar la imagen
-      const { data: promo, error: fetchError } = await supabase
+      const { data: promo } = await supabase
         .from('promotions')
         .select('image_url')
         .eq('id', id)
         .single()
 
-      if (fetchError) {
-        console.error('Error obteniendo promoción:', fetchError)
-      }
-
-      // 3. Si tiene imagen, eliminar del storage
       if (promo?.image_url) {
         try {
           const urlParts = promo.image_url.split('/')
           const filePath = urlParts.slice(urlParts.indexOf('promotions')).join('/')
-          await supabase.storage
-            .from('promotions')
-            .remove([filePath])
-        } catch (storageError) {
-          console.error('Error eliminando imagen del storage:', storageError)
-          // Continuamos aunque falle la eliminación de la imagen
-        }
+          await supabase.storage.from('promotions').remove([filePath])
+        } catch (e) {}
       }
 
-      // 4. Eliminar la promoción de la base de datos
-      const { error: deleteError } = await supabase
-        .from('promotions')
-        .delete()
-        .eq('id', id)
+      await supabase.from('promotions').delete().eq('id', id)
 
-      if (deleteError) throw deleteError
-
-      setSuccess(`✅ Promoción eliminada correctamente${usoCount > 0 ? ` (se eliminaron ${usoCount} uso${usoCount > 1 ? 's' : ''})` : ''}`)
+      setSuccess(`✅ Promoción eliminada correctamente`)
       setTimeout(() => setSuccess(null), 3000)
-      
-      // Recargar la lista
       await loadPromociones()
-      
     } catch (error: any) {
-      console.error('Error eliminando promoción:', error)
       setError(`❌ Error al eliminar: ${error.message || 'Error desconocido'}`)
       setTimeout(() => setError(null), 3000)
     } finally {
@@ -190,35 +182,35 @@ export default function AdminPromocionesPage() {
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
+      await supabase
         .from('promotions')
         .update({ is_active: !currentStatus })
         .eq('id', id)
 
-      if (error) throw error
-
-      setSuccess(`✅ Promoción ${!currentStatus ? 'activada' : 'desactivada'} correctamente`)
+      setSuccess(`✅ Promoción ${!currentStatus ? 'activada' : 'desactivada'}`)
       setTimeout(() => setSuccess(null), 3000)
       await loadPromociones()
     } catch (error) {
-      console.error('Error cambiando estado:', error)
       setError('❌ Error al cambiar el estado')
       setTimeout(() => setError(null), 3000)
     }
   }
 
+  const copyCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
   useEffect(() => {
     let filtered = promociones
-
     if (filterCategory !== 'all') {
       filtered = filtered.filter(p => p.category === filterCategory)
     }
-
     if (filterActive !== 'all') {
       const isActive = filterActive === 'active'
       filtered = filtered.filter(p => p.is_active === isActive)
     }
-
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(p => 
@@ -227,17 +219,16 @@ export default function AdminPromocionesPage() {
         p.code?.toLowerCase().includes(term)
       )
     }
-
     setFilteredPromociones(filtered)
   }, [searchTerm, filterCategory, filterActive, promociones])
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'flash': return <Flame className="w-3.5 h-3.5" />
-      case 'premium': return <Crown className="w-3.5 h-3.5" />
-      case 'welcome': return <Gift className="w-3.5 h-3.5" />
-      case 'seasonal': return <Sparkles className="w-3.5 h-3.5" />
-      default: return <Tag className="w-3.5 h-3.5" />
+      case 'flash': return <Flame className="w-4 h-4" />
+      case 'premium': return <Crown className="w-4 h-4" />
+      case 'welcome': return <Gift className="w-4 h-4" />
+      case 'seasonal': return <Sparkles className="w-4 h-4" />
+      default: return <Tag className="w-4 h-4" />
     }
   }
 
@@ -248,6 +239,16 @@ export default function AdminPromocionesPage() {
       case 'welcome': return 'Bienvenida'
       case 'seasonal': return 'Temporada'
       default: return 'Especial'
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'flash': return 'from-red-500 to-red-600'
+      case 'premium': return 'from-amber-400 to-amber-600'
+      case 'welcome': return 'from-emerald-400 to-emerald-600'
+      case 'seasonal': return 'from-purple-400 to-purple-600'
+      default: return `from-[${primaryColor}] to-[${settings?.secondary_color || '#E5A46E'}]`
     }
   }
 
@@ -281,7 +282,7 @@ export default function AdminPromocionesPage() {
                 Gestión de Promociones
               </h2>
               <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                Crea y gestiona todas tus promociones y volantes
+                {filteredPromociones.length} promociones encontradas
               </p>
             </div>
           </div>
@@ -295,7 +296,6 @@ export default function AdminPromocionesPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualizar</span>
-              <span className="sm:hidden">Act.</span>
             </button>
             <Link 
               href="/admin/promociones/crear"
@@ -303,39 +303,33 @@ export default function AdminPromocionesPage() {
               style={{ backgroundColor: primaryColor }}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Nueva Promoción</span>
-              <span className="sm:hidden">+</span>
+              <span className="hidden sm:inline">Nueva</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* MENSAJES DE ERROR/SUCCESS */}
+      {/* MENSAJES */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
-          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-4 h-4" />
-          </div>
-          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
         </div>
       )}
-
       {success && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
         </div>
       )}
 
-      {/* FILTROS */}
-      <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+      {/* FILTROS - RESPONSIVE */}
+      <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
         <div className="flex-1 flex items-center gap-3 min-w-0">
           <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
           <input 
             type="text" 
-            placeholder="Buscar promociones por título, descripción o código..." 
+            placeholder="Buscar promociones..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
@@ -346,10 +340,10 @@ export default function AdminPromocionesPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950`}
+            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none`}
           >
-            <option value="all">Todas las categorías</option>
-            <option value="flash">Flash Sale</option>
+            <option value="all">Todas</option>
+            <option value="flash">Flash</option>
             <option value="premium">Premium</option>
             <option value="seasonal">Temporada</option>
             <option value="welcome">Bienvenida</option>
@@ -358,7 +352,7 @@ export default function AdminPromocionesPage() {
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950`}
+            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none`}
           >
             <option value="all">Todos</option>
             <option value="active">Activas</option>
@@ -367,131 +361,8 @@ export default function AdminPromocionesPage() {
         </div>
       </div>
 
-      {/* TABLA DE PROMOCIONES */}
-      <div className="rounded-2xl border overflow-hidden bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className={isDark ? 'bg-[#0f0c1b]' : 'bg-stone-50'}>
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Promoción</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Descuento</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Código</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Categoría</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Usos</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-stone-500">Estado</th>
-                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-widest text-stone-500">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-200 dark:divide-fuchsia-950">
-              {filteredPromociones.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-stone-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <Gift className="w-8 h-8 text-stone-300" />
-                      <p>No hay promociones creadas</p>
-                      <Link 
-                        href="/admin/promociones/crear"
-                        className="px-4 py-2 rounded-xl text-white text-xs font-bold hover:scale-105 transition-all"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        Crear primera promoción
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredPromociones.map((promo) => (
-                  <tr key={promo.id} className="hover:bg-stone-50 dark:hover:bg-stone-900/40 transition-colors">
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-stone-900 dark:text-white truncate max-w-[200px]">
-                          {promo.title}
-                        </p>
-                        <p className="text-[10px] text-stone-400 truncate max-w-[200px]">
-                          {promo.description}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-bold text-emerald-500">
-                        {promo.discount_percent}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <code className="px-2 py-1 rounded bg-stone-100 dark:bg-stone-800 text-xs font-mono">
-                        {promo.code || 'N/A'}
-                      </code>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ${
-                        promo.category === 'flash' ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
-                        promo.category === 'premium' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
-                        promo.category === 'welcome' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
-                        'bg-purple-500/10 text-purple-600 border border-purple-500/20'
-                      }`}>
-                        {getCategoryIcon(promo.category)}
-                        {getCategoryLabel(promo.category)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-stone-600 dark:text-stone-400">
-                        {promo.uses_count || 0}{promo.uses_limit ? `/${promo.uses_limit}` : ''}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggleActive(promo.id, promo.is_active)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all ${
-                          promo.is_active 
-                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20'
-                            : 'bg-stone-100 text-stone-400 border border-stone-200 hover:bg-stone-200'
-                        }`}
-                      >
-                        {promo.is_active ? (
-                          <><CheckCircle2 className="w-2.5 h-2.5" /> Activa</>
-                        ) : (
-                          <><XCircle className="w-2.5 h-2.5" /> Inactiva</>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link 
-                          href={`/admin/promociones/editar/${promo.id}`}
-                          className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-pink-500"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Link>
-                        <Link 
-                          href={`/promociones-cliente#${promo.id}`}
-                          target="_blank"
-                          className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-blue-500"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(promo.id)}
-                          disabled={deletingId === promo.id}
-                          className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-rose-500 disabled:opacity-50"
-                        >
-                          {deletingId === promo.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* RESUMEN */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* KPIS - RESPONSIVE */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
           <p className="text-2xl font-bold text-stone-900 dark:text-white">{promociones.length}</p>
           <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Total</p>
@@ -506,9 +377,159 @@ export default function AdminPromocionesPage() {
         </div>
         <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
           <p className="text-2xl font-bold text-purple-500">{promociones.reduce((sum, p) => sum + (p.uses_count || 0), 0)}</p>
-          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Usos totales</p>
+          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Usos</p>
         </div>
       </div>
+
+      {/* TARJETAS DE PROMOCIONES - GRID RESPONSIVE */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        {filteredPromociones.length === 0 ? (
+          <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
+            <Gift className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <p className="text-sm text-stone-500">No hay promociones creadas</p>
+            <Link 
+              href="/admin/promociones/crear"
+              className="inline-block mt-4 px-4 py-2 rounded-xl text-white text-xs font-bold hover:scale-105 transition-all"
+              style={{ backgroundColor: primaryColor }}
+            >
+              Crear primera promoción
+            </Link>
+          </div>
+        ) : (
+          filteredPromociones.map((promo) => (
+            <motion.div
+              key={promo.id}
+              variants={itemVariants}
+              className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
+                isDark 
+                  ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
+                  : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-lg'
+              }`}
+            >
+              {/* Imagen o placeholder */}
+              {promo.image_url ? (
+                <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
+                  <img 
+                    src={promo.image_url} 
+                    alt={promo.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  {promo.discount_percent > 0 && (
+                    <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
+                      -{promo.discount_percent}%
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
+                  <Percent className="w-12 h-12 text-stone-300 dark:text-stone-600" />
+                  {promo.discount_percent > 0 && (
+                    <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
+                      -{promo.discount_percent}%
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Badges */}
+              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm bg-gradient-to-r ${getCategoryColor(promo.category)}`}>
+                  {getCategoryIcon(promo.category)}
+                  {getCategoryLabel(promo.category)}
+                </span>
+                {promo.featured && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-amber-400 text-stone-900 shadow-sm">
+                    <Star className="w-2.5 h-2.5 fill-current" /> Destacada
+                  </span>
+                )}
+              </div>
+
+              {/* Estado activo/inactivo */}
+              <div className="absolute bottom-3 right-3">
+                <button
+                  onClick={() => handleToggleActive(promo.id, promo.is_active)}
+                  className={`px-2.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all backdrop-blur-sm ${
+                    promo.is_active 
+                      ? 'bg-emerald-500/80 text-white hover:bg-emerald-600'
+                      : 'bg-stone-500/80 text-white hover:bg-stone-600'
+                  }`}
+                >
+                  {promo.is_active ? 'Activa' : 'Inactiva'}
+                </button>
+              </div>
+
+              {/* Contenido */}
+              <div className="p-4 space-y-2">
+                <h3 className="font-bold text-sm text-stone-800 dark:text-white line-clamp-1">
+                  {promo.title}
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+                  {promo.description}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 dark:border-fuchsia-950">
+                  <div className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500">
+                    <Clock className="w-3 h-3" />
+                    {promo.valid_until ? new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : 'Sin fecha'}
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-stone-400">
+                    <Users className="w-3 h-3" />
+                    {promo.uses_count || 0}{promo.uses_limit ? `/${promo.uses_limit}` : ''}
+                  </div>
+                </div>
+
+                {/* Código y acciones */}
+                <div className="flex items-center gap-2 pt-2">
+                  {promo.code && (
+                    <button
+                      onClick={() => copyCode(promo.code!, promo.id)}
+                      className="flex-1 px-2 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      {copiedId === promo.id ? (
+                        <><CheckCircle2 className="w-3 h-3" /> Copiado</>
+                      ) : (
+                        <><Copy className="w-3 h-3" /> {promo.code}</>
+                      )}
+                    </button>
+                  )}
+
+                  <div className="flex items-center gap-1">
+                    <Link 
+                      href={`/admin/promociones/${promo.id}`}
+                      className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-blue-500"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Link>
+                    <Link 
+                      href={`/admin/promociones/editar/${promo.id}`}
+                      className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-pink-500"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(promo.id)}
+                      disabled={deletingId === promo.id}
+                      className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-rose-500 disabled:opacity-50"
+                    >
+                      {deletingId === promo.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </motion.div>
     </div>
   )
 }
