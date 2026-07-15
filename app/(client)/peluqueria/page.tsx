@@ -1,391 +1,666 @@
+// app/(client)/peluqueria/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import { useTheme } from '@/contexts/ThemeContext'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { 
-  Scissors, Sparkles, Star, Heart, 
-  Clock, User, ChevronRight, Calendar, 
-  Crown, ArrowRight, Gem,
-  Wind, Droplets, Flower2, 
-  Waves, Sparkle, Leaf, Eye, Brush, Palette
-} from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useSettings } from '@/contexts/SettingsContext'
+import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  ArrowLeft, 
+  Scissors, 
+  Clock, 
+  DollarSign, 
+  Star,
+  Sparkles,
+  Search,
+  Filter,
+  Grid3x3,
+  LayoutList,
+  ChevronDown,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Heart,
+  Users,
+  Award,
+  Quote,
+  Instagram,
+  Facebook,
+  Twitter,
+  Play,
+  Calendar,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Crown,
+  Gem,
+  Zap,
+  Flame,
+  Palette,
+  Wind,
+  Droplets,
+  Leaf,
+  Sun,
+  Moon,
+  Eye,
+  Camera,
+  Image,
+  Video,
+  Music,
+  Coffee,
+  Wine,
+  Gift,
+  PartyPopper
+} from 'lucide-react'
 
 interface Servicio {
   id: string
+  tenant_id: string
   name: string
   description: string
   price: number
   duration: number
   category: string
-  icon: string
   is_active: boolean
-  badge?: string
+  image_url: string | null
+  created_at: string
 }
 
-export default function ServiciosPage() {
+interface Testimonio {
+  id: string
+  client_name: string
+  client_image: string | null
+  rating: number
+  comment: string
+  service: string
+  created_at: string
+}
+
+// Imágenes de muestra para cabello (reemplaza con tus propias imágenes)
+const HAIR_IMAGES = {
+  hero: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=1200&h=600&fit=crop',
+  corte1: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
+  corte2: 'https://images.unsplash.com/photo-1560869713-7d0a2943084e?w=600&h=400&fit=crop',
+  color1: 'https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=600&h=400&fit=crop',
+  color2: 'https://images.unsplash.com/photo-1522336572468-97b06e8ef143?w=600&h=400&fit=crop',
+  tratamiento: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
+  styling: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
+  gallery1: 'https://images.unsplash.com/photo-1560869713-7d0a2943084e?w=400&h=400&fit=crop',
+  gallery2: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&h=400&fit=crop',
+  gallery3: 'https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=400&h=400&fit=crop',
+  gallery4: 'https://images.unsplash.com/photo-1522336572468-97b06e8ef143?w=400&h=400&fit=crop',
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+      delayChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 300, 
+      damping: 24 
+    }
+  }
+}
+
+export default function PeluqueriaPage() {
+  const { tenantId } = useAuth()
   const { theme } = useTheme()
-  const { user } = useAuth()
+  const { settings } = useSettings()
   const isDark = theme === 'dark'
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
+
   const [servicios, setServicios] = useState<Servicio[]>([])
+  const [filteredServicios, setFilteredServicios] = useState<Servicio[]>([])
+  const [testimonios, setTestimonios] = useState<Testimonio[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState('todos')
-  const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedService, setSelectedService] = useState<Servicio | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState<'servicios' | 'galeria' | 'testimonios'>('servicios')
+
+  const brandGradient = {
+    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+  }
+
+  // Categorías de servicios
+  const categories = [
+    { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: 'corte', label: 'Cortes', icon: <Scissors className="w-3.5 h-3.5" /> },
+    { id: 'color', label: 'Coloración', icon: <Palette className="w-3.5 h-3.5" /> },
+    { id: 'tratamiento', label: 'Tratamientos', icon: <Droplets className="w-3.5 h-3.5" /> },
+    { id: 'peinado', label: 'Peinados', icon: <Wind className="w-3.5 h-3.5" /> },
+  ]
 
   useEffect(() => {
-    cargarServicios()
-  }, [])
+    loadServicios()
+    loadTestimonios()
+  }, [tenantId])
 
-  const cargarServicios = async () => {
+  const loadServicios = async () => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+
     try {
-      setLoading(true)
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
+        .eq('category', 'peluqueria')
         .order('name', { ascending: true })
 
       if (error) throw error
       setServicios(data || [])
-
-      const categorias = [...new Set(data.map(s => s.category).filter(Boolean))] as string[]
-      setCategoriasDisponibles(categorias)
-      
+      setFilteredServicios(data || [])
     } catch (error) {
       console.error('Error cargando servicios:', error)
+      setError('Error al cargar los servicios de peluquería')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const getIconForCategory = (cat: string) => {
-    const map: Record<string, any> = {
-      'Corte': Scissors,
-      'Color': Palette,
-      'Tratamientos': Flower2,
-      'Peinados': Waves,
-      'Extensiones': Leaf,
-      'Cejas': Eye,
-      'Pestañas': Sparkle,
-      'Estética': Sparkles,
-      'Manicuría': Brush,
-      'General': Sparkles
+  const loadTestimonios = async () => {
+    if (!tenantId) return
+
+    try {
+      const { data } = await supabase
+        .from('testimonials')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(6)
+
+      if (data) setTestimonios(data)
+    } catch (error) {
+      console.error('Error cargando testimonios:', error)
     }
-    return map[cat] || Sparkles
   }
 
-  const categoriasFiltro = [
-    { id: 'todos', label: 'Todos', icon: Sparkles },
-    ...categoriasDisponibles.map(cat => ({
-      id: cat,
-      label: cat,
-      icon: getIconForCategory(cat)
-    }))
-  ]
-
-  const categoriasFinal = categoriasFiltro.length > 1 
-    ? categoriasFiltro 
-    : [
-        { id: 'todos', label: 'Todos', icon: Sparkles },
-        { id: 'Corte', label: 'Corte', icon: Scissors },
-        { id: 'Color', label: 'Color', icon: Palette },
-        { id: 'Tratamientos', label: 'Tratamientos', icon: Flower2 },
-        { id: 'Cejas', label: 'Cejas', icon: Eye },
-        { id: 'Pestañas', label: 'Pestañas', icon: Sparkle },
-        { id: 'Manicuría', label: 'Manicuría', icon: Brush },
-        { id: 'Estética', label: 'Estética', icon: Sparkles },
-      ]
-
-  const serviciosFiltrados = selectedCategory === 'todos' 
-    ? servicios 
-    : servicios.filter(s => s.category === selectedCategory)
-
-  const getIcon = (iconName: string) => {
-    const icons: Record<string, any> = {
-      Scissors: Scissors,
-      Sparkles: Sparkles,
-      Wind: Wind,
-      Droplets: Droplets,
-      Flower2: Flower2,
-      Waves: Waves,
-      Sparkle: Sparkle,
-      Leaf: Leaf,
-      Crown: Crown,
-      Star: Star,
-      Heart: Heart,
-      Eye: Eye,
-      Brush: Brush,
-      Palette: Palette
+  useEffect(() => {
+    let filtered = servicios
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(s => s.category === selectedCategory)
     }
-    return icons[iconName] || Scissors
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(s => 
+        s.name.toLowerCase().includes(term) ||
+        s.description?.toLowerCase().includes(term)
+      )
+    }
+    setFilteredServicios(filtered)
+  }, [selectedCategory, searchTerm, servicios])
+
+  const openModal = (servicio: Servicio) => {
+    setSelectedService(servicio)
+    setIsModalOpen(true)
+    document.body.style.overflow = 'hidden'
   }
 
-  const getBadgeColor = (badge?: string) => {
-    switch(badge) {
-      case 'Más Solicitado': return 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-      case 'Tendencia': return 'bg-violet-500/10 border-violet-500/20 text-violet-500'
-      case 'Premium': return 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-      case 'Nuevo': return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-      default: return 'bg-stone-500/10 border-stone-500/20 text-stone-500'
-    }
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedService(null)
+    document.body.style.overflow = 'unset'
   }
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
-          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}40`, borderTopColor: primaryColor }} />
+          <Scissors className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
         </div>
-        <p className={`text-xs font-mono tracking-widest uppercase font-black animate-pulse ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-          Iniciando Catálogo...
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
+          Preparando tu experiencia de belleza...
         </p>
       </div>
     )
   }
 
   return (
-    <div className={`w-full max-w-7xl mx-auto p-4 md:p-6 antialiased selection:bg-pink-500/20 relative min-h-screen transition-colors duration-500 ${
-      isDark ? 'bg-stone-950 text-stone-200' : 'bg-gradient-to-b from-pink-50/10 via-amber-50/5 to-stone-50/30 text-stone-800'
-    }`}>
-
-      {/* Auras de Fondo */}
-      <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-pink-500/[0.03] pointer-events-none" />
-      <div className="absolute bottom-20 right-1/4 w-[300px] h-[300px] rounded-full blur-[140px] bg-amber-500/[0.02] pointer-events-none" />
+    <div className="space-y-8 pb-12 max-w-7xl mx-auto">
 
       {/* ============================================================ */}
-      {/* HERO BANNER DE SERVICIOS PRESTIGE */}
+      {/* HERO SECTION - ESPECTACULAR */}
       {/* ============================================================ */}
-      <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-8 shadow-xl transition-all duration-300 ${
-        isDark 
-          ? 'bg-gradient-to-br from-stone-950 via-pink-950/10 to-neutral-950 border-pink-950/30' 
-          : 'bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 border-pink-100'
-      }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-              <span className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>Menú Experiencias Elite</span>
-            </div>
-            <h2 className="text-3xl font-black tracking-tight text-white">
-              Nuestros <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">Servicios</span>
-            </h2>
-            <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-pink-100/90 font-medium'}`}>
-              Explora una selección integral de rituales y tratamientos diseñados para tu bienestar.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 self-start sm:self-auto">
-            <div className={`px-3 py-2 rounded-xl border text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md ${
-              isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-white/90 border-pink-100 text-stone-800'
-            }`}>
-              <Crown className="w-3 h-3 text-amber-400" />
-              {servicios.length} Rituales
-            </div>
-            
-            <Link 
-              href={user ? '/agenda' : '/login'} 
-              className={`px-4 py-2 rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 border shadow-sm ${
-                isDark 
-                  ? 'bg-pink-500/20 border-pink-500/30 text-pink-300 hover:bg-pink-500/30' 
-                  : 'bg-stone-950 border-stone-900 text-white hover:bg-stone-900'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              Agendar Ritual
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* SECCIÓN CATEGORÍAS */}
-      {/* ============================================================ */}
-      <div className="mt-10 space-y-6">
-        
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-black uppercase tracking-wider font-mono flex items-center gap-2 text-stone-800 dark:text-stone-200">
-              <Sparkles className="w-4 h-4 text-pink-500" />
-              Filtrar Experiencias
-            </h3>
-            <p className={`text-[11px] ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-              Mostrando {serviciosFiltrados.length} opciones disponibles
-            </p>
-          </div>
-          {selectedCategory !== 'todos' && (
-            <button
-              onClick={() => setSelectedCategory('todos')}
-              className="text-[10px] font-mono font-black uppercase tracking-widest text-pink-500 hover:text-pink-400 transition-colors flex items-center gap-1"
-            >
-              Limpiar Filtros
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          )}
+      <div className="relative overflow-hidden rounded-3xl">
+        <div className="absolute inset-0">
+          <img 
+            src={HAIR_IMAGES.hero}
+            alt="Peluquería Fresh Nails"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
         </div>
 
-        {/* Mallas de Botones de Categorías */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-          {categoriasFinal.map((cat) => {
-            const Icon = cat.icon
-            const isActive = selectedCategory === cat.id
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all duration-300 ${
-                  isActive
-                    ? isDark
-                      ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 shadow-sm'
-                      : 'bg-stone-950 border-stone-900 text-white shadow-sm'
-                    : isDark
-                      ? 'bg-stone-900/40 border-stone-900 text-stone-400 hover:border-pink-500/20 hover:text-stone-200'
-                      : 'bg-white border-pink-100/60 text-stone-500 hover:border-pink-300 hover:text-stone-800 shadow-sm'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-pink-400' : 'text-stone-400'}`} />
-                <span className="text-[10px] font-bold uppercase tracking-wide truncate">
-                  {cat.label}
+        <div className="relative z-10 px-6 py-16 md:py-24 md:px-12 lg:px-16">
+          <div className="max-w-2xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm bg-white/10 mb-6">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="text-[10px] uppercase tracking-widest font-bold text-white/80">
+                  {settings?.business_name || 'Fresh Nails Studio'} • Peluquería
                 </span>
-              </button>
-            )
-          })}
-        </div>
+              </div>
 
-        {/* ============================================================ */}
-        {/* GRID DE TARJETAS BOUTIQUE */}
-        {/* ============================================================ */}
-        {serviciosFiltrados.length === 0 ? (
-          <div className={`border border-dashed rounded-3xl p-16 text-center backdrop-blur-md ${
-            isDark ? 'border-stone-800 bg-stone-900/10' : 'border-pink-100 bg-white/40 shadow-inner'
-          }`}>
-            <Scissors className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-stone-800' : 'text-pink-200'}`} />
-            <p className="text-sm font-black tracking-tight text-stone-800 dark:text-stone-200">No hay servicios en esta categoría</p>
-            <p className={`text-xs mt-1 max-w-sm mx-auto ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-              Prueba seleccionando otra sección del menú de filtros superior.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {serviciosFiltrados.map((servicio) => {
-              const Icon = getIcon(servicio.icon || 'Scissors')
-              const badgeColor = getBadgeColor(servicio.badge)
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-white leading-[1.1]">
+                <span className="font-serif italic" style={{ color: secondaryColor }}>Arte</span>
+                <span className="block text-5xl md:text-7xl lg:text-8xl font-bold">Capilar</span>
+              </h1>
 
-              return (
-                <div 
-                  key={servicio.id} 
-                  className={`group relative rounded-2xl border p-5 transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[220px] overflow-hidden ${
-                    isDark 
-                      ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
-                      : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
-                  }`}
+              <p className="text-base md:text-lg text-white/80 mt-4 max-w-lg leading-relaxed">
+                Transformamos tu cabello en una obra de arte. Cortes, coloraciones y tratamientos de vanguardia con los mejores profesionales.
+              </p>
+
+              <div className="flex flex-wrap gap-3 mt-6">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-3 rounded-xl text-white text-xs font-bold uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all"
+                  style={{ background: brandGradient.backgroundImage }}
                 >
-                  {/* Cristal decorativo */}
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.02] to-transparent rounded-bl-full pointer-events-none transition-all group-hover:from-pink-500/[0.06]" />
+                  <Calendar className="w-4 h-4" />
+                  Reservar ahora
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all hover:bg-white/20"
+                >
+                  <Play className="w-4 h-4" />
+                  Ver galería
+                </motion.button>
+              </div>
 
-                  <div>
-                    {/* Header Tarjeta: Icono y Badge */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-105 ${
-                        isDark ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' : 'bg-stone-50 border border-stone-100 text-pink-600'
-                      }`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      
-                      {servicio.badge && (
-                        <span className={`text-[8px] font-mono font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${badgeColor}`}>
-                          {servicio.badge}
-                        </span>
-                      )}
+              <div className="flex items-center gap-6 mt-6">
+                <div className="flex -space-x-2">
+                  {[1,2,3,4].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white/30 bg-gradient-to-br from-pink-400 to-amber-400 flex items-center justify-center text-[10px] font-bold text-white">
+                      {String.fromCharCode(64 + i)}
                     </div>
-
-                    {/* Nombre y descripción */}
-                    <div className="space-y-1">
-                      <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
-                        {servicio.name}
-                      </h4>
-                      <p className={`text-[11px] leading-relaxed line-clamp-3 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                        {servicio.description || 'Tratamiento personalizado formulado bajo estándares de la firma.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Footer Tarjeta: Precio, Tiempo y Botón */}
-                  <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-3.5 ${
-                    isDark ? 'border-stone-800/80' : 'border-stone-100'
-                  }`}>
-                    <div className="flex items-center gap-2.5">
-                      <span className={`text-base font-mono font-black tracking-tight ${
-                        isDark ? 'text-pink-400' : 'text-stone-950'
-                      }`}>
-                        ${servicio.price?.toLocaleString()}
-                      </span>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                        <Clock className="w-3 h-3 text-pink-400" />
-                        {servicio.duration || 60} Min
-                      </span>
-                    </div>
-
-                    <Link
-                      href={user ? '/agenda' : '/login'}
-                      className={`p-2 rounded-xl transition-all duration-300 ${
-                        isDark 
-                          ? 'bg-stone-950/60 border border-stone-800 text-stone-400 hover:text-pink-400 hover:border-pink-500/30' 
-                          : 'bg-stone-50 border border-stone-100 text-stone-500 hover:text-stone-950 hover:border-pink-300'
-                      }`}
-                    >
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                  ))}
+                  <div className="w-8 h-8 rounded-full border-2 border-white/30 bg-white/10 backdrop-blur-sm flex items-center justify-center text-[9px] font-bold text-white">
+                    +12
                   </div>
                 </div>
-              )
-            })}
+                <div>
+                  <p className="text-sm font-semibold text-white">12+ profesionales</p>
+                  <p className="text-xs text-white/60">Expertos en cabello</p>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* ============================================================ */}
-      {/* BANNER INVITACIÓN PRESTIGE */}
-      {/* ============================================================ */}
-      <div className={`relative overflow-hidden rounded-3xl border p-6 shadow-xl mt-12 ${
-        isDark 
-          ? 'bg-gradient-to-br from-stone-950 via-stone-900/40 to-neutral-950 border-pink-950/30' 
-          : 'bg-gradient-to-br from-pink-50/40 via-stone-50/50 to-amber-50/20 border-pink-100'
-      }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/[0.02] rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl shrink-0 ${
-              isDark ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' : 'bg-white border border-pink-100 text-pink-600 shadow-sm'
-            }`}>
-              <Gem className="w-5 h-5" />
-            </div>
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-black tracking-tight text-stone-900 dark:text-stone-200">
-                Diseña Tu Rutina de Cuidado Ideal
-              </h3>
-              <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                Combina múltiples servicios coordinando tu agenda con nuestro equipo de profesionales.
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href={user ? '/agenda' : '/login'}
-            className="px-5 py-3 rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 shadow-sm shrink-0 bg-stone-950 border border-stone-900 text-white hover:bg-stone-900 dark:bg-white dark:border-white dark:text-stone-950 dark:hover:bg-stone-100"
+        {/* Decoración flotante */}
+        <div className="absolute bottom-10 right-10 hidden lg:block">
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center"
           >
-            <Calendar className="w-3.5 h-3.5 text-pink-500" />
-            Reservar Ahora
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+            <Scissors className="w-8 h-8 text-white/40" />
+          </motion.div>
         </div>
       </div>
 
+      {/* ============================================================ */}
+      {/* CATEGORÍAS RÁPIDAS */}
+      {/* ============================================================ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex flex-wrap gap-2 justify-center"
+      >
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+              selectedCategory === cat.id
+                ? 'text-white shadow-md'
+                : isDark
+                  ? 'bg-[#130f24] border-fuchsia-950 text-stone-400 hover:text-stone-200'
+                  : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+            }`}
+            style={selectedCategory === cat.id ? { background: brandGradient.backgroundImage } : {}}
+          >
+            {cat.icon}
+            {cat.label}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* ============================================================ */}
+      {/* TABS: SERVICIOS | GALERÍA | TESTIMONIOS */}
+      {/* ============================================================ */}
+      <div className="flex border-b border-pink-100/60 dark:border-fuchsia-950/60">
+        {[
+          { id: 'servicios', label: 'Servicios', icon: <Scissors className="w-4 h-4" /> },
+          { id: 'galeria', label: 'Galería', icon: <Camera className="w-4 h-4" /> },
+          { id: 'testimonios', label: 'Testimonios', icon: <Quote className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === tab.id
+                ? `border-[${primaryColor}] text-stone-900 dark:text-white`
+                : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+            }`}
+            style={activeTab === tab.id ? { borderColor: primaryColor } : {}}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ============================================================ */}
+      {/* TAB: SERVICIOS */}
+      {/* ============================================================ */}
+      {activeTab === 'servicios' && (
+        <>
+          {/* BÚSQUEDA */}
+          <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+            <div className="flex-1 flex items-center gap-3 min-w-0">
+              <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
+              <input 
+                type="text" 
+                placeholder="Buscar servicios de peluquería..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border ${
+                  showFilters ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950'
+                }`}
+                style={showFilters ? { background: brandGradient.backgroundImage } : {}}
+              >
+                <Filter className="w-3.5 h-3.5" /> Filtros
+              </button>
+
+              <div className={`flex rounded-xl overflow-hidden border p-0.5 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
+                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}>
+                  <Grid3x3 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}>
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* GRID DE SERVICIOS */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {filteredServicios.length === 0 ? (
+              <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
+                <Scissors className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                <p className="text-sm text-stone-500">No hay servicios de peluquería disponibles</p>
+              </div>
+            ) : (
+              filteredServicios.map((servicio) => (
+                <motion.div key={servicio.id} variants={itemVariants}>
+                  <div 
+                    className="group relative rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
+                    onClick={() => openModal(servicio)}
+                  >
+                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
+                      <img 
+                        src={servicio.image_url || HAIR_IMAGES.corte1}
+                        alt={servicio.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <h3 className="font-bold text-sm text-stone-800 dark:text-white group-hover:text-pink-500 transition-colors">
+                        {servicio.name}
+                      </h3>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+                        {servicio.description}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-pink-100/60 dark:border-fuchsia-950">
+                        <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
+                          <Clock className="w-3.5 h-3.5" />
+                          {servicio.duration} min
+                        </div>
+                        <div className="flex items-center gap-1 text-sm font-bold text-emerald-500">
+                          <DollarSign className="w-3.5 h-3.5" />
+                          ${servicio.price}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+        </>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB: GALERÍA */}
+      {/* ============================================================ */}
+      {activeTab === 'galeria' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
+            Descubre nuestro trabajo y transformaciones capilares
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { src: HAIR_IMAGES.gallery1, title: 'Corte moderno' },
+              { src: HAIR_IMAGES.gallery2, title: 'Coloración balayage' },
+              { src: HAIR_IMAGES.gallery3, title: 'Tratamiento de keratina' },
+              { src: HAIR_IMAGES.gallery4, title: 'Peinado de novia' },
+              { src: HAIR_IMAGES.corte1, title: 'Corte degradado' },
+              { src: HAIR_IMAGES.color1, title: 'Coloración fantasía' },
+              { src: HAIR_IMAGES.tratamiento, title: 'Hidratación profunda' },
+              { src: HAIR_IMAGES.styling, title: 'Styling de pasarela' },
+            ].map((img, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ scale: 1.02 }}
+                className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer"
+              >
+                <img 
+                  src={img.src}
+                  alt={img.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                  <p className="text-white text-xs font-bold">{img.title}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center pt-4">
+            <button className="px-6 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105" style={{ background: brandGradient.backgroundImage }}>
+              Ver toda la galería
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB: TESTIMONIOS */}
+      {/* ============================================================ */}
+      {activeTab === 'testimonios' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
+            Lo que dicen nuestros clientes sobre su experiencia
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {testimonios.length === 0 ? (
+              // Testimonios de muestra
+              [
+                { name: 'María García', comment: 'El mejor salón de peluquería que he visitado. El equipo es increíblemente talentoso y profesional.', rating: 5, service: 'Corte y color' },
+                { name: 'Laura Martínez', comment: 'Mi experiencia fue maravillosa. Salí con un look totalmente renovado y me encanta.', rating: 5, service: 'Balayage' },
+                { name: 'Carmen Rodríguez', comment: 'Excelente atención y resultados espectaculares. 100% recomendado.', rating: 5, service: 'Tratamiento capilar' },
+              ].map((t, idx) => (
+                <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-amber-400 flex items-center justify-center text-white font-bold text-sm">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-stone-900 dark:text-white">{t.name}</p>
+                      <p className="text-xs text-stone-400">{t.service}</p>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400 text-xs mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{t.comment}"</p>
+                </div>
+              ))
+            ) : (
+              testimonios.map((t) => (
+                <div key={t.id} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-amber-400 flex items-center justify-center text-white font-bold text-sm">
+                      {t.client_name?.charAt(0) || 'C'}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-stone-900 dark:text-white">{t.client_name}</p>
+                      <p className="text-xs text-stone-400">{t.service}</p>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400 text-xs mb-2">
+                    {[...Array(t.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{t.comment}"</p>
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL DE SERVICIO */}
+      {/* ============================================================ */}
+      <AnimatePresence>
+        {isModalOpen && selectedService && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
+                isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={closeModal}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+
+              <div className="relative aspect-video rounded-xl overflow-hidden mb-4">
+                <img 
+                  src={selectedService.image_url || HAIR_IMAGES.corte1}
+                  alt={selectedService.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-white text-xs font-bold">
+                  {selectedService.duration} min
+                </div>
+              </div>
+
+              <h3 className="text-2xl font-bold text-stone-900 dark:text-white">
+                {selectedService.name}
+              </h3>
+              <p className="text-sm text-stone-600 dark:text-stone-400 mt-2 leading-relaxed">
+                {selectedService.description}
+              </p>
+
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-pink-100/60 dark:border-fuchsia-950">
+                <div className="text-2xl font-bold text-emerald-500">
+                  ${selectedService.price}
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-4 py-2 rounded-xl text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105" style={{ background: brandGradient.backgroundImage }}>
+                    Reservar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
