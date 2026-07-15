@@ -1,436 +1,413 @@
+// app/(admin)/promociones/crear/page.tsx
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useSettings } from '@/contexts/SettingsContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  LayoutDashboard, Calendar, Users, Sparkles, History,
-  XCircle, ShoppingBag, Sliders, UsersRound, Crown,
-  Sun, Moon, ChevronLeft, ChevronRight, Power, X,
-  Menu, Gem, Heart, Star, Zap, Award, Palette, Gift  // ✅ Star solo una vez
+import { useSettings } from '@/contexts/SettingsContext'
+import { supabase } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { 
+  ArrowLeft, 
+  Gift, 
+  Save, 
+  X, 
+  AlertCircle,
+  CheckCircle2,
+  Tag,
+  Percent,
+  Calendar,
+  Users,
+  Flame,
+  Crown,
+  Sparkles,
+  Star  // ✅ Agregado Star
 } from 'lucide-react'
 
-interface AdminSidebarProps {
-  collapsed: boolean
-  setCollapsed: (collapsed: boolean) => void
-  isOpen: boolean
-  onClose: () => void
-}
-
-const ALL_MENU_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'from-pink-500 to-rose-500' },
-  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/admin/agenda', color: 'from-violet-500 to-fuchsia-500' },
-  { id: 'galeria', name: 'Galería', icon: Palette, path: '/admin/galeria', color: 'from-amber-500 to-rose-500' },
-  { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'from-blue-500 to-cyan-500' },
-  { id: 'clientes', name: 'Clientas', icon: Users, path: '/admin/clientes', color: 'from-rose-500 to-pink-500' },
-  { id: 'fidelizacion', name: 'VIP Club', icon: Crown, path: '/admin/fidelizacion', color: 'from-amber-500 to-orange-500' },
-  { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'from-fuchsia-500 to-pink-500' },
-  { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones', color: 'from-emerald-500 to-teal-500' },
-  { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'from-emerald-500 to-teal-500' },
-  { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'from-red-500 to-rose-500' },
-  { id: 'staff', name: 'Staff', icon: UsersRound, path: '/admin/staff', color: 'from-cyan-500 to-blue-500' },
-  { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'from-orange-500 to-amber-500' },
-]
-
-// Animaciones
-const sidebarVariants = {
-  open: { 
-    width: '256px',
-    transition: { type: "spring", stiffness: 300, damping: 30 }
-  },
-  collapsed: { 
-    width: '76px',
-    transition: { type: "spring", stiffness: 300, damping: 30 }
-  }
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: { 
-      delay: 0.05 * i,
-      type: "spring",
-      stiffness: 400,
-      damping: 25
-    }
-  })
-}
-
-export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
-  const { settings } = useSettings()
-  const { user, role, signOut } = useAuth() 
-  const { theme, toggleTheme } = useTheme()
+export default function CrearPromocionPage() {
   const router = useRouter()
-  const pathname = usePathname()
-
-  const [mounted, setMounted] = useState(false)
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const { user, tenantId } = useAuth()
+  const { theme } = useTheme()
+  const { settings } = useSettings()
   const isDark = theme === 'dark'
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    discount_percent: 0,
+    code: '',
+    valid_until: '',
+    category: 'general' as 'flash' | 'premium' | 'seasonal' | 'welcome' | 'referral',
+    style: 'volante' as 'volante' | 'tarjeta' | 'flyer',
+    featured: false,
+    uses_limit: '',
+    terms: '',
+    min_purchase: '',
+    image_url: ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tenantId) {
+      setError('No hay tenant disponible')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const promoData = {
+        tenant_id: tenantId,
+        title: formData.title,
+        description: formData.description,
+        discount_percent: formData.discount_percent,
+        code: formData.code || null,
+        valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
+        category: formData.category,
+        style: formData.style,
+        featured: formData.featured,
+        is_active: true,
+        uses_limit: formData.uses_limit ? parseInt(formData.uses_limit) : null,
+        terms: formData.terms || null,
+        min_purchase: formData.min_purchase ? parseFloat(formData.min_purchase) : null,
+        image_url: formData.image_url || null,
+        uses_count: 0
+      }
+
+      const { error } = await supabase
+        .from('promotions')
+        .insert(promoData)
+
+      if (error) throw error
+
+      setSuccess('¡Promoción creada con éxito!')
+      setTimeout(() => {
+        router.push('/admin/promociones')
+      }, 2000)
+    } catch (err: any) {
+      console.error('Error creando promoción:', err)
+      setError(err.message || 'Error al crear la promoción')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }))
+  }
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
-
-  const handleNavigation = (path: string) => {
-    router.push(path)
-    onClose()
-  }
-
-  const isItemActive = (itemPath: string) => {
-    if (itemPath === '/dashboard') return pathname === '/dashboard'
-    return pathname?.startsWith(itemPath + '/') || pathname === itemPath
-  }
-
-  const handleLogoutClick = async () => {
-    try {
-      if (signOut) await signOut()
-      router.push('/login')
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error)
-      router.push('/login')
-    }
-  }
-
   return (
-    <>
-      {/* OVERLAY MÓVIL */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={onClose}
-          />
-        )}
-      </AnimatePresence>
+    <div className="space-y-6 p-1 max-w-3xl mx-auto">
 
-      <motion.aside 
-        variants={sidebarVariants}
-        initial="open"
-        animate={collapsed ? "collapsed" : "open"}
-        className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl
-          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${isDark 
-            ? 'bg-gradient-to-b from-[#0f0c1b] via-[#130f24] to-[#0f0c1b] border-r border-fuchsia-950/40' 
-            : 'bg-gradient-to-b from-[#fffafd] via-white to-[#fff5f8] border-r border-pink-100/60'
-          }
-        `}
-      >
-        {/* EFECTO GLOW DE FONDO */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div 
-            className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-20"
-            style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
-            animate={{
-              x: [0, 20, -10, 0],
-              y: [0, -10, 20, 0]
-            }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.div 
-            className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-20"
-            style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }}
-            animate={{
-              x: [0, -20, 10, 0],
-              y: [0, 10, -20, 0]
-            }}
-            transition={{ duration: 10, repeat: Infinity }}
+      {/* HEADER */}
+      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
+        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link 
+              href="/admin/promociones"
+              className="p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-500 hover:text-pink-500"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="min-w-0">
+              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
+                Crear Nueva Promoción
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
+                Diseña una oferta exclusiva para tus clientes
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MENSAJES */}
+      {error && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+        </div>
+      )}
+
+      {/* FORMULARIO */}
+      <form onSubmit={handleSubmit} className={`rounded-2xl border p-6 space-y-6 ${
+        isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
+      }`}>
+        
+        {/* Título */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            Título de la promoción *
+          </label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            placeholder="Ej: Oferta Flash - 30% Off"
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+              isDark 
+                ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+            }`}
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
           />
         </div>
 
-        {/* CABECERA CON BRILLO Y LOGO */}
-        <motion.div 
-          className={`h-16 px-4 flex items-center justify-between border-b relative z-10 ${
-            isDark ? 'border-fuchsia-950/30' : 'border-pink-50'
-          }`}
-        >
-          <motion.div 
-            className="flex items-center gap-3 overflow-hidden"
-            whileHover={{ scale: 1.02 }}
-          >
-            <motion.div 
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-              style={brandGradient}
-              whileHover={{ rotate: -10, scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Sparkles className="w-4 h-4 text-white animate-pulse" />
-            </motion.div>
-
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="animate-fade-in"
-                >
-                  <span className="text-sm font-serif tracking-wide block font-extrabold bg-gradient-to-r from-pink-600 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-amber-300">
-                    Fresh Nails
-                  </span>
-                  <span className="text-[9px] uppercase tracking-widest font-mono block text-pink-400 dark:text-fuchsia-400/80 font-bold">
-                    {role || 'Studio'}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          {isOpen && (
-            <motion.button 
-              onClick={onClose} 
-              className="lg:hidden p-1.5 rounded-xl hover:bg-pink-100/20 text-pink-400 hover:text-pink-600 transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <X className="w-4 h-4" />
-            </motion.button>
-          )}
-        </motion.div>
-
-        {/* PERFIL GLOW CON ANIMACIÓN */}
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="px-3 pt-4 shrink-0 relative z-10"
-            >
-              <motion.div 
-                className={`p-3 rounded-2xl flex items-center gap-3 transition-all border relative overflow-hidden ${
-                  isDark 
-                    ? 'bg-gradient-to-r from-fuchsia-950/30 to-pink-950/20 border-fuchsia-900/30' 
-                    : 'bg-gradient-to-r from-pink-50/60 to-amber-50/40 border-pink-100/70'
-                }`}
-                whileHover={{ scale: 1.02, y: -2 }}
-              >
-                <motion.div 
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-white shadow-sm shrink-0"
-                  style={brandGradient}
-                  whileHover={{ scale: 1.1, rotate: -5 }}
-                >
-                  {user?.email?.charAt(0).toUpperCase() || 'A'}
-                </motion.div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate text-stone-800 dark:text-pink-100">
-                    {user?.email || 'Admin'}
-                  </p>
-                  <motion.div 
-                    className="flex items-center gap-1.5 mt-0.5"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                    <span className="text-[9px] font-mono tracking-wider text-emerald-600 dark:text-emerald-400 font-bold uppercase">
-                      Activa
-                    </span>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NAVEGACIÓN CON ANIMACIONES */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none relative z-10">
-          {ALL_MENU_ITEMS.map((item, index) => {
-            const Icon = item.icon
-            const isActive = isItemActive(item.path)
-            const isHovered = hoveredItem === item.id
-
-            return (
-              <motion.button
-                key={item.id}
-                custom={index}
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{ scale: 1.02, x: 4 }}
-                whileTap={{ scale: 0.95 }}
-                onHoverStart={() => setHoveredItem(item.id)}
-                onHoverEnd={() => setHoveredItem(null)}
-                onClick={() => handleNavigation(item.path)}
-                className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group
-                  ${collapsed ? 'justify-center px-0' : ''}
-                  ${isActive 
-                    ? 'text-white shadow-lg' 
-                    : isDark
-                      ? 'text-stone-400 hover:text-stone-100 hover:bg-stone-900/30'
-                      : 'text-stone-500 hover:text-pink-700 hover:bg-pink-50/30'
-                  }
-                `}
-                style={isActive ? brandGradient : {}}
-                title={collapsed ? item.name : ''}
-              >
-                {isActive && (
-                  <motion.span 
-                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-white/80"
-                    layoutId="activeIndicator"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-
-                {isHovered && !isActive && (
-                  <motion.span 
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{
-                      boxShadow: `inset 0 0 20px ${settings?.primary_color || '#DB5B9A'}15`
-                    }}
-                  />
-                )}
-
-                <motion.div
-                  animate={{
-                    scale: isActive ? 1.1 : (isHovered ? 1.1 : 1),
-                    rotate: isHovered ? [0, -5, 5, 0] : 0
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
-                    isActive ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''
-                  }`} />
-                </motion.div>
-
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span 
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="truncate tracking-wide"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-
-                {isActive && !collapsed && (
-                  <motion.span 
-                    className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60"
-                    animate={{ scale: [1, 1.5, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                )}
-              </motion.button>
-            )
-          })}
-        </nav>
-
-        {/* CONTROLES ELEGANTES CON ANIMACIONES */}
-        <motion.div 
-          className={`p-3 border-t space-y-1 shrink-0 relative z-10 ${
-            isDark ? 'border-fuchsia-950/30 bg-[#0c0a14]/50' : 'border-pink-50 bg-[#fffdf1]/30'
-          }`}
-        >
-          <motion.button 
-            onClick={toggleTheme} 
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-              collapsed ? 'justify-center' : ''
+        {/* Descripción */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            Descripción
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={3}
+            placeholder="Describe los beneficios de esta promoción..."
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
+              isDark 
+                ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
             }`}
-            whileHover={{ scale: 1.02, x: 4 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <motion.div
-              animate={{ rotate: isDark ? [0, 360] : [0, -360] }}
-              transition={{ duration: 0.5 }}
-            >
-              {isDark ? 
-                <Sun className="w-4 h-4 text-amber-400" /> : 
-                <Moon className="w-4 h-4 text-indigo-500" />
-              }
-            </motion.div>
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="text-stone-500 dark:text-stone-400"
-                >
-                  {isDark ? 'Modo Claro' : 'Modo Oscuro'}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+          />
+        </div>
 
-          <motion.button 
-            onClick={handleLogoutClick} 
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
-              collapsed ? 'justify-center' : ''
+        {/* Grid de campos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Descuento */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              <Percent className="w-3 h-3 inline mr-1" /> Descuento (%)
+            </label>
+            <input
+              type="number"
+              name="discount_percent"
+              value={formData.discount_percent}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              placeholder="20"
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Código */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              <Tag className="w-3 h-3 inline mr-1" /> Código promocional
+            </label>
+            <input
+              type="text"
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+              placeholder="FLASH30"
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Categoría */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              Categoría
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            >
+              <option value="flash">🔥 Flash Sale</option>
+              <option value="premium">👑 Premium</option>
+              <option value="seasonal">✨ Temporada</option>
+              <option value="welcome">🎁 Bienvenida</option>
+              <option value="referral">📣 Referido</option>
+              <option value="general">🎯 General</option>
+            </select>
+          </div>
+
+          {/* Estilo */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              Estilo de presentación
+            </label>
+            <select
+              name="style"
+              value={formData.style}
+              onChange={handleChange}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            >
+              <option value="volante">📄 Volante</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+              <option value="flyer">📬 Flyer</option>
+            </select>
+          </div>
+
+          {/* Fecha de expiración */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              <Calendar className="w-3 h-3 inline mr-1" /> Válido hasta
+            </label>
+            <input
+              type="date"
+              name="valid_until"
+              value={formData.valid_until}
+              onChange={handleChange}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Límite de usos */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+              <Users className="w-3 h-3 inline mr-1" /> Límite de usos
+            </label>
+            <input
+              type="number"
+              name="uses_limit"
+              value={formData.uses_limit}
+              onChange={handleChange}
+              placeholder="Sin límite"
+              min="0"
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+                isDark 
+                  ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                  : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+              }`}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            />
+          </div>
+        </div>
+
+        {/* URL de imagen */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            URL de imagen
+          </label>
+          <input
+            type="url"
+            name="image_url"
+            value={formData.image_url}
+            onChange={handleChange}
+            placeholder="https://ejemplo.com/imagen.jpg"
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
+              isDark 
+                ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
             }`}
-            whileHover={{ scale: 1.02, x: 4 }}
-            whileTap={{ scale: 0.95 }}
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+          />
+        </div>
+
+        {/* Términos y condiciones */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            Términos y condiciones
+          </label>
+          <textarea
+            name="terms"
+            value={formData.terms}
+            onChange={handleChange}
+            rows={2}
+            placeholder="Términos y condiciones de la promoción..."
+            className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
+              isDark 
+                ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
+                : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
+            }`}
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+          />
+        </div>
+
+        {/* Featured y activa */}
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-300 cursor-pointer">
+            <input
+              type="checkbox"
+              name="featured"
+              checked={formData.featured}
+              onChange={handleChange}
+              className="w-4 h-4 rounded border-pink-100/60 text-pink-500 focus:ring-pink-500"
+            />
+            <Star className="w-4 h-4 text-amber-400" />
+            Destacar promoción
+          </label>
+        </div>
+
+        {/* Botones */}
+        <div className="flex gap-3 pt-4 border-t border-pink-100/60 dark:border-fuchsia-950">
+          <Link
+            href="/admin/promociones"
+            className="px-6 py-2.5 rounded-xl border text-sm font-semibold transition-all hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700"
           >
-            <motion.div
-              whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5 }}
-            >
-              <Power className="w-4 h-4 text-stone-400 group-hover:text-rose-500 transition-colors" />
-            </motion.div>
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="text-stone-500 dark:text-stone-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors"
-                >
-                  Cerrar sesión
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </motion.div>
-
-        {/* BORDE DECORATIVO INFERIOR */}
-        <motion.div 
-          className="absolute bottom-0 left-0 right-0 h-[2px]"
-          style={brandGradient}
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-      </motion.aside>
-
-      {/* BOTÓN FLOTANTE PARA COLLAPSE */}
-      <motion.button
-        onClick={() => setCollapsed(!collapsed)}
-        className="hidden lg:flex fixed top-5 border rounded-full p-1.5 transition-all z-50 shadow-lg backdrop-blur-sm"
-        style={{
-          left: collapsed ? '60px' : '244px',
-          backgroundColor: isDark ? '#151126' : 'white',
-          borderColor: isDark ? '#fuchsia-900/50' : '#pink-200',
-          color: isDark ? '#fuchsia-400' : '#pink-400',
-        }}
-        whileHover={{ scale: 1.1, rotate: collapsed ? 10 : -10 }}
-        whileTap={{ scale: 0.9 }}
-        animate={{ 
-          left: collapsed ? '60px' : '244px',
-          transition: { type: "spring", stiffness: 300, damping: 30 }
-        }}
-      >
-        {collapsed ? 
-          <ChevronRight className="w-3.5 h-3.5" /> : 
-          <ChevronLeft className="w-3.5 h-3.5" />
-        }
-      </motion.button>
-    </>
+            Cancelar
+          </Link>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 px-6 py-2.5 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Guardando...' : 'Guardar Promoción'}
+          </button>
+        </div>
+      </form>
+    </div>
   )
 }
