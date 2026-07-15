@@ -86,7 +86,7 @@ const itemVariants = {
 }
 
 export default function PromocionesCliente() {
-  const { user, tenantId } = useAuth()
+  const { user, tenantId, refreshUserData } = useAuth()
   const { theme } = useTheme()
   const { settings } = useSettings()
   const isDark = theme === 'dark'
@@ -116,7 +116,6 @@ export default function PromocionesCliente() {
     loadPromociones()
   }, [tenantId])
 
-  // ✅ CARGA DE PROMOCIONES - CORREGIDA
   const loadPromociones = async () => {
     if (!tenantId) {
       setLoading(false)
@@ -124,20 +123,15 @@ export default function PromocionesCliente() {
     }
 
     try {
-      // 🔥 QUITAMOS EL FILTRO POR FECHA para que se vean todas las promociones activas
       const { data, error } = await supabase
         .from('promotions')
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        // ❌ ELIMINADO: .gte('valid_until', hoy.toISOString())
         .order('featured', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      
-      console.log('📦 Promociones cargadas:', data?.length || 0)
-      console.log('📄 Datos:', data)
       
       setPromociones(data || [])
       setFilteredPromociones(data || [])
@@ -148,7 +142,7 @@ export default function PromocionesCliente() {
     }
   }
 
-  // ✅ APLICAR PROMOCIÓN
+  // ✅ APLICAR PROMOCIÓN - CON GUARDADO DE NOMBRE Y EMAIL
   const applyPromotion = async (promo: Promocion) => {
     if (!user) {
       setError('Debes iniciar sesión para usar esta promoción')
@@ -163,7 +157,23 @@ export default function PromocionesCliente() {
     }
 
     try {
-      // 1. Incrementar contador
+      // ✅ OBTENER DATOS DEL CLIENTE
+      let clientName = user.name || user.email || 'Cliente'
+      let clientEmail = user.email || ''
+      
+      // Intentar obtener datos completos desde clients
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('name, email')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (clientData) {
+        clientName = clientData.name || clientName
+        clientEmail = clientData.email || clientEmail
+      }
+
+      // 1. Incrementar contador de usos
       const { error: updateError } = await supabase
         .from('promotions')
         .update({ uses_count: (promo.uses_count || 0) + 1 })
@@ -171,12 +181,15 @@ export default function PromocionesCliente() {
 
       if (updateError) throw updateError
 
-      // 2. Registrar uso
+      // 2. Registrar uso con nombre y email
       const { error: usageError } = await supabase
         .from('promotion_usage')
         .insert({
           promotion_id: promo.id,
           user_id: user.id,
+          client_id: user.id,
+          client_name: clientName,      // ✅ Guardamos el nombre
+          client_email: clientEmail,    // ✅ Guardamos el email
           tenant_id: tenantId,
           action: 'applied',
           used_at: new Date().toISOString()
@@ -202,7 +215,7 @@ export default function PromocionesCliente() {
               user_id: adminUser.id,
               tenant_id: tenantId,
               title: `🎉 Nueva promoción aplicada`,
-              message: `${user.name || 'Un cliente'} aplicó "${promo.title}" (${promo.discount_percent}% off)`,
+              message: `${clientName} aplicó "${promo.title}" (${promo.discount_percent}% off)`,
               type: 'promo',
               read: false,
               created_at: new Date().toISOString()
@@ -356,7 +369,7 @@ export default function PromocionesCliente() {
           </div>
           <div>
             <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black">Activas</p>
-            <h3 className="text-sm font-mono font-black text-emerald-500">{promociones.filter(p => new Date(p.valid_until) >= new Date()).length}</h3>
+            <h3 className="text-sm font-mono font-black text-emerald-500">{promociones.length}</h3>
           </div>
         </div>
       </div>
@@ -419,7 +432,6 @@ export default function PromocionesCliente() {
           <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
             <Gift className="w-12 h-12 text-stone-300 mx-auto mb-3" />
             <p className="text-sm text-stone-500">No hay promociones disponibles</p>
-            <p className="text-xs text-stone-400 mt-1">Vuelve más tarde para nuevas ofertas</p>
           </div>
         ) : (
           filteredPromociones.map((promo) => (
@@ -483,7 +495,6 @@ function PromocionCard({
   const isFlash = promo.category === 'flash'
   const isPremium = promo.category === 'premium'
   const isApplied = appliedPromo === promo.id
-  const style = promo.style || 'volante'
 
   return (
     <div 
@@ -496,7 +507,6 @@ function PromocionCard({
       }`}
       onClick={() => onOpenModal(promo)}
     >
-      {/* Imagen o placeholder */}
       {promo.image_url ? (
         <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
           <img 
@@ -522,7 +532,6 @@ function PromocionCard({
         </div>
       )}
 
-      {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm ${
           isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
@@ -544,7 +553,6 @@ function PromocionCard({
         )}
       </div>
 
-      {/* Contenido */}
       <div className="p-4 space-y-2">
         <h3 className="font-bold text-sm text-stone-800 dark:text-white line-clamp-1">
           {promo.title}
@@ -566,7 +574,6 @@ function PromocionCard({
           )}
         </div>
 
-        {/* Acciones */}
         <div className="flex items-center gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
           {promo.code && (
             <button
