@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, Sliders, UsersRound, Crown,
   Sun, Moon, ChevronLeft, ChevronRight, Power, X,
-  Menu, Gem, Heart, Star, Zap, Award, Palette
+  Menu, Gem, Heart, Star, Zap, Award, Palette, Gift
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -28,6 +28,7 @@ const ALL_MENU_ITEMS = [
   { id: 'clientes', name: 'Clientas', icon: Users, path: '/admin/clientes', color: 'from-rose-500 to-pink-500' },
   { id: 'fidelizacion', name: 'VIP Club', icon: Crown, path: '/admin/fidelizacion', color: 'from-amber-500 to-orange-500' },
   { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'from-fuchsia-500 to-pink-500' },
+  { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones', color: 'from-emerald-500 to-teal-500' }, // ✅ NUEVO
   { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'from-emerald-500 to-teal-500' },
   { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'from-red-500 to-rose-500' },
   { id: 'staff', name: 'Staff', icon: UsersRound, path: '/admin/staff', color: 'from-cyan-500 to-blue-500' },
@@ -169,7 +170,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             >
               <Sparkles className="w-4 h-4 text-white animate-pulse" />
             </motion.div>
-            
+
             <AnimatePresence>
               {!collapsed && (
                 <motion.div
