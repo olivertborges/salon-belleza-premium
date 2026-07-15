@@ -33,7 +33,6 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertCircle,
-  Bug,
   Users
 } from 'lucide-react'
 
@@ -113,8 +112,14 @@ export default function PromocionesCliente() {
   }
 
   useEffect(() => {
-    loadPromociones()
-  }, [tenantId])
+    const checkUserAndLoad = async () => {
+      if (!user) {
+        await refreshUserData()
+      }
+      loadPromociones()
+    }
+    checkUserAndLoad()
+  }, [tenantId, user])
 
   const loadPromociones = async () => {
     if (!tenantId) {
@@ -142,7 +147,7 @@ export default function PromocionesCliente() {
     }
   }
 
-  // ✅ APLICAR PROMOCIÓN - CON GUARDADO DE NOMBRE Y EMAIL
+  // ✅ APLICAR PROMOCIÓN - CORREGIDO (nombre real desde clients)
   const applyPromotion = async (promo: Promocion) => {
     if (!user) {
       setError('Debes iniciar sesión para usar esta promoción')
@@ -157,10 +162,10 @@ export default function PromocionesCliente() {
     }
 
     try {
-      // ✅ OBTENER DATOS DEL CLIENTE
-      let clientName = user.name || user.email || 'Cliente'
-      let clientEmail = user.email || ''
-      
+      // ✅ OBTENER DATOS DEL CLIENTE - CORREGIDO
+      let clientName = 'Cliente'
+      let clientEmail = user?.email || ''
+
       // Intentar obtener datos completos desde clients
       const { data: clientData } = await supabase
         .from('clients')
@@ -169,8 +174,20 @@ export default function PromocionesCliente() {
         .maybeSingle()
 
       if (clientData) {
-        clientName = clientData.name || clientName
-        clientEmail = clientData.email || clientEmail
+        clientName = clientData.name || 'Cliente'
+        clientEmail = clientData.email || user?.email || ''
+      } else {
+        // Si no está en clients, intentar desde profiles
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', user.id)
+          .maybeSingle()
+        
+        if (profileData) {
+          clientName = profileData.name || 'Cliente'
+          clientEmail = profileData.email || user?.email || ''
+        }
       }
 
       // 1. Incrementar contador de usos
@@ -188,8 +205,8 @@ export default function PromocionesCliente() {
           promotion_id: promo.id,
           user_id: user.id,
           client_id: user.id,
-          client_name: clientName,      // ✅ Guardamos el nombre
-          client_email: clientEmail,    // ✅ Guardamos el email
+          client_name: clientName,
+          client_email: clientEmail,
           tenant_id: tenantId,
           action: 'applied',
           used_at: new Date().toISOString()
