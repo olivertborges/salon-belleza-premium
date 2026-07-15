@@ -7,7 +7,7 @@ import {
   Sparkles, Bell, ShoppingCart, 
   Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag
+  Camera, Tag, Eye, Hand, Sparkle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -30,11 +30,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 🛡️ EFECTO DE CONTROL Y BLOQUEO DE SCROLL EN EL BODY
   useEffect(() => {
     if (sidebarOpen) {
-      // Bloquear el scroll de la página de atrás
       document.documentElement.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
     } else {
-      // Restaurar comportamiento normal
       document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
@@ -113,14 +111,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
+  // ✅ MENÚ COMPLETO CON TODOS LOS LINKS
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
     { icon: Calendar, label: 'Mis Citas', href: '/reservas' },
-    { icon: Scissors, label: 'Peluquería & Estilo', href: '/peluqueria' },
-    { icon: Heart, label: 'Cuidado & Estética', href: '/estetica' },
+    { icon: Scissors, label: 'Peluquería', href: '/peluqueria' },
+    { icon: Eye, label: 'Micropigmentación', href: '/micropigmentacion' },
+    { icon: Hand, label: 'Uñas', href: '/unhas' },
+    { icon: Heart, label: 'Estética', href: '/estetica' },
     { icon: Camera, label: 'Galería & Looks', href: '/galeria' },
-    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
+    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones-cliente' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 
@@ -162,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       />
 
-      {/* SIDEBAR - REDISEÑADO A FULL-OVERLAY EN MÓVILES */}
+      {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-full xs:w-80 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-72 lg:flex lg:flex-col shrink-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
@@ -171,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           : 'bg-white/95 border-stone-200/80 shadow-2xl shadow-stone-300/40'
       }`}>
 
-        {/* LOGO SECCIÓN */}
+        {/* LOGO */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-zinc-900/60' : 'border-stone-100'
         }`}>
@@ -196,7 +197,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        {/* MENÚ DE NAVEGACIÓN */}
+        {/* MENÚ */}
         <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overscroll-contain">
           {menuItems.map((item, index) => {
             const Icon = item.icon
@@ -228,7 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <span className="tracking-wide font-black">{item.label}</span>
 
-                {item.href === '/promociones' && (
+                {item.href === '/promociones-cliente' && (
                   <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20">
                     Nuevo
                   </span>
@@ -238,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* BOTÓN CERRAR SESIÓN */}
+        {/* CERRAR SESIÓN */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
         }`}>
@@ -264,8 +265,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
-        
-        {/* HEADER SUPERIOR */}
+
+        {/* HEADER */}
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
           isDark ? 'bg-zinc-950/80 border-zinc-900' : 'bg-white/80 border-stone-200/60'
         }`}>
@@ -294,7 +295,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER */}
+          {/* ACCIONES */}
           <div className="flex items-center gap-3.5">
             <ThemeToggle />
 
@@ -353,7 +354,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* ÁREA DE CONTENIDO */}
+        {/* CONTENIDO */}
         <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto overscroll-contain bg-transparent">
           {children}
         </main>
