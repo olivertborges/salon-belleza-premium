@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react'
 
 interface Promocion {
@@ -93,30 +94,64 @@ export default function AdminPromocionesPage() {
     } catch (error) {
       console.error('Error cargando promociones:', error)
       setError('Error al cargar las promociones')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
   }
 
+  // ✅ FUNCIÓN ELIMINAR - CORREGIDA
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar esta promoción?')) return
+    if (!confirm('¿Estás seguro de eliminar esta promoción? Esta acción no se puede deshacer.')) return
 
     setDeletingId(id)
+    setError(null)
+    setSuccess(null)
+
     try {
-      const { error } = await supabase
+      // Primero obtener la promoción para eliminar la imagen del storage
+      const { data: promo, error: fetchError } = await supabase
+        .from('promotions')
+        .select('image_url')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) {
+        console.error('Error obteniendo promoción:', fetchError)
+      }
+
+      // Si tiene imagen, eliminar del storage
+      if (promo?.image_url) {
+        try {
+          const urlParts = promo.image_url.split('/')
+          const filePath = urlParts.slice(urlParts.indexOf('promotions')).join('/')
+          await supabase.storage
+            .from('promotions')
+            .remove([filePath])
+        } catch (storageError) {
+          console.error('Error eliminando imagen del storage:', storageError)
+          // Continuamos aunque falle la eliminación de la imagen
+        }
+      }
+
+      // Eliminar la promoción de la base de datos
+      const { error: deleteError } = await supabase
         .from('promotions')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (deleteError) throw deleteError
 
-      setSuccess('Promoción eliminada correctamente')
+      setSuccess('✅ Promoción eliminada correctamente')
       setTimeout(() => setSuccess(null), 3000)
-      loadPromociones()
-    } catch (error) {
+      
+      // Recargar la lista
+      await loadPromociones()
+      
+    } catch (error: any) {
       console.error('Error eliminando promoción:', error)
-      setError('Error al eliminar la promoción')
+      setError(`❌ Error al eliminar: ${error.message || 'Error desconocido'}`)
       setTimeout(() => setError(null), 3000)
     } finally {
       setDeletingId(null)
@@ -132,12 +167,12 @@ export default function AdminPromocionesPage() {
 
       if (error) throw error
 
-      setSuccess(`Promoción ${!currentStatus ? 'activada' : 'desactivada'} correctamente`)
+      setSuccess(`✅ Promoción ${!currentStatus ? 'activada' : 'desactivada'} correctamente`)
       setTimeout(() => setSuccess(null), 3000)
-      loadPromociones()
+      await loadPromociones()
     } catch (error) {
       console.error('Error cambiando estado:', error)
-      setError('Error al cambiar el estado')
+      setError('❌ Error al cambiar el estado')
       setTimeout(() => setError(null), 3000)
     }
   }
@@ -409,7 +444,11 @@ export default function AdminPromocionesPage() {
                           disabled={deletingId === promo.id}
                           className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors text-stone-400 hover:text-rose-500 disabled:opacity-50"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {deletingId === promo.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </div>
                     </td>
