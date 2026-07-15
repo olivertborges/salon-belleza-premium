@@ -1,7 +1,7 @@
 // app/(admin)/promociones/crear/page.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -22,7 +22,10 @@ import {
   Flame,
   Crown,
   Sparkles,
-  Star  // ✅ ESTA ES LA LÍNEA QUE FALTABA
+  Star,
+  Upload,
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react'
 
 export default function CrearPromocionPage() {
@@ -34,8 +37,11 @@ export default function CrearPromocionPage() {
   const primaryColor = settings?.primary_color || '#DB5B9A'
 
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -51,6 +57,96 @@ export default function CrearPromocionPage() {
     min_purchase: '',
     image_url: ''
   })
+
+  // ✅ SUBIR IMAGEN A SUPABASE STORAGE
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Solo se permiten imágenes (JPEG, PNG, WEBP, GIF)')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    // Validar tamaño (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no puede superar los 5MB')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    try {
+      // Generar nombre único para el archivo
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `promotions/${tenantId}/${fileName}`
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('promotions') // Nombre de tu bucket
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Error subiendo imagen:', uploadError)
+        setError('Error al subir la imagen: ' + uploadError.message)
+        setTimeout(() => setError(null), 3000)
+        setUploading(false)
+        return
+      }
+
+      // Obtener URL pública de la imagen
+      const { data: urlData } = supabase.storage
+        .from('promotions')
+        .getPublicUrl(filePath)
+
+      const publicUrl = urlData.publicUrl
+      
+      setPreviewImage(publicUrl)
+      setFormData(prev => ({ ...prev, image_url: publicUrl }))
+      setSuccess('Imagen subida correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+
+    } catch (err: any) {
+      console.error('Error:', err)
+      setError('Error al procesar la imagen: ' + err.message)
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // ✅ ELIMINAR IMAGEN
+  const removeImage = async () => {
+    if (formData.image_url) {
+      try {
+        // Extraer la ruta del archivo de la URL
+        const urlParts = formData.image_url.split('/')
+        const filePath = urlParts.slice(urlParts.indexOf('promotions')).join('/')
+        
+        // Eliminar archivo del storage
+        await supabase.storage
+          .from('promotions')
+          .remove([filePath])
+      } catch (e) {
+        console.error('Error eliminando imagen:', e)
+      }
+    }
+    
+    setPreviewImage(null)
+    setFormData(prev => ({ ...prev, image_url: '' }))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -334,24 +430,62 @@ export default function CrearPromocionPage() {
           </div>
         </div>
 
-        {/* URL de imagen */}
+        {/* ✅ SUBIR IMAGEN */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
-            URL de imagen
+            <ImageIcon className="w-3 h-3 inline mr-1" /> Imagen de la promoción
           </label>
-          <input
-            type="url"
-            name="image_url"
-            value={formData.image_url}
-            onChange={handleChange}
-            placeholder="https://ejemplo.com/imagen.jpg"
-            className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 ${
-              isDark 
-                ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
-                : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'
-            }`}
-            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-          />
+          
+          {previewImage ? (
+            <div className="relative rounded-xl overflow-hidden border border-pink-100/60 dark:border-fuchsia-950">
+              <img 
+                src={previewImage} 
+                alt="Vista previa" 
+                className="w-full h-48 object-cover"
+              />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/80 hover:bg-red-600 text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/50 text-white text-[10px]">
+                Imagen cargada
+              </div>
+            </div>
+          ) : (
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all hover:border-pink-500 ${
+                isDark ? 'border-fuchsia-950 hover:border-fuchsia-700' : 'border-pink-200 hover:border-pink-400'
+              }`}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              {uploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+                  <p className="text-xs text-stone-500">Subiendo imagen...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="w-8 h-8 text-stone-400" />
+                  <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+                    Haz clic para subir una imagen
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    PNG, JPG, WEBP • Máx 5MB
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Términos y condiciones */}
