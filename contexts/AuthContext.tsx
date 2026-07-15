@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
@@ -26,36 +26,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Evita llamadas concurrentes idénticas a la base de datos para el mismo userId
+  const lastFetchedUserId = useRef<string | null>(null)
 
   const fetchUserDataAndRole = async (userId: string) => {
+    if (!userId) return
+    if (lastFetchedUserId.current === userId && role !== null) {
+      // Si ya tenemos los datos cargados para este usuario, no volvemos a pegarle a la base de datos
+      return
+    }
+    
     try {
+      lastFetchedUserId.current = userId
+
       // 1. Obtenemos el rol y el tenant_id directo desde el perfil del usuario
-      const { data: profile } = await supabase
+      const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role, tenant_id')
         .eq('id', userId)
         .maybeSingle()
 
+      if (profileErr) throw profileErr
+
       const userRole = profile?.role || 'client'
       setRole(userRole)
 
-      // 2. Si el perfil ya cuenta con un tenant_id (caso de administradores/staff), lo asignamos de inmediato
+      // 2. Si es administrador/staff, asignamos su tenant
       if (profile?.tenant_id) {
         setTenantId(profile.tenant_id)
       }
 
       // 3. Si es cliente, buscamos sus datos adicionales en la tabla relacional
       if (userRole === 'client') {
-        const { data: client } = await supabase
+        const { data: client, error: clientErr } = await supabase
           .from('clients')
           .select('id, tenant_id')
           .eq('auth_user_id', userId)
           .maybeSingle()
 
+        if (clientErr) throw clientErr
+
         if (client) {
           setClientId(client.id)
-          // Si la tabla client sobreescribe o define un tenant_id, lo priorizamos
-          if (client.tenant_id) setTenantId(client.tenant_id)
+          if (client.tenant_id) {
+            setTenantId(client.tenant_id)
+          }
 
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
@@ -73,97 +89,133 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Función de limpieza de estado
+  const clearAuthState = () => {
+    setUser(null)
+    setRole(null)
+    setClientId(null)
+    setTenantId(null)
+    setPoints(null)
+    lastFetchedUserId.current = null
+  }
+
   useEffect(() => {
-    const checkPersistedSession = async () => {
+    let isMounted = true
+
+    const initializeAuth = async () => {
       try {
+        // Recuperar la sesión persistida directamente de Supabase (más fiable que parsear localStorage a mano)
         const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
+        
+        if (session?.user && isMounted) {
           setUser(session.user)
           await fetchUserDataAndRole(session.user.id)
         }
       } catch (err) {
-        console.error('Error verificando sesión inicial:', err)
+        console.error('Error en inicialización de autenticación:', err)
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
-    checkPersistedSession()
+    initializeAuth()
 
+    // Listener reactivo a eventos de sesión de Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        await fetchUserDataAndRole(session.user.id)
-      } else {
-        setUser(null)
-        setRole(null)
-        setClientId(null)
-        setTenantId(null)
-        setPoints(null)
+      if (!isMounted) return
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          setUser(session.user)
+          await fetchUserDataAndRole(session.user.id)
+        }
+        setLoading(false)
       }
-      setLoading(false)
+
+      if (event === 'SIGNED_OUT') {
+        clearAuthState()
+        setLoading(false)
+      }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const refreshUserData = async () => {
-    if (user?.id) await fetchUserDataAndRole(user.id)
+    if (user?.id) {
+      // Forzar recarga limpiando el tracker temporal
+      lastFetchedUserId.current = null
+      await fetchUserDataAndRole(user.id)
+    }
   }
 
   const signIn = async (email: string, password: string) => {
     try {
+      setLoading(true)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: password.trim()
       })
 
-      if (error) return { error }
-
-      if (data?.session && typeof window !== 'undefined') {
-        localStorage.setItem('freshnails-auth-token', JSON.stringify(data.session))
-        setUser(data.user)
-        await fetchUserDataAndRole(data.user.id)
+      if (error) {
+        setLoading(false)
+        return { error }
       }
 
+      // No es necesario actualizar el estado manualmente aquí ni guardar en localStorage.
+      // El callback de onAuthStateChange detectará inmediatamente el "SIGNED_IN", 
+      // actualizará el usuario, traerá los roles correspondientes y apagará el loading de forma limpia.
+      
       return { error: null }
     } catch (err: any) {
+      setLoading(false)
       return { error: err }
     }
   }
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
+      setLoading(true)
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
-        options: { data: { full_name: fullName, phone, referral_code: referralCode } }
+        options: { 
+          data: { 
+            full_name: fullName, 
+            phone, 
+            referral_code: referralCode 
+          } 
+        }
       })
 
-      if (error) return { data: null, error }
-
-      if (data?.session && typeof window !== 'undefined') {
-        localStorage.setItem('freshnails-auth-token', JSON.stringify(data.session))
-        setUser(data.user)
-        await fetchUserDataAndRole(data.user.id)
+      if (error) {
+        setLoading(false)
+        return { data: null, error }
       }
 
       return { data, error: null }
     } catch (err: any) {
+      setLoading(false)
       return { data: null, error: err }
     }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('freshnails-auth-token')
+    try {
+      setLoading(true)
+      await supabase.auth.signOut()
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('freshnails-auth-token')
+      }
+      clearAuthState()
+    } catch (err) {
+      console.error('Error cerrando sesión:', err)
+    } finally {
+      setLoading(false)
     }
-    setUser(null)
-    setRole(null)
-    setClientId(null)
-    setTenantId(null)
-    setPoints(null)
   }
 
   return (
