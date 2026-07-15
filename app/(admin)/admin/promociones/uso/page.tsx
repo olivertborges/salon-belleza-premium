@@ -13,20 +13,22 @@ import {
   Search, 
   Users, 
   Calendar, 
-  Eye,
   RefreshCw,
   AlertCircle,
-  CheckCircle2,
-  Copy,
   User,
   Clock,
-  Tag
+  Tag,
+  Percent,
+  Loader2
 } from 'lucide-react'
 
 interface PromotionUsage {
   id: string
   promotion_id: string
   user_id: string
+  client_id: string
+  client_name: string
+  client_email: string
   tenant_id: string
   action: string
   used_at: string
@@ -35,10 +37,6 @@ interface PromotionUsage {
     discount_percent: number
     code: string
     category: string
-  }
-  profiles: {
-    name: string
-    email: string
   }
 }
 
@@ -64,6 +62,7 @@ export default function UsoPromocionesPage() {
     loadUsos()
   }, [tenantId])
 
+  // ✅ CONSULTA CORREGIDA - Usa client_name de promotion_usage
   const loadUsos = async () => {
     if (!tenantId) {
       setLoading(false)
@@ -71,23 +70,32 @@ export default function UsoPromocionesPage() {
     }
 
     try {
+      console.log('🔍 Cargando usos para tenant:', tenantId)
+      
+      // ✅ Consulta simple: solo promotion_usage con promotion
       const { data, error } = await supabase
         .from('promotion_usage')
         .select(`
           *,
-          promotion:promotion_id (title, discount_percent, code, category),
-          profiles:user_id (name, email)
+          promotion:promotion_id (title, discount_percent, code, category)
         `)
         .eq('tenant_id', tenantId)
         .eq('action', 'applied')
         .order('used_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error en consulta:', error)
+        throw error
+      }
+
+      console.log('📦 Usos encontrados:', data?.length || 0)
+
+      // ✅ Los datos ya tienen client_name y client_email de la tabla promotion_usage
       setUsos(data || [])
       setFilteredUsos(data || [])
-    } catch (error) {
-      console.error('Error cargando usos:', error)
-      setError('Error al cargar los usos de promociones')
+    } catch (error: any) {
+      console.error('❌ Error cargando usos:', error)
+      setError(`Error al cargar los usos: ${error.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -99,8 +107,8 @@ export default function UsoPromocionesPage() {
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(u => 
-        u.profiles?.name?.toLowerCase().includes(term) ||
-        u.profiles?.email?.toLowerCase().includes(term) ||
+        u.client_name?.toLowerCase().includes(term) ||
+        u.client_email?.toLowerCase().includes(term) ||
         u.promotion?.title?.toLowerCase().includes(term) ||
         u.promotion?.code?.toLowerCase().includes(term)
       )
@@ -109,7 +117,7 @@ export default function UsoPromocionesPage() {
   }, [searchTerm, usos])
 
   const totalUsos = usos.length
-  const clientesUnicos = new Set(usos.map(u => u.user_id)).size
+  const clientesUnicos = new Set(usos.map(u => u.client_id || u.user_id)).size
 
   if (loading) {
     return (
@@ -141,7 +149,7 @@ export default function UsoPromocionesPage() {
                 Uso de Promociones
               </h2>
               <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                Monitorea qué promociones están aplicando tus clientes
+                {totalUsos} usos registrados
               </p>
             </div>
           </div>
@@ -163,7 +171,7 @@ export default function UsoPromocionesPage() {
       {/* MENSAJES */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
-          <AlertCircle className="w-4 h-4 text-rose-500" />
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
         </div>
       )}
@@ -213,7 +221,7 @@ export default function UsoPromocionesPage() {
         </div>
       </div>
 
-      {/* TABLA */}
+      {/* TABLA DE USOS */}
       <div className="rounded-2xl border overflow-hidden bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -242,10 +250,10 @@ export default function UsoPromocionesPage() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-sm font-medium text-stone-900 dark:text-white">
-                          {uso.profiles?.name || 'Cliente'}
+                          {uso.client_name || 'Cliente sin nombre'}
                         </p>
                         <p className="text-[10px] text-stone-400">
-                          {uso.profiles?.email || 'Sin email'}
+                          {uso.client_email || 'Sin email'}
                         </p>
                       </div>
                     </td>
