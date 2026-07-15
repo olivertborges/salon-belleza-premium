@@ -21,7 +21,8 @@ import {
   Users,
   Flame,
   Crown,
-  Sparkles
+  Sparkles,
+  Star  // ✅ ESTA ES LA LÍNEA QUE FALTABA
 } from 'lucide-react'
 
 export default function CrearPromocionPage() {
