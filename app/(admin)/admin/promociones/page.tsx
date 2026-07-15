@@ -437,8 +437,8 @@ export default function AdminPromocionesPage() {
                 </div>
               )}
 
-              {/* Badges */}
-              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+              {/* Badges - arriba izquierda */}
+              <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm bg-gradient-to-r ${getCategoryColor(promo.category)}`}>
                   {getCategoryIcon(promo.category)}
                   {getCategoryLabel(promo.category)}
@@ -448,20 +448,6 @@ export default function AdminPromocionesPage() {
                     <Star className="w-2.5 h-2.5 fill-current" /> Destacada
                   </span>
                 )}
-              </div>
-
-              {/* Estado activo/inactivo */}
-              <div className="absolute bottom-3 right-3">
-                <button
-                  onClick={() => handleToggleActive(promo.id, promo.is_active)}
-                  className={`px-2.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest transition-all backdrop-blur-sm ${
-                    promo.is_active 
-                      ? 'bg-emerald-500/80 text-white hover:bg-emerald-600'
-                      : 'bg-stone-500/80 text-white hover:bg-stone-600'
-                  }`}
-                >
-                  {promo.is_active ? 'Activa' : 'Inactiva'}
-                </button>
               </div>
 
               {/* Contenido */}
@@ -484,7 +470,7 @@ export default function AdminPromocionesPage() {
                   </div>
                 </div>
 
-                {/* Código y acciones */}
+                {/* Código y acciones - BOTÓN DE ESTADO MOVIDO AQUÍ */}
                 <div className="flex items-center gap-2 pt-2">
                   {promo.code && (
                     <button
@@ -498,6 +484,18 @@ export default function AdminPromocionesPage() {
                       )}
                     </button>
                   )}
+
+                  {/* ✅ BOTÓN DE ESTADO - MOVIDO AQUÍ PARA QUE NO SE SUPERPONGA */}
+                  <button
+                    onClick={() => handleToggleActive(promo.id, promo.is_active)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all ${
+                      promo.is_active 
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/30 dark:text-emerald-400'
+                        : 'bg-stone-500/20 text-stone-600 dark:bg-stone-500/30 dark:text-stone-400'
+                    }`}
+                  >
+                    {promo.is_active ? 'Activa' : 'Inactiva'}
+                  </button>
 
                   <div className="flex items-center gap-1">
                     <Link 
