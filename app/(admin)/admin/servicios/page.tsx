@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Sparkles, Plus, Search, Clock, DollarSign, 
   Layers, Edit, Trash2, CheckCircle2, 
   X, Save, Tag, Scissors, Star, Heart, Flame,
-  RefreshCw, TrendingUp, Package
+  RefreshCw, TrendingUp, Package, Eye, Hand
 } from 'lucide-react'
 
 type Servicio = {
@@ -25,6 +26,7 @@ type Servicio = {
 
 export default function ServiciosPage() {
   const { settings } = useSettings()
+  const { tenantId } = useAuth()
 
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [search, setSearch] = useState<string>('')
@@ -50,20 +52,32 @@ export default function ServiciosPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
+  // ✅ CATEGORÍAS CORRECTAS PARA PÁGINAS DE CLIENTE
   const categoriasConfig = [
     { name: 'Todos', icon: Star },
-    { name: 'Manicuría', icon: Sparkles },
-    { name: 'Sistemas', icon: Layers },
-    { name: 'Esmaltado', icon: Flame },
-    { name: 'Pedicuría', icon: Heart },
-    { name: 'Nail Art', icon: Scissors },
-    { name: 'Micropigmentación', icon: Tag },
-    { name: 'Microblading', icon: CheckCircle2 },
-    { name: 'Pestañas', icon: Sparkles },
-    { name: 'Cejas', icon: Scissors },
+    { name: 'Peluquería', icon: Scissors, page: '/peluqueria' },
+    { name: 'Micropigmentación', icon: Eye, page: '/micropigmentacion' },
+    { name: 'Uñas', icon: Hand, page: '/unhas' },
+    { name: 'Estética', icon: Heart, page: '/estetica' },
+    { name: 'Manicuría', icon: Sparkles, page: '/servicios' },
+    { name: 'Sistemas', icon: Layers, page: '/servicios' },
+    { name: 'Esmaltado', icon: Flame, page: '/servicios' },
+    { name: 'Pedicuría', icon: Heart, page: '/servicios' },
+    { name: 'Nail Art', icon: Scissors, page: '/servicios' },
   ]
 
+  // ✅ Mapeo de categorías a páginas
+  const getCategoryPage = (category: string) => {
+    const found = categoriasConfig.find(c => c.name === category)
+    return found?.page || '/servicios'
+  }
+
   const fetchServicios = async (showLoading = true) => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+
     if (showLoading) {
       setLoading(true)
     } else {
@@ -75,8 +89,10 @@ export default function ServiciosPage() {
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
         .order('category', { ascending: true })
+        .order('name', { ascending: true })
 
       if (error) throw error
       if (data) setServicios(data as Servicio[])
@@ -94,7 +110,7 @@ export default function ServiciosPage() {
 
   useEffect(() => {
     fetchServicios()
-  }, [])
+  }, [tenantId])
 
   const handleRefresh = () => {
     fetchServicios(true)
@@ -102,10 +118,16 @@ export default function ServiciosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!tenantId) {
+      setError('No hay tenant disponible')
+      return
+    }
+
     setError(null)
     setSuccess(null)
 
     const payload = {
+      tenant_id: tenantId,
       name: formData.name,
       description: formData.description || '',
       price: parseFloat(formData.price) || 0,
@@ -202,7 +224,7 @@ export default function ServiciosPage() {
   return (
     <div className="space-y-6 p-1 max-w-6xl mx-auto">
 
-      {/* HEADER CON GRADIENTE CONFIGURABLE */}
+      {/* HEADER */}
       <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
         <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
         <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
@@ -247,7 +269,7 @@ export default function ServiciosPage() {
         </div>
       </div>
 
-      {/* MENSAJES DE ERROR/SUCCESS */}
+      {/* MENSAJES */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
@@ -266,7 +288,7 @@ export default function ServiciosPage() {
         </div>
       )}
 
-      {/* KPIS MODERNOS */}
+      {/* KPIS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
           <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
@@ -299,7 +321,7 @@ export default function ServiciosPage() {
         </div>
       </div>
 
-      {/* FILTRO DE BÚSQUEDA */}
+      {/* BÚSQUEDA */}
       <div className="flex items-center gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 transition-all duration-300">
         <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
         <input 
@@ -319,8 +341,8 @@ export default function ServiciosPage() {
         )}
       </div>
 
-      {/* CATEGORÍAS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-10 gap-2">
+      {/* ✅ CATEGORÍAS CORREGIDAS */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-2">
         {categoriasConfig.map((cat) => {
           const IconComponent = cat.icon
           const esActivo = selectedCategory === cat.name
@@ -349,6 +371,13 @@ export default function ServiciosPage() {
                 {cat.name}
               </span>
 
+              {/* ✅ INDICADOR DE PÁGINA */}
+              {cat.page && cat.page !== '/servicios' && (
+                <span className="text-[7px] text-emerald-500 font-mono uppercase tracking-wider">
+                  {cat.page.replace('/', '')}
+                </span>
+              )}
+
               {esActivo && (
                 <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
               )}
@@ -359,59 +388,70 @@ export default function ServiciosPage() {
 
       {/* GRID DE SERVICIOS */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
-        {filtrados.map((servicio: Servicio) => (
-          <div 
-            key={servicio.id} 
-            className="rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/5 group bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
-          >
-            <div className="space-y-2.5">
-              <div className="flex justify-between items-center">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
-                  <Layers className="w-3 h-3" style={{ color: settings?.primary_color || '#DB5B9A' }} /> 
-                  {servicio.category || 'General'}
-                </span>
-                {servicio.badge && (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-white" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-                    {servicio.badge.toUpperCase()}
+        {filtrados.map((servicio: Servicio) => {
+          const page = getCategoryPage(servicio.category)
+          
+          return (
+            <div 
+              key={servicio.id} 
+              className="rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/5 group bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
+            >
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] uppercase font-mono tracking-widest text-stone-400 dark:text-stone-500 flex items-center gap-1.5">
+                    <Layers className="w-3 h-3" style={{ color: settings?.primary_color || '#DB5B9A' }} /> 
+                    {servicio.category || 'General'}
                   </span>
-                )}
+                  {servicio.badge && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-white" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+                      {servicio.badge.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className={`text-sm font-bold transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400 text-stone-800 dark:text-pink-100`}>
+                  {servicio.name}
+                </h3>
+
+                <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] text-stone-500 dark:text-pink-100/60`}>
+                  {servicio.description || 'Sin descripción detallada asignada todavía.'}
+                </p>
+
+                {/* ✅ INDICADOR DE DÓNDE APARECE */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[8px] text-emerald-500 dark:text-emerald-400 font-mono uppercase tracking-wider">
+                    📍 Aparece en: <span className="font-bold">{page}</span>
+                  </span>
+                </div>
               </div>
 
-              <h3 className={`text-sm font-bold transition-colors group-hover:text-pink-500 dark:group-hover:text-pink-400 text-stone-800 dark:text-pink-100`}>
-                {servicio.name}
-              </h3>
-
-              <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] text-stone-500 dark:text-pink-100/60`}>
-                {servicio.description || 'Sin descripción detallada asignada todavía.'}
-              </p>
-            </div>
-
-            <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono border-pink-100/60 dark:border-fuchsia-950/50`}>
-              <div className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{servicio.duration || 60} min</span>
+              <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono border-pink-100/60 dark:border-fuchsia-950/50`}>
+                <div className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{servicio.duration || 60} min</span>
+                </div>
+                <div className="font-mono font-extrabold text-sm text-stone-800 dark:text-pink-100">
+                  ${servicio.price?.toLocaleString()}
+                </div>
               </div>
-              <div className="font-mono font-extrabold text-sm text-stone-800 dark:text-pink-100">
-                ${servicio.price?.toLocaleString()}
+
+              <div className="flex gap-2 pt-3.5 mt-1">
+                <button 
+                  onClick={() => handleEdit(servicio)} 
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-300 dark:hover:border-fuchsia-800"
+                >
+                  <Edit className="w-3.5 h-3.5 stroke-[1.5]" /> Editar
+                </button>
+                <button 
+                  onClick={() => handleDelete(servicio.id)} 
+                  className="px-3 py-2 rounded-xl border transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500 hover:text-rose-500 hover:border-rose-500/20"
+                >
+                  <Trash2 className="w-3.5 h-3.5 stroke-[1.5]" />
+                </button>
               </div>
             </div>
-
-            <div className="flex gap-2 pt-3.5 mt-1">
-              <button 
-                onClick={() => handleEdit(servicio)} 
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-300 dark:hover:border-fuchsia-800"
-              >
-                <Edit className="w-3.5 h-3.5 stroke-[1.5]" /> Editar
-              </button>
-              <button 
-                onClick={() => handleDelete(servicio.id)} 
-                className="px-3 py-2 rounded-xl border transition-all bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500 hover:text-rose-500 hover:border-rose-500/20"
-              >
-                <Trash2 className="w-3.5 h-3.5 stroke-[1.5]" />
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         {filtrados.length === 0 && (
           <div className="col-span-full py-12 text-center font-mono text-xs border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 dark:text-stone-500">
@@ -420,7 +460,7 @@ export default function ServiciosPage() {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL - CON CATEGORÍAS CORRECTAS */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-md rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto">
@@ -453,14 +493,14 @@ export default function ServiciosPage() {
                   style={{ 
                     '--tw-ring-color': settings?.primary_color || '#DB5B9A'
                   } as React.CSSProperties}
-                  placeholder="Ej: Esmaltado Semipermanente Glam"
+                  placeholder="Ej: Microblading Cejas"
                   required 
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                  Descripción Operativa
+                  Descripción
                 </label>
                 <textarea 
                   value={formData.description} 
@@ -470,7 +510,7 @@ export default function ServiciosPage() {
                   style={{ 
                     '--tw-ring-color': settings?.primary_color || '#DB5B9A'
                   } as React.CSSProperties}
-                  placeholder="Detalla los materiales utilizados o especificaciones particulares..." 
+                  placeholder="Detalla el tratamiento..." 
                 />
               </div>
 
@@ -512,7 +552,7 @@ export default function ServiciosPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Categoría
+                    Categoría *
                   </label>
                   <select 
                     value={formData.category} 
@@ -522,10 +562,20 @@ export default function ServiciosPage() {
                       '--tw-ring-color': settings?.primary_color || '#DB5B9A'
                     } as React.CSSProperties}
                   >
-                    {categoriasConfig.filter(c => c.name !== 'Todos').map(cat => (
-                      <option key={cat.name} value={cat.name}>{cat.name}</option>
-                    ))}
+                    <option value="Peluquería">✂️ Peluquería</option>
+                    <option value="Micropigmentación">👁️ Micropigmentación</option>
+                    <option value="Uñas">💅 Uñas</option>
+                    <option value="Estética">💖 Estética</option>
+                    <option value="Manicuría">💅 Manicuría</option>
+                    <option value="Sistemas">📋 Sistemas</option>
+                    <option value="Esmaltado">🔥 Esmaltado</option>
+                    <option value="Pedicuría">❤️ Pedicuría</option>
+                    <option value="Nail Art">✂️ Nail Art</option>
+                    <option value="General">📋 General</option>
                   </select>
+                  <p className="text-[8px] text-stone-400 mt-1">
+                    La categoría determina en qué página aparece el servicio
+                  </p>
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
