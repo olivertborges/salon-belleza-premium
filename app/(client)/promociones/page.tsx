@@ -147,7 +147,7 @@ export default function PromocionesCliente() {
     }
   }
 
-  // ✅ APLICAR PROMOCIÓN - CORREGIDO (buscar en profiles primero)
+  // ✅ APLICAR PROMOCIÓN - CORREGIDO (usando full_name de profiles)
   const applyPromotion = async (promo: Promocion) => {
     if (!user) {
       setError('Debes iniciar sesión para usar esta promoción')
@@ -162,32 +162,21 @@ export default function PromocionesCliente() {
     }
 
     try {
-      // ✅ OBTENER DATOS DEL CLIENTE - BUSCAR EN PROFILES PRIMERO
+      // ✅ OBTENER DATOS DEL CLIENTE - USANDO full_name DE profiles
       let clientName = 'Cliente'
       let clientEmail = user?.email || ''
 
-      // 1. Intentar obtener desde profiles (donde está el usuario)
+      // Buscar en profiles (la columna es full_name)
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('name, email')
+        .select('full_name, email')
         .eq('id', user.id)
         .maybeSingle()
 
       if (profileData) {
-        clientName = profileData.name || 'Cliente'
+        clientName = profileData.full_name || 'Cliente'
         clientEmail = profileData.email || user?.email || ''
-      } else {
-        // 2. Si no está en profiles, intentar desde clients
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('name, email')
-          .eq('id', user.id)
-          .maybeSingle()
-        
-        if (clientData) {
-          clientName = clientData.name || 'Cliente'
-          clientEmail = clientData.email || user?.email || ''
-        }
+        console.log('✅ Nombre encontrado en profiles:', clientName)
       }
 
       // 1. Incrementar contador de usos
