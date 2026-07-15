@@ -52,7 +52,7 @@ export default function ServiciosPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // ✅ CATEGORÍAS CORRECTAS PARA PÁGINAS DE CLIENTE
+  // ✅ CATEGORÍAS CON PÁGINAS
   const categoriasConfig = [
     { name: 'Todos', icon: Star },
     { name: 'Peluquería', icon: Scissors, page: '/peluqueria' },
@@ -66,7 +66,6 @@ export default function ServiciosPage() {
     { name: 'Nail Art', icon: Scissors, page: '/servicios' },
   ]
 
-  // ✅ Mapeo de categorías a páginas
   const getCategoryPage = (category: string) => {
     const found = categoriasConfig.find(c => c.name === category)
     return found?.page || '/servicios'
@@ -341,7 +340,7 @@ export default function ServiciosPage() {
         )}
       </div>
 
-      {/* ✅ CATEGORÍAS CORREGIDAS */}
+      {/* CATEGORÍAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-2">
         {categoriasConfig.map((cat) => {
           const IconComponent = cat.icon
@@ -371,7 +370,6 @@ export default function ServiciosPage() {
                 {cat.name}
               </span>
 
-              {/* ✅ INDICADOR DE PÁGINA */}
               {cat.page && cat.page !== '/servicios' && (
                 <span className="text-[7px] text-emerald-500 font-mono uppercase tracking-wider">
                   {cat.page.replace('/', '')}
@@ -417,7 +415,6 @@ export default function ServiciosPage() {
                   {servicio.description || 'Sin descripción detallada asignada todavía.'}
                 </p>
 
-                {/* ✅ INDICADOR DE DÓNDE APARECE */}
                 <div className="flex items-center gap-1">
                   <span className="text-[8px] text-emerald-500 dark:text-emerald-400 font-mono uppercase tracking-wider">
                     📍 Aparece en: <span className="font-bold">{page}</span>
@@ -460,7 +457,7 @@ export default function ServiciosPage() {
         )}
       </div>
 
-      {/* MODAL - CON CATEGORÍAS CORRECTAS */}
+      {/* MODAL - CON TODAS LAS CATEGORÍAS */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-md rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto">
@@ -554,6 +551,7 @@ export default function ServiciosPage() {
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
                     Categoría *
                   </label>
+                  {/* ✅ SELECT CON TODAS LAS CATEGORÍAS */}
                   <select 
                     value={formData.category} 
                     onChange={(e) => setFormData({...formData, category: e.target.value})} 
