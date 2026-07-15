@@ -147,7 +147,7 @@ export default function PromocionesCliente() {
     }
   }
 
-  // ✅ APLICAR PROMOCIÓN - CORREGIDO (nombre real desde clients)
+  // ✅ APLICAR PROMOCIÓN - CORREGIDO (buscar en profiles primero)
   const applyPromotion = async (promo: Promocion) => {
     if (!user) {
       setError('Debes iniciar sesión para usar esta promoción')
@@ -162,31 +162,31 @@ export default function PromocionesCliente() {
     }
 
     try {
-      // ✅ OBTENER DATOS DEL CLIENTE - CORREGIDO
+      // ✅ OBTENER DATOS DEL CLIENTE - BUSCAR EN PROFILES PRIMERO
       let clientName = 'Cliente'
       let clientEmail = user?.email || ''
 
-      // Intentar obtener datos completos desde clients
-      const { data: clientData } = await supabase
-        .from('clients')
+      // 1. Intentar obtener desde profiles (donde está el usuario)
+      const { data: profileData } = await supabase
+        .from('profiles')
         .select('name, email')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (clientData) {
-        clientName = clientData.name || 'Cliente'
-        clientEmail = clientData.email || user?.email || ''
+      if (profileData) {
+        clientName = profileData.name || 'Cliente'
+        clientEmail = profileData.email || user?.email || ''
       } else {
-        // Si no está en clients, intentar desde profiles
-        const { data: profileData } = await supabase
-          .from('profiles')
+        // 2. Si no está en profiles, intentar desde clients
+        const { data: clientData } = await supabase
+          .from('clients')
           .select('name, email')
           .eq('id', user.id)
           .maybeSingle()
         
-        if (profileData) {
-          clientName = profileData.name || 'Cliente'
-          clientEmail = profileData.email || user?.email || ''
+        if (clientData) {
+          clientName = clientData.name || 'Cliente'
+          clientEmail = clientData.email || user?.email || ''
         }
       }
 
