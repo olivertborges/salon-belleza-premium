@@ -101,16 +101,46 @@ export default function AdminPromocionesPage() {
     }
   }
 
-  // ✅ FUNCIÓN ELIMINAR - CORREGIDA
+  // ✅ FUNCIÓN ELIMINAR - CORREGIDA CON CASCADA
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar esta promoción? Esta acción no se puede deshacer.')) return
+    // Contar cuántos usos tiene
+    const { count, error: countError } = await supabase
+      .from('promotion_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('promotion_id', id)
+
+    if (countError) {
+      console.error('Error contando usos:', countError)
+    }
+
+    const usoCount = count || 0
+    let confirmMessage = '¿Estás seguro de eliminar esta promoción? Esta acción no se puede deshacer.'
+    
+    if (usoCount > 0) {
+      confirmMessage = `⚠️ Esta promoción tiene ${usoCount} uso${usoCount > 1 ? 's' : ''} registrado${usoCount > 1 ? 's' : ''}. Al eliminarla, también se eliminarán todos los registros de uso. ¿Continuar?`
+    }
+
+    if (!confirm(confirmMessage)) return
 
     setDeletingId(id)
     setError(null)
     setSuccess(null)
 
     try {
-      // Primero obtener la promoción para eliminar la imagen del storage
+      // 1. Primero eliminar los usos de promotion_usage
+      if (usoCount > 0) {
+        const { error: deleteUsageError } = await supabase
+          .from('promotion_usage')
+          .delete()
+          .eq('promotion_id', id)
+
+        if (deleteUsageError) {
+          console.error('Error eliminando usos:', deleteUsageError)
+          throw new Error('No se pudieron eliminar los usos asociados')
+        }
+      }
+
+      // 2. Obtener la promoción para eliminar la imagen
       const { data: promo, error: fetchError } = await supabase
         .from('promotions')
         .select('image_url')
@@ -121,7 +151,7 @@ export default function AdminPromocionesPage() {
         console.error('Error obteniendo promoción:', fetchError)
       }
 
-      // Si tiene imagen, eliminar del storage
+      // 3. Si tiene imagen, eliminar del storage
       if (promo?.image_url) {
         try {
           const urlParts = promo.image_url.split('/')
@@ -135,7 +165,7 @@ export default function AdminPromocionesPage() {
         }
       }
 
-      // Eliminar la promoción de la base de datos
+      // 4. Eliminar la promoción de la base de datos
       const { error: deleteError } = await supabase
         .from('promotions')
         .delete()
@@ -143,7 +173,7 @@ export default function AdminPromocionesPage() {
 
       if (deleteError) throw deleteError
 
-      setSuccess('✅ Promoción eliminada correctamente')
+      setSuccess(`✅ Promoción eliminada correctamente${usoCount > 0 ? ` (se eliminaron ${usoCount} uso${usoCount > 1 ? 's' : ''})` : ''}`)
       setTimeout(() => setSuccess(null), 3000)
       
       // Recargar la lista
