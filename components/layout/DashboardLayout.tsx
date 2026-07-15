@@ -27,6 +27,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
+  // 🛡️ EFECTO DE CONTROL Y BLOQUEO DE SCROLL EN EL BODY
+  useEffect(() => {
+    if (sidebarOpen) {
+      // Bloquear el scroll de la página de atrás
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+    } else {
+      // Restaurar comportamiento normal
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
+
   useEffect(() => {
     if (!user) return
 
@@ -106,8 +124,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 
-  const inicialNombre = user?.name ? user.name.charAt(0).toUpperCase() : 'C'
-  const primerNombre = user?.name ? user.name.split(' ')[0] : 'Clienta'
+  const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
+  const primerNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.split(' ')[0] : 'Clienta'
 
   const handleLogoutClick = async () => {
     try {
@@ -130,48 +148,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`h-screen w-full antialiased font-sans flex relative overflow-hidden transition-all duration-500 ${
-      isDark ? 'bg-stone-950 text-stone-100' : 'bg-gradient-to-b from-pink-50/40 via-amber-50/20 to-stone-50/40 text-stone-900'
+    <div className={`h-screen w-screen overflow-hidden antialiased font-sans flex relative transition-colors duration-500 ${
+      isDark 
+        ? 'bg-zinc-950 text-zinc-100' 
+        : 'bg-gradient-to-b from-stone-50 via-pink-50/20 to-stone-50 text-stone-900'
     }`}>
 
-      {sidebarOpen && (
-        <div 
-          onClick={() => setSidebarOpen(false)} 
-          className="fixed inset-0 bg-stone-950/40 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300"
-        />
-      )}
+      {/* BACKDROP - MÓVIL */}
+      <div 
+        onClick={() => setSidebarOpen(false)} 
+        className={`fixed inset-0 bg-black/60 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300 ${
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
-      {/* SIDEBAR - SIN WIDGET, CERRAR SESIÓN SIEMPRE VISIBLE */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:flex lg:flex-col shrink-0 ${
+      {/* SIDEBAR - REDISEÑADO A FULL-OVERLAY EN MÓVILES */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-full xs:w-80 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-72 lg:flex lg:flex-col shrink-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
-        isDark ? 'bg-stone-950/80 border-stone-900 backdrop-blur-xl' : 'bg-white/95 border-pink-100/80 backdrop-blur-xl'
+        isDark 
+          ? 'bg-zinc-950/95 border-zinc-900 shadow-2xl shadow-black/80' 
+          : 'bg-white/95 border-stone-200/80 shadow-2xl shadow-stone-300/40'
       }`}>
 
-        {/* LOGO */}
+        {/* LOGO SECCIÓN */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
-          isDark ? 'border-stone-900/60' : 'border-pink-100/50'
+          isDark ? 'border-zinc-900/60' : 'border-stone-100'
         }`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 dark:from-pink-600 dark:to-neutral-900 flex items-center justify-center shadow-lg shadow-pink-500/20">
-              <Sparkles className="w-4 h-4 text-white animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-md shadow-pink-500/20">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <span className="text-xs font-black uppercase tracking-[0.25em] block text-stone-800 dark:text-stone-100">
+              <span className="text-xs font-black uppercase tracking-[0.25em] block text-stone-900 dark:text-white">
                 <span className="font-serif italic text-pink-500 dark:text-pink-400 lowercase tracking-normal font-normal text-sm">fresh</span> NAILS
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-black font-mono block text-stone-400 dark:text-stone-500 mt-0.5">
+              <span className="text-[9px] uppercase tracking-widest font-black font-mono block text-stone-400 dark:text-zinc-500 mt-0.5">
                 Studio Center
               </span>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-stone-400 hover:text-pink-500 transition-colors">
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            className="lg:hidden p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-900 transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* MENÚ - OCUPA TODO EL ESPACIO DISPONIBLE */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {/* MENÚ DE NAVEGACIÓN */}
+        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overscroll-contain">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -181,29 +207,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={index} 
                 href={item.href} 
                 onClick={() => setSidebarOpen(false)} 
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 group relative border ${
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-300 group relative border ${
                   isActive 
                     ? isDark 
-                      ? 'bg-gradient-to-r from-pink-950/30 via-stone-900/40 to-transparent border-pink-500/30 text-white shadow-[0_4px_20px_rgba(236,72,153,0.05)]'
-                      : 'bg-gradient-to-r from-pink-100/50 via-pink-50/20 to-transparent border-pink-200 text-stone-900 shadow-[0_4px_20px_rgba(236,72,153,0.08)]'
-                    : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-pink-50/30 dark:hover:bg-stone-900/40'
+                      ? 'bg-gradient-to-r from-pink-950/30 to-transparent border-pink-500/30 text-white shadow-sm'
+                      : 'bg-gradient-to-r from-pink-50/70 to-transparent border-pink-100 text-stone-900 shadow-sm'
+                    : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-white hover:bg-stone-50 dark:hover:bg-zinc-900/60'
                 }`}
               >
                 {isActive && (
                   <span className="absolute left-0 w-1 h-5 bg-pink-500 dark:bg-pink-400 rounded-r-full" />
                 )}
 
-                <div className={`p-2 rounded-xl border transition-all duration-300 ${
+                <div className={`p-2 rounded-lg border transition-all duration-300 ${
                   isActive 
-                    ? 'bg-white border-pink-200 text-pink-500 shadow-sm dark:bg-stone-900 dark:border-pink-500/20 dark:text-pink-400'
-                    : 'bg-stone-50 border-stone-200 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-stone-900/60 dark:border-stone-800 dark:text-stone-500 dark:group-hover:border-stone-700 dark:group-hover:text-pink-400'
+                    ? 'bg-white border-pink-200 text-pink-500 shadow-sm dark:bg-zinc-900 dark:border-pink-500/30 dark:text-pink-400'
+                    : 'bg-stone-50 border-stone-100 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-zinc-900/40 dark:border-zinc-800 dark:text-zinc-500 dark:group-hover:border-zinc-700 dark:group-hover:text-pink-400'
                 }`}>
-                  <Icon className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+                  <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
                 </div>
                 <span className="tracking-wide font-black">{item.label}</span>
 
                 {item.href === '/promociones' && (
-                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20 animate-pulse">
+                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20">
                     Nuevo
                   </span>
                 )}
@@ -212,24 +238,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* ✅ BOTÓN CERRAR SESIÓN - SIEMPRE VISIBLE, SIN WIDGET */}
+        {/* BOTÓN CERRAR SESIÓN */}
         <div className={`p-4 border-t shrink-0 ${
-          isDark ? 'border-stone-900/60 bg-stone-950/40' : 'border-pink-100/40 bg-pink-50/10'
+          isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
         }`}>
           <button 
             onClick={handleLogoutClick}
-            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-2xl text-xs font-bold transition-all border border-transparent group ${
+            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-xl text-xs font-bold transition-all border border-transparent group ${
               isDark
-                ? 'text-stone-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/20'
+                ? 'text-zinc-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/20'
                 : 'text-stone-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
             }`}
           >
-            <div className={`p-2 rounded-xl border transition-colors ${
+            <div className={`p-2 rounded-lg border transition-colors ${
               isDark
-                ? 'bg-stone-900 border-stone-800 text-stone-500 group-hover:text-rose-400 group-hover:border-rose-500/20'
-                : 'bg-stone-100 border-stone-200 text-stone-400 group-hover:text-rose-500 group-hover:border-rose-300'
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-500 group-hover:text-rose-400 group-hover:border-rose-500/20'
+                : 'bg-white border-stone-200 text-stone-400 group-hover:text-rose-500 group-hover:border-rose-300 shadow-sm'
             }`}>
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
             </div>
             <span className="tracking-wide font-black">Cerrar Sesión</span>
           </button>
@@ -238,44 +264,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
-        {/* HEADER */}
+        
+        {/* HEADER SUPERIOR */}
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
-          isDark ? 'bg-stone-950/80 border-stone-900' : 'bg-white/80 border-pink-100/60'
+          isDark ? 'bg-zinc-950/80 border-zinc-900' : 'bg-white/80 border-stone-200/60'
         }`}>
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className={`lg:hidden p-2.5 rounded-xl border transition-colors ${
-              isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-white border-pink-100 text-stone-600 shadow-sm'
-            }`}>
+            <button 
+              onClick={() => setSidebarOpen(true)} 
+              className={`lg:hidden p-2.5 rounded-xl border transition-colors ${
+                isDark 
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800' 
+                  : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50 shadow-sm'
+              }`}
+            >
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex flex-col">
-              <h1 className={`text-xl font-bold tracking-tight ${
+              <h1 className={`text-xl font-bold tracking-tight leading-none ${
                 isDark ? 'text-white' : 'text-stone-900'
               }`}>
                 Fresh<span className="font-light" style={{ color: '#DB5B9A' }}>Nails</span>
               </h1>
-              <span className={`text-[9px] uppercase tracking-[0.25em] font-medium ${
-                isDark ? 'text-stone-500' : 'text-stone-400'
+              <span className={`text-[9px] uppercase tracking-[0.25em] font-medium mt-1 ${
+                isDark ? 'text-zinc-500' : 'text-stone-400'
               }`}>
                 Studio Center
               </span>
             </div>
           </div>
 
+          {/* ACCIONES DEL HEADER */}
           <div className="flex items-center gap-3.5">
             <ThemeToggle />
 
             <Link 
               href="/notificaciones"
-              className={`relative p-2.5 rounded-xl border transition-all hover:shadow-md ${
+              className={`relative p-2.5 rounded-xl border transition-all hover:shadow-sm ${
                 isDark
-                  ? 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-100 hover:border-stone-700'
-                  : 'bg-white border-pink-100 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                  : 'bg-white border-stone-200 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
               }`}
             >
               <Bell className="w-4 h-4" />
               {notificaciones > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-pink-600 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-stone-950 shadow-md">
+                <span className="absolute -top-1.5 -right-1.5 bg-pink-500 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-md">
                   {notificaciones > 99 ? '99+' : notificaciones}
                 </span>
               )}
@@ -283,35 +316,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <button className={`relative p-2.5 rounded-xl border transition-all ${
               isDark
-                ? 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-100 hover:border-stone-700'
-                : 'bg-white border-pink-100 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                : 'bg-white border-stone-200 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
             }`}>
               <ShoppingCart className="w-4 h-4" />
               {carritoItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-stone-950 dark:bg-white text-white dark:text-stone-950 text-[9px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-stone-950 shadow-sm">
+                <span className="absolute -top-1.5 -right-1.5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[9px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm">
                   {carritoItems}
                 </span>
               )}
             </button>
 
-            <div className={`h-6 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-stone-800' : 'bg-pink-100'}`}></div>
+            <div className={`h-6 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-zinc-800' : 'bg-stone-200'}`}></div>
 
             <div className="flex items-center gap-3 pr-1">
               <div className="text-right hidden xs:block">
-                <p className={`text-xs font-medium ${
-                  isDark ? 'text-white' : 'text-stone-800'
+                <p className={`text-xs font-bold leading-none ${
+                  isDark ? 'text-white' : 'text-stone-900'
                 }`}>
                   {primerNombre}
                 </p>
-                <span className={`text-[9px] font-medium tracking-[0.15em] uppercase ${
-                  isDark ? 'text-stone-500' : 'text-stone-400'
+                <span className={`text-[9px] font-bold tracking-[0.15em] uppercase mt-1 block ${
+                  isDark ? 'text-zinc-500' : 'text-stone-400'
                 }`}>
                   VIP
                 </span>
               </div>
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs shadow-inner transition-colors ${
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-black text-xs transition-colors shadow-sm ${
                 isDark
-                  ? 'bg-stone-900 border-stone-800 text-pink-400'
+                  ? 'bg-zinc-900 border-zinc-800 text-pink-400'
                   : 'bg-pink-50/60 border-pink-100 text-pink-600'
               }`}>
                 {inicialNombre}
@@ -320,7 +353,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto">
+        {/* ÁREA DE CONTENIDO */}
+        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto overscroll-contain bg-transparent">
           {children}
         </main>
       </div>
