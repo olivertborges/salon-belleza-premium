@@ -77,14 +77,27 @@ interface Review {
   client_name?: string
 }
 
-// Imágenes de muestra
+// ✅ IMÁGENES REALES DE MICROPIGMENTACIÓN
 const MICRO_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=1200&h=600&fit=crop',
-  cejas1: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=600&h=400&fit=crop',
-  gallery1: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=400&h=400&fit=crop',
-  gallery2: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=400&h=400&fit=crop',
+  // Hero - Imagen de cejas profesional
+  hero: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=1200&h=600&fit=crop',
+  // Cejas
+  cejas1: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
+  cejas2: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
+  cejas3: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
+  // Labios
+  labios1: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
+  labios2: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
+  // Ojos
+  ojos1: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
+  ojos2: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
+  // Tratamientos
+  tratamiento: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
+  // Galería
+  gallery1: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=400&h=400&fit=crop',
+  gallery2: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=400&h=400&fit=crop',
   gallery3: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=400&h=400&fit=crop',
-  gallery4: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=400&h=400&fit=crop',
+  gallery4: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=400&h=400&fit=crop',
 }
 
 const containerVariants = {
@@ -145,7 +158,6 @@ export default function MicropigmentacionPage() {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
   }
 
-  // Categorías
   const categories = [
     { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: 'Cejas', label: 'Cejas', icon: <Eye className="w-3.5 h-3.5" /> },
@@ -422,7 +434,6 @@ export default function MicropigmentacionPage() {
                 Microblading, Microshading y técnicas avanzadas de micropigmentación para realzar tu belleza natural.
               </p>
 
-              {/* Profesional */}
               <div className="flex items-center gap-4 mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 max-w-sm">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
                   A
@@ -487,7 +498,6 @@ export default function MicropigmentacionPage() {
       {/* TAB: SERVICIOS */}
       {activeTab === 'servicios' && (
         <div className="space-y-6">
-          {/* Categorías */}
           <div className="flex flex-wrap gap-2 justify-center">
             {categories.map((cat) => (
               <button
@@ -508,7 +518,6 @@ export default function MicropigmentacionPage() {
             ))}
           </div>
 
-          {/* Búsqueda */}
           <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
             <div className="flex-1 flex items-center gap-3 min-w-0">
               <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
@@ -543,7 +552,6 @@ export default function MicropigmentacionPage() {
             </div>
           </div>
 
-          {/* Grid de Servicios */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -560,6 +568,16 @@ export default function MicropigmentacionPage() {
                 const avgRating = getAverageRating(servicio.id)
                 const ratingCount = getRatingCount(servicio.id)
 
+                // ✅ Asignar imagen según categoría
+                let imageUrl = servicio.image_url || MICRO_IMAGES.cejas1
+                if (servicio.category === 'Labios') {
+                  imageUrl = servicio.image_url || MICRO_IMAGES.labios1
+                } else if (servicio.category === 'Ojos') {
+                  imageUrl = servicio.image_url || MICRO_IMAGES.ojos1
+                } else if (servicio.category === 'Cejas') {
+                  imageUrl = servicio.image_url || MICRO_IMAGES.cejas1
+                }
+
                 return (
                   <motion.div key={servicio.id} variants={itemVariants}>
                     <div 
@@ -570,7 +588,7 @@ export default function MicropigmentacionPage() {
 
                       <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
                         <img 
-                          src={servicio.image_url || MICRO_IMAGES.cejas1}
+                          src={imageUrl}
                           alt={servicio.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
@@ -651,14 +669,14 @@ export default function MicropigmentacionPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { src: MICRO_IMAGES.gallery1, title: 'Microblading cejas' },
-              { src: MICRO_IMAGES.gallery2, title: 'Microshading' },
-              { src: MICRO_IMAGES.gallery3, title: 'Pigmentación labios' },
-              { src: MICRO_IMAGES.gallery4, title: 'Pigmentación ojos' },
-              { src: MICRO_IMAGES.cejas1, title: 'Cejas pelo a pelo' },
-              { src: MICRO_IMAGES.cejas1, title: 'Cejas efecto' },
-              { src: MICRO_IMAGES.cejas1, title: 'Tratamiento especial' },
-              { src: MICRO_IMAGES.cejas1, title: 'Ojos definidos' },
+              { src: MICRO_IMAGES.cejas1, title: 'Microblading cejas', categoria: 'Cejas' },
+              { src: MICRO_IMAGES.cejas2, title: 'Microshading', categoria: 'Cejas' },
+              { src: MICRO_IMAGES.labios1, title: 'Pigmentación labios', categoria: 'Labios' },
+              { src: MICRO_IMAGES.ojos1, title: 'Pigmentación ojos', categoria: 'Ojos' },
+              { src: MICRO_IMAGES.cejas3, title: 'Cejas pelo a pelo', categoria: 'Cejas' },
+              { src: MICRO_IMAGES.ojos2, title: 'Ojos definidos', categoria: 'Ojos' },
+              { src: MICRO_IMAGES.labios2, title: 'Labios hidratados', categoria: 'Labios' },
+              { src: MICRO_IMAGES.tratamiento, title: 'Tratamiento especial', categoria: 'Tratamientos' },
             ].map((img, idx) => (
               <motion.div
                 key={idx}
@@ -671,7 +689,10 @@ export default function MicropigmentacionPage() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                  <p className="text-white text-xs font-bold">{img.title}</p>
+                  <div>
+                    <p className="text-white text-xs font-bold">{img.title}</p>
+                    <p className="text-white/60 text-[8px]">{img.categoria}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -712,11 +733,10 @@ export default function MicropigmentacionPage() {
                 </div>
               ))
             ) : (
-              // Testimonios de muestra
               [
                 { name: 'Laura García', comment: 'El microblading es increíble. Mis cejas se ven naturales y perfectas.', rating: 5 },
                 { name: 'Carmen Rodríguez', comment: 'La pigmentación de labios cambió mi vida. Ya no necesito maquillaje.', rating: 5 },
-                { name: 'Sofía Martínez', comment: 'Excelente profesional, resultados espectaculares. 100% recomendado.', rating: 5 },
+                { name: 'Sofía Martínez', comment: 'Excelente profesional, resultados espectaculares.', rating: 5 },
               ].map((t, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
                   <div className="flex items-center gap-3 mb-2">
