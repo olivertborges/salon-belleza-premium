@@ -1,4 +1,3 @@
-// app/(client)/estetica/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -77,7 +76,7 @@ interface Review {
   client_name?: string
 }
 
-// ✅ IMÁGENES DE ESTÉTICA
+// IMÁGENES DE ESTÉTICA
 const ESTETICA_IMAGES = {
   hero: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&h=600&fit=crop',
   facial1: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
@@ -149,7 +148,7 @@ export default function EsteticaPage() {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
   }
 
-  // ✅ CATEGORÍAS DE ESTÉTICA
+  // CATEGORÍAS DE ESTÉTICA
   const categories = [
     { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: 'Facial', label: 'Tratamientos Faciales', icon: <Sparkles className="w-3.5 h-3.5" /> },
@@ -391,7 +390,7 @@ export default function EsteticaPage() {
         </div>
       )}
 
-      {/* HERO - ESTÉTICA */}
+      {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl">
         <div className="absolute inset-0">
           <img 
