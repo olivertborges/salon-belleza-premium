@@ -40,7 +40,14 @@ import {
   Palette,
   Brush,
   Droplets,
-  Feather
+  Feather,
+  Phone,
+  Mail,
+  MapPin,
+  Instagram,
+  Facebook,
+  Twitter,
+  Youtube
 } from 'lucide-react'
 
 interface Servicio {
@@ -169,7 +176,7 @@ export default function MicropigmentacionPage() {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        .in('category', ['Cejas', 'Labios', 'Ojos', 'Tratamientos', 'micropigmentacion'])
+        .in('category', ['Cejas', 'Labios', 'Ojos', 'Tratamientos', 'micropigmentacion', 'Micropigmentación'])
         .order('name', { ascending: true })
 
       if (error) throw error
@@ -385,9 +392,7 @@ export default function MicropigmentacionPage() {
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* HERO SECTION - MICROPIGMENTACIÓN */}
-      {/* ============================================================ */}
+      {/* HERO SECTION */}
       <div className="relative overflow-hidden rounded-3xl">
         <div className="absolute inset-0">
           <img 
@@ -459,178 +464,289 @@ export default function MicropigmentacionPage() {
             </motion.div>
           </div>
         </div>
+      </div>
 
-        {/* Decoración flotante */}
-        <div className="absolute bottom-10 right-10 hidden lg:block">
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center"
+      {/* TABS */}
+      <div className="flex border-b border-pink-100/60 dark:border-fuchsia-950/60">
+        {[
+          { id: 'servicios', label: 'Servicios', icon: <Sparkles className="w-4 h-4" /> },
+          { id: 'galeria', label: 'Galería', icon: <Camera className="w-4 h-4" /> },
+          { id: 'testimonios', label: 'Testimonios', icon: <Quote className="w-4 h-4" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === tab.id
+                ? `border-[${primaryColor}] text-stone-900 dark:text-white`
+                : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+            }`}
+            style={activeTab === tab.id ? { borderColor: primaryColor } : {}}
           >
-            <Eye className="w-8 h-8 text-white/40" />
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB: SERVICIOS */}
+      {activeTab === 'servicios' && (
+        <div className="space-y-6">
+          {/* Categorías */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  selectedCategory === cat.id
+                    ? 'text-white shadow-md'
+                    : isDark
+                      ? 'bg-[#130f24] border-fuchsia-950 text-stone-400 hover:text-stone-200'
+                      : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
+                }`}
+                style={selectedCategory === cat.id ? { background: brandGradient.backgroundImage } : {}}
+              >
+                {cat.icon}
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Búsqueda */}
+          <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+            <div className="flex-1 flex items-center gap-3 min-w-0">
+              <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
+              <input 
+                type="text" 
+                placeholder="Buscar servicios de micropigmentación..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border ${
+                  showFilters ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950'
+                }`}
+                style={showFilters ? { background: brandGradient.backgroundImage } : {}}
+              >
+                <Filter className="w-3.5 h-3.5" /> Filtros
+              </button>
+
+              <div className={`flex rounded-xl overflow-hidden border p-0.5 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
+                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}>
+                  <Grid3x3 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}>
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid de Servicios */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {filteredServicios.length === 0 ? (
+              <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
+                <Eye className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                <p className="text-sm text-stone-500">No hay servicios de micropigmentación disponibles</p>
+              </div>
+            ) : (
+              filteredServicios.map((servicio) => {
+                const avgRating = getAverageRating(servicio.id)
+                const ratingCount = getRatingCount(servicio.id)
+
+                return (
+                  <motion.div key={servicio.id} variants={itemVariants}>
+                    <div 
+                      className="group relative rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
+                      onClick={() => openModal(servicio)}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                      <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
+                        <img 
+                          src={servicio.image_url || MICRO_IMAGES.cejas1}
+                          alt={servicio.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-sm text-stone-800 dark:text-white group-hover:text-pink-500 transition-colors">
+                            {servicio.name}
+                          </h3>
+                          <span className="text-xs font-bold text-emerald-500">
+                            ${servicio.price}
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+                          {servicio.description}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 dark:border-fuchsia-950">
+                          <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
+                            <Clock className="w-3.5 h-3.5" />
+                            {servicio.duration} min
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {avgRating > 0 ? (
+                              <div className="flex items-center gap-1">
+                                {renderStars(avgRating, 'sm')}
+                                <span className="text-[10px] text-stone-500">({ratingCount})</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-stone-400">Sin reseñas</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-pink-100/60 dark:border-fuchsia-950" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setSelectedService(servicio)
+                            setShowReviewModal(true)
+                            setRating(0)
+                            setComment('')
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors flex items-center gap-1"
+                        >
+                          <Star className="w-3 h-3" /> Calificar
+                        </button>
+                        
+                        <Link
+                          href="/agenda"
+                          className="flex-1 px-3 py-1.5 rounded-lg text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 text-center flex items-center justify-center gap-1"
+                          style={{ background: brandGradient.backgroundImage }}
+                        >
+                          <Calendar className="w-3 h-3" /> Agendar
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })
+            )}
           </motion.div>
         </div>
-      </div>
+      )}
 
-      {/* ============================================================ */}
-      {/* SECCIÓN DE SERVICIOS */}
-      {/* ============================================================ */}
-      <div className="space-y-6">
-
-        {/* Categorías */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
-                selectedCategory === cat.id
-                  ? 'text-white shadow-md'
-                  : isDark
-                    ? 'bg-[#130f24] border-fuchsia-950 text-stone-400 hover:text-stone-200'
-                    : 'bg-white border-pink-100/60 text-stone-600 hover:bg-pink-50'
-              }`}
-              style={selectedCategory === cat.id ? { background: brandGradient.backgroundImage } : {}}
-            >
-              {cat.icon}
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Búsqueda */}
-        <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-          <div className="flex-1 flex items-center gap-3 min-w-0">
-            <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
-            <input 
-              type="text" 
-              placeholder="Buscar servicios de micropigmentación..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border ${
-                showFilters ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950'
-              }`}
-              style={showFilters ? { background: brandGradient.backgroundImage } : {}}
-            >
-              <Filter className="w-3.5 h-3.5" /> Filtros
-            </button>
-
-            <div className={`flex rounded-xl overflow-hidden border p-0.5 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950`}>
-              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}>
-                <Grid3x3 className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}>
-                <LayoutList className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Grid de Servicios */}
+      {/* TAB: GALERÍA */}
+      {activeTab === 'galeria' && (
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-4"
         >
-          {filteredServicios.length === 0 ? (
-            <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
-              <Eye className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-              <p className="text-sm text-stone-500">No hay servicios de micropigmentación disponibles</p>
-            </div>
-          ) : (
-            filteredServicios.map((servicio) => {
-              const avgRating = getAverageRating(servicio.id)
-              const ratingCount = getRatingCount(servicio.id)
+          <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
+            Descubre nuestro trabajo y transformaciones con micropigmentación
+          </p>
 
-              return (
-                <motion.div key={servicio.id} variants={itemVariants}>
-                  <div 
-                    className="group relative rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:border-pink-300 dark:hover:border-fuchsia-800"
-                    onClick={() => openModal(servicio)}
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-pink-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { src: MICRO_IMAGES.gallery1, title: 'Microblading cejas' },
+              { src: MICRO_IMAGES.gallery2, title: 'Microshading cejas' },
+              { src: MICRO_IMAGES.gallery3, title: 'Pigmentación labios' },
+              { src: MICRO_IMAGES.gallery4, title: 'Pigmentación ojos' },
+              { src: MICRO_IMAGES.cejas1, title: 'Cejas pelo a pelo' },
+              { src: MICRO_IMAGES.labios1, title: 'Labios hidratados' },
+              { src: MICRO_IMAGES.tratamiento, title: 'Tratamiento especial' },
+              { src: MICRO_IMAGES.ojos1, title: 'Ojos definidos' },
+            ].map((img, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ scale: 1.02 }}
+                className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer"
+              >
+                <img 
+                  src={img.src}
+                  alt={img.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                  <p className="text-white text-xs font-bold">{img.title}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
-                      <img 
-                        src={servicio.image_url || MICRO_IMAGES.cejas1}
-                        alt={servicio.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      {/* TAB: TESTIMONIOS */}
+      {activeTab === 'testimonios' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
+            Lo que dicen nuestros clientes sobre su experiencia
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reviews && Object.values(reviews).flat().length > 0 ? (
+              Object.values(reviews).flat().slice(0, 6).map((review, idx) => (
+                <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                      {review.client_name?.charAt(0) || 'C'}
                     </div>
-
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-sm text-stone-800 dark:text-white group-hover:text-pink-500 transition-colors">
-                          {servicio.name}
-                        </h3>
-                        <span className="text-xs font-bold text-emerald-500">
-                          ${servicio.price}
-                        </span>
-                      </div>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
-                        {servicio.description}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 dark:border-fuchsia-950">
-                        <div className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400">
-                          <Clock className="w-3.5 h-3.5" />
-                          {servicio.duration} min
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {avgRating > 0 ? (
-                            <div className="flex items-center gap-1">
-                              {renderStars(avgRating, 'sm')}
-                              <span className="text-[10px] text-stone-500">({ratingCount})</span>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-stone-400">Sin reseñas</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Botones de acción */}
-                    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-pink-100/60 dark:border-fuchsia-950" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => {
-                          setSelectedService(servicio)
-                          setShowReviewModal(true)
-                          setRating(0)
-                          setComment('')
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors flex items-center gap-1"
-                      >
-                        <Star className="w-3 h-3" /> Calificar
-                      </button>
-                      
-                      <Link
-                        href="/agenda"
-                        className="flex-1 px-3 py-1.5 rounded-lg text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 text-center flex items-center justify-center gap-1"
-                        style={{ background: brandGradient.backgroundImage }}
-                      >
-                        <Calendar className="w-3 h-3" /> Agendar
-                      </Link>
+                    <div>
+                      <p className="font-bold text-sm text-stone-900 dark:text-white">{review.client_name}</p>
+                      <p className="text-xs text-stone-400">Micropigmentación</p>
                     </div>
                   </div>
-                </motion.div>
-              )
-            })
-          )}
+                  <div className="flex text-amber-400 text-xs mb-2">
+                    {[...Array(review.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{review.comment}"</p>
+                </div>
+              ))
+            ) : (
+              // Testimonios de muestra
+              [
+                { name: 'Laura García', comment: 'El microblading que me hizo Ana es increíble. Mis cejas se ven naturales y perfectas.', rating: 5 },
+                { name: 'Carmen Rodríguez', comment: 'La pigmentación de labios cambió mi vida. Ya no necesito maquillaje para sentirme hermosa.', rating: 5 },
+                { name: 'Sofía Martínez', comment: 'Excelente profesional, muy atenta y los resultados son espectaculares. 100% recomendado.', rating: 5 },
+              ].map((t, idx) => (
+                <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-stone-900 dark:text-white">{t.name}</p>
+                      <p className="text-xs text-stone-400">Micropigmentación</p>
+                    </div>
+                  </div>
+                  <div className="flex text-amber-400 text-xs mb-2">
+                    {[...Array(t.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{t.comment}"</p>
+                </div>
+              ))
+            )}
+          </div>
         </motion.div>
-      </div>
+      )}
 
-      {/* ============================================================ */}
       {/* MODAL DE SERVICIO */}
-      {/* ============================================================ */}
       <AnimatePresence>
         {isModalOpen && selectedService && (
           <motion.div
@@ -693,9 +809,7 @@ export default function MicropigmentacionPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================================================ */}
       {/* MODAL DE CALIFICACIÓN */}
-      {/* ============================================================ */}
       <AnimatePresence>
         {showReviewModal && selectedService && (
           <motion.div
@@ -728,7 +842,6 @@ export default function MicropigmentacionPage() {
                 Comparte tu experiencia con este servicio
               </p>
 
-              {/* Estrellas */}
               <div className="flex items-center gap-1 my-6 justify-center">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
