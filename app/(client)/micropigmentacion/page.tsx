@@ -77,15 +77,10 @@ interface Review {
   client_name?: string
 }
 
-// Imágenes de muestra para micropigmentación
+// Imágenes de muestra
 const MICRO_IMAGES = {
   hero: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=1200&h=600&fit=crop',
   cejas1: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=600&h=400&fit=crop',
-  cejas2: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=600&h=400&fit=crop',
-  labios1: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  labios2: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  ojos1: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  tratamiento: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
   gallery1: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=400&h=400&fit=crop',
   gallery2: 'https://images.unsplash.com/photo-1622881163947-9f4ed9730ab0?w=400&h=400&fit=crop',
   gallery3: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=400&h=400&fit=crop',
@@ -150,7 +145,7 @@ export default function MicropigmentacionPage() {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
   }
 
-  // Categorías de servicios de micropigmentación
+  // Categorías
   const categories = [
     { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: 'Cejas', label: 'Cejas', icon: <Eye className="w-3.5 h-3.5" /> },
@@ -184,7 +179,7 @@ export default function MicropigmentacionPage() {
       setFilteredServicios(data || [])
     } catch (error) {
       console.error('Error cargando servicios:', error)
-      setError('Error al cargar los servicios de micropigmentación')
+      setError('Error al cargar los servicios')
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -368,7 +363,7 @@ export default function MicropigmentacionPage() {
           <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Preparando tu experiencia de micropigmentación...
+          Cargando experiencias de micropigmentación...
         </p>
       </div>
     )
@@ -377,7 +372,7 @@ export default function MicropigmentacionPage() {
   return (
     <div className="space-y-8 pb-12 max-w-7xl mx-auto">
 
-      {/* MENSAJES DE ERROR/SUCCESS */}
+      {/* MENSAJES */}
       {errorMessage && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400">
           <AlertCircle className="w-5 h-5" />
@@ -392,12 +387,12 @@ export default function MicropigmentacionPage() {
         </div>
       )}
 
-      {/* HERO SECTION */}
+      {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl">
         <div className="absolute inset-0">
           <img 
             src={MICRO_IMAGES.hero}
-            alt="Micropigmentación Fresh Nails"
+            alt="Micropigmentación"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
@@ -414,7 +409,7 @@ export default function MicropigmentacionPage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm bg-white/10 mb-6">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span className="text-[10px] uppercase tracking-widest font-bold text-white/80">
-                  {settings?.business_name || 'Fresh Nails Studio'} • Micropigmentación
+                  Fresh Nails • Micropigmentación
                 </span>
               </div>
 
@@ -424,10 +419,10 @@ export default function MicropigmentacionPage() {
               </h1>
 
               <p className="text-base md:text-lg text-white/80 mt-4 max-w-lg leading-relaxed">
-                Microblading, Microshading y técnicas avanzadas de micropigmentación para realzar tu belleza natural con resultados impecables.
+                Microblading, Microshading y técnicas avanzadas de micropigmentación para realzar tu belleza natural.
               </p>
 
-              {/* Profesional Destacada */}
+              {/* Profesional */}
               <div className="flex items-center gap-4 mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 max-w-sm">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
                   A
@@ -447,7 +442,7 @@ export default function MicropigmentacionPage() {
               <div className="flex flex-wrap gap-3 mt-6">
                 <Link
                   href="/agenda"
-                  className="px-6 py-3 rounded-xl text-white text-xs font-bold uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all hover:scale-105"
+                  className="px-6 py-3 rounded-xl text-white text-xs font-bold uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
                   style={{ background: brandGradient.backgroundImage }}
                 >
                   <Calendar className="w-4 h-4" />
@@ -478,7 +473,7 @@ export default function MicropigmentacionPage() {
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-b-2 ${
               activeTab === tab.id
-                ? `border-[${primaryColor}] text-stone-900 dark:text-white`
+                ? 'border-pink-500 text-stone-900 dark:text-white'
                 : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
             style={activeTab === tab.id ? { borderColor: primaryColor } : {}}
@@ -519,7 +514,7 @@ export default function MicropigmentacionPage() {
               <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
               <input 
                 type="text" 
-                placeholder="Buscar servicios de micropigmentación..." 
+                placeholder="Buscar servicios..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
@@ -558,7 +553,7 @@ export default function MicropigmentacionPage() {
             {filteredServicios.length === 0 ? (
               <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
                 <Eye className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                <p className="text-sm text-stone-500">No hay servicios de micropigmentación disponibles</p>
+                <p className="text-sm text-stone-500">No hay servicios disponibles</p>
               </div>
             ) : (
               filteredServicios.map((servicio) => {
@@ -628,7 +623,7 @@ export default function MicropigmentacionPage() {
                         
                         <Link
                           href="/agenda"
-                          className="flex-1 px-3 py-1.5 rounded-lg text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 text-center flex items-center justify-center gap-1"
+                          className="flex-1 px-3 py-1.5 rounded-lg text-white text-[9px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 text-center flex items-center justify-center gap-1"
                           style={{ background: brandGradient.backgroundImage }}
                         >
                           <Calendar className="w-3 h-3" /> Agendar
@@ -651,19 +646,19 @@ export default function MicropigmentacionPage() {
           className="space-y-4"
         >
           <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
-            Descubre nuestro trabajo y transformaciones con micropigmentación
+            Descubre nuestro trabajo y transformaciones
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { src: MICRO_IMAGES.gallery1, title: 'Microblading cejas' },
-              { src: MICRO_IMAGES.gallery2, title: 'Microshading cejas' },
+              { src: MICRO_IMAGES.gallery2, title: 'Microshading' },
               { src: MICRO_IMAGES.gallery3, title: 'Pigmentación labios' },
               { src: MICRO_IMAGES.gallery4, title: 'Pigmentación ojos' },
               { src: MICRO_IMAGES.cejas1, title: 'Cejas pelo a pelo' },
-              { src: MICRO_IMAGES.labios1, title: 'Labios hidratados' },
-              { src: MICRO_IMAGES.tratamiento, title: 'Tratamiento especial' },
-              { src: MICRO_IMAGES.ojos1, title: 'Ojos definidos' },
+              { src: MICRO_IMAGES.cejas1, title: 'Cejas efecto' },
+              { src: MICRO_IMAGES.cejas1, title: 'Tratamiento especial' },
+              { src: MICRO_IMAGES.cejas1, title: 'Ojos definidos' },
             ].map((img, idx) => (
               <motion.div
                 key={idx}
@@ -692,11 +687,11 @@ export default function MicropigmentacionPage() {
           className="space-y-4"
         >
           <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
-            Lo que dicen nuestros clientes sobre su experiencia
+            Lo que dicen nuestros clientes
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {reviews && Object.values(reviews).flat().length > 0 ? (
+            {Object.values(reviews).flat().length > 0 ? (
               Object.values(reviews).flat().slice(0, 6).map((review, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
                   <div className="flex items-center gap-3 mb-2">
@@ -719,9 +714,9 @@ export default function MicropigmentacionPage() {
             ) : (
               // Testimonios de muestra
               [
-                { name: 'Laura García', comment: 'El microblading que me hizo Ana es increíble. Mis cejas se ven naturales y perfectas.', rating: 5 },
-                { name: 'Carmen Rodríguez', comment: 'La pigmentación de labios cambió mi vida. Ya no necesito maquillaje para sentirme hermosa.', rating: 5 },
-                { name: 'Sofía Martínez', comment: 'Excelente profesional, muy atenta y los resultados son espectaculares. 100% recomendado.', rating: 5 },
+                { name: 'Laura García', comment: 'El microblading es increíble. Mis cejas se ven naturales y perfectas.', rating: 5 },
+                { name: 'Carmen Rodríguez', comment: 'La pigmentación de labios cambió mi vida. Ya no necesito maquillaje.', rating: 5 },
+                { name: 'Sofía Martínez', comment: 'Excelente profesional, resultados espectaculares. 100% recomendado.', rating: 5 },
               ].map((t, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
                   <div className="flex items-center gap-3 mb-2">
@@ -797,7 +792,7 @@ export default function MicropigmentacionPage() {
                 <div className="flex gap-2">
                   <Link
                     href="/agenda"
-                    className="px-4 py-2 rounded-xl text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105 flex items-center gap-1"
+                    className="px-4 py-2 rounded-xl text-white text-xs font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 flex items-center gap-1"
                     style={{ background: brandGradient.backgroundImage }}
                   >
                     <Calendar className="w-4 h-4" /> Agendar
@@ -839,7 +834,7 @@ export default function MicropigmentacionPage() {
                 Calificar {selectedService.name}
               </h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-                Comparte tu experiencia con este servicio
+                Comparte tu experiencia
               </p>
 
               <div className="flex items-center gap-1 my-6 justify-center">
@@ -874,7 +869,7 @@ export default function MicropigmentacionPage() {
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Escribe tu experiencia con este servicio..."
+                placeholder="Escribe tu experiencia..."
                 className={`w-full px-4 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${
                   isDark 
                     ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' 
