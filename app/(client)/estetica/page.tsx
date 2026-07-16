@@ -16,7 +16,7 @@ import {
   Camera, Quote, Send, X, Loader2,
   AlertCircle, CheckCircle2, Search, Filter,
   Grid3x3, LayoutList, RefreshCw, User,
-  Award, StarHalf, Users
+  Award, StarHalf, Users, Scissors
 } from 'lucide-react'
 
 interface Servicio {
