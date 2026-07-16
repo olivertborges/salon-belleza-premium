@@ -1,4 +1,4 @@
-// app/(client)/micropigmentacion/page.tsx
+// app/(client)/estetica/page.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -77,27 +77,18 @@ interface Review {
   client_name?: string
 }
 
-// ✅ IMÁGENES REALES DE MICROPIGMENTACIÓN
-const MICRO_IMAGES = {
-  // Hero - Imagen de cejas profesional
-  hero: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=1200&h=600&fit=crop',
-  // Cejas
-  cejas1: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  cejas2: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
-  cejas3: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
-  // Labios
-  labios1: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  labios2: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  // Ojos
-  ojos1: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
-  ojos2: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  // Tratamientos
-  tratamiento: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
-  // Galería
-  gallery1: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=400&h=400&fit=crop',
-  gallery2: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=400&h=400&fit=crop',
-  gallery3: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=400&h=400&fit=crop',
-  gallery4: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=400&h=400&fit=crop',
+// ✅ IMÁGENES DE ESTÉTICA
+const ESTETICA_IMAGES = {
+  hero: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&h=600&fit=crop',
+  facial1: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
+  facial2: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
+  cuerpo1: 'https://images.unsplash.com/photo-1540555700478-4be6f5f1ccd7?w=600&h=400&fit=crop',
+  cuerpo2: 'https://images.unsplash.com/photo-1540555700478-4be6f5f1ccd7?w=600&h=400&fit=crop',
+  tratamiento: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
+  gallery1: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=400&fit=crop',
+  gallery2: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
+  gallery3: 'https://images.unsplash.com/photo-1540555700478-4be6f5f1ccd7?w=400&h=400&fit=crop',
+  gallery4: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
 }
 
 const containerVariants = {
@@ -125,7 +116,7 @@ const itemVariants = {
   }
 }
 
-export default function MicropigmentacionPage() {
+export default function EsteticaPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
   const { settings } = useSettings()
@@ -158,12 +149,13 @@ export default function MicropigmentacionPage() {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
   }
 
+  // ✅ CATEGORÍAS DE ESTÉTICA
   const categories = [
     { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { id: 'Cejas', label: 'Cejas', icon: <Eye className="w-3.5 h-3.5" /> },
-    { id: 'Labios', label: 'Labios', icon: <Droplets className="w-3.5 h-3.5" /> },
-    { id: 'Ojos', label: 'Ojos', icon: <Eye className="w-3.5 h-3.5" /> },
-    { id: 'Tratamientos', label: 'Tratamientos', icon: <Feather className="w-3.5 h-3.5" /> },
+    { id: 'Facial', label: 'Tratamientos Faciales', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: 'Corporal', label: 'Tratamientos Corporales', icon: <Heart className="w-3.5 h-3.5" /> },
+    { id: 'Depilación', label: 'Depilación', icon: <Feather className="w-3.5 h-3.5" /> },
+    { id: 'Bienestar', label: 'Bienestar', icon: <Gem className="w-3.5 h-3.5" /> },
   ]
 
   useEffect(() => {
@@ -183,7 +175,7 @@ export default function MicropigmentacionPage() {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        .in('category', ['Cejas', 'Labios', 'Ojos', 'Tratamientos', 'micropigmentacion', 'Micropigmentación'])
+        .in('category', ['Facial', 'Corporal', 'Depilación', 'Bienestar', 'estetica', 'Estética'])
         .order('name', { ascending: true })
 
       if (error) throw error
@@ -375,7 +367,7 @@ export default function MicropigmentacionPage() {
           <Sparkles className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" style={{ color: primaryColor }} />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Cargando experiencias de micropigmentación...
+          Cargando experiencias de estética...
         </p>
       </div>
     )
@@ -399,12 +391,12 @@ export default function MicropigmentacionPage() {
         </div>
       )}
 
-      {/* HERO */}
+      {/* HERO - ESTÉTICA */}
       <div className="relative overflow-hidden rounded-3xl">
         <div className="absolute inset-0">
           <img 
-            src={MICRO_IMAGES.hero}
-            alt="Micropigmentación"
+            src={ESTETICA_IMAGES.hero}
+            alt="Estética Fresh Nails"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
@@ -421,26 +413,26 @@ export default function MicropigmentacionPage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm bg-white/10 mb-6">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span className="text-[10px] uppercase tracking-widest font-bold text-white/80">
-                  Fresh Nails • Micropigmentación
+                  Fresh Nails • Estética & Bienestar
                 </span>
               </div>
 
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-white leading-[1.1]">
-                <span className="font-serif italic" style={{ color: secondaryColor }}>Arte</span>
-                <span className="block text-5xl md:text-7xl lg:text-8xl font-bold">Permanent</span>
+                <span className="font-serif italic" style={{ color: secondaryColor }}>Belleza</span>
+                <span className="block text-5xl md:text-7xl lg:text-8xl font-bold">Integral</span>
               </h1>
 
               <p className="text-base md:text-lg text-white/80 mt-4 max-w-lg leading-relaxed">
-                Microblading, Microshading y técnicas avanzadas de micropigmentación para realzar tu belleza natural.
+                Tratamientos faciales, corporales y de bienestar diseñados para realzar tu belleza natural y cuidar de ti.
               </p>
 
               <div className="flex items-center gap-4 mt-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 max-w-sm">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                  A
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                  L
                 </div>
                 <div>
-                  <p className="text-white font-bold text-sm">Ana Martínez</p>
-                  <p className="text-xs text-white/60">Especialista en Micropigmentación</p>
+                  <p className="text-white font-bold text-sm">Laura Sánchez</p>
+                  <p className="text-xs text-white/60">Especialista en Estética</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -457,7 +449,7 @@ export default function MicropigmentacionPage() {
                   style={{ background: brandGradient.backgroundImage }}
                 >
                   <Calendar className="w-4 h-4" />
-                  Reservar con Ana
+                  Reservar con Laura
                 </Link>
                 <button
                   onClick={() => setActiveTab('galeria')}
@@ -523,7 +515,7 @@ export default function MicropigmentacionPage() {
               <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
               <input 
                 type="text" 
-                placeholder="Buscar servicios..." 
+                placeholder="Buscar servicios de estética..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
@@ -560,22 +552,19 @@ export default function MicropigmentacionPage() {
           >
             {filteredServicios.length === 0 ? (
               <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
-                <Eye className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                <p className="text-sm text-stone-500">No hay servicios disponibles</p>
+                <Heart className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                <p className="text-sm text-stone-500">No hay servicios de estética disponibles</p>
               </div>
             ) : (
               filteredServicios.map((servicio) => {
                 const avgRating = getAverageRating(servicio.id)
                 const ratingCount = getRatingCount(servicio.id)
 
-                // ✅ Asignar imagen según categoría
-                let imageUrl = servicio.image_url || MICRO_IMAGES.cejas1
-                if (servicio.category === 'Labios') {
-                  imageUrl = servicio.image_url || MICRO_IMAGES.labios1
-                } else if (servicio.category === 'Ojos') {
-                  imageUrl = servicio.image_url || MICRO_IMAGES.ojos1
-                } else if (servicio.category === 'Cejas') {
-                  imageUrl = servicio.image_url || MICRO_IMAGES.cejas1
+                let imageUrl = servicio.image_url || ESTETICA_IMAGES.facial1
+                if (servicio.category === 'Corporal') {
+                  imageUrl = servicio.image_url || ESTETICA_IMAGES.cuerpo1
+                } else if (servicio.category === 'Facial') {
+                  imageUrl = servicio.image_url || ESTETICA_IMAGES.facial1
                 }
 
                 return (
@@ -664,19 +653,19 @@ export default function MicropigmentacionPage() {
           className="space-y-4"
         >
           <p className="text-sm text-stone-500 dark:text-stone-400 text-center">
-            Descubre nuestro trabajo y transformaciones
+            Descubre nuestro trabajo y resultados
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { src: MICRO_IMAGES.cejas1, title: 'Microblading cejas', categoria: 'Cejas' },
-              { src: MICRO_IMAGES.cejas2, title: 'Microshading', categoria: 'Cejas' },
-              { src: MICRO_IMAGES.labios1, title: 'Pigmentación labios', categoria: 'Labios' },
-              { src: MICRO_IMAGES.ojos1, title: 'Pigmentación ojos', categoria: 'Ojos' },
-              { src: MICRO_IMAGES.cejas3, title: 'Cejas pelo a pelo', categoria: 'Cejas' },
-              { src: MICRO_IMAGES.ojos2, title: 'Ojos definidos', categoria: 'Ojos' },
-              { src: MICRO_IMAGES.labios2, title: 'Labios hidratados', categoria: 'Labios' },
-              { src: MICRO_IMAGES.tratamiento, title: 'Tratamiento especial', categoria: 'Tratamientos' },
+              { src: ESTETICA_IMAGES.gallery1, title: 'Tratamiento facial', categoria: 'Facial' },
+              { src: ESTETICA_IMAGES.gallery2, title: 'Limpieza profunda', categoria: 'Facial' },
+              { src: ESTETICA_IMAGES.gallery3, title: 'Tratamiento corporal', categoria: 'Corporal' },
+              { src: ESTETICA_IMAGES.gallery4, title: 'Bienestar', categoria: 'Bienestar' },
+              { src: ESTETICA_IMAGES.facial2, title: 'Hidratación facial', categoria: 'Facial' },
+              { src: ESTETICA_IMAGES.cuerpo2, title: 'Masaje corporal', categoria: 'Corporal' },
+              { src: ESTETICA_IMAGES.tratamiento, title: 'Tratamiento especial', categoria: 'Tratamientos' },
+              { src: ESTETICA_IMAGES.facial1, title: 'Cuidado facial', categoria: 'Facial' },
             ].map((img, idx) => (
               <motion.div
                 key={idx}
@@ -716,12 +705,12 @@ export default function MicropigmentacionPage() {
               Object.values(reviews).flat().slice(0, 6).map((review, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
                       {review.client_name?.charAt(0) || 'C'}
                     </div>
                     <div>
                       <p className="font-bold text-sm text-stone-900 dark:text-white">{review.client_name}</p>
-                      <p className="text-xs text-stone-400">Micropigmentación</p>
+                      <p className="text-xs text-stone-400">Estética</p>
                     </div>
                   </div>
                   <div className="flex text-amber-400 text-xs mb-2">
@@ -734,18 +723,18 @@ export default function MicropigmentacionPage() {
               ))
             ) : (
               [
-                { name: 'Laura García', comment: 'El microblading es increíble. Mis cejas se ven naturales y perfectas.', rating: 5 },
-                { name: 'Carmen Rodríguez', comment: 'La pigmentación de labios cambió mi vida. Ya no necesito maquillaje.', rating: 5 },
-                { name: 'Sofía Martínez', comment: 'Excelente profesional, resultados espectaculares.', rating: 5 },
+                { name: 'María González', comment: 'Los tratamientos faciales son increíbles. Mi piel nunca se había visto tan radiante.', rating: 5 },
+                { name: 'Laura Pérez', comment: 'El masaje corporal fue una experiencia relajante. Laura es una profesional excelente.', rating: 5 },
+                { name: 'Carmen Sánchez', comment: 'Me encanta el servicio de depilación. Rápido, indoloro y resultados perfectos.', rating: 5 },
               ].map((t, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
                       {t.name.charAt(0)}
                     </div>
                     <div>
                       <p className="font-bold text-sm text-stone-900 dark:text-white">{t.name}</p>
-                      <p className="text-xs text-stone-400">Micropigmentación</p>
+                      <p className="text-xs text-stone-400">Estética</p>
                     </div>
                   </div>
                   <div className="flex text-amber-400 text-xs mb-2">
@@ -789,7 +778,7 @@ export default function MicropigmentacionPage() {
 
               <div className="relative aspect-video rounded-xl overflow-hidden mb-4">
                 <img 
-                  src={selectedService.image_url || MICRO_IMAGES.cejas1}
+                  src={selectedService.image_url || ESTETICA_IMAGES.facial1}
                   alt={selectedService.name}
                   className="w-full h-full object-cover"
                 />
