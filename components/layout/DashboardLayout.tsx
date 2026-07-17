@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Hand, label: 'Uñas', href: '/unhas' },
     { icon: Heart, label: 'Estética', href: '/estetica' },
     { icon: Camera, label: 'Galería & Looks', href: '/galeria' },
-    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones-cliente' },
+    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 
