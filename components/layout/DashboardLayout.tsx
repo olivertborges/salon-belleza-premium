@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
-  // 🛡️ EFECTO DE CONTROL Y BLOQUEO DE SCROLL EN EL BODY
+  // 🛡️ EFECTO DE CONTROL DE SCROLL EN EL BODY CUANDO SIDEBAR ESTÁ ABIERTO
   useEffect(() => {
     if (sidebarOpen) {
       document.documentElement.style.overflow = 'hidden'
@@ -111,7 +111,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
-  // ✅ MENÚ COMPLETO CON TODOS LOS LINKS
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -121,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Hand, label: 'Uñas', href: '/unhas' },
     { icon: Heart, label: 'Estética', href: '/estetica' },
     { icon: Camera, label: 'Galería & Looks', href: '/galeria' },
-    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
+    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones-cliente' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
 
@@ -149,7 +148,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`h-screen w-screen overflow-hidden antialiased font-sans flex relative transition-colors duration-500 ${
+    // ✅ CONTENEDOR PRINCIPAL: altura completa pero SIN overflow hidden para permitir scroll
+    <div className={`h-screen w-full antialiased font-sans flex relative transition-colors duration-500 ${
       isDark 
         ? 'bg-zinc-950 text-zinc-100' 
         : 'bg-gradient-to-b from-stone-50 via-pink-50/20 to-stone-50 text-stone-900'
@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       {/* SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-full xs:w-80 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-72 lg:flex lg:flex-col shrink-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-full xs:w-80 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-72 lg:flex lg:flex-col shrink-0 overflow-y-auto ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${
         isDark 
@@ -239,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* CERRAR SESIÓN */}
+        {/* CERRAR SESIÓN - SIEMPRE VISIBLE */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
         }`}>
@@ -263,8 +263,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
+      {/* CONTENIDO PRINCIPAL - CON SCROLL HABILITADO */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
         {/* HEADER */}
         <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
@@ -354,8 +354,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* CONTENIDO */}
-        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto overscroll-contain bg-transparent">
+        {/* ✅ CONTENIDO - CON SCROLL HABILITADO */}
+        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto">
           {children}
         </main>
       </div>
