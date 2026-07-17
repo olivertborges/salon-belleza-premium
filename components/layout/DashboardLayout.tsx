@@ -27,7 +27,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
-  // 🛡️ EFECTO DE CONTROL DE SCROLL EN EL BODY CUANDO SIDEBAR ESTÁ ABIERTO
   useEffect(() => {
     if (sidebarOpen) {
       document.documentElement.style.overflow = 'hidden'
@@ -148,7 +147,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    // ✅ CONTENEDOR PRINCIPAL: altura completa pero SIN overflow hidden para permitir scroll
     <div className={`h-screen w-full antialiased font-sans flex relative transition-colors duration-500 ${
       isDark 
         ? 'bg-zinc-950 text-zinc-100' 
@@ -163,16 +161,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       />
 
-      {/* SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-full xs:w-80 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-72 lg:flex lg:flex-col shrink-0 overflow-y-auto ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } ${
-        isDark 
-          ? 'bg-zinc-950/95 border-zinc-900 shadow-2xl shadow-black/80' 
-          : 'bg-white/95 border-stone-200/80 shadow-2xl shadow-stone-300/40'
-      }`}>
-
-        {/* LOGO */}
+      {/* ============================================================ */}
+      {/* SIDEBAR - CORREGIDO */}
+      {/* ============================================================ */}
+      <aside 
+        className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:flex lg:flex-col shrink-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${
+          isDark 
+            ? 'bg-zinc-950/95 border-zinc-900 shadow-2xl shadow-black/80' 
+            : 'bg-white/95 border-stone-200/80 shadow-2xl shadow-stone-300/40'
+        }`}
+      >
+        {/* LOGO - FIJO */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-zinc-900/60' : 'border-stone-100'
         }`}>
@@ -197,8 +198,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        {/* MENÚ */}
-        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overscroll-contain">
+        {/* MENÚ - SCROLLABLE */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -237,9 +238,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             )
           })}
-        </nav>
+        </div>
 
-        {/* CERRAR SESIÓN - SIEMPRE VISIBLE */}
+        {/* CERRAR SESIÓN - SIEMPRE VISIBLE AL FINAL */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
         }`}>
@@ -263,7 +264,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL - CON SCROLL HABILITADO */}
+      {/* ============================================================ */}
+      {/* CONTENIDO PRINCIPAL */}
+      {/* ============================================================ */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
         {/* HEADER */}
@@ -295,7 +298,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES */}
+          {/* ACCIONES HEADER */}
           <div className="flex items-center gap-3.5">
             <ThemeToggle />
 
@@ -354,7 +357,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* ✅ CONTENIDO - CON SCROLL HABILITADO */}
+        {/* CONTENIDO */}
         <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto">
           {children}
         </main>
