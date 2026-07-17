@@ -7,7 +7,7 @@ import {
   Sparkles, Bell, ShoppingCart, 
   Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, Sparkle
+  Camera, Tag, Eye, Hand
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`h-screen w-full antialiased font-sans flex relative transition-colors duration-500 ${
+    <div className={`h-screen w-full antialiased font-sans flex relative transition-colors duration-500 overflow-hidden ${
       isDark 
         ? 'bg-zinc-950 text-zinc-100' 
         : 'bg-gradient-to-b from-stone-50 via-pink-50/20 to-stone-50 text-stone-900'
@@ -162,10 +162,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       {/* ============================================================ */}
-      {/* SIDEBAR - CORREGIDO */}
+      {/* SIDEBAR - REVISADO */}
       {/* ============================================================ */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:flex lg:flex-col shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 flex flex-col shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } ${
           isDark 
@@ -198,8 +198,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        {/* MENÚ - SCROLLABLE */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+        {/* MENÚ - SCROLLABLE GARANTIZADO */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -240,7 +240,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        {/* CERRAR SESIÓN - SIEMPRE VISIBLE AL FINAL */}
+        {/* CERRAR SESIÓN - CLAVADO ABAJO */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
         }`}>
