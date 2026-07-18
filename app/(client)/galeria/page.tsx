@@ -80,7 +80,7 @@ export default function GaleriaPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   
-  // NUEVO: Estado para alternar el modo "Solo Foto" (Pantalla completa)
+  // Estado para alternar el modo "Solo Foto" (Pantalla completa)
   const [fullImageMode, setFullImageMode] = useState(false)
 
   useEffect(() => {
@@ -462,12 +462,12 @@ export default function GaleriaPage() {
       </div>
 
       {/* ============================================================
-          MODAL LIGHTBOX CON FUNCIÓN "SÓLO FOTO" (PANTALLA COMPLETA)
+          MODAL LIGHTBOX (CORREGIDO SIN SCROLL HORIZONTAL)
       ============================================================ */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6"
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -502,8 +502,8 @@ export default function GaleriaPage() {
 
             {/* Contenedor adaptativo principal */}
             <motion.div 
-              className={`relative z-10 w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row bg-neutral-900 transition-all duration-500 ease-out ${
-                fullImageMode ? 'max-w-4xl max-h-[90vh] md:max-h-[88vh]' : 'max-w-5xl max-h-[88vh] md:max-h-[82vh]'
+              className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-500 ease-out overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
+                fullImageMode ? 'max-w-4xl h-auto max-h-[90vh]' : 'max-w-5xl h-auto max-h-[90vh] md:max-h-[82vh]'
               }`}
               initial={{ scale: 0.94, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -511,10 +511,10 @@ export default function GaleriaPage() {
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* LADO DE LA IMAGEN (Crece al 100% si fullImageMode está activo) */}
+              {/* LADO DE LA IMAGEN */}
               <div 
-                className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 ${
-                  fullImageMode ? 'w-full min-h-[75vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] max-h-[45vh] md:min-h-0 md:max-h-none'
+                className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 flex-1 ${
+                  fullImageMode ? 'w-full min-h-[60vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] md:min-h-0'
                 }`}
                 onClick={() => setFullImageMode(!fullImageMode)}
               >
@@ -522,14 +522,14 @@ export default function GaleriaPage() {
                   src={selectedImage.image_url} 
                   alt={selectedImage.title}
                   className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${
-                    fullImageMode ? 'max-h-[70vh] md:max-h-[82vh] scale-[1.01]' : 'max-h-[42vh] md:max-h-[74vh]'
+                    fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'
                   }`}
                 />
 
                 {/* Botón flotante para alternar visualización limpia */}
                 <button
                   onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
-                  className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5"
+                  className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
                 >
                   {fullImageMode ? (
                     <>
@@ -545,40 +545,40 @@ export default function GaleriaPage() {
                 </button>
               </div>
 
-              {/* LADO DE INFORMACIÓN (Se esconde suavemente si fullImageMode está activo) */}
+              {/* LADO DE INFORMACIÓN */}
               <AnimatePresence initial={false}>
                 {!fullImageMode && (
                   <motion.div 
                     initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 'auto', opacity: 1 }}
+                    animate={{ width: '100%', opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
-                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                    className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto max-h-[43vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5"
+                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+                    className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0"
                   >
                     <div className="space-y-4">
                       <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
                         {selectedImage.sensory_category || 'Exclusivo'}
                       </span>
 
-                      <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight">
+                      <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">
                         {selectedImage.title}
                       </h2>
 
                       {selectedImage.description && (
-                        <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed">
+                        <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">
                           {selectedImage.description}
                         </p>
                       )}
 
                       <div className="space-y-2.5 pt-4 border-t border-white/10">
-                        <div className="flex justify-between items-center text-xs md:text-sm">
-                          <span className="text-neutral-500">Artista</span>
-                          <span className="text-white/90 font-light">{selectedImage.client_name || 'Fresh Nails'}</span>
+                        <div className="flex justify-between items-center text-xs md:text-sm gap-2">
+                          <span className="text-neutral-500 shrink-0">Artista</span>
+                          <span className="text-white/90 font-light truncate">{selectedImage.client_name || 'Fresh Nails'}</span>
                         </div>
                         {selectedImage.polish_used && (
-                          <div className="flex justify-between items-center text-xs md:text-sm">
-                            <span className="text-neutral-500">Esmaltado</span>
-                            <span className="text-white/90 font-light text-right max-w-[180px] truncate">{selectedImage.polish_used}</span>
+                          <div className="flex justify-between items-center text-xs md:text-sm gap-2">
+                            <span className="text-neutral-500 shrink-0">Esmaltado</span>
+                            <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used}</span>
                           </div>
                         )}
                         <div className="flex justify-between items-center text-xs md:text-sm">
@@ -605,7 +605,7 @@ export default function GaleriaPage() {
                         <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                         {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                       </button>
-                      <button className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md">
+                      <button className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0">
                         <Calendar className="w-3.5 h-3.5" /> Agendar
                       </button>
                     </div>
