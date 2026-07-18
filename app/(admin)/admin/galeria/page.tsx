@@ -104,11 +104,56 @@ export default function GaleriaAdminPage() {
   }
 
   // ============================================================
-  // 🔥 SUBIR ARCHIVO A STORAGE - CORREGIDO
+  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID DE FORMA SEGURA
   // ============================================================
-  const uploadFile = async (file: File): Promise<string> => {
-    if (!tenantId) throw new Error('No hay tenant ID disponible')
+  const getTenantId = async (): Promise<string> => {
+    // 1. Primero intentar con el tenantId del contexto
+    if (tenantId) return tenantId
 
+    // 2. Si no hay, intentar obtener de la sesión
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (session?.user) {
+      // Buscar en user_metadata
+      if (session.user.user_metadata?.tenant_id) {
+        return session.user.user_metadata.tenant_id
+      }
+      
+      // Buscar en app_metadata
+      if (session.user.app_metadata?.tenant_id) {
+        return session.user.app_metadata.tenant_id
+      }
+
+      // Buscar en la tabla profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (profile?.tenant_id) {
+        return profile.tenant_id
+      }
+
+      // Buscar en la tabla clients
+      const { data: client } = await supabase
+        .from('clients')
+        .select('tenant_id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle()
+
+      if (client?.tenant_id) {
+        return client.tenant_id
+      }
+    }
+
+    throw new Error('No se pudo identificar el salón. Por favor, recarga la página.')
+  }
+
+  // ============================================================
+  // SUBIR ARCHIVO A STORAGE
+  // ============================================================
+  const uploadFile = async (file: File, tenantId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
     const filePath = `gallery/${tenantId}/${fileName}`
@@ -157,7 +202,7 @@ export default function GaleriaAdminPage() {
   }
 
   // ============================================================
-  // 🔥 HANDLE SUBMIT - CORREGIDO
+  // 🔥 HANDLE SUBMIT - CORREGIDO CON getTenantId()
   // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -165,32 +210,15 @@ export default function GaleriaAdminPage() {
     setSuccess(null)
 
     try {
-      // Validar tenantId
-      let activeTenantId = tenantId
-
-      if (!activeTenantId && user?.id) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('tenant_id')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (profileError) throw new Error("Error al validar tu perfil.")
-        if (profile?.tenant_id) {
-          activeTenantId = profile.tenant_id
-        }
-      }
-
-      if (!activeTenantId) {
-        throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.')
-      }
-
+      // Obtener tenantId de forma segura
+      const activeTenantId = await getTenantId()
+      
       setUploading(true)
 
       // Subir imagen si hay un archivo seleccionado
       let imageUrl = formData.image_url
       if (selectedFile) {
-        imageUrl = await uploadFile(selectedFile)
+        imageUrl = await uploadFile(selectedFile, activeTenantId)
       }
 
       // Para nuevas fotos, la imagen es obligatoria
@@ -269,7 +297,17 @@ export default function GaleriaAdminPage() {
   // CARGAR FOTOS
   // ============================================================
   const fetchPhotos = async (showLoading = true) => {
-    if (!tenantId) return
+    let activeTenantId = tenantId
+    
+    // Si no hay tenantId, intentar obtenerlo
+    if (!activeTenantId) {
+      try {
+        activeTenantId = await getTenantId()
+      } catch (e) {
+        console.error('Error obteniendo tenantId:', e)
+        return
+      }
+    }
 
     if (showLoading) setLoading(true)
     else setRefreshing(true)
@@ -282,7 +320,7 @@ export default function GaleriaAdminPage() {
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', activeTenantId)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
@@ -309,7 +347,7 @@ export default function GaleriaAdminPage() {
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', activeTenantId)
         .order('created_at', { ascending: false })
 
       if (clientError) throw clientError
@@ -355,7 +393,7 @@ export default function GaleriaAdminPage() {
   }
 
   useEffect(() => {
-    if (tenantId) fetchPhotos()
+    fetchPhotos()
   }, [tenantId])
 
   // ============================================================
