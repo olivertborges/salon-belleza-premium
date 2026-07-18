@@ -16,9 +16,10 @@ import {
   Eye,
   ArrowLeft,
   ArrowRight
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import toast from "react-hot-toast";
+} from 'lucide-react';
+import { supabase } from "../services/supabase";
+
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from "framer-motion";
 
 interface GalleryImage {
