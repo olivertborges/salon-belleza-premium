@@ -7,11 +7,13 @@ import {
   Heart, 
   X, 
   Loader,     
-  Calendar,
   Sparkles,
   Columns,
   ChevronRight,
-  Maximize2
+  Maximize2,
+  Eye,
+  Scissors,
+  CheckCircle2
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -23,7 +25,7 @@ interface GalleryImage {
   is_public: boolean
   created_at: string
   client_name?: string
-  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
+  sensory_category?: 'glow' | 'mirada' | 'transformacion' | 'tendencia'
   polish_used?: string
   price?: string | number
 }
@@ -31,18 +33,13 @@ interface GalleryImage {
 export default function GaleriaInnovadoraPage() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
-  
-  // Datos originales
   const [allImages, setAllImages] = useState<GalleryImage[]>([])
-  
-  // Estado de favoritos y el comparador interactivo de pantalla dividida
   const [favorites, setFavorites] = useState<GalleryImage[]>([])
   const [compareMode, setCompareMode] = useState(false)
   const [slotA, setSlotA] = useState<GalleryImage | null>(null)
   const [slotB, setSlotB] = useState<GalleryImage | null>(null)
-
-  // Lightbox clásico de detalle
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [activeHeartId, setActiveHeartId] = useState<string | null>(null)
 
   useEffect(() => {
     loadGalleryData()
@@ -61,9 +58,9 @@ export default function GaleriaInnovadoraPage() {
       if (publicPhotos) {
         const mapped = publicPhotos.map((photo: any) => ({
           ...photo,
-          client_name: photo.client_name || 'Fresh Master',
-          sensory_category: photo.sensory_category || 'minimal',
-          price: photo.price ? `$${photo.price}` : '$45.00'
+          client_name: photo.client_name || 'Studio Premium',
+          sensory_category: photo.sensory_category || 'mirada',
+          price: photo.price ? `$${photo.price}` : '$60.00'
         }))
         setAllImages(mapped)
       }
@@ -82,124 +79,141 @@ export default function GaleriaInnovadoraPage() {
       setSlotB(img)
       setCompareMode(true)
     } else {
-      // Si ambos están llenos, desplaza el primero
       setSlotA(slotB)
       setSlotB(img)
     }
   }
 
   const toggleFavorite = (img: GalleryImage) => {
+    const isAdding = !favorites.some(f => f.id === img.id)
+    if (isAdding) {
+      setActiveHeartId(img.id)
+      setTimeout(() => setActiveHeartId(null), 400) // Duración del pulso
+    }
     setFavorites(prev => 
       prev.some(f => f.id === img.id) ? prev.filter(f => f.id !== img.id) : [...prev, img]
     )
   }
 
-  // Agrupamos dinámicamente para las colecciones deslizables horizontales
+  // Categorías exclusivas del sector belleza y estética avanzada
   const categories = {
-    minimal: allImages.filter(i => i.sensory_category === 'minimal'),
-    '3d': allImages.filter(i => i.sensory_category === '3d'),
-    glossy: allImages.filter(i => i.sensory_category === 'glossy'),
-    abstract: allImages.filter(i => i.sensory_category === 'abstract'),
+    mirada: allImages.filter(i => i.sensory_category === 'mirada' || !i.sensory_category),
+    glow: allImages.filter(i => i.sensory_category === 'glow'),
+    transformacion: allImages.filter(i => i.sensory_category === 'transformacion'),
+    tendencia: allImages.filter(i => i.sensory_category === 'tendencia'),
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0B0B] flex flex-col items-center justify-center gap-4">
-        <Loader className="w-5 h-5 text-neutral-600 animate-spin" />
-        <span className="text-[10px] tracking-[0.4em] uppercase text-neutral-500 font-light">Iniciando Exhibición</span>
+      <div className="min-h-screen bg-[#070708] flex flex-col items-center justify-center gap-4">
+        <div className="relative flex items-center justify-center">
+          <Loader className="w-8 h-8 text-neutral-400 animate-spin absolute" />
+          <div className="w-12 h-12 rounded-full border border-neutral-800 animate-ping" />
+        </div>
+        <span className="text-[10px] tracking-[0.5em] uppercase text-neutral-400 font-light mt-2 animate-pulse">Cargando Lookbook</span>
       </div>
     )
   }
 
   return (
-    <div className="bg-[#0B0B0B] text-neutral-200 min-h-screen pb-32 font-sans antialiased overflow-x-hidden">
+    <div className="bg-[#070708] text-neutral-200 min-h-screen pb-32 font-sans antialiased overflow-x-hidden selection:bg-neutral-800 selection:text-white">
       
-      {/* GLOW DE AMBIENTE INMERSIVO */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-neutral-900/40 rounded-full filter blur-[120px] pointer-events-none" />
-      <div className="absolute top-[40vh] right-0 w-[300px] h-[400px] bg-neutral-800/20 rounded-full filter blur-[100px] pointer-events-none" />
+      {/* DESTELLES LUXURY DE FONDO (Gradientes dinámicos) */}
+      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-rose-950/10 rounded-full filter blur-[140px] pointer-events-none animate-pulse duration-[6s]" />
+      <div className="absolute top-[30vh] right-0 w-[400px] h-[500px] bg-neutral-900/30 rounded-full filter blur-[120px] pointer-events-none" />
 
-      {/* HEADER TIPO MUSEO DIGITAL */}
+      {/* CABECERA ESTILO SALÓN PREMIUM */}
       <header className="max-w-7xl mx-auto px-6 pt-24 pb-12 space-y-4 relative z-10">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-neutral-500" />
-          <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Atelier Experiential Canvas</span>
+        <div className="flex items-center gap-2 animate-fade-in">
+          <Sparkles className="w-3.5 h-3.5 text-rose-400/80 animate-spin duration-1000" />
+          <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-400 font-medium">Catálogo de Alta Estética & Diseño Visual</span>
         </div>
-        <h1 className="text-4xl md:text-7xl font-light font-serif tracking-tight text-white lowercase">
-          diseño <span className="italic text-neutral-600">vanguardia</span>
+        <h1 className="text-4xl md:text-7xl font-light font-serif tracking-tight text-white lowercase transition-all duration-500 hover:tracking-normal">
+          redefine tu <span className="italic text-neutral-400 font-normal">esencia</span>
         </h1>
-        <p className="text-neutral-500 text-xs tracking-wider max-w-md font-light">
-          Desliza lateralmente para explorar. Toca el ícono de columnas <Columns className="w-3 h-3 inline mx-1 text-neutral-400" /> en cualquier pieza para llevarla al estudio de comparación en tiempo real.
+        <p className="text-neutral-400 text-xs tracking-wider max-w-md font-light leading-relaxed">
+          Explora nuestras transformaciones reales en micropigmentación, pestañas y estilismo. Desliza de forma lateral y pulsa <Columns className="w-3 h-3 inline mx-1 text-rose-300" /> para contrastar dos trabajos simultáneamente.
         </p>
       </header>
 
-      {/* SECCIÓN DE CAROUSELS HORIZONTALES INMERSIVOS */}
-      <main className="space-y-16 pl-6 md:pl-16 relative z-10">
+      {/* CAROUSELS DE CONTENIDO DE BELLEZA */}
+      <main className="space-y-20 pl-6 md:pl-16 relative z-10">
         {Object.entries(categories).map(([categoryName, images]) => {
           if (images.length === 0) return null
           return (
-            <div key={categoryName} className="space-y-4">
-              {/* Título de la colección */}
-              <div className="flex items-center justify-between pr-6 md:pr-16 border-b border-neutral-900 pb-3">
-                <h2 className="text-sm font-light tracking-[0.3em] uppercase text-neutral-400 flex items-center gap-2">
-                  <span>//</span> {categoryName === '3d' ? 'Escultural 3D' : categoryName === 'minimal' ? 'Pure Minimal' : categoryName === 'glossy' ? 'Ultra Glossy' : 'Fine Art'}
+            <div key={categoryName} className="space-y-6 transition-all duration-300">
+              
+              {/* Título de la Línea de Belleza */}
+              <div className="flex items-center justify-between pr-6 md:pr-16 border-b border-neutral-900/60 pb-3 group">
+                <h2 className="text-sm font-light tracking-[0.25em] uppercase text-neutral-300 flex items-center gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block opacity-70 group-hover:scale-150 transition-transform duration-300" />
+                  {categoryName === 'mirada' ? 'Diseño de Mirada & Pestañas' : categoryName === 'glow' ? 'Micropigmentación Avanzada' : categoryName === 'transformacion' ? 'Cambios de Estilo & Cabello' : 'Tendencias de temporada'}
                 </h2>
-                <span className="text-[10px] text-neutral-600 font-mono flex items-center gap-1">
-                  {images.length} piezas <ChevronRight className="w-3 h-3" />
+                <span className="text-[10px] text-neutral-500 font-mono tracking-widest bg-neutral-900/40 px-2 py-0.5 rounded-md border border-neutral-800/40">
+                  {images.length} looks
                 </span>
               </div>
 
-              {/* Contenedor deslizable nativo y fluido */}
-              <div className="flex gap-6 overflow-x-auto pr-6 md:pr-16 pt-2 pb-6 scrollbar-none snap-x snap-mandatory">
+              {/* Slider Horizontal con Scroll Fluido de Alta Sensibilidad */}
+              <div className="flex gap-6 overflow-x-auto pr-6 md:pr-16 pt-2 pb-6 scrollbar-none snap-x snap-mandatory scroll-smooth">
                 {images.map((img) => {
                   const isFav = favorites.some(f => f.id === img.id)
+                  const isPulsing = activeHeartId === img.id
                   return (
                     <div 
                       key={img.id}
-                      className="w-[280px] md:w-[380px] shrink-0 snap-start space-y-4 group relative"
+                      className="w-[290px] md:w-[390px] shrink-0 snap-start space-y-4 group relative"
                     >
-                      {/* Envoltura de la Imagen con Aspect Ratio de Revista */}
-                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[2rem] bg-neutral-900 border border-neutral-900/60 shadow-2xl">
+                      {/* Marco Magnético de la Foto */}
+                      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[2.25rem] bg-neutral-950 border border-neutral-900 shadow-2xl transition-all duration-500 group-hover:border-neutral-700/50 group-hover:shadow-rose-950/10">
+                        
                         <img 
                           src={img.image_url} 
                           alt={img.title} 
-                          className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
+                          className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all骨 duration-700 ease-out group-hover:scale-[1.04]"
                           loading="lazy"
                         />
                         
-                        {/* Gradiente oscuro */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 opacity-80" />
+                        {/* Máscara de Sombra de Enfoque */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/90 opacity-90 transition-opacity duration-300 group-hover:opacity-80" />
 
-                        {/* Controles interactivos flotantes rápidos */}
-                        <div className="absolute top-4 right-4 flex flex-col gap-2">
+                        {/* Botones de Acción Rápida Reactivos */}
+                        <div className="absolute top-5 right-5 flex flex-col gap-2.5 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform md:translate-y-2 md:group-hover:translate-y-0">
                           <button 
                             onClick={() => toggleFavorite(img)}
-                            className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white transition-all hover:scale-110 active:scale-95"
+                            className={`p-3 rounded-full backdrop-blur-xl border bg-black/30 transition-all duration-300 ${isFav ? 'border-rose-500/40 text-rose-400 bg-rose-950/20' : 'border-white/10 text-white hover:bg-black/60'} ${isPulsing ? 'scale-125 ring-4 ring-rose-500/20' : ''}`}
                           >
-                            <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-neutral-300'}`} />
+                            <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500' : ''}`} />
                           </button>
                           <button 
                             onClick={() => handleAddToCompare(img)}
-                            className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white transition-all hover:scale-110 active:scale-95"
-                            title="Añadir a comparación"
+                            className={`p-3 rounded-full backdrop-blur-xl border bg-black/30 transition-all duration-300 ${slotA?.id === img.id || slotB?.id === img.id ? 'border-amber-500/50 text-amber-400 bg-amber-950/20 scale-105' : 'border-white/10 text-white hover:bg-black/60'}`}
+                            title="Añadir para comparar texturas"
                           >
-                            <Columns className={`w-3.5 h-3.5 ${slotA?.id === img.id || slotB?.id === img.id ? 'text-amber-400' : 'text-neutral-300'}`} />
+                            <Columns className="w-4 h-4" />
                           </button>
                         </div>
 
-                        {/* Detalles de la Obra en la base de la foto */}
-                        <div className="absolute bottom-6 left-6 right-6 space-y-2">
-                          <p className="text-[10px] font-mono text-neutral-400">{img.client_name}</p>
-                          <h3 className="font-serif text-2xl italic text-white leading-tight font-light">{img.title}</h3>
-                          <div className="pt-2 flex items-center justify-between border-t border-white/10">
-                            <span className="text-xs font-mono text-neutral-300">{img.price}</span>
+                        {/* Ficha Informativa Inferior que se Eleva */}
+                        <div className="absolute bottom-6 left-6 right-6 space-y-3 transform transition-transform duration-300">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-neutral-400" />
+                            <p className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase">{img.client_name}</p>
+                          </div>
+                          <h3 className="font-serif text-2xl text-white font-light tracking-wide leading-none">{img.title}</h3>
+                          
+                          <div className="pt-2.5 flex items-center justify-between border-t border-white/10 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xs font-mono font-medium tracking-wider text-rose-200/90">{img.price}</span>
                             <button 
                               onClick={() => setSelectedImage(img)}
-                              className="text-[9px] uppercase tracking-widest text-neutral-400 flex items-center gap-1 hover:text-white"
+                              className="text-[10px] uppercase tracking-widest text-neutral-300 flex items-center gap-1.5 hover:text-white transition-colors group/btn"
                             >
-                              Detalles <Maximize2 className="w-2.5 h-2.5" />
+                              <span>Ver Acercamiento</span> 
+                              <Maximize2 className="w-2.5 h-2.5 transition-transform group-hover/btn:scale-125 text-rose-400" />
                             </button>
                           </div>
                         </div>
+
                       </div>
                     </div>
                   )
@@ -210,125 +224,156 @@ export default function GaleriaInnovadoraPage() {
         })}
       </main>
 
-      {/* COMPARADOR DE PANTALLA DIVIDIDA */}
+      {/* ESTUDIO DE COMPARACIÓN INTERACTIVO (PANTALLA DIVIDIDA REAL DE ALTA EXPERIENCIA) */}
       {compareMode && (
-        <div className="fixed inset-0 z-50 bg-[#070707] flex flex-col animate-in fade-in duration-300">
-          {/* Cabecera del Comparador */}
-          <div className="p-4 md:p-6 border-b border-neutral-900 flex items-center justify-between bg-[#0B0B0B]">
-            <div>
-              <h3 className="text-xs uppercase tracking-widest font-semibold text-white">Laboratorio de Estilo</h3>
-              <p className="text-[10px] text-neutral-500">Inspecciona y compara las texturas lado a lado para decidir</p>
+        <div className="fixed inset-0 z-50 bg-[#050506] flex flex-col animate-in fade-in zoom-in-95 duration-300">
+          
+          {/* Cabecera Técnica de Belleza */}
+          <div className="p-4 md:p-6 border-b border-neutral-900/80 flex items-center justify-between bg-[#070708]">
+            <div className="space-y-0.5">
+              <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-white flex items-center gap-2">
+                <Scissors className="w-3 h-3 text-rose-400" /> Simulador de Resultados
+              </h3>
+              <p className="text-[10px] text-neutral-400">Analiza simultáneamente las diferencias de volúmenes, curvaturas y tonos</p>
             </div>
             <button 
               onClick={() => setCompareMode(false)}
-              className="p-3 bg-neutral-900 rounded-full text-neutral-400 hover:text-white transition-colors"
+              className="p-3 bg-neutral-900 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-white transition-all duration-200 active:scale-95"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Área de Pantalla Dividida */}
+          {/* Canvas Dividido Cinemático */}
           <div className="flex-1 grid grid-cols-2 bg-black h-full relative">
             
-            {/* Slot de Imagen Izquierda */}
-            <div className="relative border-r border-neutral-900 h-full bg-neutral-950 flex items-center justify-center overflow-hidden">
+            {/* Panel de Muestra A */}
+            <div className="relative border-r border-neutral-900/60 h-full bg-neutral-950 flex items-center justify-center overflow-hidden group/split">
               {slotA ? (
-                <>
+                <div className="w-full h-full animate-in slide-in-from-left duration-500">
                   <img src={slotA.image_url} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md p-3 rounded-xl max-w-[85%]">
-                    <p className="text-[11px] font-serif italic text-white truncate">{slotA.title}</p>
-                    <p className="text-[9px] font-mono text-neutral-400 mt-0.5">{slotA.price}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
+                  <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-xl p-4 rounded-2xl border border-white/5 max-w-[85%]">
+                    <p className="text-[10px] font-mono uppercase text-rose-300 tracking-wider">Opción Seleccionada</p>
+                    <p className="text-sm font-medium text-white truncate mt-0.5">{slotA.title}</p>
                   </div>
-                  <button onClick={() => setSlotA(null)} className="absolute top-4 left-4 p-2 bg-black/40 text-white rounded-full"><X className="w-3 h-3" /></button>
+                  <button 
+                    onClick={() => setSlotA(null)} 
+                    className="absolute top-4 left-4 p-2.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </>
               ) : (
-                <div className="text-center p-4 space-y-2">
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider">Lado A Vacío</p>
-                  <p className="text-[9px] text-neutral-700 max-w-[120px] mx-auto">Cierra esta vista y toca el icono flotante de una foto para mandarla aquí.</p>
+                <div className="text-center p-6 space-y-3 animate-pulse">
+                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center mx-auto text-neutral-600 font-mono text-xs">A</div>
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-medium">Primer Look Vacío</p>
+                  <p className="text-[9px] text-neutral-600 max-w-[140px] mx-auto leading-relaxed">Pulsa el icono de columnas en cualquier tarjeta para fijar aquí.</p>
                 </div>
               )}
             </div>
 
-            {/* Slot de Imagen Derecha */}
-            <div className="relative h-full bg-neutral-950 flex items-center justify-center overflow-hidden">
+            {/* Panel de Muestra B */}
+            <div className="relative h-full bg-neutral-950 flex items-center justify-center overflow-hidden group/split">
               {slotB ? (
-                <>
+                <div className="w-full h-full animate-in slide-in-from-right duration-500">
                   <img src={slotB.image_url} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md p-3 rounded-xl max-w-[85%]">
-                    <p className="text-[11px] font-serif italic text-white truncate">{slotB.title}</p>
-                    <p className="text-[9px] font-mono text-neutral-400 mt-0.5">{slotB.price}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
+                  <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-xl p-4 rounded-2xl border border-white/5 max-w-[85%]">
+                    <p className="text-[10px] font-mono uppercase text-rose-300 tracking-wider">Opción Seleccionada</p>
+                    <p className="text-sm font-medium text-white truncate mt-0.5">{slotB.title}</p>
                   </div>
-                  <button onClick={() => setSlotB(null)} className="absolute top-4 right-4 p-2 bg-black/40 text-white rounded-full"><X className="w-3 h-3" /></button>
+                  <button 
+                    onClick={() => setSlotB(null)} 
+                    className="absolute top-4 right-4 p-2.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </>
               ) : (
-                <div className="text-center p-4 space-y-2">
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider">Lado B Vacío</p>
-                  <p className="text-[9px] text-neutral-700 max-w-[120px] mx-auto">Selecciona otro diseño de la galería para contrastar las diferencias.</p>
+                <div className="text-center p-6 space-y-3 animate-pulse">
+                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center mx-auto text-neutral-600 font-mono text-xs">B</div>
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-medium">Segundo Look Vacío</p>
+                  <p className="text-[9px] text-neutral-600 max-w-[140px] mx-auto leading-relaxed">Elige un estilo diferente para contrastar y tomar la decisión perfecta.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Acciones de la parte inferior */}
-          <div className="p-4 bg-[#0B0B0B] border-t border-neutral-900 flex items-center justify-between">
-            <span className="text-[10px] text-neutral-500 font-light italic">¿Resolviste tu duda estética?</span>
+          {/* Barra de Conversión o Salida */}
+          <div className="p-5 bg-[#070708] border-t border-neutral-900/80 flex items-center justify-between">
+            <span className="text-[11px] text-neutral-400 font-light italic">¿Definiste tu cambio ideal?</span>
             <button 
-              onClick={() => { setCompareMode(false); alert('Aperturando agenda corporativa...'); }}
-              className="px-5 py-3 bg-white text-black font-medium text-[10px] uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors"
+              onClick={() => { setCompareMode(false); alert('Abriendo sistema de reserva de citas...'); }}
+              className="px-6 py-3.5 bg-white text-black font-semibold text-[10px] uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all active:scale-95 shadow-xl disabled:opacity-40"
               disabled={!slotA && !slotB}
             >
-              Agendar con esta Selección
+              Solicitar Asesoría con Estos Looks
             </button>
           </div>
         </div>
       )}
 
-      {/* BOTÓN FLOTANTE PERMANENTE CUANDO HAY ELEMENTOS */}
+      {/* DISPARADOR FLOTANTE DE COMPARADOR */}
       {(slotA || slotB) && !compareMode && (
         <button 
           onClick={() => setCompareMode(true)}
-          className="fixed bottom-6 right-6 z-40 bg-white text-black px-4 py-3 rounded-full flex items-center gap-2 shadow-2xl transition-transform hover:scale-105 active:scale-95 text-[11px] tracking-wider uppercase font-medium"
+          className="fixed bottom-6 right-6 z-40 bg-white text-black px-5 py-3.5 rounded-full flex items-center gap-2.5 shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 text-[11px] tracking-wider uppercase font-semibold border border-neutral-200/20"
         >
-          <Columns className="w-3.5 h-3.5" />
-          Comparar Laboratorio ({slotA ? 1 : 0} + {slotB ? 1 : 0})
+          <div className="relative flex items-center justify-center w-2 h-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+          </div>
+          Estudio de Estilo ({slotA ? 1 : 0}/{slotB ? 1 : 0})
         </button>
       )}
 
-      {/* DETALLE LIGHTBOX */}
+      {/* POPUP LIGHTBOX DE ACERCAMIENTO DINÁMICO */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-lg animate-in fade-in duration-200"
           onClick={() => setSelectedImage(null)}
         >
           <div 
-            className="bg-[#0F0F0F] border border-neutral-900 rounded-[2rem] max-w-lg w-full overflow-hidden"
+            className="bg-[#0c0c0e] border border-neutral-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl transition-all scale-in duration-300"
             onClick={e => e.stopPropagation()}
           >
-            <div className="aspect-square relative w-full bg-neutral-900">
-              <img src={selectedImage.image_url} alt="" className="w-full h-full object-cover" />
+            {/* Foto Ampliada */}
+            <div className="aspect-square relative w-full bg-neutral-900 overflow-hidden">
+              <img src={selectedImage.image_url} alt="" className="w-full h-full object-cover transition-transform duration-700 hover:scale-110 cursor-zoom-in" />
               <button 
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-4 right-4 p-2 bg-black/60 text-white rounded-full"
+                className="absolute top-4 right-4 p-2.5 bg-black/70 hover:bg-black/90 text-white rounded-full transition-all duration-200"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            
+            {/* Metadatos del Trabajo Estético */}
+            <div className="p-7 space-y-5">
               <div>
-                <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-mono">{selectedImage.sensory_category}</span>
-                <h4 className="text-xl font-serif text-white italic mt-1 font-light">{selectedImage.title}</h4>
-                {selectedImage.description && <p className="text-xs text-neutral-400 font-light mt-2 leading-relaxed">{selectedImage.description}</p>}
+                <span className="text-[9px] text-rose-400 bg-rose-950/40 border border-rose-900/50 px-2.5 py-1 rounded-full uppercase tracking-widest font-mono font-medium">
+                  {selectedImage.sensory_category === 'mirada' ? 'Diseño Mirada' : selectedImage.sensory_category === 'glow' ? 'Micropigmentación' : selectedImage.sensory_category === 'transformacion' ? 'Estilismo' : 'Tendencia'}
+                </span>
+                <h4 className="text-2xl font-serif text-white italic mt-3 font-light tracking-wide">{selectedImage.title}</h4>
+                {selectedImage.description && (
+                  <p className="text-xs text-neutral-400 font-light mt-2.5 leading-relaxed bg-neutral-950 p-3 rounded-xl border border-neutral-900">
+                    {selectedImage.description}
+                  </p>
+                )}
               </div>
+              
               <div className="flex items-center justify-between pt-4 border-t border-neutral-900">
                 <div>
-                  <p className="text-[9px] text-neutral-600 uppercase">Precio Estimado</p>
-                  <p className="text-lg font-mono text-white mt-0.5">{selectedImage.price}</p>
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-wider font-mono">Inversión del Servicio</p>
+                  <p className="text-xl font-mono text-white font-medium mt-0.5">{selectedImage.price}</p>
                 </div>
                 <button 
-                  onClick={() => { setSelectedImage(null); alert('Aperturando agenda corporativa...'); }}
-                  className="px-4 py-2.5 bg-neutral-800 text-white hover:bg-neutral-700 transition-colors text-[10px] tracking-wider uppercase font-medium rounded-lg"
+                  onClick={() => { setSelectedImage(null); alert('Redireccionando al calendario de citas...'); }}
+                  className="px-5 py-3 bg-neutral-800 hover:bg-rose-950 hover:text-rose-200 border border-neutral-700/50 hover:border-rose-900 text-white transition-all duration-300 text-[10px] tracking-widest uppercase font-semibold rounded-xl flex items-center gap-2 active:scale-95"
                 >
-                  Reservar este Look
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400" />
+                  Reservar este Servicio
                 </button>
               </div>
             </div>
