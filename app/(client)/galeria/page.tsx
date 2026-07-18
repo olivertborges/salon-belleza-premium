@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { useState, useEffect, useRef } from "react";
 import { 
@@ -17,7 +17,7 @@ import {
   ArrowLeft,
   ArrowRight
 } from "lucide-react";
-import { supabase } from "../services/supabase";
+import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
