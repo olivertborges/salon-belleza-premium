@@ -14,7 +14,7 @@ import {
   FaShieldAlt,
   FaChevronLeft,
   FaChevronRight,
-  FaSparkles,
+  FaStar, // Cambiado por FaSparkles que fallaba
   FaPlay,
   FaPause,
   FaGem
@@ -58,7 +58,7 @@ const GALLERY_IMAGES = [
     category: 'Mano Alzada'
   },
   {
-    url: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    url: 'https://images.unsplash.com/photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Micropigmentación',
     category: 'Cejas'
   },
@@ -110,7 +110,7 @@ const TESTIMONIALS = [
 ]
 
 // ============================================================
-// SUBCOMPONENTES (Declarados formalmente antes de Home)
+// SUBCOMPONENTES
 // ============================================================
 
 const Header = () => (
@@ -187,7 +187,7 @@ const HeroSection = () => {
                 href="#servicios" 
                 className="group bg-stone-900/60 hover:bg-stone-900 border border-stone-800 hover:border-[#C9A96E] px-8 py-4 rounded-xl font-medium text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-sm"
               >
-                <FaSparkles className="text-xs group-hover:rotate-180 transition-transform duration-500" style={{ color: COLORS.gold }} />
+                <FaStar className="text-xs group-hover:rotate-180 transition-transform duration-500" style={{ color: COLORS.gold }} />
                 VER SERVICIOS
               </a>
             </div>
@@ -418,7 +418,7 @@ const AcademySection = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,#1c1917_0%,transparent_60%)] opacity-30" />
 
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-12 gap-8 items-center mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-20">
           <div className="lg:col-span-6">
             <span className="text-xs font-bold tracking-[0.3em] block mb-2" style={{ color: COLORS.gold }}>✦ FRESH NAILS ACADEMY ✦</span>
             <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight leading-none">
@@ -580,7 +580,7 @@ const TestimonialsSection = () => {
 const HygieneSection = () => (
   <section className="py-24 bg-[#0d0b0a] text-white border-t border-stone-900 relative overflow-hidden">
     <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
-      <div className="bg-gradient-to-r from-[#141211] to-[#1e1917] border border-stone-850 rounded-3xl p-8 md:p-12 grid md:grid-cols-12 gap-8 items-center">
+      <div className="bg-gradient-to-r from-[#141211] to-[#1e1917] border border-stone-850 rounded-3xl p-8 md:p-12 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
         <div className="md:col-span-4 flex justify-center md:justify-start">
           <div className="w-24 h-24 rounded-2xl border border-[#C9A96E]/30 flex items-center justify-center text-4xl shadow-inner" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}10, ${COLORS.gold}10)` }}>
             <FaShieldAlt className="animate-pulse" style={{ color: COLORS.gold }} />
@@ -590,7 +590,7 @@ const HygieneSection = () => (
           <span className="text-[10px] font-bold tracking-widest uppercase block" style={{ color: COLORS.gold }}>✦ PROTOCOLOS DE HIGIENE ✦</span>
           <h3 className="text-2xl sm:text-3xl font-serif text-stone-100">Bioseguridad y Cuidado Integral</h3>
           <p className="text-sm text-stone-400 font-light leading-relaxed">
-            Tu bienestar es nuestra priority. Todo nuestro instrumental metálico pasa por un proceso riguroso de tres etapas: desinfección por inmersión, lavado ultrasónico y esterilización térmica en autoclave. Los sobres esterilizados se abren en tu presencia al iniciar la sesión.
+            Tu bienestar es nuestra prioridad. Todo nuestro instrumental metálico pasa por un proceso riguroso de tres etapas: desinfección por inmersión, lavado ultrasónico y esterilización térmica en autoclave. Los sobres esterilizados se abren en tu presencia al iniciar la sesión.
           </p>
         </div>
       </div>
