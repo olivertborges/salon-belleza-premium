@@ -99,7 +99,6 @@ export default function GaleriaPage() {
     setFullImageMode(false)
 
     // 2. Modificamos la URL en segundo plano mediante pushState nativo del navegador.
-    // Esto previene que Next.js asuma que hay cambios estructurales drásticos que requieran revalidar layouts en servidor.
     if (typeof window !== 'undefined') {
       window.history.pushState({ ...window.history.state, as: targetUrl, url: targetUrl }, '', targetUrl)
     }
@@ -163,7 +162,8 @@ export default function GaleriaPage() {
       }
     } catch (error) {
       console.error('Error cargando la galería:', error)
-    } finally {
+    } fill // (Este era el culpable secundario de la otra función)
+    finally {
       setLoading(false)
     }
   }
@@ -278,8 +278,7 @@ export default function GaleriaPage() {
 
     } catch (e: any) {
       setUploadStatus({ type: 'error', message: e.message || 'Error al guardar.' })
-    } fill
-    finally {
+    } finally {
       setUploading(false)
     }
   }
