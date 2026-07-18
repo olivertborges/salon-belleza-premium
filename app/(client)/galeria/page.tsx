@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Grid3x3,
   LayoutList,
-  Plus
+  Plus,
+  Calendar
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -48,7 +49,6 @@ export default function GaleriaPage() {
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const beforeInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -204,7 +204,7 @@ export default function GaleriaPage() {
         client_id: isAdmin ? null : clientId,
         tenant_id: resolvedTenantId,
         image_url: afterImageUrl,
-        title: uploadTitle || (isAdmin ? 'Estilo de Vanguardia' : 'Mi Diseño'),
+        title: uploadTitle || (isAdmin ? 'Diseño Exclusivo' : 'Mi Diseño'),
         description: uploadDescription || '',
         price: parseFloat(uploadPrice) || 45.00,
         polish_used: uploadPolish || 'Fresh Nails Premium',
@@ -290,21 +290,96 @@ export default function GaleriaPage() {
 
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
-      {/* HERO */}
-      <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/20 via-[#FAF8F5] to-[#C9A96E]/10 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#C9A96E]/5 blur-3xl" />
-          <div className="absolute top-20 left-10 w-32 h-[1px] bg-[#C9A96E]/20 rotate-12" />
-          <div className="absolute bottom-20 right-10 w-32 h-[1px] bg-[#C9A96E]/20 -rotate-12" />
-          <div className="absolute top-1/3 right-1/4 w-16 h-[1px] bg-[#C9A96E]/20 rotate-45" />
-        </div>
+      {/* ============================================================
+          HERO - CON LÍNEAS ABSTRACTAS NO UNIFORMES
+      ============================================================ */}
+      <section className="relative h-[60vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/15 via-[#FAF8F5] to-[#C9A96E]/5 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
+        
+        {/* Líneas abstractas no uniformes - Galería de arte */}
+        <svg 
+          className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20"
+          viewBox="0 0 1000 600"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Líneas curvas orgánicas */}
+          <path 
+            d="M 0 100 Q 150 20 250 120 T 500 80 T 750 150 T 1000 60" 
+            stroke="#C9A96E" 
+            strokeWidth="1.5" 
+            fill="none" 
+            opacity="0.6"
+          />
+          <path 
+            d="M 0 180 Q 200 300 350 200 T 600 280 T 850 180 T 1000 250" 
+            stroke="#C9A96E" 
+            strokeWidth="1" 
+            fill="none" 
+            opacity="0.4"
+          />
+          <path 
+            d="M 0 280 Q 180 180 300 300 T 550 240 T 800 320 T 1000 280" 
+            stroke="#C9A96E" 
+            strokeWidth="0.8" 
+            fill="none" 
+            opacity="0.3"
+          />
+          <path 
+            d="M 0 380 Q 250 450 400 350 T 700 420 T 900 370 T 1000 400" 
+            stroke="#C9A96E" 
+            strokeWidth="1.2" 
+            fill="none" 
+            opacity="0.35"
+          />
+          <path 
+            d="M 0 450 Q 180 500 300 440 T 600 500 T 850 460 T 1000 500" 
+            stroke="#C9A96E" 
+            strokeWidth="0.6" 
+            fill="none" 
+            opacity="0.25"
+          />
+          
+          {/* Líneas rectas en diferentes ángulos */}
+          <line x1="100" y1="0" x2="200" y2="600" stroke="#C9A96E" strokeWidth="1" opacity="0.2" />
+          <line x1="350" y1="0" x2="280" y2="600" stroke="#C9A96E" strokeWidth="0.8" opacity="0.15" />
+          <line x1="600" y1="0" x2="700" y2="600" stroke="#C9A96E" strokeWidth="1" opacity="0.2" />
+          <line x1="850" y1="0" x2="800" y2="600" stroke="#C9A96E" strokeWidth="0.6" opacity="0.15" />
+          
+          {/* Líneas diagonales abstractas */}
+          <line x1="50" y1="0" x2="0" y2="150" stroke="#C9A96E" strokeWidth="0.8" opacity="0.2" />
+          <line x1="750" y1="0" x2="1000" y2="250" stroke="#C9A96E" strokeWidth="0.8" opacity="0.15" />
+          <line x1="0" y1="450" x2="300" y2="600" stroke="#C9A96E" strokeWidth="0.8" opacity="0.15" />
+          <line x1="650" y1="450" x2="1000" y2="600" stroke="#C9A96E" strokeWidth="0.8" opacity="0.15" />
+          
+          {/* Formas geométricas abstractas sutiles */}
+          <rect x="150" y="80" width="40" height="40" stroke="#C9A96E" strokeWidth="1" fill="none" opacity="0.15" transform="rotate(25 170 100)" />
+          <rect x="520" y="120" width="30" height="30" stroke="#C9A96E" strokeWidth="0.8" fill="none" opacity="0.12" transform="rotate(-15 535 135)" />
+          <rect x="800" y="200" width="50" height="50" stroke="#C9A96E" strokeWidth="0.8" fill="none" opacity="0.1" transform="rotate(40 825 225)" />
+          
+          {/* Círculos abstractos */}
+          <circle cx="250" cy="480" r="60" stroke="#C9A96E" strokeWidth="0.6" fill="none" opacity="0.1" />
+          <circle cx="750" cy="100" r="80" stroke="#C9A96E" strokeWidth="0.6" fill="none" opacity="0.08" />
+          <circle cx="100" cy="300" r="40" stroke="#C9A96E" strokeWidth="0.5" fill="none" opacity="0.1" />
+          
+          {/* Puntos decorativos */}
+          <circle cx="50" cy="200" r="3" fill="#C9A96E" opacity="0.2" />
+          <circle cx="300" cy="100" r="2" fill="#C9A96E" opacity="0.15" />
+          <circle cx="500" cy="350" r="4" fill="#C9A96E" opacity="0.15" />
+          <circle cx="700" cy="280" r="2" fill="#C9A96E" opacity="0.2" />
+          <circle cx="950" cy="420" r="3" fill="#C9A96E" opacity="0.15" />
+          <circle cx="180" cy="500" r="2" fill="#C9A96E" opacity="0.12" />
+          <circle cx="850" cy="80" r="2.5" fill="#C9A96E" opacity="0.12" />
+        </svg>
 
+        {/* Círculos difuminados de fondo */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#C9A96E]/5 blur-3xl" />
+
+        {/* Contenido */}
         <div className="relative z-10 text-center max-w-3xl px-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C9A96E]/30 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm mb-6">
             <Sparkles className="w-3 h-3 text-[#C9A96E]" />
-            <span className="text-[8px] tracking-[0.3em] uppercase text-[#C9A96E] font-medium">Portfolio Exclusivo</span>
+            <span className="text-[8px] tracking-[0.3em] uppercase text-[#C9A96E] font-medium">Galería Fresh Nails</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-light font-serif tracking-wide text-neutral-800 dark:text-white drop-shadow-sm">
@@ -326,7 +401,9 @@ export default function GaleriaPage() {
         </div>
       </section>
 
-      {/* GALERÍA */}
+      {/* ============================================================
+          GALERÍA
+      ============================================================ */}
       <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-20">
         {/* CONTROLES FLOTANTES */}
         <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-5 mb-10">
@@ -545,7 +622,7 @@ export default function GaleriaPage() {
       </div>
 
       {/* ============================================================
-          LIGHTBOX - CORREGIDO Y MEJORADO
+          LIGHTBOX - COMPLETO CON PRECIO, NOMBRE, DESCRIPCIÓN, ARTISTA
       ============================================================ */}
       <AnimatePresence>
         {selectedImage && (
@@ -556,10 +633,8 @@ export default function GaleriaPage() {
             exit={{ opacity: 0 }}
             onClick={() => setSelectedImage(null)}
           >
-            {/* Fondo con blur */}
             <div className="absolute inset-0 bg-black/80" />
 
-            {/* Botón cerrar */}
             <button 
               onClick={() => setSelectedImage(null)}
               className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
@@ -567,7 +642,6 @@ export default function GaleriaPage() {
               <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
-            {/* Navegación */}
             {filteredImages.length > 1 && (
               <>
                 <button 
@@ -585,14 +659,12 @@ export default function GaleriaPage() {
               </>
             )}
 
-            {/* Contador */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
               {lightboxIndex + 1} / {filteredImages.length}
             </div>
 
-            {/* Modal - CORREGIDO */}
             <motion.div 
-              className="relative z-10 w-full max-w-5xl max-h-[85vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl"
+              className="relative z-10 w-full max-w-5xl max-h-[90vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl"
               initial={{ scale: 0.92, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 20 }}
@@ -609,51 +681,59 @@ export default function GaleriaPage() {
                   />
                 </div>
 
-                {/* Info */}
-                <div className="md:w-2/5 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto max-h-[300px] md:max-h-none">
+                {/* Info - COMPLETA con todo lo que tenía antes */}
+                <div className="md:w-2/5 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto">
                   <div className="space-y-4">
+                    {/* Categoría */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full">
                         {selectedImage.sensory_category || 'Exclusivo'}
                       </span>
                     </div>
 
+                    {/* Título */}
                     <h2 className="font-serif text-2xl md:text-3xl font-light tracking-wide">
                       {selectedImage.title}
                     </h2>
 
+                    {/* Descripción */}
                     {selectedImage.description && (
                       <p className="text-sm text-neutral-400 font-light leading-relaxed">
                         {selectedImage.description}
                       </p>
                     )}
 
-                    <div className="space-y-2 pt-4 border-t border-white/10 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-neutral-500">Artista</span>
-                        <span>{selectedImage.client_name || 'Fresh Nails'}</span>
+                    {/* Detalles - PRECIO, ARTISTA, ESMALTADO, VISUALIZACIONES */}
+                    <div className="space-y-3 pt-4 border-t border-white/10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-500 text-sm">Artista</span>
+                        <span className="text-white/90 font-light">{selectedImage.client_name || 'Fresh Nails'}</span>
                       </div>
+                      
                       {selectedImage.polish_used && (
-                        <div className="flex justify-between">
-                          <span className="text-neutral-500">Esmaltado</span>
-                          <span className="text-right text-sm">{selectedImage.polish_used}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-neutral-500 text-sm">Esmaltado</span>
+                          <span className="text-white/90 font-light text-right text-sm">{selectedImage.polish_used}</span>
                         </div>
                       )}
-                      <div className="flex justify-between">
-                        <span className="text-neutral-500">Visualizaciones</span>
-                        <span>{selectedImage.views || 0}</span>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-500 text-sm">Visualizaciones</span>
+                        <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                        <span className="text-neutral-500 text-sm">Precio</span>
+                        <span className="text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-6 border-t border-white/10 mt-4">
-                    <div>
-                      <span className="text-[8px] uppercase text-neutral-500 tracking-wider block">Inversión</span>
-                      <span className="text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
-                    </div>
+                  {/* Botones de acción */}
+                  <div className="flex items-center gap-3 pt-6 border-t border-white/10 mt-4">
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
-                      className={`px-5 py-2.5 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center gap-2 ${
+                      className={`flex-1 py-3 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
                         likedImages.has(selectedImage.id) 
                           ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
                           : 'bg-white/10 text-white hover:bg-white/20'
@@ -661,6 +741,13 @@ export default function GaleriaPage() {
                     >
                       <Heart className={`w-4 h-4 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                       {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
+                    </button>
+                    
+                    <button 
+                      onClick={() => { setSelectedImage(null); }}
+                      className="px-5 py-3 rounded-full bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-2"
+                    >
+                      <Calendar className="w-3.5 h-3.5" /> Agendar
                     </button>
                   </div>
                 </div>
@@ -688,7 +775,7 @@ export default function GaleriaPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Look</h3>
+                <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Diseño</h3>
                 <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
                   <X className="w-4 h-4" />
                 </button>
@@ -806,7 +893,7 @@ export default function GaleriaPage() {
                   className="w-full py-3.5 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs tracking-[0.15em] uppercase font-medium rounded-xl hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
                 >
                   {uploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {uploading ? 'Publicando...' : 'Publicar en Portfolio'}
+                  {uploading ? 'Publicando...' : 'Publicar en Galería'}
                 </button>
               </div>
             </motion.div>
