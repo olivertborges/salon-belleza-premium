@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation' // 👈 Integrado
 import { 
   Calendar as CalendarIcon, Clock, User, Sparkles, ChevronRight, 
   CheckCircle2, ChevronLeft, ChevronRight as ChevronRightIcon,
@@ -21,7 +22,6 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 
-// Mapa de iconos y descripciones elegantes para las categorías del Atelier
 const CATEGORIAS_CONFIG: Record<string, { label: string; icon: any; desc: string }> = {
   'todas': { label: 'Todos los Rituales', icon: Layers, desc: 'Explora nuestra colección completa' },
   'uñas': { label: 'Uñas & Manicura', icon: Heart, desc: 'Esculpidas, gel y diseños de alta gama' },
@@ -34,6 +34,11 @@ export default function ClientBookingPage() {
   const { theme } = useTheme()
   const { user, tenantId } = useAuth()
   const isDark = theme === 'dark'
+  
+  // 🧭 LECTURA DE URL PARAMS
+  const searchParams = useSearchParams()
+  const urlProfessionalId = searchParams.get('professional')
+  const urlStyleName = searchParams.get('style')
 
   const [paso, setPaso] = useState<number>(1)
   const [services, setServices] = useState<any[]>([])
@@ -43,9 +48,7 @@ export default function ClientBookingPage() {
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([])
 
-  // Estado para la categoría activa
   const [activeCategory, setActiveCategory] = useState<string>('todas')
-
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [selectedService, setSelectedService] = useState<any>(null)
   const [selectedProfessional, setSelectedProfessional] = useState<any>(null)
@@ -77,10 +80,7 @@ export default function ClientBookingPage() {
         .order('start_time', { ascending: true })
 
       if (error) throw error
-
-      if (data && data.length > 0) {
-        return data.map((h: any) => h.start_time)
-      }
+      if (data && data.length > 0) return data.map((h: any) => h.start_time)
       return horariosPorDefecto
     } catch (error) {
       console.error('Error obteniendo horarios:', error)
@@ -88,6 +88,7 @@ export default function ClientBookingPage() {
     }
   }
 
+  // 1. Carga inicial de datos de Supabase
   useEffect(() => {
     const fetchInicial = async () => {
       try {
@@ -96,9 +97,44 @@ export default function ClientBookingPage() {
           supabase.from('staff').select('*').eq('is_active', true),
           obtenerHorariosBD()
         ])
-        setServices(servicesRes.data || [])
-        setStaff(staffRes.data || [])
+        
+        const bdedServices = servicesRes.data || []
+        const bdedStaff = staffRes.data || []
+        
+        setServices(bdedServices)
+        setStaff(bdedStaff)
         setHorariosDisponibles(horarios)
+
+        // 💡 2. LÓGICA DE PRE-SELECCIÓN INTEGRADA:
+        // Evaluamos los parámetros de la URL inmediatamente después de recibir la data de la BD.
+        let servicioEncontrado = null
+        let profesionalEncontrado = null
+
+        if (urlStyleName) {
+          servicioEncontrado = bdedServices.find(
+            (s: any) => s.name.toLowerCase().trim() === urlStyleName.toLowerCase().trim() || s.id === urlStyleName
+          )
+          if (servicioEncontrado) {
+            setSelectedService(servicioEncontrado)
+          }
+        }
+
+        if (urlProfessionalId) {
+          profesionalEncontrado = bdedStaff.find((p: any) => p.id === urlProfessionalId)
+          if (profesionalEncontrado) {
+            setSelectedProfessional(profesionalEncontrado)
+          }
+        }
+
+        // Determinar dinámicamente a qué paso enviar al usuario según lo que ya tenemos
+        if (servicioEncontrado && profesionalEncontrado) {
+          setPaso(3) // Salta directo al calendario
+        } else if (servicioEncontrado) {
+          setPaso(2) // Ya eligió ritual, que elija profesional
+        } else if (profesionalEncontrado) {
+          setPaso(1) // Sabe el profesional, pero debe elegir qué ritual hacerse con él
+        }
+
       } catch (err) {
         console.error("Error al cargar datos iniciales:", err)
       } finally {
@@ -106,7 +142,7 @@ export default function ClientBookingPage() {
       }
     }
     fetchInicial()
-  }, [])
+  }, [urlProfessionalId, urlStyleName]) // Se re-ejecuta de manera segura si cambian los parámetros
 
   useEffect(() => {
     if (!selectedProfessional) return
@@ -158,7 +194,6 @@ export default function ClientBookingPage() {
     end: endOfMonth(currentMonth)
   })
 
-  // Helper para normalizar y agrupar las categorías dinámicamente según lo que viene de la BD
   const getServiceCategoryKey = (categoryName: string): string => {
     if (!categoryName) return 'otros'
     const normalized = categoryName.toLowerCase().trim()
@@ -168,7 +203,6 @@ export default function ClientBookingPage() {
     return 'otros'
   }
 
-  // Filtrado de servicios reactivo
   const filteredServices = services.filter(serv => {
     if (activeCategory === 'todas') return true
     return getServiceCategoryKey(serv.category) === activeCategory
@@ -192,9 +226,7 @@ export default function ClientBookingPage() {
           .eq('auth_user_id', user.id)
           .single()
 
-        if (clienteAuth) {
-          client_id = clienteAuth.id
-        }
+        if (clienteAuth) client_id = clienteAuth.id
       }
 
       if (!client_id) {
@@ -254,10 +286,6 @@ export default function ClientBookingPage() {
         .eq('client_id', client_id)
         .eq('tenant_id', tenantId)
         .single()
-
-      if (walletError && walletError.code !== 'PGRST116') {
-        console.error('Error obteniendo wallet:', walletError)
-      }
 
       if (!walletData) {
         await supabase
@@ -447,7 +475,7 @@ export default function ClientBookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-4">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* STEP 1: SERVICES RITUAL WITH CATEGORIES */}
+            {/* STEP 1: SERVICES RITUAL */}
             {paso === 1 && (
               <div className="space-y-6 animate-fade-in">
                 <div className="border-b border-pink-100/40 dark:border-stone-900 pb-2">
@@ -457,7 +485,6 @@ export default function ClientBookingPage() {
                   </p>
                 </div>
 
-                {/* 🏷️ TABS DE CATEGORÍAS HIGH GLAM */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {Object.entries(CATEGORIAS_CONFIG).map(([key, config]) => {
                     const IconComponent = config.icon
@@ -481,12 +508,10 @@ export default function ClientBookingPage() {
                   })}
                 </div>
 
-                {/* Breve subtítulo de la categoría seleccionada */}
                 <div className="px-1 text-[11px] italic text-stone-500 dark:text-stone-400 font-serif">
                   {CATEGORIAS_CONFIG[activeCategory]?.desc}
                 </div>
 
-                {/* LISTADO DE SERVICIOS FILTRADOS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredServices.length > 0 ? (
                     filteredServices.map((serv, index) => (
@@ -536,7 +561,7 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* STEP 2: PROFESSIONAL STAFF CHIC */}
+            {/* STEP 2: PROFESSIONAL STAFF */}
             {paso === 2 && (
               <div className="space-y-4 animate-fade-in">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
@@ -589,7 +614,7 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* STEP 3: CALENDAR & SLOTS AGENDA */}
+            {/* STEP 3: CALENDAR & SLOTS */}
             {paso === 3 && (
               <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
@@ -604,7 +629,6 @@ export default function ClientBookingPage() {
                   </button>
                 </div>
 
-                {/* BOUTIQUE INTERACTIVE CALENDAR */}
                 <div className={`border rounded-2xl p-6 shadow-xl ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
                   <div className="flex items-center justify-between mb-6">
                     <h4 className="text-sm font-black tracking-widest uppercase font-mono text-stone-800 dark:text-stone-100">
@@ -671,7 +695,6 @@ export default function ClientBookingPage() {
                   </div>
                 </div>
 
-                {/* TIME SLOTS LUXURY SELECTOR */}
                 {selectedDate && (
                   <div className={`border rounded-2xl p-6 shadow-xl space-y-6 ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
                     <p className={`text-xs font-black font-mono border-b pb-3 flex items-center justify-between ${isDark ? 'text-stone-400 border-stone-800' : 'text-stone-500 border-pink-100/80'}`}>
@@ -687,7 +710,6 @@ export default function ClientBookingPage() {
                       </span>
                     </p>
 
-                    {/* MORNING SLOTS */}
                     <div className="space-y-2">
                       <span className="text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">🌅 Turnos Mañana</span>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -716,7 +738,6 @@ export default function ClientBookingPage() {
                       </div>
                     </div>
 
-                    {/* AFTERNOON SLOTS */}
                     <div className="space-y-2">
                       <span className="text-[10px] font-black font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500 block">🌆 Turnos Tarde</span>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -758,7 +779,7 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* STEP 4: CUSTOMER DATA CONCIERGE */}
+            {/* STEP 4: CUSTOMER DATA */}
             {paso === 4 && (
               <div className="space-y-4 animate-fade-in">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-pink-100/40 dark:border-stone-900 pb-3">
@@ -859,7 +880,7 @@ export default function ClientBookingPage() {
               </div>
             )}
 
-            {/* STEP 5: SUCCESS ARCHITECTURE */}
+            {/* STEP 5: SUCCESS */}
             {paso === 5 && (
               <div className={`border rounded-3xl p-8 text-center max-w-lg mx-auto shadow-2xl relative overflow-hidden animate-scale-up ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-pink-500 via-amber-400 to-pink-500" />
@@ -877,7 +898,6 @@ export default function ClientBookingPage() {
                   🎉 +50 Puntos Glow Acreditados
                 </div>
 
-                {/* DIGEST CARD RECEIPT */}
                 <div className={`border rounded-2xl p-4 text-left space-y-3 mt-6 text-xs font-bold border-dashed ${isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-stone-50/60 border-pink-100'}`}>
                   <div className="flex justify-between items-center">
                     <span className="text-stone-400 dark:text-stone-500 uppercase tracking-wider text-[10px] font-mono">Ritual</span>
@@ -932,7 +952,7 @@ export default function ClientBookingPage() {
             )}
           </div>
 
-          {/* 🎫 SIDEBAR RESUMEN STICKY CARD */}
+          {/* 🎫 SIDEBAR RESUMEN */}
           {paso < 5 && (
             <div className={`border rounded-2xl p-5 space-y-5 lg:sticky lg:top-6 shadow-xl relative overflow-hidden backdrop-blur-xl ${isDark ? 'bg-stone-900/30 border-stone-900' : 'bg-white border-pink-100/60'}`}>
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-pink-500/5 to-transparent rounded-bl-full pointer-events-none" />
@@ -989,7 +1009,6 @@ export default function ClientBookingPage() {
                 </div>
               )}
 
-              {/* DYNAMIC PROGRESS RADAR FOOTER */}
               <div className={`pt-3.5 border-t flex items-center gap-2 text-[9px] font-black font-mono tracking-wider ${isDark ? 'text-stone-600 border-stone-800' : 'text-stone-400 border-pink-100'}`}>
                 <span className={`flex items-center gap-1 ${paso >= 1 ? 'text-pink-500' : ''}`}>Ritual</span>
                 <span>→</span>
