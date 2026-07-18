@@ -87,7 +87,7 @@ export default function ClientDashboardIndex() {
     setRefreshing(true)
     await refreshUserData()
     if (clientId) await refreshPuntos(clientId)
-    setTimeout(() => setRefreshing(false), 500)
+    setTimeout(() => setRefreshing(false), 600)
   }
 
   useEffect(() => {
@@ -153,131 +153,159 @@ export default function ClientDashboardIndex() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
-          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
+      <div className="flex items-center justify-center min-h-[75vh] relative overflow-hidden">
+        <div className="absolute w-40 h-40 bg-pink-500/10 rounded-full blur-2xl animate-pulse" />
+        <div className="relative flex flex-col items-center justify-center gap-4">
+          <div className="w-14 h-14 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
+          <Sparkles className="w-5 h-5 text-pink-400 absolute animate-pulse top-4.5" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-500/60 animate-pulse">Cargando tu universo Fresh...</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`space-y-8 max-w-5xl mx-auto w-full px-4 pb-12 antialiased transition-colors duration-500 ${isDark ? 'text-stone-100 bg-neutral-900' : 'text-stone-900 bg-gradient-to-b from-pink-50/60 via-amber-50/30 to-stone-50/50'}`}>
+    <div className={`space-y-8 max-w-5xl mx-auto w-full px-4 pb-16 antialiased transition-colors duration-700 ${
+      isDark ? 'text-zinc-100 bg-[#09090b]' : 'text-stone-900 bg-transparent'
+    }`}>
 
-      {/* 👑 HERO BANNER PRESTIGE */}
-      <div className="relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-xl p-6 md:p-8 border-pink-100 bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 dark:from-stone-950 dark:via-pink-950/20 dark:to-neutral-950 dark:border-pink-950/40">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-56 h-56 bg-amber-400/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-pink-400/20 rounded-full blur-3xl pointer-events-none"></div>
+      {/* ============================================================ */}
+      {/* 👑 HERO BANNER LUXURY PRESTIGE */}
+      {/* ============================================================ */}
+      <div className={`relative overflow-hidden rounded-[2.5rem] border transition-all duration-500 p-6 md:p-10 shadow-[0_20px_50px_-12px_rgba(219,91,154,0.15)] ${
+        isDark 
+          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/40 to-black border-zinc-900/80' 
+          : 'bg-gradient-to-br from-stone-900 via-stone-950 to-pink-950 border-stone-800'
+      }`}>
+        {/* Luces de neón ambiente */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-pink-500/10 rounded-full blur-[100px] pointer-events-none animate-[pulse_6s_infinite]" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-4 w-full md:w-auto">
-            <div className={`inline-flex items-center gap-2 border px-3.5 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
-              <Sparkles className={`w-3.5 h-3.5 animate-pulse ${isDark ? 'text-pink-400' : 'text-amber-200'}`} />
-              <span className={`text-[10px] uppercase tracking-widest font-extrabold ${isDark ? 'text-pink-300' : 'text-white'}`}>
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+          <div className="space-y-5 w-full lg:w-auto">
+            <div className="inline-flex items-center gap-2 border px-4 py-1.5 rounded-full backdrop-blur-md bg-white/5 border-white/10 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-spin-slow" />
+              <span className="text-[10px] uppercase tracking-[0.25em] font-black text-pink-300">
                 {timeOfDay === 'morning' ? 'Buenos días ✨' : timeOfDay === 'afternoon' ? 'Buenas tardes 💖' : 'Buenas noches 🌙'}
               </span>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">
-              Hola, <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">{nombreCliente}</span>
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-none">
+              Hola, <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">{nombreCliente}</span>
             </h1>
 
             {/* MARCADOR DIGITAL DE PUNTOS BOUTIQUE */}
-            <div className="grid grid-cols-2 gap-4 pt-1 max-w-md">
-              <div className={`border rounded-2xl p-3.5 backdrop-blur-md shadow-inner transition-colors ${isDark ? 'bg-stone-900/80 border-pink-500/20' : 'bg-white/10 border-white/20'}`}>
-                <p className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
-                  {puntosGlow} <span className="text-xs font-normal text-pink-300">★</span>
+            <div className="grid grid-cols-2 gap-4 pt-2 max-w-md w-full">
+              <div className="border border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent rounded-2xl p-4 backdrop-blur-md group hover:border-pink-500/20 transition-all duration-300">
+                <p className="text-3xl font-black text-white tracking-tight flex items-baseline gap-1.5">
+                  {puntosGlow} <span className="text-xs font-medium text-pink-400">Glow</span>
                 </p>
-                <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${isDark ? 'text-pink-400' : 'text-pink-200'}`}>Estética Glow</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] mt-1 text-zinc-400 group-hover:text-pink-400 transition-colors">Estética Premium</p>
               </div>
-              <div className={`border rounded-2xl p-3.5 backdrop-blur-md shadow-inner transition-colors ${isDark ? 'bg-stone-900/80 border-amber-500/20' : 'bg-white/10 border-white/20'}`}>
-                <p className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
-                  {puntosHair} <span className="text-xs font-normal text-amber-300">★</span>
+              <div className="border border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent rounded-2xl p-4 backdrop-blur-md group hover:border-amber-500/20 transition-all duration-300">
+                <p className="text-3xl font-black text-white tracking-tight flex items-baseline gap-1.5">
+                  {puntosHair} <span className="text-xs font-medium text-amber-400">Hair</span>
                 </p>
-                <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-200'}`}>Peluquería Hair</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] mt-1 text-zinc-400 group-hover:text-amber-400 transition-colors">Peluquería & Stylist</p>
               </div>
             </div>
 
-            <button onClick={handleRefresh} disabled={refreshing} className={`inline-flex items-center gap-2 text-[10px] font-extrabold tracking-wider uppercase px-4 py-2 rounded-xl transition active:scale-95 border ${isDark ? 'bg-stone-900/90 hover:bg-stone-800 text-stone-300 border-pink-900/30' : 'bg-stone-950 text-white hover:bg-stone-900 border-stone-800'}`}>
-              <RefreshCw className={`w-3 h-3 text-amber-400 ${refreshing ? 'animate-spin' : ''}`} /> Sincronizar Cuenta
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className="inline-flex items-center gap-2 text-[9px] font-black tracking-[0.2em] uppercase px-4 py-2.5 rounded-xl transition-all duration-300 active:scale-95 border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+            >
+              <RefreshCw className={`w-3 h-3 text-pink-400 ${refreshing ? 'animate-spin' : ''}`} /> Sincronizar Cuenta
             </button>
           </div>
 
           {/* Botón Agendar Cita */}
           <Link 
             href="/agenda" 
-            className={`w-full md:w-auto relative group overflow-hidden px-8 py-4 rounded-2xl font-black text-xs tracking-[0.2em] uppercase transition-all duration-300 transform active:scale-[0.98] hover:-translate-y-0.5 flex items-center justify-center gap-3 border ${
-              isDark 
-                ? 'bg-white text-stone-950 border-stone-100 shadow-[0_10px_30px_rgba(255,255,255,0.05)] hover:shadow-pink-500/20' 
-                : 'bg-stone-950 text-white border-stone-900 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:shadow-pink-500/30'
-            }`}
+            className="w-full lg:w-auto relative group overflow-hidden px-8 py-5 rounded-2xl font-black text-xs tracking-[0.25em] uppercase transition-all duration-300 transform active:scale-[0.98] hover:-translate-y-0.5 flex items-center justify-center gap-3 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white border border-pink-400/20 shadow-[0_15px_30px_rgba(219,91,154,0.3)] hover:shadow-[0_20px_40px_rgba(219,91,154,0.4)]"
           >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 dark:via-stone-950/10 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
-
-            <span className="relative flex h-2 w-2 flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
             </span>
-
-            <Calendar className="w-4 h-4 text-pink-500 dark:text-pink-600 transition-transform group-hover:rotate-12 duration-300" />
-
-            <span>Agendar Cita VIP</span>
-
-            <span className="font-serif italic font-normal tracking-normal text-pink-500 dark:text-pink-600 lowercase text-sm ml-0.5 transition-all duration-300 group-hover:translate-x-1">
-              online →
-            </span>
+            <Calendar className="w-4 h-4 transition-transform group-hover:rotate-12 duration-300" />
+            <span>Agendar Turno VIP</span>
           </Link>
         </div>
       </div>
 
-      {/* 📢 ANUNCIOS Y PROMOCIONES - DESDE BASE DE DATOS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Anuncios desde tabla 'announcements' */}
-        <AnunciosBanner position="hero" limit={2} />
-        
-        {/* Promociones desde tabla 'promotions' */}
-        <PromocionesVolante limit={3} />
+      {/* ============================================================ */}
+      {/* 📢 ANUNCIOS Y PROMOCIONES - RE-ESTRUCTURADOS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="transition-all hover:translate-y-[-2px] duration-300">
+          <AnunciosBanner position="hero" limit={2} />
+        </div>
+        <div className="transition-all hover:translate-y-[-2px] duration-300">
+          <PromocionesVolante limit={3} />
+        </div>
       </div>
 
-      {/* Más promociones */}
-      <div className="mt-2">
+      <div className="opacity-95 hover:opacity-100 transition-opacity">
         <PromocionesVolante limit={6} showTitle={true} />
       </div>
 
-      {/* 📅 SECCIÓN DE TURNOS */}
-      <div className={`p-6 md:p-8 rounded-3xl border transition shadow-lg ${isDark ? 'bg-stone-900/60 border-pink-950/30 backdrop-blur-md' : 'bg-white border-pink-100/70'}`}>
+      {/* ============================================================ */}
+      {/* 📅 CONTENEDOR DE PRÓXIMOS TURNOS BENTO STYLE */}
+      {/* ============================================================ */}
+      <div className={`p-6 md:p-8 rounded-3xl border transition-all duration-300 shadow-xl ${
+        isDark 
+          ? 'bg-zinc-950/40 border-zinc-900/80 backdrop-blur-md' 
+          : 'bg-white border-stone-200/60 shadow-stone-200/50'
+      }`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-black tracking-tight">Próximos <span className="font-serif italic font-normal text-pink-500">Turnos</span></h2>
-          <span className="text-xs font-mono px-3 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 rounded-full font-bold border border-pink-500/20">
-            {citasProximas.length} Reservas
+          <h2 className="text-xl font-black tracking-tight">Próximas <span className="font-serif italic font-normal text-pink-500">Citas</span></h2>
+          <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 bg-pink-500/10 text-pink-500 dark:text-pink-400 rounded-full border border-pink-500/10">
+            {citasProximas.length} Activas
           </span>
         </div>
 
         {citasProximas.length === 0 ? (
-          <div className={`text-center py-10 border border-dashed rounded-2xl ${isDark ? 'border-stone-800' : 'border-pink-200 bg-pink-50/20'}`}>
-            <Clock className="w-8 h-8 text-pink-300 mx-auto mb-2" />
-            <p className="text-stone-400 dark:text-stone-500 text-sm font-medium">Consiéntete hoy, aún no registras citas.</p>
+          <div className={`text-center py-12 border border-dashed rounded-2xl transition-colors ${
+            isDark ? 'border-zinc-800 bg-zinc-900/10' : 'border-pink-100 bg-pink-50/10'
+          }`}>
+            <Clock className="w-8 h-8 text-pink-300/60 mx-auto mb-2 animate-pulse" />
+            <p className="text-zinc-400 dark:text-zinc-500 text-xs font-medium tracking-wide">Consiéntete hoy, aún no registras citas pendientes.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {citasProximas.slice(0, 4).map((cita: any) => (
-              <div key={cita.id} className={`p-4 rounded-2xl border flex justify-between items-center shadow-sm relative overflow-hidden group transition-all duration-300 ${isDark ? 'bg-stone-950/40 border-stone-800/80 hover:border-pink-500/30' : 'bg-gradient-to-r from-pink-50/50 to-white border-pink-100 hover:border-pink-300'}`}>
-                <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-pink-500 to-amber-400"></div>
-                <div className="space-y-1 pl-2.5">
-                  <h4 className="text-sm font-black tracking-tight text-stone-800 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-300 transition-colors">{cita.services?.name || 'Servicio de Belleza'}</h4>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 font-bold flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3 text-pink-400" /> {cita.date} • {cita.time} hs
-                  </p>
+              <div 
+                key={cita.id} 
+                className={`p-5 rounded-2xl border flex justify-between items-center relative overflow-hidden group transition-all duration-300 shadow-sm ${
+                  isDark 
+                    ? 'bg-zinc-900/20 border-zinc-900 hover:border-pink-500/20' 
+                    : 'bg-gradient-to-r from-stone-50/50 to-white border-stone-200/40 hover:border-pink-200 hover:shadow-md'
+                }`}
+              >
+                {/* Indicador de Línea Premium */}
+                <span className="absolute left-0 inset-y-0 w-1 bg-gradient-to-b from-pink-500 via-rose-500 to-amber-400" />
+                
+                <div className="space-y-1.5 pl-3">
+                  <h4 className="text-sm font-black tracking-tight group-hover:text-pink-500 transition-colors">
+                    {cita.services?.name || 'Servicio de Belleza'}
+                  </h4>
+                  <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                    <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-pink-400" /> {cita.date}</span>
+                    <span>•</span>
+                    <span>{cita.time} hs</span>
+                  </div>
                 </div>
-                <div>
+
+                <div className="shrink-0">
                   {cita.status === 'confirmed' ? (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      <CheckCircle2 className="w-2.5 h-2.5" /> Listado
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Listado
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                      <Clock className="w-2.5 h-2.5 animate-spin text-amber-500" /> Pendiente
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" /> Pendiente
                     </span>
                   )}
                 </div>
@@ -287,44 +315,61 @@ export default function ClientDashboardIndex() {
         )}
       </div>
 
-      {/* 🎯 COMPONENTES INTEGRADOS */}
-      <div className="space-y-4">
+      {/* ============================================================ */}
+      {/* 🎯 COMPONENTES MISIONES & LOGROS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 gap-6">
         <MisionesDiarias />
       </div>
 
-      <div className="transform transition hover:scale-[1.005]">
+      <div className="transition-all duration-300 hover:shadow-[0_15px_30px_rgba(0,0,0,0.02)]">
         <QRReferido codigo={codigoReferido} user={user} />
       </div>
 
-      <div className={`p-1.5 rounded-3xl border ${isDark ? 'bg-stone-900/40 border-pink-950/20' : 'bg-white border-pink-100/40 shadow-sm'}`}>
+      <div className={`p-2 rounded-[2rem] border transition-all duration-300 ${
+        isDark ? 'bg-zinc-950/20 border-zinc-900/60' : 'bg-stone-50/50 border-stone-200/40 shadow-inner'
+      }`}>
         <InsigniasLogros citas={citas.length} serviciosUnicos={serviciosUnicos} referidos={referidos.length} puntos={puntosTotales} racha={3} />
       </div>
 
-      {/* 🎡 LUCKY WHEEL VIP GAMIFICATION BANNER */}
-      <div className={`p-6 md:p-8 rounded-3xl border flex flex-col sm:flex-row items-center justify-between shadow-xl relative overflow-hidden transition-all ${isDark ? 'bg-gradient-to-r from-pink-950/20 via-stone-900 to-amber-950/10 border-pink-950/30' : 'bg-gradient-to-r from-pink-100 via-amber-50 to-white border-pink-200'}`}>
-        <div className="absolute top-0 left-1/4 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="flex items-center gap-4 z-10">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-500 to-amber-500 text-white shadow-md">
-            <Gift className="w-6 h-6 animate-bounce" />
+      {/* ============================================================ */}
+      {/* 🎡 LUCKY WHEEL GAMIFICATION BANNER LUXE */}
+      {/* ============================================================ */}
+      <div className={`p-6 md:p-8 rounded-3xl border flex flex-col sm:flex-row items-center justify-between shadow-xl relative overflow-hidden transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-r from-pink-950/20 via-zinc-950 to-amber-950/10 border-pink-950/20' 
+          : 'bg-gradient-to-r from-pink-50 via-amber-50/20 to-stone-50 border-pink-100 shadow-pink-100/30'
+      }`}>
+        <div className="absolute top-0 right-1/4 w-40 h-40 bg-pink-500/5 rounded-full blur-2xl pointer-events-none" />
+        
+        <div className="flex items-center gap-5 z-10 w-full sm:w-auto">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/20 shrink-0 transform transition group-hover:scale-105">
+            <Gift className="w-6 h-6 animate-[bounce_2s_infinite]" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-black tracking-tight text-stone-900 dark:text-white">¿Te sientes con <span className="font-serif italic font-normal text-pink-600 dark:text-pink-400">Suerte</span> hoy?</h3>
-            <p className="text-xs text-stone-500 dark:text-stone-400 font-bold">Gira la ruleta de belleza diaria y reclama fantásticos premios VIP.</p>
+            <h3 className="text-lg font-black tracking-tight">¿Te sientes con <span className="font-serif italic font-normal text-pink-500 dark:text-pink-400">Suerte</span> hoy?</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Gira la ruleta Fresh diaria y reclama obsequios VIP instantáneos.</p>
           </div>
         </div>
-        <button onClick={() => setIsRuletaOpen(true)} className="w-full sm:w-auto mt-4 sm:mt-0 px-6 py-3.5 rounded-xl bg-stone-950 text-white hover:bg-stone-900 text-xs font-black tracking-widest uppercase shadow-xl transition transform active:scale-95 border border-stone-800">
+        
+        <button 
+          onClick={() => setIsRuletaOpen(true)} 
+          className="w-full sm:w-auto mt-4 sm:mt-0 px-6 py-4 rounded-xl bg-zinc-950 dark:bg-zinc-100 dark:text-zinc-950 text-white hover:bg-zinc-900 dark:hover:bg-white text-xs font-black tracking-widest uppercase shadow-xl transition transform active:scale-95 border border-zinc-800 dark:border-white"
+        >
           GIRAR RULETA
         </button>
       </div>
 
-      {/* 📸 INSTAGRAM Y PIE DE PÁGINA */}
-      <div className="pt-4 border-t border-pink-100 dark:border-stone-900">
+      {/* ============================================================ */}
+      {/* 📸 FEEDS Y SOCIALS */}
+      {/* ============================================================ */}
+      <div className="pt-6 border-t border-zinc-200/60 dark:border-zinc-900/60">
         <InstagramFeed />
       </div>
 
       <FooterCliente />
 
-      {/* 🎡 MODAL RULETA */}
+      {/* MODAL CONTROLLER */}
       <RuletaModal
         isOpen={isRuletaOpen}
         onClose={() => { setIsRuletaOpen(false); if (clientId) refreshPuntos(clientId) }}
