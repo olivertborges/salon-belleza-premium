@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { 
@@ -9,7 +9,7 @@ import {
   Loader,     
   Calendar,
   Sparkles,
-  Columns2,
+  Columns,
   ChevronRight,
   Maximize2
 } from 'lucide-react'
@@ -30,13 +30,12 @@ interface GalleryImage {
 
 export default function GaleriaInnovadoraPage() {
   const { user } = useAuth()
-  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   
   // Datos originales
   const [allImages, setAllImages] = useState<GalleryImage[]>([])
   
-  // Estado de favoritos y el nuevo comparador interactivo de pantalla dividida
+  // Estado de favoritos y el comparador interactivo de pantalla dividida
   const [favorites, setFavorites] = useState<GalleryImage[]>([])
   const [compareMode, setCompareMode] = useState(false)
   const [slotA, setSlotA] = useState<GalleryImage | null>(null)
@@ -46,7 +45,6 @@ export default function GaleriaInnovadoraPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
 
   useEffect(() => {
-    setMounted(true)
     loadGalleryData()
   }, [user])
 
@@ -116,7 +114,7 @@ export default function GaleriaInnovadoraPage() {
   return (
     <div className="bg-[#0B0B0B] text-neutral-200 min-h-screen pb-32 font-sans antialiased overflow-x-hidden">
       
-      {/* GLOW DE AMBIENTE INMERSIVO (Efecto de luces de galería de lujo) */}
+      {/* GLOW DE AMBIENTE INMERSIVO */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-neutral-900/40 rounded-full filter blur-[120px] pointer-events-none" />
       <div className="absolute top-[40vh] right-0 w-[300px] h-[400px] bg-neutral-800/20 rounded-full filter blur-[100px] pointer-events-none" />
 
@@ -130,7 +128,7 @@ export default function GaleriaInnovadoraPage() {
           diseño <span className="italic text-neutral-600">vanguardia</span>
         </h1>
         <p className="text-neutral-500 text-xs tracking-wider max-w-md font-light">
-          Desliza lateralmente para explorar. Toca el ícono de columnas <Columns2 className="w-3 h-3 inline mx-1 text-neutral-400" /> en cualquier pieza para llevarla al estudio de comparación en tiempo real.
+          Desliza lateralmente para explorar. Toca el ícono de columnas <Columns className="w-3 h-3 inline mx-1 text-neutral-400" /> en cualquier pieza para llevarla al estudio de comparación en tiempo real.
         </p>
       </header>
 
@@ -150,7 +148,7 @@ export default function GaleriaInnovadoraPage() {
                 </span>
               </div>
 
-              {/* Contenedor deslizable nativo y fluido para el teléfono */}
+              {/* Contenedor deslizable nativo y fluido */}
               <div className="flex gap-6 overflow-x-auto pr-6 md:pr-16 pt-2 pb-6 scrollbar-none snap-x snap-mandatory">
                 {images.map((img) => {
                   const isFav = favorites.some(f => f.id === img.id)
@@ -168,7 +166,7 @@ export default function GaleriaInnovadoraPage() {
                           loading="lazy"
                         />
                         
-                        {/* Gradiente oscuro superior e inferior */}
+                        {/* Gradiente oscuro */}
                         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 opacity-80" />
 
                         {/* Controles interactivos flotantes rápidos */}
@@ -184,7 +182,7 @@ export default function GaleriaInnovadoraPage() {
                             className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white transition-all hover:scale-110 active:scale-95"
                             title="Añadir a comparación"
                           >
-                            <Columns2 className={`w-3.5 h-3.5 ${slotA?.id === img.id || slotB?.id === img.id ? 'text-amber-400' : 'text-neutral-300'}`} />
+                            <Columns className={`w-3.5 h-3.5 ${slotA?.id === img.id || slotB?.id === img.id ? 'text-amber-400' : 'text-neutral-300'}`} />
                           </button>
                         </div>
 
@@ -212,7 +210,7 @@ export default function GaleriaInnovadoraPage() {
         })}
       </main>
 
-      {/* WIDGET TOTALMENTE INTERACTIVO: COMPARADOR DE PANTALLA DIVIDIDA */}
+      {/* COMPARADOR DE PANTALLA DIVIDIDA */}
       {compareMode && (
         <div className="fixed inset-0 z-50 bg-[#070707] flex flex-col animate-in fade-in duration-300">
           {/* Cabecera del Comparador */}
@@ -229,7 +227,7 @@ export default function GaleriaInnovadoraPage() {
             </button>
           </div>
 
-          {/* Área de Pantalla Dividida Imersiva */}
+          {/* Área de Pantalla Dividida */}
           <div className="flex-1 grid grid-cols-2 bg-black h-full relative">
             
             {/* Slot de Imagen Izquierda */}
@@ -285,18 +283,18 @@ export default function GaleriaInnovadoraPage() {
         </div>
       )}
 
-      {/* BOTÓN FLOTANTE PERMANENTE CUANDO HAY ELEMENTOS EN EL COMPARADOR */}
+      {/* BOTÓN FLOTANTE PERMANENTE CUANDO HAY ELEMENTOS */}
       {(slotA || slotB) && !compareMode && (
         <button 
           onClick={() => setCompareMode(true)}
-          className="fixed bottom-6 right-6 z-40 bg-white text-black px-4 py-3 rounded-full flex items-center gap-2 shadow-2xl transition-transform hover:scale-105 active:scale-95 text-[11px] tracking-wider uppercase font-medium animate-bounce"
+          className="fixed bottom-6 right-6 z-40 bg-white text-black px-4 py-3 rounded-full flex items-center gap-2 shadow-2xl transition-transform hover:scale-105 active:scale-95 text-[11px] tracking-wider uppercase font-medium"
         >
-          <Columns2 className="w-3.5 h-3.5" />
+          <Columns className="w-3.5 h-3.5" />
           Comparar Laboratorio ({slotA ? 1 : 0} + {slotB ? 1 : 0})
         </button>
       )}
 
-      {/* DETALLE LIGHTBOX EXCLUSIVO */}
+      {/* DETALLE LIGHTBOX */}
       {selectedImage && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
