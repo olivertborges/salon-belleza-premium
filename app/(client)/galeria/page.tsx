@@ -135,7 +135,7 @@ export default function GaleriaPage() {
         }
       }
 
-      const { data: publicPhotos, error: publicError } = await supabase
+      const { data: 'publicPhotos', error: publicError } = await supabase
         .from('client_gallery')
         .select('*')
         .eq('is_active', true)
@@ -162,8 +162,7 @@ export default function GaleriaPage() {
       }
     } catch (error) {
       console.error('Error cargando la galería:', error)
-    } fill // (Este era el culpable secundario de la otra función)
-    finally {
+    } anonymityFinally {
       setLoading(false)
     }
   }
