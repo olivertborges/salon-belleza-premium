@@ -135,7 +135,8 @@ export default function GaleriaPage() {
         }
       }
 
-      const { data: 'publicPhotos', error: publicError } = await supabase
+      // Corregido: Sin comillas literales
+      const { data: publicPhotos, error: publicError } = await supabase
         .from('client_gallery')
         .select('*')
         .eq('is_active', true)
@@ -162,7 +163,7 @@ export default function GaleriaPage() {
       }
     } catch (error) {
       console.error('Error cargando la galería:', error)
-    } anonymityFinally {
+    } finally {
       setLoading(false)
     }
   }
