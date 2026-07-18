@@ -8,11 +8,9 @@ import {
   X, 
   Sparkles, 
   Loader,     
-  ArrowRight,
   Calendar,
   Eye,
   Maximize2,
-  ChevronRight,
   Quote
 } from 'lucide-react'
 
@@ -36,7 +34,6 @@ interface GalleryImage {
   after_image_url?: string | null
 }
 
-// Testimonios de alta gama integrados en el flujo visual
 const PREMIUM_TESTIMONIALS = [
   {
     id: 't1',
@@ -53,7 +50,10 @@ const PREMIUM_TESTIMONIALS = [
 ]
 
 export default function GaleriaPage() {
-  const { user, tenantId } = useAuth()
+  const { user } = useAuth()
+
+  // Control de hidratación para Next.js
+  const [mounted, setMounted] = useState(false)
 
   // Estados principales
   const [loading, setLoading] = useState(true)
@@ -72,6 +72,11 @@ export default function GaleriaPage() {
 
   // Lightbox & Modal
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+
+  // Forzar que el cliente esté montado antes de calcular fechas locales
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     loadGalleryData()
@@ -155,6 +160,20 @@ export default function GaleriaPage() {
     img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
   )
 
+  // Formateador seguro para evitar errores en servidores SSR
+  const formatDate = (dateString: string) => {
+    if (!mounted) return '—'
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    } catch {
+      return '—'
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center gap-5">
@@ -174,7 +193,7 @@ export default function GaleriaPage() {
       {/* SECCIÓN HERO MINIMALISTA */}
       <header className="max-w-7xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-24 text-center space-y-6">
         <div className="space-y-3">
-          <span className="text-[9px] text-neutral-400 tracking-[0.5em] uppercase font-medium block animate-fade-in">
+          <span className="text-[9px] text-neutral-400 tracking-[0.5em] uppercase font-medium block">
             — Handcrafted Perfection
           </span>
           <h1 className="text-4xl md:text-7xl font-extralight tracking-tight text-neutral-900 font-serif lowercase leading-tight">
@@ -196,14 +215,14 @@ export default function GaleriaPage() {
               className={`pb-6 relative transition-all duration-300 ${activeTab === 'public' ? 'text-neutral-900 font-medium' : 'text-neutral-400 hover:text-neutral-600'}`}
             >
               Colección Global
-              {activeTab === 'public' && <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-900 animate-slide-down" />}
+              {activeTab === 'public' && <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-900" />}
             </button>
             <button 
               onClick={() => setActiveTab('personal')}
               className={`pb-6 relative transition-all duration-300 ${activeTab === 'personal' ? 'text-neutral-900 font-medium' : 'text-neutral-400 hover:text-neutral-600'}`}
             >
               Bitácora Privada ({clientImages.length})
-              {activeTab === 'personal' && <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-900 animate-slide-down" />}
+              {activeTab === 'personal' && <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-900" />}
             </button>
           </div>
 
@@ -241,7 +260,7 @@ export default function GaleriaPage() {
               {filteredImages.map((img, index) => {
                 const isLiked = likedImages.has(img.id)
                 
-                // Inserción orgánica de testimonios cada 4 imágenes para romper la monotonía
+                // Inserción orgánica de testimonios cada 3 imágenes
                 const showTestimonial = index > 0 && index % 3 === 0
                 const testimonialIndex = Math.floor(index / 3) % PREMIUM_TESTIMONIALS.length
                 const testimonial = PREMIUM_TESTIMONIALS[testimonialIndex]
@@ -261,7 +280,7 @@ export default function GaleriaPage() {
                       </div>
                     )}
 
-                    {/* TARJETA DE IMAGEN ASIMÉTRICA Y SE LLEVA EL FOCO */}
+                    {/* TARJETA DE IMAGEN */}
                     <div 
                       onClick={() => setSelectedImage(img)}
                       className="group block cursor-pointer space-y-4"
@@ -275,7 +294,6 @@ export default function GaleriaPage() {
                         />
                         <div className="absolute inset-0 bg-neutral-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
-                        {/* Micro-interacción: Botón flotante refinado */}
                         <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500 z-10">
                           <div className="p-3 bg-white/90 backdrop-blur-md rounded-full shadow-lg text-neutral-900 hover:bg-white hover:scale-105 transition-all">
                             <Maximize2 className="w-3.5 h-3.5 stroke-[1.5]" />
@@ -283,7 +301,7 @@ export default function GaleriaPage() {
                         </div>
                       </div>
 
-                      {/* PIE DE FOTO TIPO REVISTA */}
+                      {/* PIE DE FOTO */}
                       <div className="flex items-start justify-between px-1">
                         <div className="space-y-1 max-w-[80%]">
                           <h3 className="font-serif text-lg font-light text-neutral-900 group-hover:text-neutral-600 transition-colors">
@@ -309,7 +327,7 @@ export default function GaleriaPage() {
               })}
             </div>
 
-            {/* SECCIÓN SLIDER ANTES/DESPUÉS PULIDO */}
+            {/* SECCIÓN SLIDER ANTES/DESPUÉS */}
             <div className="bg-[#F3EFEA] rounded-2xl p-8 md:p-16 border border-neutral-200/60 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               <div className="lg:col-span-4 space-y-6">
                 <span className="text-[9px] text-[#C9A96E] uppercase font-mono tracking-[0.3em] font-medium block">Technical Analysis</span>
@@ -339,7 +357,6 @@ export default function GaleriaPage() {
                   onMouseLeave={() => setIsDraggingSlider(false)}
                   className="relative aspect-[16/10] w-full max-w-2xl mx-auto rounded-xl overflow-hidden bg-neutral-200 select-none cursor-ew-resize border border-neutral-300/40"
                 >
-                  {/* Lado Derecho: DESPUÉS */}
                   <img 
                     src={featuredBeforeAfter?.after_image_url || "https://images.unsplash.com/photo-1604654894610-df490651e56c?q=80&w=1200"}
                     alt="Resultado Final" 
@@ -347,7 +364,6 @@ export default function GaleriaPage() {
                   />
                   <div className="absolute bottom-4 right-4 bg-neutral-900/80 backdrop-blur-xs px-3 py-1 rounded text-[9px] tracking-[0.2em] text-white uppercase font-light">Después</div>
 
-                  {/* Lado Izquierdo: ANTES */}
                   <div 
                     className="absolute inset-y-0 left-0 overflow-hidden"
                     style={{ width: `${sliderPosition}%` }}
@@ -361,7 +377,6 @@ export default function GaleriaPage() {
                     <div className="absolute bottom-4 left-4 bg-neutral-900/80 backdrop-blur-xs px-3 py-1 rounded text-[9px] tracking-[0.2em] text-white uppercase font-light">Antes</div>
                   </div>
 
-                  {/* Eje de control minimalista */}
                   <div 
                     className="absolute inset-y-0 w-[1px] -translate-x-1/2 pointer-events-none z-30 bg-neutral-400"
                     style={{ left: `${sliderPosition}%` }}
@@ -376,7 +391,7 @@ export default function GaleriaPage() {
 
           </div>
         ) : (
-          /* BITÁCORA PRIVADA MINIMALISTA */
+          /* BITÁCORA PRIVADA */
           clientImages.length === 0 ? (
             <div className="text-center py-24 max-w-md mx-auto space-y-4 border border-dashed border-neutral-200 rounded-xl">
               <span className="text-xs font-light uppercase tracking-widest text-neutral-400 block">Sin registros activos</span>
@@ -396,7 +411,7 @@ export default function GaleriaPage() {
                     <img src={img.image_url} alt={img.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102" />
                   </div>
                   <span className="text-[10px] text-neutral-400 font-mono block">
-                    {new Date(img.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {formatDate(img.created_at)}
                   </span>
                 </div>
               ))}
@@ -405,10 +420,10 @@ export default function GaleriaPage() {
         )}
       </main>
 
-      {/* LIGHTBOX DE DETALLES INMERSIVO */}
+      {/* LIGHTBOX DETALLES INMERSIVO */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-12 bg-[#FAF8F5]/98 backdrop-blur-md animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-12 bg-[#FAF8F5]/98 backdrop-blur-md overflow-y-auto"
           onClick={() => setSelectedImage(null)}
         >
           <button 
@@ -419,7 +434,7 @@ export default function GaleriaPage() {
           </button>
 
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-5xl w-full grid grid-cols-1 md:grid-cols-12 overflow-hidden border border-neutral-200/60 animate-scale-up"
+            className="bg-white rounded-2xl shadow-xl max-w-5xl w-full grid grid-cols-1 md:grid-cols-12 overflow-hidden border border-neutral-200/60"
             onClick={e => e.stopPropagation()}
           >
             <div className="md:col-span-7 bg-[#F3EFEA] aspect-square md:aspect-auto md:h-[70vh] overflow-hidden">
@@ -437,7 +452,7 @@ export default function GaleriaPage() {
                     {selectedImage.sensory_category}
                   </span>
                   <span className="text-[10px] text-neutral-400 font-mono">
-                    {new Date(selectedImage.created_at).toLocaleDateString()}
+                    {formatDate(selectedImage.created_at)}
                   </span>
                 </div>
 
