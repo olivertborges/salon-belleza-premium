@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
+// ELIMINA la importación de Link
+// import Link from 'next/link'
+
 import { 
   FaArrowRight, 
   FaQuoteLeft,
@@ -69,56 +71,8 @@ const GALLERY_IMAGES = [
   },
 ]
 
-const SERVICES = [
-  { 
-    name: 'Manicura Rusa Combinada & Capping', 
-    description: 'Limpieza minuciosa de cutículas con fresas de alta precisión, seguida de un escudo de gel estructural que nivela, unifica y protege el crecimiento biológico.', 
-    price: 45, 
-    duration: 90, 
-    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop&q=80',
-    tag: 'Más Solicitado',
-    icon: <FaScissors className="text-[#C9A96E]" />
-  },
-  { 
-    name: 'Extensiones Esculturales Soft Gel', 
-    description: 'Arquitectura completa de la uña utilizando tips de gel preformados y adhesión molecular. Flexibilidad de vanguardia con un grosor natural.', 
-    price: 65, 
-    duration: 120, 
-    image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80',
-    tag: 'Tendencia',
-    icon: <FaWind className="text-[#C9A96E]" />
-  },
-  { 
-    name: 'Nail Art de Autor (Mano Alzada)', 
-    description: 'Llevamos tus ideas al lienzo. Diseños geométricos detallados, encapsulados con pan de oro, efectos holográficos avanzados y pedrería fina.', 
-    price: 55, 
-    duration: 105, 
-    image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80',
-    tag: 'Estilo Único',
-    icon: <FaPalette className="text-[#C9A96E]" />
-  },
-]
-
-const TESTIMONIALS = [
-  {
-    comment: "La precisión de la manicura rusa aquí es excelente. Mis cutículas nunca lucieron tan limpias y prolijas, y el capping me duró un mes entero. ¡Súper recomendable!",
-    name: "Valeria Mendoza",
-    service: "Manicura Rusa & Capping"
-  },
-  {
-    comment: "Hice el curso en la academia y realmente impulsó mi trabajo. La paciencia de las instructoras y el nivel de detalle técnico es fantástico.",
-    name: "Agustina Silva",
-    service: "Alumna Academia"
-  },
-  {
-    comment: "Un lugar con un gusto excelente. Los diseños a mano alzada son divinos. No cambio este salón por ningún otro.",
-    name: "Carolina Rostagnol",
-    service: "Nail Art"
-  }
-]
-
 // ============================================================
-// HERO SECTION
+// HERO SECTION - SIN Link
 // ============================================================
 function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -166,11 +120,12 @@ function HeroSection() {
             </h1>
 
             <p className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed">
-              Especialistas en manicura combinada y extensiones esculturales. Creamos diseños vanguardistas que fusionan resistencia estructural y estética impecable.
+              Especialistas en manicura combinada y extensiones esculturales.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link 
+              {/* Link reemplazado por <a> */}
+              <a 
                 href="/reservas" 
                 className="relative group overflow-hidden rounded-xl p-[1px] transition-all duration-300 shadow-[0_0_30px_rgba(219,91,154,0.2)] hover:shadow-[0_0_50px_rgba(219,91,154,0.4)]"
                 style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
@@ -179,14 +134,14 @@ function HeroSection() {
                   RESERVAR CITA
                   <FaArrowRight className="text-xs group-hover:translate-x-1.5 transition-transform duration-300" style={{ color: COLORS.gold }} />
                 </div>
-              </Link>
-              <Link 
+              </a>
+              <a 
                 href="#servicios" 
                 className="group bg-stone-900/60 hover:bg-stone-900 border border-stone-800 hover:border-[#C9A96E] px-8 py-4 rounded-xl font-medium text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-sm"
               >
                 <FaSparkles className="text-xs group-hover:rotate-180 transition-transform duration-500" style={{ color: COLORS.gold }} />
                 VER SERVICIOS
-              </Link>
+              </a>
             </div>
 
             <div className="grid grid-cols-3 gap-6 pt-12 border-t border-stone-900 max-w-md">
@@ -320,6 +275,33 @@ function FeaturedGallery() {
 // ============================================================
 // SERVICIOS
 // ============================================================
+const SERVICES = [
+  { 
+    name: 'Manicura Rusa Combinada & Capping', 
+    description: 'Limpieza minuciosa de cutículas con fresas de alta precisión, seguida de un escudo de gel estructural que nivela, unifica y protege el crecimiento biológico.', 
+    price: 45, 
+    duration: 90, 
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop&q=80',
+    tag: 'Más Solicitado'
+  },
+  { 
+    name: 'Extensiones Esculturales Soft Gel', 
+    description: 'Arquitectura completa de la uña utilizando tips de gel preformados y adhesión molecular. Flexibilidad de vanguardia con un grosor natural.', 
+    price: 65, 
+    duration: 120, 
+    image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80',
+    tag: 'Tendencia'
+  },
+  { 
+    name: 'Nail Art de Autor (Mano Alzada)', 
+    description: 'Llevamos tus ideas al lienzo. Diseños geométricos detallados, encapsulados con pan de oro, efectos holográficos avanzados y pedrería fina.', 
+    price: 55, 
+    duration: 105, 
+    image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80',
+    tag: 'Estilo Único'
+  },
+]
+
 function ServicesSection() {
   return (
     <section id="servicios" className="py-32 bg-[#12100e] text-white relative overflow-hidden">
@@ -377,13 +359,13 @@ function ServicesSection() {
                   <span className="flex items-center gap-1.5 text-xs text-stone-400 font-light">
                     <FaClock style={{ color: COLORS.gold }} className="text-xs" /> {service.duration} Minutos
                   </span>
-                  <Link 
+                  <a 
                     href="/reservas" 
                     className="inline-flex items-center gap-1 text-xs font-bold transition-colors duration-300" 
                     style={{ color: COLORS.pink }}
                   >
                     AGENDAR CITA <FaArrowRight className="text-[10px]" />
-                  </Link>
+                  </a>
                 </div>
               </div>
 
@@ -480,13 +462,13 @@ function AcademySection() {
                   <span className="text-xs text-stone-400 flex items-center gap-2 bg-stone-900 px-4 py-2 rounded-xl border border-stone-800">
                     ⏱️ <strong className="text-stone-200">{course.duration}</strong>
                   </span>
-                  <Link 
+                  <a 
                     href="/academy" 
                     className="px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center hover:opacity-90"
                     style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})`, color: COLORS.white }}
                   >
                     CONSULTAR INFORMACIÓN
-                  </Link>
+                  </a>
                 </div>
               </div>
 
@@ -502,6 +484,24 @@ function AcademySection() {
 // ============================================================
 // TESTIMONIALS
 // ============================================================
+const TESTIMONIALS = [
+  {
+    comment: "La precisión de la manicura rusa aquí es excelente. Mis cutículas nunca lucieron tan limpias y prolijas, y el capping me duró un mes entero. ¡Súper recomendable!",
+    name: "Valeria Mendoza",
+    service: "Manicura Rusa & Capping"
+  },
+  {
+    comment: "Hice el curso en la academia y realmente impulsó mi trabajo. La paciencia de las instructoras y el nivel de detalle técnico es fantástico.",
+    name: "Agustina Silva",
+    service: "Alumna Academia"
+  },
+  {
+    comment: "Un lugar con un gusto excelente. Los diseños a mano alzada son divinos. No cambio este salón por ningún otro.",
+    name: "Carolina Rostagnol",
+    service: "Nail Art"
+  }
+]
+
 function TestimonialsSection() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
@@ -563,7 +563,6 @@ function TestimonialsSection() {
             </div>
           </div>
 
-          {/* Controles */}
           <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 flex gap-2">
             <button 
               onClick={() => setCurrentIndex((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}
@@ -618,6 +617,24 @@ function HygieneSection() {
 }
 
 // ============================================================
+// HEADER
+// ============================================================
+function Header() {
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <span className="text-white font-serif text-xl">Fresh Nails</span>
+        <nav className="flex gap-6 text-xs text-stone-400">
+          <a href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</a>
+          <a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a>
+          <a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a>
+        </nav>
+      </div>
+    </header>
+  )
+}
+
+// ============================================================
 // FOOTER
 // ============================================================
 function Footer() {
@@ -666,10 +683,10 @@ function Footer() {
         <div className="space-y-4">
           <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Navegación</h4>
           <ul className="space-y-2 text-xs font-light grid grid-cols-2 gap-2">
-            <li><Link href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</Link></li>
-            <li><Link href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</Link></li>
-            <li><Link href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</Link></li>
-            <li><Link href="/contacto" className="hover:text-[#C9A96E] transition-colors">Contacto</Link></li>
+            <li><a href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</a></li>
+            <li><a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a></li>
+            <li><a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a></li>
+            <li><a href="/contacto" className="hover:text-[#C9A96E] transition-colors">Contacto</a></li>
           </ul>
         </div>
 
@@ -712,17 +729,7 @@ function Footer() {
 export default function Home() {
   return (
     <main className="bg-[#0d0b0a] text-stone-300 min-h-screen overflow-x-hidden selection:bg-[#DB5B9A]/20 selection:text-[#DB5B9A]">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <span className="text-white font-serif text-xl">Fresh Nails</span>
-          <nav className="flex gap-6 text-xs text-stone-400">
-            <Link href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</Link>
-            <Link href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</Link>
-            <Link href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</Link>
-          </nav>
-        </div>
-      </header>
-
+      <Header />
       <HeroSection />
       <FeaturedGallery />
       <ServicesSection />
