@@ -154,88 +154,83 @@ export default function GaleriaAdminPage() {
 
   // Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  e.preventDefault();
+  setError(null);
+  setSuccess(null);
 
-    if (!tenantId) {
-      setError('⚠️ No se encontró el ID del negocio')
-      setTimeout(() => setError(null), 3000)
-      return
+  try {
+    // 1. Obtención segura y centralizada del tenantId
+    let activeTenantId = tenantId;
+    
+    if (!activeTenantId && user?.id) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) throw new Error("Error al validar tu perfil.");
+      if (profile?.tenant_id) {
+        activeTenantId = profile.tenant_id;
+      }
     }
 
-    setError(null)
-    setSuccess(null)
-
-    try {
-      let imageUrl = formData.image_url
-
-      if (selectedFile) {
-        setUploading(true)
-        imageUrl = await uploadFile(selectedFile)
-      } else if (!imageUrl && !editingPhoto) {
-        setError('⚠️ Selecciona una imagen o ingresa una URL')
-        setUploading(false)
-        return
-      }
-
-      if (editingPhoto) {
-        const { error } = await supabase
-          .from('gallery')
-          .update({
-            title: formData.title || null,
-            category: formData.category || 'Nail Art',
-            description: formData.description || null,
-            is_active: formData.is_active,
-            sort_order: formData.sort_order || 0
-          })
-          .eq('id', editingPhoto.id)
-
-        if (error) throw error
-        setSuccess('📝 Foto actualizada correctamente')
-      } else {
-        const { error } = await supabase
-          .from('gallery')
-          .insert({
-            tenant_id: tenantId,
-            professional_id: user?.id || null, // 👈 Se guarda el ID del profesional que sube la imagen
-            image_url: imageUrl,
-            title: formData.title || null,
-            category: formData.category || 'Nail Art',
-            description: formData.description || null,
-            is_active: formData.is_active,
-            sort_order: formData.sort_order || 0
-          })
-
-        if (error) throw error
-        setSuccess('✨ ¡Foto subida y agregada a la galería!')
-      }
-
-      setShowModal(false)
-      setEditingPhoto(null)
-      setSelectedFile(null)
-      setPreviewUrl(null)
-      setUploadProgress(0)
-      setFormData({
-        title: '',
-        category: 'Nail Art',
-        description: '',
-        image_url: '',
-        is_active: true,
-        sort_order: 0
-      })
-      if (fileInputRef.current) fileInputRef.current.value = ''
-
-      setTimeout(() => setSuccess(null), 3000)
-      fetchPhotos(false)
-
-    } catch (err: any) {
-      console.error('Error en handleSubmit:', err)
-      setError(err.message || 'Error al procesar la foto')
-      setTimeout(() => setError(null), 5000)
-    } finally {
-      setUploading(false)
-      setUploadProgress(0)
+    if (!activeTenantId) {
+      throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.');
     }
+
+    // 2. Procesamiento de archivos (Tu lógica existente)
+    let imageUrl = formData.image_url;
+    if (file) {
+      // Nota: Asegúrate de que tu función uploadFile maneje el error internamente o lanza aquí
+      imageUrl = await uploadFile(file, activeTenantId); 
+    }
+
+    // 3. Operación de base de datos
+    if (editingPhoto) {
+      const { error } = await supabase
+        .from('gallery')
+        .update({
+          image_url: imageUrl,
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          is_active: formData.is_active,
+          sort_order: formData.sort_order
+        })
+        .eq('id', editingPhoto.id)
+        .eq('tenant_id', activeTenantId); // Filtro de seguridad crucial
+
+      if (error) throw error;
+      setSuccess('✨ ¡Foto actualizada exitosamente!');
+    } else {
+      const { error } = await supabase
+        .from('gallery')
+        .insert({
+          tenant_id: activeTenantId,
+          professional_id: user?.id || null,
+          image_url: imageUrl,
+          title: formData.title || null,
+          category: formData.category || 'Nail Art',
+          description: formData.description || null,
+          is_active: formData.is_active,
+          sort_order: formData.sort_order || 0
+        });
+
+      if (error) throw error;
+      setSuccess('✨ ¡Foto subida exitosamente!');
+    }
+
+    // 4. Cleanup
+    resetForm();
+    onClose();
+
+  } catch (err: any) {
+    console.error("Error en handleSubmit:", err);
+    setError(err.message || 'Ocurrió un error inesperado');
   }
+};
+
 
   // Cargar fotos
   const fetchPhotos = async (showLoading = true) => {
