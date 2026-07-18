@@ -54,24 +54,20 @@ export default function GaleriaPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const beforeInputRef = useRef<HTMLInputElement>(null)
 
-  // Estados principales
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState<'public' | 'personal'>('public')
   const [sensoryFilter, setSensoryFilter] = useState<'all' | 'glossy' | '3d' | 'minimal' | 'abstract'>('all')
 
-  // Estados de datos
   const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
   const [clientImages, setClientImages] = useState<GalleryImage[]>([])
   const [clientId, setClientId] = useState<string | null>(null)
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry')
 
-  // Micro-interacciones
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
   const [likedAnimating, setLikedAnimating] = useState<string | null>(null)
 
-  // Modal de subida
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -84,13 +80,8 @@ export default function GaleriaPage() {
   const [uploadPolish, setUploadPolish] = useState('')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
-  // Lightbox
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  // ============================================================
-  // CARGAR DATOS DESDE SUPABASE
-  // ============================================================
   useEffect(() => {
     loadGalleryData()
   }, [user])
@@ -154,16 +145,10 @@ export default function GaleriaPage() {
     }
   }
 
-  // ============================================================
-  // FILTROS
-  // ============================================================
   const filteredImages = publicImages.filter(
     img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
   )
 
-  // ============================================================
-  // LIKES
-  // ============================================================
   const handleLike = (id: string) => {
     setLikedAnimating(id)
     setTimeout(() => setLikedAnimating(null), 500)
@@ -181,9 +166,6 @@ export default function GaleriaPage() {
     })
   }
 
-  // ============================================================
-  // SUBIR IMAGEN
-  // ============================================================
   const handleUpload = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const activeUserId = session?.user?.id || user?.id
@@ -300,12 +282,7 @@ export default function GaleriaPage() {
     }
   }
 
-  // ============================================================
-  // LIGHTBOX NAVEGACIÓN
-  // ============================================================
   const openLightbox = (img: GalleryImage) => {
-    const index = filteredImages.findIndex(i => i.id === img.id)
-    setLightboxIndex(index >= 0 ? index : 0)
     setSelectedImage(img)
   }
 
@@ -318,20 +295,13 @@ export default function GaleriaPage() {
     } else {
       newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
     }
-    setLightboxIndex(newIndex)
     setSelectedImage(filteredImages[newIndex])
   }
 
-  // ============================================================
-  // SCROLL SUAVE AL GALERÍA
-  // ============================================================
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
@@ -343,10 +313,7 @@ export default function GaleriaPage() {
 
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
-
-      {/* ============================================================
-          HERO - MINIMALISTA Y ELEGANTE
-      ============================================================ */}
+      {/* HERO */}
       <section className="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <img 
@@ -374,15 +341,11 @@ export default function GaleriaPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          GALERÍA PRINCIPAL
-      ============================================================ */}
+      {/* GALERÍA */}
       <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-16 relative z-20">
-
-        {/* TARJETA DE CONTROLES - FLOTANTE */}
+        {/* CONTROLES FLOTANTES */}
         <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-6 mb-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Tabs */}
             <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
               <button
                 onClick={() => setActiveTab('public')}
@@ -407,7 +370,6 @@ export default function GaleriaPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Vista */}
               <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
                 <button
                   onClick={() => setViewMode('masonry')}
@@ -427,7 +389,6 @@ export default function GaleriaPage() {
                 </button>
               </div>
 
-              {/* Subir */}
               <button
                 onClick={() => setShowUploadModal(true)}
                 className="px-5 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] transition-all duration-300 flex items-center gap-2"
@@ -437,7 +398,6 @@ export default function GaleriaPage() {
             </div>
           </div>
 
-          {/* Filtros - solo en colección pública */}
           {activeTab === 'public' && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               {[
@@ -463,9 +423,7 @@ export default function GaleriaPage() {
           )}
         </div>
 
-        {/* ============================================================
-            CONTENIDO - PINTEREST MASONRY
-        ============================================================ */}
+        {/* CONTENIDO */}
         {activeTab === 'public' ? (
           <>
             {filteredImages.length === 0 ? (
@@ -481,7 +439,6 @@ export default function GaleriaPage() {
                   const isLiked = likedImages.has(img.id)
                   const isHovered = hoveredImageId === img.id
 
-                  // Alturas variables para masonry
                   const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
                   const heightClass = heights[idx % heights.length]
 
@@ -501,7 +458,6 @@ export default function GaleriaPage() {
                           viewMode === 'masonry' ? '' : `h-full ${heightClass}`
                         } ${isHovered ? 'shadow-2xl scale-[1.02] z-10' : 'shadow-sm'}`}
                       >
-                        {/* Imagen */}
                         <img 
                           src={img.image_url} 
                           alt={img.title}
@@ -511,7 +467,6 @@ export default function GaleriaPage() {
                           loading="lazy"
                         />
 
-                        {/* Overlay en hover */}
                         <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${
                           isHovered ? 'opacity-100' : 'opacity-0'
                         }`}>
@@ -535,18 +490,15 @@ export default function GaleriaPage() {
                           </div>
                         </div>
 
-                        {/* Badge categoría */}
                         <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium">
                           {img.sensory_category || 'Exclusivo'}
                         </div>
 
-                        {/* Contador de likes - siempre visible */}
                         <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full text-[8px] text-white/60">
                           <Heart className="w-2.5 h-2.5 fill-current" />
                           {img.likes || 0}
                         </div>
 
-                        {/* Badge Antes/Después */}
                         {img.before_image_url && img.after_image_url && (
                           <div className="absolute bottom-3 left-3 bg-[#C9A96E]/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[6px] text-white tracking-[0.2em] uppercase font-bold">
                             Antes/Después
@@ -560,9 +512,6 @@ export default function GaleriaPage() {
             )}
           </>
         ) : (
-          /* ============================================================
-             SECCIÓN PERSONAL - FOTOS DE LA CLIENTA
-          ============================================================ */}
           <div>
             {clientImages.length === 0 ? (
               <div className="text-center py-20 bg-white/50 dark:bg-neutral-800/30 rounded-3xl border border-dashed border-neutral-200 dark:border-neutral-700">
@@ -610,9 +559,7 @@ export default function GaleriaPage() {
         )}
       </div>
 
-      {/* ============================================================
-          LIGHTBOX - CINEMATOGRÁFICO
-      ============================================================ */}
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
@@ -629,7 +576,6 @@ export default function GaleriaPage() {
               <X className="w-6 h-6" />
             </button>
 
-            {/* Navegación */}
             {filteredImages.length > 1 && (
               <>
                 <button 
@@ -656,7 +602,6 @@ export default function GaleriaPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="grid grid-cols-1 md:grid-cols-5">
-                {/* Imagen */}
                 <div className="md:col-span-3 bg-neutral-950 flex items-center justify-center min-h-[400px] md:min-h-[500px]">
                   <img 
                     src={selectedImage.image_url} 
@@ -665,7 +610,6 @@ export default function GaleriaPage() {
                   />
                 </div>
 
-                {/* Info */}
                 <div className="md:col-span-2 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
@@ -731,9 +675,7 @@ export default function GaleriaPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================================================
-          MODAL DE SUBIDA - LIMPIO Y MODERNO
-      ============================================================ */}
+      {/* MODAL DE SUBIDA */}
       <AnimatePresence>
         {showUploadModal && (
           <motion.div 
@@ -758,7 +700,6 @@ export default function GaleriaPage() {
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Título */}
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Nombre del Diseño *</label>
                   <input 
@@ -770,7 +711,6 @@ export default function GaleriaPage() {
                   />
                 </div>
 
-                {/* Descripción */}
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Descripción</label>
                   <textarea 
@@ -782,7 +722,6 @@ export default function GaleriaPage() {
                   />
                 </div>
 
-                {/* Imagen Principal */}
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Imagen Final *</label>
                   <div 
@@ -814,7 +753,6 @@ export default function GaleriaPage() {
                   </div>
                 </div>
 
-                {/* Imagen Antes */}
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Imagen de Antes (Opcional)</label>
                   <div 
@@ -843,7 +781,6 @@ export default function GaleriaPage() {
                   </div>
                 </div>
 
-                {/* Precio y Categoría - 2 columnas */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Precio</label>
@@ -875,7 +812,6 @@ export default function GaleriaPage() {
                   </div>
                 </div>
 
-                {/* Esmaltado */}
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Productos Usados</label>
                   <input 
