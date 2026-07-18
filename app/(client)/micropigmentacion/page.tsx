@@ -471,7 +471,7 @@ export default function MicropigmentacionPage() {
       {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl min-h-[380px] flex items-center">
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=1200&h=600&fit=crop" alt="Micropigmentación" className="w-full h-full object-cover" />
+          <img src="https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Micropigmentación" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         </div>
         <div className="relative z-10 p-6 md:p-12 max-w-2xl text-white">
