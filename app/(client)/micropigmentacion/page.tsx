@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -26,7 +26,12 @@ import {
   X,
   Loader2,
   Droplets,
-  Feather
+  Feather,
+  Heart,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon
 } from 'lucide-react'
 
 interface Servicio {
@@ -42,6 +47,18 @@ interface Servicio {
   created_at: string
 }
 
+interface GalleryImage {
+  id: string
+  tenant_id: string
+  image_url: string
+  title: string
+  category: string
+  description: string
+  is_active: boolean
+  created_at: string
+  source: 'admin' | 'client'
+}
+
 interface Review {
   id: string
   tenant_id: string
@@ -54,18 +71,6 @@ interface Review {
   is_approved: boolean
   created_at: string
   client_name?: string
-}
-
-const MICRO_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=1200&h=600&fit=crop',
-  cejas1: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  cejas2: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
-  cejas3: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
-  labios1: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  labios2: 'https://images.unsplash.com/photo-1589256469067-ea99122bb5f4?w=600&h=400&fit=crop',
-  ojos1: 'https://images.unsplash.com/photo-1611849889765-cde2b945cf09?w=600&h=400&fit=crop',
-  ojos2: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  tratamiento: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?w=600&h=400&fit=crop',
 }
 
 const containerVariants = {
@@ -88,6 +93,7 @@ export default function MicropigmentacionPage() {
 
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [filteredServicios, setFilteredServicios] = useState<Servicio[]>([])
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [reviews, setReviews] = useState<Record<string, Review[]>>({})
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -105,6 +111,11 @@ export default function MicropigmentacionPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // 🔥 Lightbox para galería
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
   }
@@ -117,33 +128,54 @@ export default function MicropigmentacionPage() {
     { id: 'Tratamientos', label: 'Tratamientos', icon: <Feather className="w-3.5 h-3.5" /> },
   ]
 
-  useEffect(() => {
-    loadServicios()
-    loadReviews()
+  // ============================================================
+  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID
+  // ============================================================
+  const getTenantId = useCallback(async (): Promise<string | null> => {
+    if (tenantId) return tenantId
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return null
+
+    if (session.user.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
+    }
+
+    if (session.user.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', session.user.id)
+      .maybeSingle()
+
+    if (profile?.tenant_id) return profile.tenant_id
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle()
+
+    if (client?.tenant_id) return client.tenant_id
+
+    return null
   }, [tenantId])
 
-  useEffect(() => {
-    let filtered = servicios
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(s => s.category === selectedCategory)
-    }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s => 
-        s.name.toLowerCase().includes(term) ||
-        s.description?.toLowerCase().includes(term)
-      )
-    }
-    setFilteredServicios(filtered)
-  }, [selectedCategory, searchTerm, servicios])
-
+  // ============================================================
+  // 🔥 CARGAR SERVICIOS
+  // ============================================================
   const loadServicios = async () => {
-    if (!tenantId) { setLoading(false); return }
+    const activeTenantId = await getTenantId()
+    if (!activeTenantId) { setLoading(false); return }
+    
     try {
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', activeTenantId)
         .eq('is_active', true)
         .in('category', ['Cejas', 'Labios', 'Ojos', 'Tratamientos', 'micropigmentacion', 'Micropigmentación'])
         .order('name', { ascending: true })
@@ -153,19 +185,96 @@ export default function MicropigmentacionPage() {
       setFilteredServicios(data || [])
     } catch (error) {
       console.error('Error cargando servicios:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
+  // ============================================================
+  // 🔥 CARGAR GALERÍA - FOTOS CON CATEGORÍA MICROPIGMENTACION
+  // ============================================================
+  const loadGallery = async () => {
+    const activeTenantId = await getTenantId()
+    if (!activeTenantId) return
+
+    try {
+      console.log('🔍 Cargando galería de micropigmentación para tenant:', activeTenantId)
+
+      let allImages: GalleryImage[] = []
+
+      // 1. Fotos de ADMIN (tabla gallery) con categoría Micropigmentacion
+      const { data: adminPhotos, error: adminError } = await supabase
+        .from('gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .eq('is_active', true)
+        .ilike('category', 'Micropigmentacion') // 🔥 Filtro por categoría
+        .order('created_at', { ascending: false })
+
+      if (adminError) {
+        console.error('Error cargando fotos de admin:', adminError)
+      } else if (adminPhotos) {
+        console.log(`📸 Encontradas ${adminPhotos.length} fotos de admin con categoría Micropigmentacion`)
+        const mappedAdmin = adminPhotos.map((p: any) => ({
+          ...p,
+          source: 'admin' as const,
+          category: p.category || 'Micropigmentacion'
+        }))
+        allImages = [...allImages, ...mappedAdmin]
+      }
+
+      // 2. Fotos de CLIENTES (tabla client_gallery) con categoría Micropigmentacion
+      const { data: clientPhotos, error: clientError } = await supabase
+        .from('client_gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .eq('is_active', true)
+        .eq('is_public', true)
+        .ilike('category', 'Micropigmentacion')
+        .order('created_at', { ascending: false })
+
+      if (clientError) {
+        console.error('Error cargando fotos de clientes:', clientError)
+      } else if (clientPhotos) {
+        console.log(`📸 Encontradas ${clientPhotos.length} fotos de clientes con categoría Micropigmentacion`)
+        const mappedClient = clientPhotos.map((p: any) => ({
+          id: p.id,
+          tenant_id: p.tenant_id,
+          image_url: p.after_image_url || p.image_url || p.before_image_url || '',
+          title: p.title || 'Trabajo de cliente',
+          category: p.category || 'Micropigmentacion',
+          description: p.description || '',
+          is_active: p.is_active !== undefined ? p.is_active : true,
+          created_at: p.created_at,
+          source: 'client' as const
+        }))
+        allImages = [...allImages, ...mappedClient]
+      }
+
+      // Ordenar por fecha
+      allImages.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      console.log(`✅ Total: ${allImages.length} fotos de micropigmentación cargadas`)
+      setGalleryImages(allImages)
+
+    } catch (error) {
+      console.error('Error cargando galería:', error)
+    }
+  }
+
+  // ============================================================
+  // CARGAR REVIEWS
+  // ============================================================
   const loadReviews = async () => {
-    if (!tenantId) return
+    const activeTenantId = await getTenantId()
+    if (!activeTenantId) return
+    
     try {
       const reviewsMap: Record<string, Review[]> = {}
       const { data, error } = await supabase
         .from('reviews')
         .select(`*, clients:client_id (name, avatar_url)`)
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', activeTenantId)
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
 
@@ -187,15 +296,75 @@ export default function MicropigmentacionPage() {
     }
   }
 
+  // ============================================================
+  // EFECTO PRINCIPAL
+  // ============================================================
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      await Promise.all([
+        loadServicios(),
+        loadGallery(),
+        loadReviews()
+      ])
+      setLoading(false)
+    }
+    loadData()
+  }, [tenantId])
+
+  // ============================================================
+  // FILTROS
+  // ============================================================
+  useEffect(() => {
+    let filtered = servicios
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(s => s.category === selectedCategory)
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(s => 
+        s.name.toLowerCase().includes(term) ||
+        s.description?.toLowerCase().includes(term)
+      )
+    }
+    setFilteredServicios(filtered)
+  }, [selectedCategory, searchTerm, servicios])
+
+  // ============================================================
+  // FUNCIONES DE REVIEWS
+  // ============================================================
+  const getAverageRating = (serviceId: string) => {
+    const serviceReviews = reviews[serviceId] || []
+    if (serviceReviews.length === 0) return 0
+    return serviceReviews.reduce((acc, r) => acc + r.rating, 0) / serviceReviews.length
+  }
+
+  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
+    const sizes = { sm: 'w-3 h-3', md: 'w-4 h-4', lg: 'w-5 h-5' }
+    const sizeClass = sizes[size]
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
+
+    return (
+      <div className="flex items-center gap-0.5">
+        {[...Array(fullStars)].map((_, i) => <Star key={`f-${i}`} className={`${sizeClass} fill-amber-400 text-amber-400`} />)}
+        {hasHalfStar && <StarHalf className={`${sizeClass} fill-amber-400 text-amber-400`} />}
+        {[...Array(emptyStars)].map((_, i) => <Star key={`e-${i}`} className={`${sizeClass} text-stone-300 dark:text-stone-600`} />)}
+      </div>
+    )
+  }
+
   const handleSubmitReview = async () => {
-    if (!user || !tenantId || rating === 0 || !comment.trim()) return
+    const activeTenantId = await getTenantId()
+    if (!user || !activeTenantId || rating === 0 || !comment.trim()) return
     setSubmitting(true)
 
     try {
       const { data, error } = await supabase
         .from('reviews')
         .insert({
-          tenant_id: tenantId,
+          tenant_id: activeTenantId,
           client_id: user.id,
           service_id: selectedService!.id,
           professional_id: null,
@@ -234,28 +403,40 @@ export default function MicropigmentacionPage() {
     }
   }
 
-  const getAverageRating = (serviceId: string) => {
-    const serviceReviews = reviews[serviceId] || []
-    if (serviceReviews.length === 0) return 0
-    return serviceReviews.reduce((acc, r) => acc + r.rating, 0) / serviceReviews.length
+  // ============================================================
+  // LIGHTBOX PARA GALERÍA
+  // ============================================================
+  const openLightbox = (image: GalleryImage) => {
+    const index = galleryImages.findIndex(i => i.id === image.id)
+    setLightboxIndex(index >= 0 ? index : 0)
+    setSelectedImage(image)
+    setIsLightboxOpen(true)
+    document.body.style.overflow = 'hidden'
   }
 
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
-    const sizes = { sm: 'w-3 h-3', md: 'w-4 h-4', lg: 'w-5 h-5' }
-    const sizeClass = sizes[size]
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
-
-    return (
-      <div className="flex items-center gap-0.5">
-        {[...Array(fullStars)].map((_, i) => <Star key={`f-${i}`} className={`${sizeClass} fill-amber-400 text-amber-400`} />)}
-        {hasHalfStar && <StarHalf className={`${sizeClass} fill-amber-400 text-amber-400`} />}
-        {[...Array(emptyStars)].map((_, i) => <Star key={`e-${i}`} className={`${sizeClass} text-stone-300 dark:text-stone-600`} />)}
-      </div>
-    )
+  const closeLightbox = () => {
+    setIsLightboxOpen(false)
+    setSelectedImage(null)
+    document.body.style.overflow = 'unset'
   }
 
+  const navigateLightbox = (direction: 'next' | 'prev') => {
+    if (!selectedImage) return
+    const currentIndex = galleryImages.findIndex(i => i.id === selectedImage.id)
+    if (currentIndex === -1) return
+
+    let newIndex
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % galleryImages.length
+    } else {
+      newIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length
+    }
+    setSelectedImage(galleryImages[newIndex])
+  }
+
+  // ============================================================
+  // MODALES
+  // ============================================================
   const openModal = (servicio: Servicio) => {
     setSelectedService(servicio)
     setIsModalOpen(true)
@@ -268,6 +449,9 @@ export default function MicropigmentacionPage() {
     document.body.style.overflow = 'unset'
   }
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
@@ -287,7 +471,7 @@ export default function MicropigmentacionPage() {
       {/* HERO */}
       <div className="relative overflow-hidden rounded-3xl min-h-[380px] flex items-center">
         <div className="absolute inset-0">
-          <img src={MICRO_IMAGES.hero} alt="Micropigmentación" className="w-full h-full object-cover" />
+          <img src="https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=1200&h=600&fit=crop" alt="Micropigmentación" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         </div>
         <div className="relative z-10 p-6 md:p-12 max-w-2xl text-white">
@@ -299,7 +483,7 @@ export default function MicropigmentacionPage() {
             <span className="font-serif italic" style={{ color: secondaryColor }}>Arte</span> Permanente
           </h1>
           <p className="text-sm md:text-base text-white/80 mt-4 max-w-md">
-            Microblading, Microshading y técnicas avanzadas conducidas por nuestra especialista <span className="font-bold text-amber-300">Ana Martínez</span>.
+            Microblading, Microshading y técnicas avanzadas conducidas por nuestra especialista.
           </p>
           <div className="flex flex-wrap gap-3 mt-6">
             <Link href="/agenda" className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg flex items-center gap-2 transition hover:scale-105" style={{ background: brandGradient.backgroundImage }}>
@@ -328,7 +512,9 @@ export default function MicropigmentacionPage() {
         ))}
       </div>
 
-      {/* CONTENIDO DE TABS */}
+      {/* ============================================================
+          TAB: SERVICIOS
+      ============================================================ */}
       {activeTab === 'servicios' && (
         <div className="space-y-6">
           <div className="flex flex-wrap gap-2 justify-center">
@@ -371,9 +557,6 @@ export default function MicropigmentacionPage() {
           >
             {filteredServicios.map((servicio) => {
               const avgRating = getAverageRating(servicio.id)
-              let imageUrl = servicio.image_url || MICRO_IMAGES.cejas1
-              if (servicio.category === 'Labios') imageUrl = MICRO_IMAGES.labios1
-              if (servicio.category === 'Ojos') imageUrl = MICRO_IMAGES.ojos1
 
               return (
                 <motion.div 
@@ -382,7 +565,7 @@ export default function MicropigmentacionPage() {
                   className={`p-4 border rounded-2xl bg-white dark:bg-[#130f24] dark:border-stone-800 flex ${viewMode === 'grid' ? 'flex-col justify-between' : 'flex-row gap-4 items-center'}`}
                 >
                   <div onClick={() => openModal(servicio)} className={`cursor-pointer ${viewMode === 'grid' ? 'space-y-2' : 'flex-1 flex gap-4 items-center'}`}>
-                    <img src={imageUrl} alt={servicio.name} className={`${viewMode === 'grid' ? 'w-full aspect-video' : 'w-24 h-24'} object-cover rounded-xl`} />
+                    <img src={servicio.image_url || 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop'} alt={servicio.name} className={`${viewMode === 'grid' ? 'w-full aspect-video' : 'w-24 h-24'} object-cover rounded-xl`} />
                     <div className="flex-1">
                       <div className="flex justify-between items-center"><h3 className="font-bold text-sm dark:text-white">{servicio.name}</h3><span className="text-xs font-bold text-emerald-500">${servicio.price}</span></div>
                       <p className="text-xs text-stone-500 line-clamp-2 mt-1">{servicio.description}</p>
@@ -402,20 +585,70 @@ export default function MicropigmentacionPage() {
         </div>
       )}
 
+      {/* ============================================================
+          TAB: GALERÍA - CON FOTOS DE LA BASE DE DATOS
+      ============================================================ */}
       {activeTab === 'galeria' && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn">
-          {Object.values(MICRO_IMAGES).filter((_, i) => i > 0).map((img, index) => (
-            <div key={index} className="overflow-hidden rounded-2xl aspect-square bg-stone-100 relative group">
-              <img src={img} alt="Galería Trabajo" className="w-full h-full object-cover transition duration-300 group-hover:scale-105" />
+        <div>
+          {galleryImages.length === 0 ? (
+            <div className="text-center py-16 bg-stone-50 dark:bg-stone-900/30 rounded-3xl border border-dashed border-stone-200 dark:border-stone-800">
+              <div className="w-16 h-16 mx-auto rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
+                <ImageIcon className="w-8 h-8 text-stone-400" />
+              </div>
+              <p className="text-sm text-stone-500 dark:text-stone-400 font-light">No hay fotos de micropigmentación aún</p>
+              <p className="text-xs text-stone-400 mt-1">Las fotos subidas desde el panel de administración aparecerán aquí</p>
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {galleryImages.map((img) => (
+                <div
+                  key={`${img.source}-${img.id}`}
+                  onClick={() => openLightbox(img)}
+                  className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-stone-100 dark:bg-stone-800 hover:shadow-2xl transition-all duration-300"
+                >
+                  <img 
+                    src={img.image_url} 
+                    alt={img.title || 'Trabajo de micropigmentación'}
+                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  
+                  {/* Overlay en hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                      <h3 className="text-sm font-light truncate">{img.title || 'Trabajo de micropigmentación'}</h3>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[9px] text-white/60">
+                          {img.source === 'admin' ? '👑 Fresh Nails' : '👤 Cliente'}
+                        </span>
+                        <ZoomIn className="w-4 h-4 text-white/60" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badge de origen */}
+                  <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[7px] text-white/90 tracking-[0.15em] uppercase font-medium ${
+                    img.source === 'admin' ? 'bg-pink-500/80' : 'bg-amber-500/80'
+                  }`}>
+                    {img.source === 'admin' ? 'Fresh Nails' : 'Cliente'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {/* ============================================================
+          TAB: TESTIMONIOS
+      ============================================================ */}
       {activeTab === 'testimonios' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadeIn">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.values(reviews).flat().length === 0 ? (
-            <div className="col-span-full text-center py-12 text-stone-400 text-xs uppercase tracking-widest">Aún no hay testimonios registrados</div>
+            <div className="col-span-full text-center py-16 text-stone-400 text-xs uppercase tracking-widest">
+              <Quote className="w-8 h-8 mx-auto mb-4 opacity-20" />
+              Aún no hay testimonios registrados
+            </div>
           ) : (
             Object.values(reviews).flat().map((rev) => (
               <div key={rev.id} className="p-5 border rounded-2xl bg-white dark:bg-[#130f24] dark:border-stone-800 space-y-3">
@@ -426,14 +659,79 @@ export default function MicropigmentacionPage() {
                   </div>
                   {renderStars(rev.rating)}
                 </div>
-                <p className="text-xs italic text-stone-600 dark:text-stone-300 flex gap-2"><Quote className="w-4 h-4 shrink-0 opacity-20" />{rev.comment}</p>
+                <p className="text-xs italic text-stone-600 dark:text-stone-300 flex gap-2">
+                  <Quote className="w-4 h-4 shrink-0 opacity-20" />
+                  {rev.comment}
+                </p>
               </div>
             ))
           )}
         </div>
       )}
 
-      {/* MODALS */}
+      {/* ============================================================
+          LIGHTBOX PARA GALERÍA
+      ============================================================ */}
+      <AnimatePresence>
+        {isLightboxOpen && selectedImage && (
+          <div 
+            className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-fadeIn"
+            onClick={closeLightbox}
+          >
+            <button 
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {galleryImages.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
+              {galleryImages.findIndex(i => i.id === selectedImage.id) + 1} / {galleryImages.length}
+            </div>
+
+            <div 
+              className="relative z-10 max-w-5xl max-h-[90vh] animate-scaleIn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={selectedImage.image_url} 
+                alt={selectedImage.title || 'Galería de micropigmentación'}
+                className="max-h-[85vh] w-auto object-contain rounded-2xl shadow-2xl"
+              />
+              
+              {selectedImage.title && (
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
+                  <p className="text-white text-sm font-light">{selectedImage.title}</p>
+                  <p className="text-[10px] text-white/50 mt-1">
+                    {selectedImage.source === 'admin' ? '👑 Fresh Nails' : '👤 Cliente'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================
+          MODAL DE SERVICIO
+      ============================================================ */}
       <AnimatePresence>
         {isModalOpen && selectedService && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
@@ -441,7 +739,10 @@ export default function MicropigmentacionPage() {
               <button onClick={closeModal} className="absolute top-4 right-4 text-stone-400"><X className="w-4 h-4" /></button>
               <h3 className="text-lg font-bold dark:text-white">{selectedService.name}</h3>
               <p className="text-xs text-stone-500 leading-relaxed">{selectedService.description}</p>
-              <div className="flex justify-between items-center pt-2"><span className="font-bold text-emerald-500">${selectedService.price}</span><Link href="/agenda" className="px-4 py-2 text-white text-xs font-bold rounded-xl" style={{ background: brandGradient.backgroundImage }}>Agendar Cupo</Link></div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-bold text-emerald-500">${selectedService.price}</span>
+                <Link href="/agenda" className="px-4 py-2 text-white text-xs font-bold rounded-xl" style={{ background: brandGradient.backgroundImage }}>Agendar Cupo</Link>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -468,6 +769,32 @@ export default function MicropigmentacionPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ============================================================
+          STYLES GLOBALES
+      ============================================================ */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { 
+            transform: scale(0.92);
+            opacity: 0;
+          }
+          to { 
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.25s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   )
 }
