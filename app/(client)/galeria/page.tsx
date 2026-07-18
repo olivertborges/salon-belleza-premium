@@ -17,7 +17,7 @@ import {
   ArrowLeft,
   ArrowRight
 } from 'lucide-react';
-import { supabase } from "../services/supabase";
+import { supabase } from '../services/supabase';
 
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from "framer-motion";
