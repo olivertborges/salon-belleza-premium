@@ -13,9 +13,7 @@ import {
   Loader,     
   Image as ImageIcon,
   ArrowDown,
-  Calendar,
   Eye,
-  ZoomIn,
   Upload,
   ChevronLeft,
   ChevronRight,
@@ -313,43 +311,62 @@ export default function GaleriaPage() {
 
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
-      {/* HERO */}
-      <section className="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src="https://images.unsplash.com/photo-1604654894610-df490651e56c?q=80&w=1600&auto=format&fit=crop"
-            alt="Hero"
-            className="w-full h-full object-cover brightness-75"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF8F5] dark:from-neutral-950 via-transparent to-transparent" />
+      {/* ============================================================
+          HERO - CON GRADIENTE Y DECORACIÓN (sin imagen externa)
+      ============================================================ */}
+      <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/20 via-[#FAF8F5] to-[#C9A96E]/10 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
+        {/* Elementos decorativos */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#C9A96E]/5 blur-3xl" />
+          
+          {/* Líneas decorativas sutiles */}
+          <div className="absolute top-20 left-10 w-32 h-[1px] bg-[#C9A96E]/20 rotate-12" />
+          <div className="absolute bottom-20 right-10 w-32 h-[1px] bg-[#C9A96E]/20 -rotate-12" />
+          <div className="absolute top-1/3 right-1/4 w-16 h-[1px] bg-[#C9A96E]/20 rotate-45" />
         </div>
 
         <div className="relative z-10 text-center max-w-3xl px-6">
-          <span className="text-[#C9A96E] text-[10px] tracking-[0.4em] uppercase font-light block mb-4">✦ Portfolio ✦</span>
-          <h1 className="text-5xl md:text-7xl font-light font-serif tracking-wide text-white drop-shadow-2xl">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#C9A96E]/30 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-sm mb-6">
+            <Sparkles className="w-3 h-3 text-[#C9A96E]" />
+            <span className="text-[8px] tracking-[0.3em] uppercase text-[#C9A96E] font-medium">Portfolio Exclusivo</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-light font-serif tracking-wide text-neutral-800 dark:text-white drop-shadow-sm">
             Galería de Arte
           </h1>
-          <p className="text-white/70 text-sm tracking-[0.2em] uppercase font-light mt-4 max-w-md mx-auto">
+          
+          <div className="w-12 h-[2px] bg-[#C9A96E] mx-auto my-6" />
+          
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 tracking-[0.15em] uppercase font-light max-w-md mx-auto">
             Descubre la colección de diseños exclusivos
           </p>
+          
           <button 
             onClick={scrollToGallery}
-            className="mt-8 px-8 py-3 rounded-full border border-white/30 text-white text-[10px] tracking-[0.25em] uppercase font-light hover:bg-white hover:text-neutral-900 transition-all duration-500 backdrop-blur-sm flex items-center gap-3 mx-auto"
+            className="mt-8 px-8 py-3 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] tracking-[0.25em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] hover:text-white transition-all duration-500 flex items-center gap-3 mx-auto shadow-lg hover:shadow-[#C9A96E]/20"
           >
             Explorar <ArrowDown className="w-3.5 h-3.5" />
           </button>
         </div>
       </section>
 
-      {/* GALERÍA */}
-      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-16 relative z-20">
-        {/* CONTROLES FLOTANTES */}
-        <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-6 mb-10">
+      {/* ============================================================
+          GALERÍA
+      ============================================================ */}
+      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-20">
+
+        {/* ============================================================
+            CONTROLES FLOTANTES - FILTROS REDISEÑADOS
+        ============================================================ */}
+        <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-5 mb-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
+            {/* Tabs */}
+            <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1 w-full md:w-auto">
               <button
                 onClick={() => setActiveTab('public')}
-                className={`px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                className={`flex-1 md:flex-none px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
                   activeTab === 'public' 
                     ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
                     : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
@@ -359,7 +376,7 @@ export default function GaleriaPage() {
               </button>
               <button
                 onClick={() => setActiveTab('personal')}
-                className={`px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                className={`flex-1 md:flex-none px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
                   activeTab === 'personal' 
                     ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
                     : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
@@ -369,7 +386,8 @@ export default function GaleriaPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+              {/* Vista */}
               <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
                 <button
                   onClick={() => setViewMode('masonry')}
@@ -389,17 +407,24 @@ export default function GaleriaPage() {
                 </button>
               </div>
 
+              {/* Subir */}
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="px-5 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] transition-all duration-300 flex items-center gap-2"
+                className="px-4 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] transition-all duration-300 flex items-center gap-2"
               >
                 <Plus className="w-3.5 h-3.5" /> Subir
               </button>
             </div>
           </div>
 
+          {/* ============================================================
+              FILTROS - REDISEÑADOS CON ESTILO "PILDORAS ELEGANTES"
+          ============================================================ */}
           {activeTab === 'public' && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
+              <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 dark:text-neutral-500 font-medium mr-2">
+                Filtrar:
+              </span>
               {[
                 { id: 'all', label: 'Todo', icon: '✦' },
                 { id: 'glossy', label: 'Glossy', icon: '✨' },
@@ -410,20 +435,25 @@ export default function GaleriaPage() {
                 <button
                   key={btn.id}
                   onClick={() => setSensoryFilter(btn.id as any)}
-                  className={`px-4 py-1.5 rounded-full text-[9px] tracking-[0.1em] font-medium transition-all duration-300 ${
+                  className={`group relative px-4 py-1.5 rounded-full text-[9px] tracking-[0.05em] font-medium transition-all duration-300 ${
                     sensoryFilter === btn.id 
-                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900' 
-                      : 'bg-neutral-100/50 dark:bg-neutral-800/30 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      ? 'bg-[#C9A96E] text-white shadow-md shadow-[#C9A96E]/20 scale-105' 
+                      : 'bg-neutral-100/80 dark:bg-neutral-800/50 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
                   <span className="mr-1">{btn.icon}</span> {btn.label}
+                  {sensoryFilter === btn.id && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/80 animate-pulse" />
+                  )}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* CONTENIDO */}
+        {/* ============================================================
+            CONTENIDO - LAS FOTOS NO SE TOCAN
+        ============================================================ */}
         {activeTab === 'public' ? (
           <>
             {filteredImages.length === 0 ? (
@@ -559,7 +589,9 @@ export default function GaleriaPage() {
         )}
       </div>
 
-      {/* LIGHTBOX */}
+      {/* ============================================================
+          LIGHTBOX
+      ============================================================ */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
@@ -675,7 +707,9 @@ export default function GaleriaPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL DE SUBIDA */}
+      {/* ============================================================
+          MODAL DE SUBIDA
+      ============================================================ */}
       <AnimatePresence>
         {showUploadModal && (
           <motion.div 
