@@ -51,7 +51,7 @@ const COLORS = {
 }
 
 // ============================================================
-// IMÁGENES DE LA GALERÍA (reales de servicios)
+// IMÁGENES DE LA GALERÍA
 // ============================================================
 const GALLERY_IMAGES = [
   {
@@ -110,19 +110,12 @@ const staggerContainer = {
 }
 
 // ============================================================
-// HERO SECTION - CON CARRUSEL DE FOTOS
+// HERO SECTION - CORREGIDO
 // ============================================================
 function HeroSection() {
   const [mounted, setMounted] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
-  })
-
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.8], [1, 0.95])
 
   const heroImages = [
     'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
@@ -145,47 +138,36 @@ function HeroSection() {
     >
       {/* Fondo con partículas animadas */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-[#DB5B9A]/10 rounded-full filter blur-[150px] animate-pulse duration-[8000ms]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-[#C9A96E]/10 rounded-full filter blur-[150px] animate-pulse duration-[6000ms]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse duration-[8000ms]" style={{ background: `${COLORS.pink}15` }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse duration-[6000ms]" style={{ background: `${COLORS.gold}15` }} />
         <div className="absolute inset-0 bg-[radial-gradient(#1c1917_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
       </div>
 
-      <motion.div 
-        style={{ opacity, scale }}
-        className="w-full max-w-7xl mx-auto px-4 relative z-10"
-      >
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-12 gap-12 items-center">
 
           {/* Texto Hero */}
-          <motion.div 
-            className="lg:col-span-6 space-y-8"
-            initial="hidden"
-            animate={mounted ? "visible" : "hidden"}
-            variants={staggerContainer}
-          >
-            <motion.div 
-              variants={fadeInUp}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-[#C9A96E]/10 to-[#DB5B9A]/10 border border-[#C9A96E]/30 px-5 py-2 rounded-full backdrop-blur-md"
-            >
+          <div className="lg:col-span-6 space-y-8">
+            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#C9A96E]/10 to-[#DB5B9A]/10 border border-[#C9A96E]/30 px-5 py-2 rounded-full backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-[#C9A96E] animate-ping" />
               <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: COLORS.gold }}>
                 ✦ Fresh Nails Salon ✦
               </p>
-            </motion.div>
+            </div>
 
-            <motion.h1 variants={fadeInUp} className="text-5xl sm:text-7xl lg:text-8xl font-extralight tracking-tight leading-[1.05]">
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extralight tracking-tight leading-[1.05]">
               <span className="text-stone-100">Donde tus manos</span>
               <br />
               <span className="font-serif italic font-normal" style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 se vuelven arte
               </span>
-            </motion.h1>
+            </h1>
 
-            <motion.p variants={fadeInUp} className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed">
+            <p className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed">
               Especialistas en manicura combinada y extensiones esculturales. Creamos diseños vanguardistas que fusionan resistencia estructural y estética impecable.
-            </motion.p>
+            </p>
 
-            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
                 href="/reservas" 
                 className="relative group overflow-hidden rounded-xl p-[1px] transition-all duration-300 shadow-[0_0_30px_rgba(219,91,154,0.2)] hover:shadow-[0_0_50px_rgba(219,91,154,0.4)]"
@@ -203,12 +185,9 @@ function HeroSection() {
                 <FaSparkles className="text-xs group-hover:rotate-180 transition-transform duration-500" style={{ color: COLORS.gold }} />
                 VER SERVICIOS
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div 
-              variants={fadeInUp}
-              className="grid grid-cols-3 gap-6 pt-12 border-t border-stone-900 max-w-md"
-            >
+            <div className="grid grid-cols-3 gap-6 pt-12 border-t border-stone-900 max-w-md">
               {[
                 { number: '100%', label: 'Esterilización Médica', color: COLORS.gold },
                 { number: 'Técnicas', label: 'Rusas Profesionales', color: COLORS.pink },
@@ -219,41 +198,42 @@ function HeroSection() {
                   <p className="text-[10px] uppercase tracking-widest text-stone-500 mt-1">{item.label}</p>
                 </div>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
 
           {/* Carrusel de imágenes Hero */}
-          <motion.div 
-            className="lg:col-span-6 relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={mounted ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div className="lg:col-span-6 relative">
             <div className="relative w-full max-w-md mx-auto aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border border-stone-800">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={currentSlide}
-                  src={heroImages[currentSlide]}
-                  alt="Fresh Nails Gallery"
-                  className="w-full h-full object-cover"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                />
-              </AnimatePresence>
+              {/* Usamos div en lugar de motion.img para evitar errores */}
+              <div className="relative w-full h-full">
+                {heroImages.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className={`absolute inset-0 transition-opacity duration-1000 ${
+                      idx === currentSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <img 
+                      src={img} 
+                      alt="Fresh Nails Gallery" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
 
               {/* Overlay con gradiente */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent opacity-60" />
 
               {/* Badge flotante */}
-              <motion.div 
+              <div 
                 className="absolute bottom-6 left-6 right-6 z-20 bg-[#0d0b0a]/85 backdrop-blur-xl border border-[#C9A96E]/30 p-5 rounded-2xl shadow-xl"
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.3 }}
+                style={{ transition: 'transform 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl border border-[#C9A96E]/30 flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}/20, ${COLORS.gold}/20)` }}>
+                  <div className="w-10 h-10 rounded-xl border border-[#C9A96E]/30 flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}20, ${COLORS.gold}20)` }}>
                     <FaGem className="animate-pulse duration-[4000ms]" style={{ color: COLORS.gold }} />
                   </div>
                   <div>
@@ -261,7 +241,7 @@ function HeroSection() {
                     <p className="text-[11px] text-stone-400 font-light mt-0.5">Brillo blindado por hasta 21 días</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Indicadores del carrusel */}
               <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
@@ -270,25 +250,23 @@ function HeroSection() {
                     key={i}
                     onClick={() => setCurrentSlide(i)}
                     className={`h-1 rounded-full transition-all duration-300 ${
-                      i === currentSlide 
-                        ? 'w-6' 
-                        : 'w-3 bg-stone-700 hover:bg-stone-500'
+                      i === currentSlide ? 'w-6' : 'w-3 bg-stone-700 hover:bg-stone-500'
                     }`}
                     style={i === currentSlide ? { background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` } : {}}
                   />
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
 
         </div>
-      </motion.div>
+      </div>
     </section>
   )
 }
 
 // ============================================================
-// GALERÍA DESTACADA - CON MUCHO MOVIMIENTO
+// GALERÍA DESTACADA
 // ============================================================
 function FeaturedGallery() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -325,33 +303,31 @@ function FeaturedGallery() {
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
-              <motion.img 
+              <img 
                 src={img.url} 
                 alt={img.title}
-                className="w-full h-full object-cover"
-                animate={{ 
-                  scale: hoveredIndex === idx ? 1.12 : 1,
+                className="w-full h-full object-cover transition-all duration-700 ease-out"
+                style={{ 
+                  transform: hoveredIndex === idx ? 'scale(1.12)' : 'scale(1)',
                   filter: hoveredIndex === idx ? 'brightness(0.9)' : 'brightness(1)'
                 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               />
               
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: hoveredIndex === idx ? 0.8 : 0 }}
-                transition={{ duration: 0.4 }}
+              <div 
+                className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent transition-opacity duration-400"
+                style={{ opacity: hoveredIndex === idx ? 0.8 : 0 }}
               />
 
-              <motion.div 
-                className="absolute bottom-0 left-0 right-0 p-4"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: hoveredIndex === idx ? 0 : 20, opacity: hoveredIndex === idx ? 1 : 0 }}
-                transition={{ duration: 0.4 }}
+              <div 
+                className="absolute bottom-0 left-0 right-0 p-4 transition-all duration-400"
+                style={{ 
+                  transform: hoveredIndex === idx ? 'translateY(0)' : 'translateY(20px)',
+                  opacity: hoveredIndex === idx ? 1 : 0
+                }}
               >
                 <h4 className="text-white text-sm font-medium">{img.title}</h4>
                 <p className="text-xs" style={{ color: COLORS.gold }}>{img.category}</p>
-              </motion.div>
+              </div>
 
               <div className="absolute top-3 left-3">
                 <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-[#C9A96E]/30" style={{ color: COLORS.gold, background: 'rgba(13,11,10,0.6)' }}>
@@ -403,8 +379,8 @@ function ServicesSection() {
 
   return (
     <section id="servicios" className="py-32 bg-[#12100e] text-white relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.pink}/5` }} />
-      <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.gold}/5` }} />
+      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.pink}15` }} />
+      <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.gold}15` }} />
 
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <motion.div 
@@ -438,12 +414,10 @@ function ServicesSection() {
               className="group bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#C9A96E]/30 hover:shadow-2xl hover:shadow-[#C9A96E]/5 flex flex-col justify-between"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-900">
-                <motion.img 
+                <img 
                   src={service.image || defaultServices[idx % 3].image} 
                   alt={service.name}
-                  className="w-full h-full object-cover"
-                  whileHover={{ scale: 1.12 }}
-                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-transparent to-transparent z-10" />
                 
@@ -451,13 +425,12 @@ function ServicesSection() {
                   {service.tag || 'Fresh Nails'}
                 </span>
 
-                <motion.div 
+                <div 
                   className="absolute bottom-4 right-4 z-20 font-serif italic text-white text-xl px-4 py-1.5 rounded-xl shadow-lg shadow-black/40"
                   style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}, ${COLORS.pinkDark})` }}
-                  whileHover={{ scale: 1.05 }}
                 >
                   ${service.price}
-                </motion.div>
+                </div>
               </div>
 
               <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
@@ -479,17 +452,20 @@ function ServicesSection() {
                     className="inline-flex items-center gap-1 text-xs font-bold transition-colors duration-300" 
                     style={{ color: COLORS.pink }}
                   >
-                    AGENDAR CITA <FaArrowRight className="text-[10px] transform group-hover:translate-x-1 transition-transform" />
+                    AGENDAR CITA <FaArrowRight className="text-[10px]" />
                   </Link>
                 </div>
               </div>
 
-              <motion.div 
-                className="h-[2px]"
-                initial={{ scaleX: 0, originX: 0 }}
-                whileHover={{ scaleX: 1 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})` }}
+              <div 
+                className="h-[2px] transition-all duration-500"
+                style={{ 
+                  background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})`,
+                  transform: 'scaleX(0)',
+                  transformOrigin: 'left'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scaleX(1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scaleX(0)'}
               />
             </motion.div>
           ))}
@@ -603,7 +579,7 @@ function AcademySection() {
                 </div>
               </div>
 
-              <div className="absolute -top-40 -right-40 w-60 h-60 rounded-full filter blur-[80px] group-hover:opacity-100 opacity-0 transition-opacity duration-700" style={{ background: `${COLORS.pink}/5` }} />
+              <div className="absolute -top-40 -right-40 w-60 h-60 rounded-full filter blur-[80px] group-hover:opacity-100 opacity-0 transition-opacity duration-700" style={{ background: `${COLORS.pink}/10` }} />
             </motion.div>
           ))}
         </motion.div>
@@ -672,8 +648,8 @@ function TestimonialsSection() {
 
   return (
     <section className="py-32 bg-[#12100e] text-white border-t border-stone-900 relative overflow-hidden">
-      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.pink}/5` }} />
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.gold}/5` }} />
+      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.pink}/10` }} />
+      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.gold}/10` }} />
 
       <div className="w-full max-w-4xl mx-auto px-4 relative z-10">
         <motion.div 
@@ -740,22 +716,18 @@ function TestimonialsSection() {
 
           {/* Controles */}
           <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 flex gap-2">
-            <motion.button 
+            <button 
               onClick={() => { setDirection(-1); setCurrentIndex((prev) => (prev - 1 + items.length) % items.length) }}
               className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
             >
               <FaChevronLeft className="text-xs" />
-            </motion.button>
-            <motion.button 
+            </button>
+            <button 
               onClick={() => { setDirection(1); setCurrentIndex((prev) => (prev + 1) % items.length) }}
               className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
             >
               <FaChevronRight className="text-xs" />
-            </motion.button>
+            </button>
           </div>
 
           <button 
@@ -825,17 +797,15 @@ function PremiumFooter() {
               { icon: <FaFacebook className="text-sm" />, href: "#" },
               { icon: <FaWhatsapp className="text-sm" />, href: "#" }
             ].map((social, i) => (
-              <motion.a 
+              <a 
                 key={i}
                 href={social.href} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="w-9 h-9 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-400 hover:text-white transition-colors"
-                whileHover={{ y: -3, scale: 1.05, borderColor: COLORS.gold }}
-                whileTap={{ scale: 0.95 }}
+                className="w-9 h-9 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-400 hover:text-white hover:border-[#C9A96E] transition-all duration-300"
               >
                 {social.icon}
-              </motion.a>
+              </a>
             ))}
           </div>
         </div>
@@ -873,21 +843,19 @@ function PremiumFooter() {
           <p className="text-xs text-stone-500 leading-relaxed font-light">
             Recibe información sobre la apertura de agendas mensuales y nuevos talleres prácticos de la academia.
           </p>
-          <motion.form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
             <input 
               type="email" 
               placeholder="Tu correo electrónico..." 
               className="w-full bg-stone-900 border border-stone-800 focus:border-[#C9A96E] focus:outline-none text-xs rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 transition-colors"
             />
-            <motion.button 
-              className="w-full text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300"
+            <button 
+              className="w-full text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300 hover:opacity-90"
               style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
               SUSCRIBIRME
-            </motion.button>
-          </motion.form>
+            </button>
+          </form>
         </div>
 
       </div>
