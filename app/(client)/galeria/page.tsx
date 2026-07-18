@@ -33,7 +33,7 @@ interface GalleryImage {
   client_name?: string
   likes?: number
   uploaded_by_admin?: boolean
-  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
+  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract' | 'Micropigmentacion' | 'Peluquería'
   polish_used?: string
   price: number
   views?: number
@@ -52,7 +52,7 @@ export default function GaleriaPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState<'public' | 'personal'>('public')
-  const [sensoryFilter, setSensoryFilter] = useState<'all' | 'glossy' | '3d' | 'minimal' | 'abstract'>('all')
+  const [sensoryFilter, setSensoryFilter] = useState<string>('all')
 
   const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
   const [clientImages, setClientImages] = useState<GalleryImage[]>([])
@@ -67,7 +67,7 @@ export default function GaleriaPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
-  const [uploadCategory, setUploadCategory] = useState<'glossy' | '3d' | 'minimal' | 'abstract'>('glossy')
+  const [uploadCategory, setUploadCategory] = useState<string>('glossy')
   const [uploadPrice, setUploadPrice] = useState('')
   const [uploadPolish, setUploadPolish] = useState('')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
@@ -77,10 +77,12 @@ export default function GaleriaPage() {
   const [fullImageMode, setFullImageMode] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // Cambio aplicado: Ahora filtra buscando tanto en sensory_category como en category (Base de datos del Admin)
   const filteredImages = useMemo(() => {
-    return publicImages.filter(
-      img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
-    )
+    return publicImages.filter(img => {
+      if (sensoryFilter === 'all') return true
+      return img.sensory_category === sensoryFilter || (img as any).category === sensoryFilter
+    })
   }, [publicImages, sensoryFilter])
 
   // ============================================================
@@ -200,17 +202,17 @@ export default function GaleriaPage() {
   // HANDLE BOOKING
   // ============================================================
   const bookingRef = useRef(false)
-  
+
   const handleBookingRedirect = useCallback((image: GalleryImage) => {
     if (bookingRef.current) return
     bookingRef.current = true
-    
+
     const profId = image.professional_id || ''
     const designTitle = encodeURIComponent(image.title)
     const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
 
     closeLightbox()
-    
+
     setTimeout(() => {
       router.push(targetUrl)
       setTimeout(() => {
@@ -309,7 +311,7 @@ export default function GaleriaPage() {
           uploaded_by_admin: isAdmin,
           likes: 0,
           views: 0,
-          sensory_category: uploadCategory,
+          sensory_category: uploadCategory as any,
           polish_used: uploadPolish || 'Fresh Nails Premium',
           price: parseFloat(uploadPrice) || 45.00
         }
@@ -339,18 +341,6 @@ export default function GaleriaPage() {
 
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  // ============================================================
-  // RENDER
-  // ============================================================
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
-        <Loader className="w-6 h-6 text-[#C9A96E] animate-spin stroke-[1.5]" />
-        <span className="text-[10px] tracking-[0.3em] uppercase text-neutral-400 font-light">Cargando galería...</span>
-      </div>
-    )
   }
 
   return (
@@ -427,16 +417,19 @@ export default function GaleriaPage() {
           {activeTab === 'public' && (
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 font-medium mr-2">Filtrar:</span>
+              {/* Cambio aplicado: Array extendido con Micropigmentación y Peluquería */}
               {[
                 { id: 'all', label: 'Todo', icon: '✦' },
                 { id: 'glossy', label: 'Glossy', icon: '✨' },
                 { id: '3d', label: '3D', icon: '💎' },
                 { id: 'minimal', label: 'Minimal', icon: '🌿' },
-                { id: 'abstract', label: 'Abstracto', icon: '🎨' }
+                { id: 'abstract', label: 'Abstracto', icon: '🎨' },
+                { id: 'Micropigmentacion', label: 'Micropigmentación', icon: '✒️' },
+                { id: 'Peluquería', label: 'Peluquería', icon: '✂️' }
               ].map((btn) => (
                 <button
                   key={btn.id}
-                  onClick={() => setSensoryFilter(btn.id as any)}
+                  onClick={() => setSensoryFilter(btn.id)}
                   className={`px-4 py-1.5 rounded-full text-[9px] font-medium transition-all ${
                     sensoryFilter === btn.id ? 'bg-[#C9A96E] text-white shadow-md' : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500'
                   }`}
@@ -494,7 +487,7 @@ export default function GaleriaPage() {
                           </div>
                         </div>
                         <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium">
-                          {img.sensory_category || 'Exclusivo'}
+                          {img.sensory_category === 'Micropigmentacion' ? 'Micropigmentación' : img.sensory_category || 'Exclusivo'}
                         </div>
                       </div>
                     </div>
@@ -590,7 +583,7 @@ export default function GaleriaPage() {
               <div className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0 animate-slideIn">
                 <div className="space-y-4">
                   <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
-                    {selectedImage.sensory_category || 'Exclusivo'}
+                    {selectedImage.sensory_category === 'Micropigmentacion' ? 'Micropigmentación' : selectedImage.sensory_category || 'Exclusivo'}
                   </span>
 
                   <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">
@@ -741,11 +734,14 @@ export default function GaleriaPage() {
                 </div>
                 <div>
                   <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría</label>
-                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value as any)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm">
+                  {/* Cambio aplicado: Opciones extendidas en el selector del formulario */}
+                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm">
                     <option value="glossy">✨ Glossy</option>
                     <option value="3d">💎 3D</option>
                     <option value="minimal">🌿 Minimal</option>
                     <option value="abstract">🎨 Abstracto</option>
+                    <option value="Micropigmentacion">✒️ Micropigmentación</option>
+                    <option value="Peluquería">✂️ Peluquería</option>
                   </select>
                 </div>
               </div>
