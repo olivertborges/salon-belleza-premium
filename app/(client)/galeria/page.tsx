@@ -75,7 +75,7 @@ export default function GaleriaPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [fullImageMode, setFullImageMode] = useState(false)
 
-  // ⚡ Optimización: Prefetch automático de la agenda para evitar retrasos de carga
+  // Pre-carga automática de la ruta agenda
   useEffect(() => {
     router.prefetch('/agenda')
   }, [router])
@@ -88,19 +88,26 @@ export default function GaleriaPage() {
     if (!selectedImage) setFullImageMode(false)
   }, [selectedImage])
 
-  // 🚀 Solución a la doble recarga: Cierre limpio inmediato + delay controlado para la navegación client-side
+  // 🔥 Solución definitiva contra el doble render/recarga usando manipulación de historial nativa + router client-side
   const handleBookingRedirect = (image: GalleryImage) => {
     const profId = image.professional_id || ''
     const designTitle = encodeURIComponent(image.title)
-    
-    // Desmontamos el Lightbox primero para liberar recursos y detener animaciones pesadas
+    const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
+
+    // 1. Limpiamos estados del modal para desmontar elementos gráficos pesados
     setSelectedImage(null)
     setFullImageMode(false)
 
-    // Un pequeño respiro de 200ms para permitir que Framer Motion complete la salida y Next.js rutee fluidamente
+    // 2. Modificamos la URL en segundo plano mediante pushState nativo del navegador.
+    // Esto previene que Next.js asuma que hay cambios estructurales drásticos que requieran revalidar layouts en servidor.
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ ...window.history.state, as: targetUrl, url: targetUrl }, '', targetUrl)
+    }
+
+    // 3. Ejecutamos la redirección puramente interna controlando que no se dispare un reset del scroll
     setTimeout(() => {
-      router.push(`/agenda?professional=${profId}&style=${designTitle}`)
-    }, 200)
+      router.push(targetUrl, { scroll: false })
+    }, 50)
   }
 
   const loadGalleryData = async () => {
@@ -271,7 +278,8 @@ export default function GaleriaPage() {
 
     } catch (e: any) {
       setUploadStatus({ type: 'error', message: e.message || 'Error al guardar.' })
-    } finally {
+    } fill
+    finally {
       setUploading(false)
     }
   }
