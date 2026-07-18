@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -38,36 +38,6 @@ type Photo = {
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentacion', 'Peluquería']
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1
-    }
-  }
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 20 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    y: 0,
-    transition: { 
-      type: "spring",
-      stiffness: 300,
-      damping: 24
-    }
-  },
-  exit: { 
-    opacity: 0, 
-    scale: 0.8,
-    transition: { duration: 0.2 }
-  }
-}
-
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
   const { tenantId, user, loading: authLoading } = useAuth()
@@ -104,51 +74,168 @@ export default function GaleriaAdminPage() {
   }
 
   // ============================================================
-  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID DE FORMA SEGURA
+  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID
   // ============================================================
-  const getTenantId = async (): Promise<string> => {
-    // 1. Primero intentar con el tenantId del contexto
+  const getTenantId = useCallback(async (): Promise<string | null> => {
+    // 1. Primero del contexto
     if (tenantId) return tenantId
 
-    // 2. Si no hay, intentar obtener de la sesión
+    // 2. De la sesión
     const { data: { session } } = await supabase.auth.getSession()
-    
-    if (session?.user) {
-      // Buscar en user_metadata
-      if (session.user.user_metadata?.tenant_id) {
-        return session.user.user_metadata.tenant_id
-      }
-      
-      // Buscar en app_metadata
-      if (session.user.app_metadata?.tenant_id) {
-        return session.user.app_metadata.tenant_id
-      }
+    if (!session?.user) return null
 
-      // Buscar en la tabla profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', session.user.id)
-        .maybeSingle()
-
-      if (profile?.tenant_id) {
-        return profile.tenant_id
-      }
-
-      // Buscar en la tabla clients
-      const { data: client } = await supabase
-        .from('clients')
-        .select('tenant_id')
-        .eq('auth_user_id', session.user.id)
-        .maybeSingle()
-
-      if (client?.tenant_id) {
-        return client.tenant_id
-      }
+    // 3. De user_metadata
+    if (session.user.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
     }
 
-    throw new Error('No se pudo identificar el salón. Por favor, recarga la página.')
-  }
+    // 4. De app_metadata
+    if (session.user.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    // 5. De profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', session.user.id)
+      .maybeSingle()
+
+    if (profile?.tenant_id) return profile.tenant_id
+
+    // 6. De clients
+    const { data: client } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle()
+
+    if (client?.tenant_id) return client.tenant_id
+
+    return null
+  }, [tenantId])
+
+  // ============================================================
+  // 🔥 CARGAR FOTOS - CORREGIDO CON FALLBACK
+  // ============================================================
+  const fetchPhotos = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true)
+      else setRefreshing(true)
+      setError(null)
+
+      // Obtener tenantId
+      let activeTenantId = await getTenantId()
+      
+      if (!activeTenantId) {
+        console.warn('⚠️ No se encontró tenantId, usando modo demostración')
+        setPhotos([])
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
+
+      console.log('🔍 Cargando fotos para tenant:', activeTenantId)
+
+      let allPhotos: Photo[] = []
+
+      // 1. Fotos de admin (tabla gallery)
+      const { data: adminPhotos, error: adminError } = await supabase
+        .from('gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false })
+
+      if (adminError) {
+        console.error('Error cargando fotos de admin:', adminError)
+      } else if (adminPhotos) {
+        console.log(`📸 Encontradas ${adminPhotos.length} fotos de admin`)
+        const mappedAdminPhotos = adminPhotos.map((p: any) => ({
+          ...p,
+          source: 'admin' as const,
+          professional_id: p.professional_id || null,
+          client_name: null,
+          client_id: null,
+          before_image_url: null,
+          after_image_url: null,
+          price: null,
+          polish_used: null,
+          sensory_category: null,
+          views: 0
+        }))
+        allPhotos = [...allPhotos, ...mappedAdminPhotos]
+      }
+
+      // 2. Fotos de clientes (tabla client_gallery)
+      const { data: clientPhotos, error: clientError } = await supabase
+        .from('client_gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .order('created_at', { ascending: false })
+
+      if (clientError) {
+        console.error('Error cargando fotos de clientes:', clientError)
+      } else if (clientPhotos) {
+        console.log(`📸 Encontradas ${clientPhotos.length} fotos de clientes`)
+        const mappedClientPhotos = clientPhotos.map((p: any) => ({
+          id: p.id,
+          image_url: p.after_image_url || p.image_url || p.before_image_url || '',
+          title: p.title || 'Trabajo de cliente',
+          category: p.category || 'Nail Art',
+          description: p.description || '',
+          is_active: p.is_active !== undefined ? p.is_active : true,
+          created_at: p.created_at,
+          source: 'client' as const,
+          professional_id: p.professional_id || null,
+          client_name: p.client_name || 'Cliente',
+          client_id: p.client_id || null,
+          before_image_url: p.before_image_url || null,
+          after_image_url: p.after_image_url || null,
+          price: p.price || null,
+          polish_used: p.polish_used || null,
+          sensory_category: p.sensory_category || null,
+          views: p.views || 0,
+          sort_order: p.sort_order || 0
+        }))
+        allPhotos = [...allPhotos, ...mappedClientPhotos]
+      }
+
+      // Ordenar por fecha (más reciente primero)
+      allPhotos.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      console.log(`✅ Total: ${allPhotos.length} fotos cargadas`)
+      setPhotos(allPhotos)
+
+    } catch (err: any) {
+      console.error('❌ Error cargando galería:', err)
+      setError(err.message || 'Error al cargar la galería')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [getTenantId])
+
+  // ============================================================
+  // 🔥 EFECTO PARA CARGAR FOTOS - CON DEPENDENCIAS CORRECTAS
+  // ============================================================
+  useEffect(() => {
+    let mounted = true
+
+    const loadData = async () => {
+      if (!mounted) return
+      await fetchPhotos(true)
+    }
+
+    loadData()
+
+    return () => {
+      mounted = false
+    }
+  }, [fetchPhotos])
 
   // ============================================================
   // SUBIR ARCHIVO A STORAGE
@@ -202,7 +289,7 @@ export default function GaleriaAdminPage() {
   }
 
   // ============================================================
-  // 🔥 HANDLE SUBMIT - CORREGIDO CON getTenantId()
+  // HANDLE SUBMIT
   // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -210,23 +297,22 @@ export default function GaleriaAdminPage() {
     setSuccess(null)
 
     try {
-      // Obtener tenantId de forma segura
       const activeTenantId = await getTenantId()
+      if (!activeTenantId) {
+        throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.')
+      }
       
       setUploading(true)
 
-      // Subir imagen si hay un archivo seleccionado
       let imageUrl = formData.image_url
       if (selectedFile) {
         imageUrl = await uploadFile(selectedFile, activeTenantId)
       }
 
-      // Para nuevas fotos, la imagen es obligatoria
       if (!editingPhoto && !imageUrl) {
         throw new Error('⚠️ Debes seleccionar una imagen')
       }
 
-      // Operación de base de datos
       if (editingPhoto) {
         const { error: updateError } = await supabase
           .from('gallery')
@@ -261,7 +347,6 @@ export default function GaleriaAdminPage() {
         setSuccess('✨ ¡Foto subida exitosamente!')
       }
 
-      // Recargar fotos y resetear formulario
       await fetchPhotos(false)
       resetForm()
       setShowModal(false)
@@ -292,109 +377,6 @@ export default function GaleriaAdminPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
     setEditingPhoto(null)
   }
-
-  // ============================================================
-  // CARGAR FOTOS
-  // ============================================================
-  const fetchPhotos = async (showLoading = true) => {
-    let activeTenantId = tenantId
-    
-    // Si no hay tenantId, intentar obtenerlo
-    if (!activeTenantId) {
-      try {
-        activeTenantId = await getTenantId()
-      } catch (e) {
-        console.error('Error obteniendo tenantId:', e)
-        return
-      }
-    }
-
-    if (showLoading) setLoading(true)
-    else setRefreshing(true)
-    setError(null)
-
-    try {
-      let allPhotos: Photo[] = []
-
-      // Admin photos
-      const { data: adminPhotos, error: adminError } = await supabase
-        .from('gallery')
-        .select('*')
-        .eq('tenant_id', activeTenantId)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
-
-      if (adminError) throw adminError
-
-      if (adminPhotos) {
-        const mappedAdminPhotos = adminPhotos.map((p: any) => ({
-          ...p,
-          source: 'admin' as const,
-          professional_id: p.professional_id || null,
-          client_name: null,
-          client_id: null,
-          before_image_url: null,
-          after_image_url: null,
-          price: null,
-          polish_used: null,
-          sensory_category: null,
-          views: 0
-        }))
-        allPhotos = [...allPhotos, ...mappedAdminPhotos]
-      }
-
-      // Client photos
-      const { data: clientPhotos, error: clientError } = await supabase
-        .from('client_gallery')
-        .select('*')
-        .eq('tenant_id', activeTenantId)
-        .order('created_at', { ascending: false })
-
-      if (clientError) throw clientError
-
-      if (clientPhotos) {
-        const mappedClientPhotos = clientPhotos.map((p: any) => ({
-          id: p.id,
-          image_url: p.after_image_url || p.image_url || p.before_image_url || '',
-          title: p.title || 'Trabajo de cliente',
-          category: p.category || 'Nail Art',
-          description: p.description || '',
-          is_active: p.is_active !== undefined ? p.is_active : true,
-          created_at: p.created_at,
-          source: 'client' as const,
-          professional_id: p.professional_id || null,
-          client_name: p.client_name || 'Cliente',
-          client_id: p.client_id || null,
-          before_image_url: p.before_image_url || null,
-          after_image_url: p.after_image_url || null,
-          price: p.price || null,
-          polish_used: p.polish_used || null,
-          sensory_category: p.sensory_category || null,
-          views: p.views || 0,
-          sort_order: p.sort_order || 0
-        }))
-        allPhotos = [...allPhotos, ...mappedClientPhotos]
-      }
-
-      allPhotos.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-
-      setPhotos(allPhotos)
-
-    } catch (err: any) {
-      console.error('Error cargando galería:', err)
-      setError(err.message || 'Error al cargar la galería')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchPhotos()
-  }, [tenantId])
 
   // ============================================================
   // ELIMINAR FOTO
@@ -690,7 +672,16 @@ export default function GaleriaAdminPage() {
 
       {/* GRID DE FOTOS */}
       <motion.div 
-        variants={containerVariants}
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.05,
+              delayChildren: 0.1
+            }
+          }
+        }}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
@@ -698,7 +689,10 @@ export default function GaleriaAdminPage() {
         <AnimatePresence mode="wait">
           {photosFiltradas.length === 0 ? (
             <motion.div 
-              variants={itemVariants}
+              variants={{
+                hidden: { opacity: 0, scale: 0.9 },
+                visible: { opacity: 1, scale: 1 }
+              }}
               className="col-span-full text-center py-20 border border-dashed rounded-3xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
             >
               <motion.div 
@@ -725,7 +719,24 @@ export default function GaleriaAdminPage() {
               return (
                 <motion.div
                   key={`${photo.source}-${photo.id}`}
-                  variants={itemVariants}
+                  variants={{
+                    hidden: { opacity: 0, scale: 0.9, y: 20 },
+                    visible: { 
+                      opacity: 1, 
+                      scale: 1, 
+                      y: 0,
+                      transition: { 
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 24
+                      }
+                    },
+                    exit: { 
+                      opacity: 0, 
+                      scale: 0.8,
+                      transition: { duration: 0.2 }
+                    }
+                  }}
                   layoutId={`photo-${photo.id}`}
                   onHoverStart={() => setHoveredId(photo.id)}
                   onHoverEnd={() => setHoveredId(null)}
