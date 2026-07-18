@@ -4,27 +4,21 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useRouter } from 'next/navigation' // ⬅️ IMPORTADO PARA NAVEGACIÓN
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Camera, 
   Heart, 
   X, 
   Sparkles, 
   Loader,     
-  Image as ImageIcon,
   ArrowDown,
-  Eye,
-  EyeOff,
-  Upload,
-  ChevronLeft,
-  ChevronRight,
-  Grid3x3,
-  LayoutList,
   Plus,
   Calendar,
   Maximize2,
-  Minimize2
+  ChevronLeft,
+  ChevronRight,
+  Grid3x3,
+  LayoutList
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -42,16 +36,15 @@ interface GalleryImage {
   uploaded_by_admin?: boolean
   sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
   polish_used?: string
-  price?: string | number
+  price: number
   views?: number
-  professional_id?: string // ⬅️ AÑADIDO: ID del profesional asignado al diseño
+  professional_id?: string 
 }
 
 export default function GaleriaPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
-  const router = useRouter() // ⬅️ HOOK INSTANCIADO
-  const isDark = theme === 'dark'
+  const router = useRouter()
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -68,7 +61,6 @@ export default function GaleriaPage() {
   const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry')
 
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
-  const [likedAnimating, setLikedAnimating] = useState<string | null>(null)
 
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
@@ -81,9 +73,12 @@ export default function GaleriaPage() {
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
-  
   const [fullImageMode, setFullImageMode] = useState(false)
+
+  // ⚡ Optimización: Prefetch automático de la agenda para evitar retrasos de carga
+  useEffect(() => {
+    router.prefetch('/agenda')
+  }, [router])
 
   useEffect(() => {
     loadGalleryData()
@@ -93,17 +88,19 @@ export default function GaleriaPage() {
     if (!selectedImage) setFullImageMode(false)
   }, [selectedImage])
 
-  // 🛠️ FUNCIÓN ENCARGADA DE ENVIAR AL USUARIO A LA AGENDA
+  // 🚀 Solución a la doble recarga: Cierre limpio inmediato + delay controlado para la navegación client-side
   const handleBookingRedirect = (image: GalleryImage) => {
-    // Cerramos el modal antes de redirigir para evitar comportamientos fantasma en el DOM
-    setSelectedImage(null)
-
-    // Construimos la ruta dinámica con los parámetros
-    // Si la imagen de la base de datos no trae profesional asignado, mandamos un fallback o lo dejamos vacío
     const profId = image.professional_id || ''
     const designTitle = encodeURIComponent(image.title)
     
-    router.push(`/agenda?professional=${profId}&style=${designTitle}`)
+    // Desmontamos el Lightbox primero para liberar recursos y detener animaciones pesadas
+    setSelectedImage(null)
+    setFullImageMode(false)
+
+    // Un pequeño respiro de 200ms para permitir que Framer Motion complete la salida y Next.js rutee fluidamente
+    setTimeout(() => {
+      router.push(`/agenda?professional=${profId}&style=${designTitle}`)
+    }, 200)
   }
 
   const loadGalleryData = async () => {
@@ -151,8 +148,8 @@ export default function GaleriaPage() {
           views: photo.views ?? 0,
           sensory_category: photo.sensory_category || 'glossy',
           polish_used: photo.polish_used || 'Fresh Nails Premium',
-          price: photo.price ? `$${photo.price}` : '$45.00',
-          professional_id: photo.professional_id || '' // Mapeo del nuevo campo
+          price: photo.price ? Number(photo.price) : 45.00,
+          professional_id: photo.professional_id || '' 
         }))
 
         setPublicImages(mappedPublic)
@@ -169,9 +166,6 @@ export default function GaleriaPage() {
   )
 
   const handleLike = (id: string) => {
-    setLikedAnimating(id)
-    setTimeout(() => setLikedAnimating(null), 500)
-
     setLikedImages(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -256,7 +250,7 @@ export default function GaleriaPage() {
           views: 0,
           sensory_category: uploadCategory,
           polish_used: uploadPolish || 'Fresh Nails Premium',
-          price: `$${parseFloat(uploadPrice) || 45.00}`
+          price: parseFloat(uploadPrice) || 45.00
         }
 
         setPublicImages(prev => [localCreated, ...prev])
@@ -283,21 +277,20 @@ export default function GaleriaPage() {
   }
 
   const openLightbox = (img: GalleryImage) => {
-    const index = filteredImages.findIndex(i => i.id === img.id)
-    setLightboxIndex(index >= 0 ? index : 0)
     setSelectedImage(img)
   }
 
   const navigateLightbox = (direction: 'next' | 'prev') => {
     if (!selectedImage) return
     const currentIndex = filteredImages.findIndex(i => i.id === selectedImage.id)
+    if (currentIndex === -1) return
+
     let newIndex
     if (direction === 'next') {
       newIndex = (currentIndex + 1) % filteredImages.length
     } else {
       newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
     }
-    setLightboxIndex(newIndex)
     setSelectedImage(filteredImages[newIndex])
   }
 
@@ -448,7 +441,7 @@ export default function GaleriaPage() {
                               <span className="text-[10px] text-white/60">{img.client_name || 'Fresh Nails'}</span>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); handleLike(img.id); }} 
-                                className={`p-1.5 rounded-full ${isLiked ? 'text-red-500' : 'text-white/60'}`}
+                                className={`p-1.5 rounded-full transition-transform active:scale-125 ${isLiked ? 'text-red-500' : 'text-white/60'}`}
                               >
                                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                               </button>
@@ -468,7 +461,7 @@ export default function GaleriaPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {clientImages.map((img) => (
-              <div key={img.id} onClick={() => openLightbox(img)} className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800">
+              <div key={img.id} onClick={() => openLightbox(img)} className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800 hover:shadow-lg transition-all">
                 <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
               </div>
             ))}
@@ -494,7 +487,7 @@ export default function GaleriaPage() {
               <X className="w-6 h-6" />
             </button>
 
-            {filteredImages.length > 1 && (
+            {activeTab === 'public' && filteredImages.length > 1 && (
               <>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
@@ -540,17 +533,8 @@ export default function GaleriaPage() {
                   onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
                   className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
                 >
-                  {fullImageMode ? (
-                    <>
-                      <Eye className="w-3.5 h-3.5 text-white" />
-                      <span>Ver Info</span>
-                    </>
-                  ) : (
-                    <>
-                      <Maximize2 className="w-3.5 h-3.5 text-white" />
-                      <span>Solo Foto</span>
-                    </>
-                  )}
+                  <Maximize2 className="w-3.5 h-3.5 text-white" />
+                  <span>{fullImageMode ? 'Ver Info' : 'Solo Foto'}</span>
                 </button>
               </div>
 
@@ -596,12 +580,13 @@ export default function GaleriaPage() {
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-white/5">
                           <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
-                          <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
+                          <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">
+                            ${Number(selectedImage.price).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* ✅ BOTÓN DE AGENDAR RE-PROGRAMADO CON REDIRECCIÓN DINÁMICA */}
                     <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
@@ -614,7 +599,7 @@ export default function GaleriaPage() {
                         <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                         {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                       </button>
-                      
+
                       <button 
                         onClick={() => handleBookingRedirect(selectedImage)}
                         className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0"
@@ -692,7 +677,14 @@ export default function GaleriaPage() {
                     </select>
                   </div>
                 </div>
-                <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 text-white text-xs uppercase font-medium rounded-xl disabled:opacity-40">
+
+                {uploadStatus.type && (
+                  <div className={`p-3 rounded-xl text-xs text-center ${uploadStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                    {uploadStatus.message}
+                  </div>
+                )}
+
+                <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 text-white text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:bg-neutral-800">
                   {uploading ? 'Publicando...' : 'Publicar en Galería'}
                 </button>
               </div>
