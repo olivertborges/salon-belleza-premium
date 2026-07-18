@@ -7,7 +7,8 @@ import {
   Phone, Mail, FileText, Bookmark, 
   Scissors, Heart, ArrowRight, Calendar,
   Star, Award, Zap, Shield, Check, X,
-  MessageCircle, MapPin, Gift, Crown
+  MessageCircle, MapPin, Gift, Crown,
+  Layers
 } from 'lucide-react'
 import { 
   format, addDays, isToday, parseISO, startOfMonth, endOfMonth, 
@@ -19,6 +20,15 @@ import { supabase } from '@/lib/supabase/client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
+
+// Mapa de iconos y descripciones elegantes para las categorías del Atelier
+const CATEGORIAS_CONFIG: Record<string, { label: string; icon: any; desc: string }> = {
+  'todas': { label: 'Todos los Rituales', icon: Layers, desc: 'Explora nuestra colección completa' },
+  'uñas': { label: 'Uñas & Manicura', icon: Heart, desc: 'Esculpidas, gel y diseños de alta gama' },
+  'micropigmentacion': { label: 'Micropigmentación', icon: Crown, desc: 'Diseño hiperrealista de cejas y labios' },
+  'peluqueria': { label: 'Peluquería Boutique', icon: Scissors, desc: 'Cortes exclusivos, colorimetría y brillo' },
+  'otros': { label: 'Otros Servicios', icon: Sparkles, desc: 'Cuidado extra para potenciar tu brillo' }
+}
 
 export default function ClientBookingPage() {
   const { theme } = useTheme()
@@ -32,6 +42,9 @@ export default function ClientBookingPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([])
+
+  // Estado para la categoría activa
+  const [activeCategory, setActiveCategory] = useState<string>('todas')
 
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [selectedService, setSelectedService] = useState<any>(null)
@@ -122,10 +135,10 @@ export default function ClientBookingPage() {
 
     for (const item of citasYBloqueos) {
       if (!item.time) continue
-      
+
       const horaInicio = item.time.substring(0, 5) 
       const duracion = item.services?.duration || 30 
-      
+
       const [hIni, mIni] = horaInicio.split(':').map(Number)
       const totalMinutosInicio = hIni * 60 + mIni
       const totalMinutosFin = totalMinutosInicio + duracion
@@ -143,6 +156,22 @@ export default function ClientBookingPage() {
   const diasDelMes = eachDayOfInterval({
     start: startOfMonth(currentMonth),
     end: endOfMonth(currentMonth)
+  })
+
+  // Helper para normalizar y agrupar las categorías dinámicamente según lo que viene de la BD
+  const getServiceCategoryKey = (categoryName: string): string => {
+    if (!categoryName) return 'otros'
+    const normalized = categoryName.toLowerCase().trim()
+    if (normalized.includes('uña') || normalized.includes('nail') || normalized.includes('manicur')) return 'uñas'
+    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja')) return 'micropigmentacion'
+    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello') || normalized.includes('corte')) return 'peluqueria'
+    return 'otros'
+  }
+
+  // Filtrado de servicios reactivo
+  const filteredServices = services.filter(serv => {
+    if (activeCategory === 'todas') return true
+    return getServiceCategoryKey(serv.category) === activeCategory
   })
 
   const handleFinalizarReserva = async (e: React.FormEvent) => {
@@ -218,7 +247,7 @@ export default function ClientBookingPage() {
       if (appointmentError) throw appointmentError
 
       const PUNTOS_POR_CITA = 50
-      
+
       const { data: walletData, error: walletError } = await supabase
         .from('loyalty_wallets')
         .select('glow_points')
@@ -315,7 +344,7 @@ export default function ClientBookingPage() {
   const horasMauna = horariosDisponibles.length > 0 
     ? horariosDisponibles.filter(h => h < '14:00')
     : horariosPorDefecto.filter(h => h < '14:00')
-  
+
   const horasTarde = horariosDisponibles.length > 0
     ? horariosDisponibles.filter(h => h >= '14:00')
     : horariosPorDefecto.filter(h => h >= '14:00')
@@ -418,51 +447,91 @@ export default function ClientBookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-4">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* STEP 1: SERVICES RITUAL */}
+            {/* STEP 1: SERVICES RITUAL WITH CATEGORIES */}
             {paso === 1 && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-6 animate-fade-in">
                 <div className="border-b border-pink-100/40 dark:border-stone-900 pb-2">
                   <h3 className="text-lg font-black tracking-tight">¿Qué ritual deseas experimentar?</h3>
                   <p className={`text-xs font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                    Elige entre nuestras especialidades de alta gama y alta costura para tus uñas y cuidado.
+                    Elige una categoría para descubrir nuestras especialidades boutique.
                   </p>
                 </div>
+
+                {/* 🏷️ TABS DE CATEGORÍAS HIGH GLAM */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {Object.entries(CATEGORIAS_CONFIG).map(([key, config]) => {
+                    const IconComponent = config.icon
+                    const isSelected = activeCategory === key
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setActiveCategory(key)}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-300 space-y-1.5 ${
+                          isSelected
+                            ? 'bg-stone-950 text-white dark:bg-white dark:text-stone-950 border-stone-950 dark:border-white shadow-md scale-[1.02]'
+                            : isDark
+                              ? 'bg-stone-900/40 border-stone-900 text-stone-400 hover:bg-stone-900/80'
+                              : 'bg-white border-pink-100/60 text-stone-600 hover:border-pink-200 hover:bg-pink-50/20'
+                        }`}
+                      >
+                        <IconComponent className={`w-4 h-4 ${isSelected ? 'text-pink-400 dark:text-pink-600' : 'text-stone-400 group-hover:text-pink-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-wider">{config.label.split(' ')[0]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Breve subtítulo de la categoría seleccionada */}
+                <div className="px-1 text-[11px] italic text-stone-500 dark:text-stone-400 font-serif">
+                  {CATEGORIAS_CONFIG[activeCategory]?.desc}
+                </div>
+
+                {/* LISTADO DE SERVICIOS FILTRADOS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {services.map((serv, index) => (
-                    <button
-                      key={serv.id}
-                      onClick={() => { setSelectedService(serv); setPaso(2); }}
-                      className={`group relative rounded-2xl border p-5 text-left transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[145px] ${
-                        isDark 
-                          ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
-                          : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
-                      }`}
-                    >
-                      {index === 0 && (
-                        <div className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                          Recomendado
+                  {filteredServices.length > 0 ? (
+                    filteredServices.map((serv, index) => (
+                      <button
+                        key={serv.id}
+                        onClick={() => { setSelectedService(serv); setPaso(2); }}
+                        className={`group relative rounded-2xl border p-5 text-left transition-all duration-300 transform hover:-translate-y-0.5 flex flex-col justify-between min-h-[145px] ${
+                          isDark 
+                            ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg' 
+                            : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
+                        }`}
+                      >
+                        {index === 0 && activeCategory === 'todas' && (
+                          <div className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            Recomendado
+                          </div>
+                        )}
+
+                        <div className="space-y-1 pr-12">
+                          <span className="text-[9px] uppercase font-mono font-black tracking-widest text-pink-500/80 block">
+                            {serv.category || 'Servicio'}
+                          </span>
+                          <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
+                            {serv.name}
+                          </h4>
+                          <p className={`text-xs line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                            {serv.description || 'Tratamiento boutique personalizado con productos orgánicos premium.'}
+                          </p>
                         </div>
-                      )}
 
-                      <div className="space-y-1 pr-14">
-                        <h4 className="font-black text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors">
-                          {serv.name}
-                        </h4>
-                        <p className={`text-xs line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                          {serv.description || 'Tratamiento boutique personalizado con productos orgánicos premium.'}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-dashed mt-4 pt-3 border-stone-200 dark:border-stone-800/80 w-full">
-                        <span className="text-sm font-black font-mono text-pink-600 dark:text-pink-400">
-                          ${Number(serv.price).toLocaleString()}
-                        </span>
-                        <span className={`text-[10px] font-black font-mono uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                          <Clock className="w-3 h-3 text-pink-500" /> {serv.duration} min
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex items-center justify-between border-t border-dashed mt-4 pt-3 border-stone-200 dark:border-stone-800/80 w-full">
+                          <span className="text-sm font-black font-mono text-pink-600 dark:text-pink-400">
+                            ${Number(serv.price).toLocaleString()}
+                          </span>
+                          <span className={`text-[10px] font-black font-mono uppercase tracking-wider flex items-center gap-1.5 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                            <Clock className="w-3 h-3 text-pink-500" /> {serv.duration} min
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-12 text-center border border-dashed rounded-2xl border-stone-300 dark:border-stone-800">
+                      <p className="text-xs font-serif italic text-stone-400">No encontramos rituales cargados en esta categoría actualmente.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -566,7 +635,7 @@ export default function ClientBookingPage() {
                     {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => (
                       <div key={d} className={`text-[10px] font-black font-mono py-1 text-stone-400 dark:text-stone-500`}>{d}</div>
                     ))}
-                    
+
                     {Array.from({ length: (getDay(diasDelMes[0]) + 6) % 7 }).map((_, i) => (
                       <div key={`empty-${i}`} />
                     ))}
@@ -803,7 +872,7 @@ export default function ClientBookingPage() {
                 <p className={`text-xs mt-1 font-medium ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                   Tu lugar en el santuario ha sido reservado de forma impecable.
                 </p>
-                
+
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 rounded-full border border-pink-500/20 text-pink-500 font-mono text-[10px] font-black uppercase tracking-widest mt-3 animate-bounce">
                   🎉 +50 Puntos Glow Acreditados
                 </div>
@@ -843,6 +912,7 @@ export default function ClientBookingPage() {
                       setSelectedTime('')
                       setClientData({ name: '', phone: '', email: '', notes: '' })
                       setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
+                      setActiveCategory('todas')
                     }}
                     className="w-full py-3.5 rounded-xl bg-stone-950 text-white hover:bg-stone-900 text-xs font-black tracking-widest uppercase transition transform active:scale-95 shadow-md border border-stone-800"
                   >
