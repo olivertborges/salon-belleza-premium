@@ -14,13 +14,16 @@ import {
   Image as ImageIcon,
   ArrowDown,
   Eye,
+  EyeOff,
   Upload,
   ChevronLeft,
   ChevronRight,
   Grid3x3,
   LayoutList,
   Plus,
-  Calendar
+  Calendar,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -76,10 +79,18 @@ export default function GaleriaPage() {
 
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  
+  // NUEVO: Estado para alternar el modo "Solo Foto" (Pantalla completa)
+  const [fullImageMode, setFullImageMode] = useState(false)
 
   useEffect(() => {
     loadGalleryData()
   }, [user])
+
+  // Resetear el modo pantalla completa al cerrar el lightbox
+  useEffect(() => {
+    if (!selectedImage) setFullImageMode(false)
+  }, [selectedImage])
 
   const loadGalleryData = async () => {
     setLoading(true)
@@ -451,7 +462,7 @@ export default function GaleriaPage() {
       </div>
 
       {/* ============================================================
-          MODAL LIGHTBOX OPTIMIZADO VERTICAL / HORIZONTAL
+          MODAL LIGHTBOX CON FUNCIÓN "SÓLO FOTO" (PANTALLA COMPLETA)
       ============================================================ */}
       <AnimatePresence>
         {selectedImage && (
@@ -462,112 +473,145 @@ export default function GaleriaPage() {
             exit={{ opacity: 0 }}
             onClick={() => setSelectedImage(null)}
           >
-            {/* Botón de cierre en la esquina superior derecha de la pantalla */}
+            {/* Botón superior de cierre */}
             <button 
               onClick={() => setSelectedImage(null)}
               className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
+              title="Cerrar modal"
             >
               <X className="w-6 h-6" />
             </button>
 
-            {/* Navegación lateral entre fotos */}
+            {/* Flechas de navegación entre fotos */}
             {filteredImages.length > 1 && (
               <>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
+                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
+                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
               </>
             )}
 
-            {/* Contador numérico inferior */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50 hidden md:block">
-              {lightboxIndex + 1} / {filteredImages.length}
-            </div>
-
-            {/* Tarjeta contenedora principal */}
+            {/* Contenedor adaptativo principal */}
             <motion.div 
-              className="relative z-10 w-full max-w-5xl max-h-[88vh] md:max-h-[82vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+              className={`relative z-10 w-full rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row bg-neutral-900 transition-all duration-500 ease-out ${
+                fullImageMode ? 'max-w-4xl max-h-[90vh] md:max-h-[88vh]' : 'max-w-5xl max-h-[88vh] md:max-h-[82vh]'
+              }`}
               initial={{ scale: 0.94, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 15 }}
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* LADO DE LA IMAGEN: Evita distorsiones tanto en vertical como en horizontal */}
-              <div className="w-full md:w-[58%] bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden min-h-[35vh] max-h-[45vh] md:min-h-0 md:max-h-none">
+              {/* LADO DE LA IMAGEN (Crece al 100% si fullImageMode está activo) */}
+              <div 
+                className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 ${
+                  fullImageMode ? 'w-full min-h-[75vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] max-h-[45vh] md:min-h-0 md:max-h-none'
+                }`}
+                onClick={() => setFullImageMode(!fullImageMode)}
+              >
                 <img 
                   src={selectedImage.image_url} 
                   alt={selectedImage.title}
-                  className="max-w-full max-h-[42vh] md:max-h-[74vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-300"
+                  className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${
+                    fullImageMode ? 'max-h-[70vh] md:max-h-[82vh] scale-[1.01]' : 'max-h-[42vh] md:max-h-[74vh]'
+                  }`}
                 />
-              </div>
 
-              {/* LADO DE INFORMACIÓN: Se desplaza con scroll si el texto excede pantallas pequeñas */}
-              <div className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto max-h-[43vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5">
-                <div className="space-y-4">
-                  <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
-                    {selectedImage.sensory_category || 'Exclusivo'}
-                  </span>
-
-                  <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight">
-                    {selectedImage.title}
-                  </h2>
-
-                  {selectedImage.description && (
-                    <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed">
-                      {selectedImage.description}
-                    </p>
+                {/* Botón flotante para alternar visualización limpia */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
+                  className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5"
+                >
+                  {fullImageMode ? (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-white" />
+                      <span>Ver Info</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="w-3.5 h-3.5 text-white" />
+                      <span>Solo Foto</span>
+                    </>
                   )}
-
-                  <div className="space-y-2.5 pt-4 border-t border-white/10">
-                    <div className="flex justify-between items-center text-xs md:text-sm">
-                      <span className="text-neutral-500">Artista</span>
-                      <span className="text-white/90 font-light">{selectedImage.client_name || 'Fresh Nails'}</span>
-                    </div>
-                    {selectedImage.polish_used && (
-                      <div className="flex justify-between items-center text-xs md:text-sm">
-                        <span className="text-neutral-500">Esmaltado</span>
-                        <span className="text-white/90 font-light text-right max-w-[180px] truncate">{selectedImage.polish_used}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-xs md:text-sm">
-                      <span className="text-neutral-500">Visualizaciones</span>
-                      <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                      <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
-                      <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Acciones inferiores ajustadas */}
-                <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
-                    className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
-                      likedImages.has(selectedImage.id) 
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
-                    {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
-                  </button>
-                  <button className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md">
-                    <Calendar className="w-3.5 h-3.5" /> Agendar
-                  </button>
-                </div>
+                </button>
               </div>
+
+              {/* LADO DE INFORMACIÓN (Se esconde suavemente si fullImageMode está activo) */}
+              <AnimatePresence initial={false}>
+                {!fullImageMode && (
+                  <motion.div 
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: 'auto', opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                    className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto max-h-[43vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5"
+                  >
+                    <div className="space-y-4">
+                      <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
+                        {selectedImage.sensory_category || 'Exclusivo'}
+                      </span>
+
+                      <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight">
+                        {selectedImage.title}
+                      </h2>
+
+                      {selectedImage.description && (
+                        <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed">
+                          {selectedImage.description}
+                        </p>
+                      )}
+
+                      <div className="space-y-2.5 pt-4 border-t border-white/10">
+                        <div className="flex justify-between items-center text-xs md:text-sm">
+                          <span className="text-neutral-500">Artista</span>
+                          <span className="text-white/90 font-light">{selectedImage.client_name || 'Fresh Nails'}</span>
+                        </div>
+                        {selectedImage.polish_used && (
+                          <div className="flex justify-between items-center text-xs md:text-sm">
+                            <span className="text-neutral-500">Esmaltado</span>
+                            <span className="text-white/90 font-light text-right max-w-[180px] truncate">{selectedImage.polish_used}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-xs md:text-sm">
+                          <span className="text-neutral-500">Visualizaciones</span>
+                          <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                          <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
+                          <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acciones inferiores */}
+                    <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
+                        className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
+                          likedImages.has(selectedImage.id) 
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
+                        {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
+                      </button>
+                      <button className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md">
+                        <Calendar className="w-3.5 h-3.5" /> Agendar
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
