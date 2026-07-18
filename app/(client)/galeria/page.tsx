@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Heart, 
   X, 
@@ -48,6 +47,7 @@ export default function GaleriaPage() {
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -72,14 +72,11 @@ export default function GaleriaPage() {
   const [uploadPolish, setUploadPolish] = useState('')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
+  // 🔥 MODAL - Estado simple sin Framer Motion
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [fullImageMode, setFullImageMode] = useState(false)
-  
-  // 🔥 NEW: Control para evitar doble apertura del modal
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const modalTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 🔥 FIX: Usar useMemo para los filtros y evitar re-renders innecesarios
   const filteredImages = useMemo(() => {
     return publicImages.filter(
       img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
@@ -87,7 +84,7 @@ export default function GaleriaPage() {
   }, [publicImages, sensoryFilter])
 
   // ============================================================
-  // LOAD DATA - con useCallback para evitar re-renders
+  // LOAD DATA
   // ============================================================
   const loadGalleryData = useCallback(async () => {
     setLoading(true)
@@ -152,40 +149,35 @@ export default function GaleriaPage() {
   }, [loadGalleryData])
 
   // ============================================================
-  // 🔥 FIX: Control de apertura/cierre del modal
+  // 🔥 MODAL - Control con timeout para evitar doble apertura
   // ============================================================
   const openLightbox = useCallback((img: GalleryImage) => {
-    // Prevenir doble apertura
     if (isModalOpen) return
-    
-    // Limpiar cualquier timeout pendiente
-    if (modalTimeoutRef.current) {
-      clearTimeout(modalTimeoutRef.current)
-      modalTimeoutRef.current = null
-    }
-    
     setIsModalOpen(true)
     setSelectedImage(img)
     setFullImageMode(false)
+    document.body.style.overflow = 'hidden'
   }, [isModalOpen])
 
   const closeLightbox = useCallback(() => {
     setIsModalOpen(false)
-    // Esperar a que termine la animación antes de limpiar el estado
-    modalTimeoutRef.current = setTimeout(() => {
+    document.body.style.overflow = 'unset'
+    setTimeout(() => {
       setSelectedImage(null)
       setFullImageMode(false)
-    }, 300)
+    }, 250)
   }, [])
 
-  // Limpiar timeout al desmontar
+  // Cerrar con ESC
   useEffect(() => {
-    return () => {
-      if (modalTimeoutRef.current) {
-        clearTimeout(modalTimeoutRef.current)
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        closeLightbox()
       }
     }
-  }, [])
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isModalOpen, closeLightbox])
 
   // ============================================================
   // NAVEGACIÓN DEL LIGHTBOX
@@ -205,12 +197,11 @@ export default function GaleriaPage() {
   }, [selectedImage, filteredImages])
 
   // ============================================================
-  // HANDLE BOOKING - con prevención de doble ejecución
+  // HANDLE BOOKING
   // ============================================================
   const bookingRef = useRef(false)
   
   const handleBookingRedirect = useCallback((image: GalleryImage) => {
-    // Prevenir ejecución doble
     if (bookingRef.current) return
     bookingRef.current = true
     
@@ -218,28 +209,21 @@ export default function GaleriaPage() {
     const designTitle = encodeURIComponent(image.title)
     const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
 
-    // Cerrar modal primero
-    setIsModalOpen(false)
+    closeLightbox()
     
     setTimeout(() => {
-      setSelectedImage(null)
-      setFullImageMode(false)
-    }, 200)
-
-    // Redirigir después de cerrar el modal
-    setTimeout(() => {
       router.push(targetUrl)
-      // Resetear el flag después de la navegación
       setTimeout(() => {
         bookingRef.current = false
       }, 500)
-    }, 400)
-  }, [router])
+    }, 300)
+  }, [router, closeLightbox])
 
   // ============================================================
   // LIKES
   // ============================================================
-  const handleLike = useCallback((id: string) => {
+  const handleLike = useCallback((id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
     setLikedImages(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -480,12 +464,11 @@ export default function GaleriaPage() {
                   const heightClass = heights[idx % heights.length]
 
                   return (
-                    <motion.div
+                    <div
                       key={img.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: (idx % 6) * 0.06 }}
-                      className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''}`}
+                      className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''} transition-all duration-300 ${
+                        isHovered ? 'scale-[1.02] z-10' : 'scale-100'
+                      }`}
                       onMouseEnter={() => setHoveredImageId(img.id)}
                       onMouseLeave={() => setHoveredImageId(null)}
                     >
@@ -493,7 +476,7 @@ export default function GaleriaPage() {
                         onClick={() => openLightbox(img)}
                         className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 ${
                           viewMode === 'masonry' ? '' : `h-full ${heightClass}`
-                        } ${isHovered ? 'shadow-2xl scale-[1.02] z-10' : 'shadow-sm'}`}
+                        } ${isHovered ? 'shadow-2xl' : 'shadow-sm'}`}
                       >
                         <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
                         <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
@@ -502,7 +485,7 @@ export default function GaleriaPage() {
                             <div className="flex items-center justify-between mt-2">
                               <span className="text-[10px] text-white/60">{img.client_name || 'Fresh Nails'}</span>
                               <button 
-                                onClick={(e) => { e.stopPropagation(); handleLike(img.id); }} 
+                                onClick={(e) => handleLike(img.id, e)} 
                                 className={`p-1.5 rounded-full transition-transform active:scale-125 ${isLiked ? 'text-red-500' : 'text-white/60'}`}
                               >
                                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
@@ -514,7 +497,7 @@ export default function GaleriaPage() {
                           {img.sensory_category || 'Exclusivo'}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   )
                 })}
               </div>
@@ -531,230 +514,255 @@ export default function GaleriaPage() {
         )}
       </div>
 
-      {/* MODAL LIGHTBOX - CORREGIDO */}
-      <AnimatePresence mode="wait">
-        {isModalOpen && selectedImage && (
-          <motion.div 
-            key="lightbox"
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {/* ============================================================
+          🔥 MODAL LIGHTBOX - SIN FRAMER MOTION (CSS Puro)
+      ============================================================ */}
+      {isModalOpen && selectedImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden animate-fadeIn"
+          onClick={closeLightbox}
+        >
+          {/* Botón cerrar */}
+          <button 
             onClick={closeLightbox}
+            className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
           >
-            <button 
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
-              title="Cerrar modal"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <X className="w-6 h-6" />
+          </button>
 
-            {activeTab === 'public' && filteredImages.length > 1 && (
-              <>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </>
-            )}
-
-            <motion.div 
-              className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-500 ease-out overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
-                fullImageMode ? 'max-w-4xl h-auto max-h-[90vh]' : 'max-w-5xl h-auto max-h-[90vh] md:max-h-[82vh]'
-              }`}
-              initial={{ scale: 0.94, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.94, opacity: 0, y: 15 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* LADO DE LA IMAGEN */}
-              <div 
-                className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 flex-1 ${
-                  fullImageMode ? 'w-full min-h-[60vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] md:min-h-0'
-                }`}
-                onClick={() => setFullImageMode(!fullImageMode)}
+          {/* Navegación */}
+          {activeTab === 'public' && filteredImages.length > 1 && (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
               >
-                <img 
-                  src={selectedImage.image_url} 
-                  alt={selectedImage.title}
-                  className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${
-                    fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'
-                  }`}
-                />
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
 
-                <button
-                  onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
-                  className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 text-white" />
-                  <span>{fullImageMode ? 'Ver Info' : 'Solo Foto'}</span>
-                </button>
-              </div>
+          {/* Contador */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
+            {filteredImages.findIndex(i => i.id === selectedImage.id) + 1} / {filteredImages.length}
+          </div>
 
-              {/* LADO DE INFORMACIÓN */}
-              <AnimatePresence initial={false}>
-                {!fullImageMode && (
-                  <motion.div 
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: '100%', opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ duration: 0.35, ease: 'easeInOut' }}
-                    className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0"
-                  >
-                    <div className="space-y-4">
-                      <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
-                        {selectedImage.sensory_category || 'Exclusivo'}
-                      </span>
+          {/* Modal Content */}
+          <div 
+            ref={modalRef}
+            className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-300 overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
+              fullImageMode ? 'max-w-4xl h-auto max-h-[90vh]' : 'max-w-5xl h-auto max-h-[90vh] md:max-h-[82vh]'
+            } animate-scaleIn`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Lado de la imagen */}
+            <div 
+              className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 flex-1 ${
+                fullImageMode ? 'w-full min-h-[60vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] md:min-h-0'
+              }`}
+              onClick={() => setFullImageMode(!fullImageMode)}
+            >
+              <img 
+                src={selectedImage.image_url} 
+                alt={selectedImage.title}
+                className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${
+                  fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'
+                }`}
+              />
 
-                      <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">
-                        {selectedImage.title}
-                      </h2>
+              <button
+                onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
+                className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>{fullImageMode ? 'Ver Info' : 'Solo Foto'}</span>
+              </button>
+            </div>
 
-                      {selectedImage.description && (
-                        <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">
-                          {selectedImage.description}
-                        </p>
-                      )}
+            {/* Lado de información */}
+            {!fullImageMode && (
+              <div className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0 animate-slideIn">
+                <div className="space-y-4">
+                  <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
+                    {selectedImage.sensory_category || 'Exclusivo'}
+                  </span>
 
-                      <div className="space-y-2.5 pt-4 border-t border-white/10">
-                        <div className="flex justify-between items-center text-xs md:text-sm gap-2">
-                          <span className="text-neutral-500 shrink-0">Artista</span>
-                          <span className="text-white/90 font-light truncate">{selectedImage.client_name || 'Fresh Nails'}</span>
-                        </div>
-                        {selectedImage.polish_used && (
-                          <div className="flex justify-between items-center text-xs md:text-sm gap-2">
-                            <span className="text-neutral-500 shrink-0">Esmaltado</span>
-                            <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between items-center text-xs md:text-sm">
-                          <span className="text-neutral-500">Visualizaciones</span>
-                          <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                          <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
-                          <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">
-                            ${Number(selectedImage.price).toFixed(2)}
-                          </span>
-                        </div>
+                  <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">
+                    {selectedImage.title}
+                  </h2>
+
+                  {selectedImage.description && (
+                    <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">
+                      {selectedImage.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-2.5 pt-4 border-t border-white/10">
+                    <div className="flex justify-between items-center text-xs md:text-sm gap-2">
+                      <span className="text-neutral-500 shrink-0">Artista</span>
+                      <span className="text-white/90 font-light truncate">{selectedImage.client_name || 'Fresh Nails'}</span>
+                    </div>
+                    {selectedImage.polish_used && (
+                      <div className="flex justify-between items-center text-xs md:text-sm gap-2">
+                        <span className="text-neutral-500 shrink-0">Esmaltado</span>
+                        <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used}</span>
                       </div>
+                    )}
+                    <div className="flex justify-between items-center text-xs md:text-sm">
+                      <span className="text-neutral-500">Visualizaciones</span>
+                      <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
                     </div>
-
-                    <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
-                        className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
-                          likedImages.has(selectedImage.id) 
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                            : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
-                        {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
-                      </button>
-
-                      <button 
-                        onClick={() => handleBookingRedirect(selectedImage)}
-                        className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0"
-                      >
-                        <Calendar className="w-3.5 h-3.5" /> Agendar
-                      </button>
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                      <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
+                      <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">
+                        ${Number(selectedImage.price).toFixed(2)}
+                      </span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }}
+                    className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
+                      likedImages.has(selectedImage.id) 
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
+                    {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
+                  </button>
+
+                  <button 
+                    onClick={() => handleBookingRedirect(selectedImage)}
+                    className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0"
+                  >
+                    <Calendar className="w-3.5 h-3.5" /> Agendar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================
+          STYLES GLOBALES PARA ANIMACIONES CSS
+      ============================================================ */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { 
+            transform: scale(0.92);
+            opacity: 0;
+            transform-origin: center center;
+          }
+          to { 
+            transform: scale(1);
+            opacity: 1;
+            transform-origin: center center;
+          }
+        }
+        @keyframes slideIn {
+          from { 
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.25s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
+        }
+      `}</style>
 
       {/* MODAL DE SUBIDA */}
-      <AnimatePresence>
-        {showUploadModal && (
-          <motion.div 
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowUploadModal(false)}
-          >
-            <motion.div 
-              className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Diseño</h3>
-                <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full">
-                  <X className="w-4 h-4" />
-                </button>
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowUploadModal(false)}>
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+              <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Diseño</h3>
+              <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Nombre del Diseño *</label>
+                <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ej: Glossy Chrome" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
+              </div>
+              <div>
+                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Descripción</label>
+                <textarea value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Detalles..." rows={2} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm resize-none" />
+              </div>
+              <div>
+                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Imagen Final *</label>
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer relative min-h-[120px] flex items-center justify-center">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setUploadFile(e.target.files[0])
+                        const reader = new FileReader()
+                        reader.onload = (event) => setPreviewUrl(event.target?.result as string)
+                        reader.readAsDataURL(e.target.files[0])
+                      }
+                    }} 
+                    className="hidden" 
+                    accept="image/*" 
+                  />
+                  {previewUrl ? <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : <p className="text-xs text-neutral-400">Subir foto</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Precio</label>
+                  <input type="number" value={uploadPrice} onChange={(e) => setUploadPrice(e.target.value)} placeholder="45.00" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría</label>
+                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value as any)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm">
+                    <option value="glossy">✨ Glossy</option>
+                    <option value="3d">💎 3D</option>
+                    <option value="minimal">🌿 Minimal</option>
+                    <option value="abstract">🎨 Abstracto</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Nombre del Diseño *</label>
-                  <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ej: Glossy Chrome" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
+              {uploadStatus.type && (
+                <div className={`p-3 rounded-xl text-xs text-center ${uploadStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                  {uploadStatus.message}
                 </div>
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Descripción</label>
-                  <textarea value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Detalles..." rows={2} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm resize-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Imagen Final *</label>
-                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer relative min-h-[120px] flex items-center justify-center">
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setUploadFile(e.target.files[0])
-                          const reader = new FileReader()
-                          reader.onload = (event) => setPreviewUrl(event.target?.result as string)
-                          reader.readAsDataURL(e.target.files[0])
-                        }
-                      }} 
-                      className="hidden" 
-                      accept="image/*" 
-                    />
-                    {previewUrl ? <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : <p className="text-xs text-neutral-400">Subir foto</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] text-neutral-500 uppercase block mb-1">Precio</label>
-                    <input type="number" value={uploadPrice} onChange={(e) => setUploadPrice(e.target.value)} placeholder="45.00" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría</label>
-                    <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value as any)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm">
-                      <option value="glossy">✨ Glossy</option>
-                      <option value="3d">💎 3D</option>
-                      <option value="minimal">🌿 Minimal</option>
-                      <option value="abstract">🎨 Abstracto</option>
-                    </select>
-                  </div>
-                </div>
+              )}
 
-                {uploadStatus.type && (
-                  <div className={`p-3 rounded-xl text-xs text-center ${uploadStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                    {uploadStatus.message}
-                  </div>
-                )}
-
-                <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 text-white text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:bg-neutral-800">
-                  {uploading ? 'Publicando...' : 'Publicar en Galería'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 text-white text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:bg-neutral-800">
+                {uploading ? 'Publicando...' : 'Publicar en Galería'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
