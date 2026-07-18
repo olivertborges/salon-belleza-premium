@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notificacionesList, setNotificacionesList] = useState<any[]>([])
   const [carritoItems] = useState(1)
   const [loadingNotis, setLoadingNotis] = useState(true)
+  const [animateBell, setAnimateBell] = useState(false)
 
   const isDark = theme === 'dark'
 
@@ -79,9 +80,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         (payload) => {
           setNotificaciones(prev => prev + 1)
           setNotificacionesList(prev => [...prev, payload.new])
+          setAnimateBell(true)
+          setTimeout(() => setAnimateBell(false), 1200)
           try {
             const audio = new Audio('/notification.mp3')
-            audio.volume = 0.3
+            audio.volume = 0.25
             audio.play().catch(() => {})
           } catch (e) {}
         }
@@ -147,59 +150,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`h-screen w-full antialiased font-sans flex relative transition-colors duration-500 overflow-hidden ${
+    <div className={`h-screen w-full antialiased flex relative transition-colors duration-700 overflow-hidden selection:bg-pink-200 dark:selection:bg-pink-900/40 ${
       isDark 
-        ? 'bg-zinc-950 text-zinc-100' 
-        : 'bg-gradient-to-b from-stone-50 via-pink-50/20 to-stone-50 text-stone-900'
+        ? 'bg-[#09090b] text-zinc-100' 
+        : 'bg-gradient-to-br from-stone-50 via-pink-50/30 to-stone-100 text-stone-900'
     }`}>
+      
+      {/* GLOW DE FONDO DECORATIVO (Solo modo oscuro para dar profundidad de neón) */}
+      {isDark && (
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-600/5 blur-[150px] pointer-events-none rounded-full z-0" />
+      )}
 
-      {/* BACKDROP - MÓVIL */}
+      {/* BACKDROP CON BLUR INTEGRADO */}
       <div 
         onClick={() => setSidebarOpen(false)} 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-md z-40 lg:hidden transition-opacity duration-300 ${
-          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-500 ${
+          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
       {/* ============================================================ */}
-      {/* SIDEBAR - REVISADO */}
+      {/* SIDEBAR ULTRA PREMIUM */}
       {/* ============================================================ */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-72 h-full border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 flex flex-col shrink-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:static lg:translate-x-0 flex flex-col shrink-0 ${
+          sidebarOpen ? 'translate-x-0 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.3)]' : '-translate-x-full'
         } ${
           isDark 
-            ? 'bg-zinc-950/95 border-zinc-900 shadow-2xl shadow-black/80' 
-            : 'bg-white/95 border-stone-200/80 shadow-2xl shadow-stone-300/40'
+            ? 'bg-zinc-950/80 border-zinc-900/80 backdrop-blur-xl' 
+            : 'bg-white/80 border-stone-200/60 backdrop-blur-xl'
         }`}
       >
-        {/* LOGO - FIJO */}
+        {/* LOGO AREA */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
-          isDark ? 'border-zinc-900/60' : 'border-stone-100'
+          isDark ? 'border-zinc-900/40' : 'border-stone-100'
         }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-md shadow-pink-500/20">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3 group cursor-default">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 flex items-center justify-center shadow-lg shadow-pink-500/20 transition-transform duration-500 group-hover:rotate-12">
+              <Sparkles className="w-5 h-5 text-white animate-pulse" />
             </div>
             <div>
-              <span className="text-xs font-black uppercase tracking-[0.25em] block text-stone-900 dark:text-white">
-                <span className="font-serif italic text-pink-500 dark:text-pink-400 lowercase tracking-normal font-normal text-sm">fresh</span> NAILS
+              <span className="text-sm font-black uppercase tracking-[0.2em] block">
+                <span className="font-serif italic text-pink-500 dark:text-pink-400 lowercase tracking-normal font-medium text-lg mr-0.5">fresh</span>NAILS
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-black font-mono block text-stone-400 dark:text-zinc-500 mt-0.5">
+              <span className="text-[9px] uppercase tracking-[0.3em] font-bold block text-stone-400 dark:text-zinc-500 mt-0.5">
                 Studio Center
               </span>
             </div>
           </div>
           <button 
             onClick={() => setSidebarOpen(false)} 
-            className="lg:hidden p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-900 transition-colors"
+            className="lg:hidden p-2 rounded-xl text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-zinc-900 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* MENÚ - SCROLLABLE GARANTIZADO */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
+        {/* MENÚ - SCROLL ANIMADO */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-pink-500/20">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -209,30 +217,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={index} 
                 href={item.href} 
                 onClick={() => setSidebarOpen(false)} 
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-300 group relative border ${
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition-all duration-300 group relative border ${
                   isActive 
                     ? isDark 
-                      ? 'bg-gradient-to-r from-pink-950/30 to-transparent border-pink-500/30 text-white shadow-sm'
-                      : 'bg-gradient-to-r from-pink-50/70 to-transparent border-pink-100 text-stone-900 shadow-sm'
-                    : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-white hover:bg-stone-50 dark:hover:bg-zinc-900/60'
+                      ? 'bg-gradient-to-r from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/30 text-pink-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                      : 'bg-gradient-to-r from-pink-500/5 via-pink-500/[0.01] to-transparent border-pink-200/60 text-pink-600 shadow-sm'
+                    : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-stone-100/60 dark:hover:bg-zinc-900/40'
                 }`}
               >
+                {/* Indicador Flotante Activo */}
                 {isActive && (
-                  <span className="absolute left-0 w-1 h-5 bg-pink-500 dark:bg-pink-400 rounded-r-full" />
+                  <span className="absolute left-0 w-1 h-6 bg-gradient-to-b from-pink-500 to-rose-500 rounded-r-full animate-fade-in" />
                 )}
 
-                <div className={`p-2 rounded-lg border transition-all duration-300 ${
+                {/* Contenedor del Ícono */}
+                <div className={`p-2 rounded-lg border transition-all duration-300 transform group-hover:scale-105 ${
                   isActive 
-                    ? 'bg-white border-pink-200 text-pink-500 shadow-sm dark:bg-zinc-900 dark:border-pink-500/30 dark:text-pink-400'
-                    : 'bg-stone-50 border-stone-100 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-zinc-900/40 dark:border-zinc-800 dark:text-zinc-500 dark:group-hover:border-zinc-700 dark:group-hover:text-pink-400'
+                    ? 'bg-gradient-to-br from-pink-500 to-rose-500 border-transparent text-white shadow-md shadow-pink-500/10'
+                    : 'bg-stone-50 border-stone-200/40 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-zinc-900/50 dark:border-zinc-800/60 dark:text-zinc-500 dark:group-hover:border-pink-500/30 dark:group-hover:text-pink-400'
                 }`}>
-                  <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
+                  <Icon className={`w-4 h-4 transition-transform duration-500 ${isActive ? '' : 'group-hover:rotate-6'}`} />
                 </div>
-                <span className="tracking-wide font-black">{item.label}</span>
+                
+                <span className="tracking-wide font-medium">{item.label}</span>
 
-                {item.href === '/promociones-cliente' && (
-                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 border border-pink-500/20">
-                    Nuevo
+                {item.href === '/promociones' && (
+                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
+                    HOT
                   </span>
                 )}
               </Link>
@@ -240,43 +251,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        {/* CERRAR SESIÓN - CLAVADO ABAJO */}
+        {/* LOGOUT BOTÓN */}
         <div className={`p-4 border-t shrink-0 ${
-          isDark ? 'border-zinc-900/60 bg-zinc-950/40' : 'border-stone-100 bg-stone-50/30'
+          isDark ? 'border-zinc-900/60 bg-zinc-950/20' : 'border-stone-100 bg-stone-50/20'
         }`}>
           <button 
             onClick={handleLogoutClick}
-            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-xl text-xs font-bold transition-all border border-transparent group ${
+            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-xl text-xs font-semibold transition-all border border-transparent group ${
               isDark
-                ? 'text-zinc-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/20'
-                : 'text-stone-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200'
+                ? 'text-zinc-400 hover:text-rose-400 hover:bg-rose-950/20 hover:border-rose-500/10'
+                : 'text-stone-500 hover:text-rose-600 hover:bg-rose-50/60 hover:border-rose-200/60'
             }`}
           >
-            <div className={`p-2 rounded-lg border transition-colors ${
+            <div className={`p-2 rounded-lg border transition-all duration-300 ${
               isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-500 group-hover:text-rose-400 group-hover:border-rose-500/20'
-                : 'bg-white border-stone-200 text-stone-400 group-hover:text-rose-500 group-hover:border-rose-300 shadow-sm'
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-500 group-hover:text-rose-400 group-hover:border-rose-500/20 group-hover:rotate-6'
+                : 'bg-white border-stone-200 text-stone-400 group-hover:text-rose-500 group-hover:border-rose-300 shadow-sm group-hover:rotate-6'
             }`}>
               <LogOut className="w-4 h-4" />
             </div>
-            <span className="tracking-wide font-black">Cerrar Sesión</span>
+            <span className="tracking-wide">Cerrar Sesión</span>
           </button>
         </div>
       </aside>
 
       {/* ============================================================ */}
-      {/* CONTENIDO PRINCIPAL */}
+      {/* VISTA PRINCIPAL CONTENIDO */}
       {/* ============================================================ */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
-        {/* HEADER */}
-        <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-300 ${
-          isDark ? 'bg-zinc-950/80 border-zinc-900' : 'bg-white/80 border-stone-200/60'
+        {/* HEADER MODERNO */}
+        <header className={`sticky top-0 z-30 border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-all duration-300 ${
+          isDark ? 'bg-zinc-950/60 border-zinc-900/60 backdrop-blur-xl' : 'bg-white/60 border-stone-200/40 backdrop-blur-xl'
         }`}>
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(true)} 
-              className={`lg:hidden p-2.5 rounded-xl border transition-colors ${
+              className={`lg:hidden p-2.5 rounded-xl border transition-all active:scale-95 ${
                 isDark 
                   ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800' 
                   : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50 shadow-sm'
@@ -284,72 +295,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex flex-col">
-              <h1 className={`text-xl font-bold tracking-tight leading-none ${
-                isDark ? 'text-white' : 'text-stone-900'
-              }`}>
-                Fresh<span className="font-light" style={{ color: '#DB5B9A' }}>Nails</span>
+            <div className="flex flex-col lg:hidden">
+              <h1 className="text-lg font-black tracking-tight leading-none">
+                Fresh<span className="font-serif italic text-pink-500">Nails</span>
               </h1>
-              <span className={`text-[9px] uppercase tracking-[0.25em] font-medium mt-1 ${
-                isDark ? 'text-zinc-500' : 'text-stone-400'
-              }`}>
-                Studio Center
-              </span>
             </div>
           </div>
 
-          {/* ACCIONES HEADER */}
-          <div className="flex items-center gap-3.5">
+          {/* ACCIONES DEL HEADER ACCESIBLES */}
+          <div className="flex items-center gap-3">
             <ThemeToggle />
 
+            {/* Notificaciones con campana oscilante */}
             <Link 
               href="/notificaciones"
-              className={`relative p-2.5 rounded-xl border transition-all hover:shadow-sm ${
+              className={`relative p-2.5 rounded-xl border transition-all active:scale-95 ${
                 isDark
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700'
                   : 'bg-white border-stone-200 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
-              }`}
+              } ${animateBell ? 'animate-[bounce_0.5s_ease-in-out_infinite]' : ''}`}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className={`w-4 h-4 ${animateBell ? 'text-pink-500' : ''}`} />
               {notificaciones > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-pink-500 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-md">
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-rose-500 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-md animate-fade-in">
                   {notificaciones > 99 ? '99+' : notificaciones}
                 </span>
               )}
             </Link>
 
-            <button className={`relative p-2.5 rounded-xl border transition-all ${
+            {/* Carrito */}
+            <button className={`relative p-2.5 rounded-xl border transition-all active:scale-95 ${
               isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700'
                 : 'bg-white border-stone-200 text-stone-500 hover:text-pink-600 hover:border-pink-200 shadow-sm'
             }`}>
               <ShoppingCart className="w-4 h-4" />
               {carritoItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[9px] font-black h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm">
+                <span className="absolute -top-1 -right-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[9px] font-bold h-4.5 min-w-4.5 px-1 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm">
                   {carritoItems}
                 </span>
               )}
             </button>
 
-            <div className={`h-6 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-zinc-800' : 'bg-stone-200'}`}></div>
+            <div className={`h-5 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-zinc-800' : 'bg-stone-200'}`} />
 
-            <div className="flex items-center gap-3 pr-1">
+            {/* Perfil VIP */}
+            <div className="flex items-center gap-3 pl-1 group cursor-pointer">
               <div className="text-right hidden xs:block">
-                <p className={`text-xs font-bold leading-none ${
-                  isDark ? 'text-white' : 'text-stone-900'
+                <p className={`text-xs font-bold leading-none transition-colors group-hover:text-pink-500 ${
+                  isDark ? 'text-zinc-200' : 'text-stone-800'
                 }`}>
                   {primerNombre}
                 </p>
-                <span className={`text-[9px] font-bold tracking-[0.15em] uppercase mt-1 block ${
-                  isDark ? 'text-zinc-500' : 'text-stone-400'
-                }`}>
-                  VIP
+                <span className="text-[8px] font-black tracking-[0.2em] uppercase mt-1 block bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">
+                  VIP MEMBER
                 </span>
               </div>
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-black text-xs transition-colors shadow-sm ${
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm group-hover:scale-105 ${
                 isDark
-                  ? 'bg-zinc-900 border-zinc-800 text-pink-400'
-                  : 'bg-pink-50/60 border-pink-100 text-pink-600'
+                  ? 'bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-800 text-pink-400 group-hover:border-pink-500/30'
+                  : 'bg-gradient-to-br from-pink-50 to-pink-100/50 border-pink-100 text-pink-600 group-hover:border-pink-300'
               }`}>
                 {inicialNombre}
               </div>
@@ -357,9 +362,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* CONTENIDO */}
-        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto">
-          {children}
+        {/* CONTENIDO PRINCIPAL CON SUAVIZADO DE SCROLL */}
+        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto bg-transparent transition-all duration-300">
+          <div className="max-w-7xl mx-auto animate-[fadeIn_0.4s_ease-out]">
+            {children}
+          </div>
         </main>
       </div>
     </div>
