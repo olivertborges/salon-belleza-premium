@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   FaArrowRight, 
@@ -17,80 +17,25 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaSparkles,
-  FaFeather,
-  FaPalette,
-  FaScissors,
-  FaBolt,
-  FaRegGem,
-  FaImages,
   FaPlay,
   FaPause
 } from 'react-icons/fa'
-
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
-import { useServices, useTestimonials } from '@/hooks/useData'
 
 // ============================================================
 // COLORES DE LA MARCA
 // ============================================================
 const COLORS = {
   gold: '#C9A96E',
-  goldLight: '#E8D5A8',
-  goldDark: '#A8894A',
   pink: '#DB5B9A',
-  pinkLight: '#E88AB8',
-  pinkDark: '#C43A7A',
   copper: '#E5A46E',
-  copperLight: '#F0C49A',
-  dark: '#0d0b0a',
-  darkCard: '#141211',
-  darkBorder: '#1e1a18',
-  white: '#FAF8F5'
+  pinkDark: '#C43A7A',
 }
 
 // ============================================================
-// IMÁGENES DE LA GALERÍA
-// ============================================================
-const GALLERY_IMAGES = [
-  {
-    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
-    title: 'Manicura Rusa',
-    category: 'Combinada'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
-    title: 'Extensiones Soft Gel',
-    category: 'Esculturales'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&fit=crop&q=90',
-    title: 'Nail Art',
-    category: 'Mano Alzada'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
-    title: 'Capping',
-    category: 'Protección'
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
-    title: 'Diseño Geométrico',
-    category: 'Vanguardista'
-  },
-  {
-    url: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    title: 'Micropigmentación',
-    category: 'Cejas'
-  },
-]
-
-// ============================================================
-// HERO SECTION - SIN FRAMER MOTION
+// HERO SECTION - COMPONENTE SIMPLE
 // ============================================================
 function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [mounted, setMounted] = useState(false)
 
   const heroImages = [
     'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
@@ -99,7 +44,6 @@ function HeroSection() {
   ]
 
   useEffect(() => {
-    setMounted(true)
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroImages.length)
     }, 4000)
@@ -108,17 +52,17 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-[#0d0b0a] text-white pt-32 pb-24 overflow-hidden">
-      {/* Fondo decorativo */}
+      {/* Fondo */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse duration-[8000ms]" style={{ background: `${COLORS.pink}15` }} />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse duration-[6000ms]" style={{ background: `${COLORS.gold}15` }} />
+        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse" style={{ background: `${COLORS.pink}15` }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] rounded-full filter blur-[150px] animate-pulse" style={{ background: `${COLORS.gold}15` }} />
         <div className="absolute inset-0 bg-[radial-gradient(#1c1917_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-12 gap-12 items-center">
 
-          {/* Texto Hero */}
+          {/* Texto */}
           <div className="lg:col-span-6 space-y-8">
             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#C9A96E]/10 to-[#DB5B9A]/10 border border-[#C9A96E]/30 px-5 py-2 rounded-full backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-[#C9A96E] animate-ping" />
@@ -136,13 +80,13 @@ function HeroSection() {
             </h1>
 
             <p className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed">
-              Especialistas en manicura combinada y extensiones esculturales. Creamos diseños vanguardistas que fusionan resistencia estructural y estética impecable.
+              Especialistas en manicura combinada y extensiones esculturales.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
                 href="/reservas" 
-                className="relative group overflow-hidden rounded-xl p-[1px] transition-all duration-300 shadow-[0_0_30px_rgba(219,91,154,0.2)] hover:shadow-[0_0_50px_rgba(219,91,154,0.4)]"
+                className="relative group overflow-hidden rounded-xl p-[1px] transition-all duration-300"
                 style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
               >
                 <div className="bg-[#0d0b0a] text-white group-hover:bg-transparent px-8 py-4 rounded-[11px] font-medium text-sm tracking-wider transition-colors duration-300 flex items-center justify-center gap-3">
@@ -173,33 +117,27 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* Carrusel de imágenes Hero */}
+          {/* Carrusel */}
           <div className="lg:col-span-6 relative">
             <div className="relative w-full max-w-md mx-auto aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border border-stone-800">
-              <div className="relative w-full h-full">
-                {heroImages.map((img, idx) => (
-                  <div
-                    key={idx}
-                    className={`absolute inset-0 transition-opacity duration-1000 ${
-                      idx === currentSlide ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  >
-                    <img 
-                      src={img} 
-                      alt="Fresh Nails Gallery" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+              {heroImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${
+                    idx === currentSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <img src={img} alt="Fresh Nails" className="w-full h-full object-cover" />
+                </div>
+              ))}
 
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent opacity-60" />
 
-              {/* Badge flotante */}
-              <div className="absolute bottom-6 left-6 right-6 z-20 bg-[#0d0b0a]/85 backdrop-blur-xl border border-[#C9A96E]/30 p-5 rounded-2xl shadow-xl transition-transform duration-300 hover:-translate-y-1">
+              {/* Badge */}
+              <div className="absolute bottom-6 left-6 right-6 z-20 bg-[#0d0b0a]/85 backdrop-blur-xl border border-[#C9A96E]/30 p-5 rounded-2xl shadow-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl border border-[#C9A96E]/30 flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}20, ${COLORS.gold}20)` }}>
-                    <FaGem className="animate-pulse duration-[4000ms]" style={{ color: COLORS.gold }} />
+                    <FaGem className="animate-pulse" style={{ color: COLORS.gold }} />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-200">Garantía Crystal Gloss</h4>
@@ -234,60 +172,33 @@ function HeroSection() {
 // GALERÍA DESTACADA
 // ============================================================
 function FeaturedGallery() {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const images = [
+    { url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90', title: 'Manicura Rusa' },
+    { url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90', title: 'Extensiones Soft Gel' },
+    { url: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&fit=crop&q=90', title: 'Nail Art' },
+    { url: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', title: 'Micropigmentación' },
+  ]
 
   return (
-    <section className="py-24 bg-[#0d0b0a] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#1c1917_0%,transparent_70%)] opacity-30" />
-      
-      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
+    <section className="py-24 bg-[#0d0b0a]">
+      <div className="w-full max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
           <span className="text-xs font-bold tracking-[0.3em] uppercase inline-block px-4 py-1.5 rounded-full border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
             ✦ GALERÍA DESTACADA ✦
           </span>
           <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight mt-4">
-            Nuestros <span className="font-serif italic" style={{ color: COLORS.pink }}>trabajos</span> más recientes
+            Nuestros <span className="font-serif italic" style={{ color: COLORS.pink }}>trabajos</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {GALLERY_IMAGES.map((img, idx) => (
-            <div
-              key={idx}
-              className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group"
-              onMouseEnter={() => setHoveredIndex(idx)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              <img 
-                src={img.url} 
-                alt={img.title}
-                className="w-full h-full object-cover transition-all duration-700 ease-out"
-                style={{ 
-                  transform: hoveredIndex === idx ? 'scale(1.12)' : 'scale(1)',
-                  filter: hoveredIndex === idx ? 'brightness(0.9)' : 'brightness(1)'
-                }}
-              />
-              
-              <div 
-                className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent transition-opacity duration-400"
-                style={{ opacity: hoveredIndex === idx ? 0.8 : 0 }}
-              />
-
-              <div 
-                className="absolute bottom-0 left-0 right-0 p-4 transition-all duration-400"
-                style={{ 
-                  transform: hoveredIndex === idx ? 'translateY(0)' : 'translateY(20px)',
-                  opacity: hoveredIndex === idx ? 1 : 0
-                }}
-              >
-                <h4 className="text-white text-sm font-medium">{img.title}</h4>
-                <p className="text-xs" style={{ color: COLORS.gold }}>{img.category}</p>
-              </div>
-
-              <div className="absolute top-3 left-3">
-                <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-[#C9A96E]/30" style={{ color: COLORS.gold, background: 'rgba(13,11,10,0.6)' }}>
-                  Fresh Nails
-                </span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {images.map((img, idx) => (
+            <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group">
+              <img src={img.url} alt={img.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <h4 className="text-white text-sm font-medium">{img.title}</h4>
+                </div>
               </div>
             </div>
           ))}
@@ -298,113 +209,47 @@ function FeaturedGallery() {
 }
 
 // ============================================================
-// SERVICES SECTION
+// SERVICIOS
 // ============================================================
 function ServicesSection() {
-  const { data: services } = useServices()
-
-  const defaultServices = [
-    { 
-      name: 'Manicura Rusa Combinada & Capping', 
-      description: 'Limpieza minuciosa de cutículas con fresas de alta precisión, seguida de un escudo de gel estructural que nivela, unifica y protege el crecimiento biológico.', 
-      price: 45, 
-      duration: 90, 
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop&q=80',
-      tag: 'Más Solicitado'
-    },
-    { 
-      name: 'Extensiones Esculturales Soft Gel', 
-      description: 'Arquitectura completa de la uña utilizando tips de gel preformados y adhesión molecular. Flexibilidad de vanguardia con un grosor natural.', 
-      price: 65, 
-      duration: 120, 
-      image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80',
-      tag: 'Tendencia'
-    },
-    { 
-      name: 'Nail Art de Autor (Mano Alzada)', 
-      description: 'Llevamos tus ideas al lienzo. Diseños geométricos detallados, encapsulados con pan de oro, efectos holográficos avanzados y pedrería fina.', 
-      price: 55, 
-      duration: 105, 
-      image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80',
-      tag: 'Estilo Único'
-    },
+  const services = [
+    { name: 'Manicura Rusa Combinada', price: 45, duration: 90, image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop&q=80' },
+    { name: 'Extensiones Soft Gel', price: 65, duration: 120, image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80' },
+    { name: 'Nail Art de Autor', price: 55, duration: 105, image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80' },
   ]
 
-  const displayServices = services?.length ? services : defaultServices
-
   return (
-    <section id="servicios" className="py-32 bg-[#12100e] text-white relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.pink}15` }} />
-      <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.gold}15` }} />
-
-      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
-        <div className="max-w-3xl mx-auto text-center mb-24 space-y-4">
+    <section id="servicios" className="py-32 bg-[#12100e] text-white">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="max-w-3xl mx-auto text-center mb-24">
           <span className="text-xs font-bold tracking-[0.3em] uppercase inline-block px-4 py-1.5 rounded-full border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
             ✦ NUESTROS SERVICIOS ✦
           </span>
-          <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight">
-            Tratamientos de <span className="font-serif italic" style={{ color: COLORS.pink }}>Fresh Nails</span>
+          <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight mt-4">
+            Tratamientos <span className="font-serif italic" style={{ color: COLORS.pink }}>Fresh Nails</span>
           </h2>
-          <div className="h-[2px] w-24 mx-auto mt-4" style={{ background: `linear-gradient(to right, transparent, ${COLORS.gold}, transparent)` }} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayServices.map((service: any, idx: number) => (
-            <div
-              key={idx}
-              className="group bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-3 hover:border-[#C9A96E]/30 hover:shadow-2xl hover:shadow-[#C9A96E]/5 flex flex-col justify-between"
-            >
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-900">
-                <img 
-                  src={service.image || defaultServices[idx % 3].image} 
-                  alt={service.name}
-                  className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-transparent to-transparent z-10" />
-                
-                <span className="absolute top-4 left-4 z-20 bg-[#0d0b0a]/80 backdrop-blur-md border border-[#C9A96E]/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md" style={{ color: COLORS.gold }}>
-                  {service.tag || 'Fresh Nails'}
-                </span>
-
-                <div 
-                  className="absolute bottom-4 right-4 z-20 font-serif italic text-white text-xl px-4 py-1.5 rounded-xl shadow-lg shadow-black/40"
-                  style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}, ${COLORS.pinkDark})` }}
-                >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {services.map((service, idx) => (
+            <div key={idx} className="group bg-[#1a1715] border border-stone-800 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-3 hover:border-[#C9A96E]/30">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <img src={service.image} alt={service.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <div className="absolute bottom-4 right-4 bg-gradient-to-br from-[#DB5B9A] to-[#C43A7A] text-white text-xl font-serif italic px-4 py-1.5 rounded-xl">
                   ${service.price}
                 </div>
               </div>
-
-              <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-xl font-medium tracking-tight text-stone-100 group-hover:text-[#DB5B9A] transition-colors duration-300">
-                    {service.name}
-                  </h3>
-                  <p className="text-sm text-stone-400 font-light leading-relaxed">
-                    {service.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-stone-800/60 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs text-stone-400 font-light">
-                    <FaClock style={{ color: COLORS.gold }} className="text-xs" /> {service.duration || 90} Minutos
+              <div className="p-6">
+                <h3 className="text-xl font-medium text-stone-100 group-hover:text-[#DB5B9A] transition-colors">{service.name}</h3>
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-stone-800">
+                  <span className="flex items-center gap-1.5 text-xs text-stone-400">
+                    <FaClock style={{ color: COLORS.gold }} /> {service.duration} Min
                   </span>
-                  <Link 
-                    href="/reservas" 
-                    className="inline-flex items-center gap-1 text-xs font-bold transition-colors duration-300" 
-                    style={{ color: COLORS.pink }}
-                  >
-                    AGENDAR CITA <FaArrowRight className="text-[10px]" />
+                  <Link href="/reservas" className="text-xs font-bold" style={{ color: COLORS.pink }}>
+                    AGENDAR →
                   </Link>
                 </div>
               </div>
-
-              <div 
-                className="h-[2px] transition-all duration-500 group-hover:scale-x-100 scale-x-0"
-                style={{ 
-                  background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})`,
-                  transformOrigin: 'left'
-                }}
-              />
             </div>
           ))}
         </div>
@@ -414,208 +259,55 @@ function ServicesSection() {
 }
 
 // ============================================================
-// ACADEMY SECTION
-// ============================================================
-function AcademySection() {
-  const masterclasses = [
-    {
-      level: 'Nivel Inicial / Intermedio',
-      title: 'Capacitación en Manicura Rusa Combinada',
-      description: 'Domina el control del torno, la correcta selección de fresas diamantadas y el corte limpio de cutícula. Incluye química de productos y anatomía de la placa ungueal.',
-      duration: '3 Días Intensivos',
-      perks: ['Kit de Práctica Completo', 'Modelos Reales Incluidas', 'Certificado de Asistencia', 'Soporte Post-Curso']
-    },
-    {
-      level: 'Nivel Avanzado / Perfeccionamiento',
-      title: 'Estructuras y Nail Art Avanzado',
-      description: 'Lleva tus habilidades al siguiente nivel. Aprendizaje especializado en reversas, encastre preciso de moldes, manejo de Polygel y simetría en puntas comerciales.',
-      duration: '2 Jornadas Completas',
-      perks: ['Materiales de Alta Calidad', 'Dosier Técnico Detallado', 'Sesión de Fotos de Portafolio', 'Soporte Post-Curso de 6 meses']
-    }
-  ]
-
-  return (
-    <section className="py-32 bg-[#0d0b0a] text-white relative overflow-hidden border-t border-stone-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,#1c1917_0%,transparent_60%)] opacity-30" />
-      
-      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-12 gap-8 items-center mb-20">
-          <div className="lg:col-span-6">
-            <span className="text-xs font-bold tracking-[0.3em] block mb-2" style={{ color: COLORS.gold }}>✦ FRESH NAILS ACADEMY ✦</span>
-            <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight leading-none">
-              Perfecciona tu técnica y <br />
-              <span className="font-serif italic font-normal" style={{ color: COLORS.pink }}>Emprende con Éxito</span>
-            </h2>
-          </div>
-          <div className="lg:col-span-6">
-            <p className="text-stone-400 font-light text-sm sm:text-base leading-relaxed">
-              Formamos a profesionales con técnicas actualizadas del mercado. Nuestros programas te dotarán de la precisión y herramientas necesarias para destacar en el sector de la estética de uñas.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {masterclasses.map((course, index) => (
-            <div 
-              key={index} 
-              className="bg-gradient-to-b from-[#141211] to-[#0f0d0c] border border-stone-850 rounded-3xl p-8 md:p-10 transition-all duration-500 group relative overflow-hidden hover:-translate-y-2 hover:border-[#C9A96E]/20 hover:shadow-2xl hover:shadow-[#C9A96E]/5"
-            >
-              <div className="flex flex-col h-full justify-between space-y-8">
-                <div className="space-y-4">
-                  <span className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-md inline-block border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
-                    {course.level}
-                  </span>
-                  <h3 className="text-2xl sm:text-3xl font-serif text-stone-100 group-hover:text-[#DB5B9A] transition-colors duration-300">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-stone-400 font-light leading-relaxed">
-                    {course.description}
-                  </p>
-                </div>
-
-                <div className="space-y-3 pt-4 border-t border-stone-850">
-                  <p className="text-xs font-bold uppercase text-stone-400 tracking-wider flex items-center gap-2">
-                    <FaAward style={{ color: COLORS.gold }} /> Contenido del Curso:
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {course.perks.map((perk, pIdx) => (
-                      <div key={pIdx} className="flex items-center gap-2 text-xs text-stone-300 font-light">
-                        <FaCheckCircle className="text-[10px] flex-shrink-0" style={{ color: COLORS.pink }} />
-                        <span>{perk}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                  <span className="text-xs text-stone-400 flex items-center gap-2 bg-stone-900 px-4 py-2 rounded-xl border border-stone-800">
-                    ⏱️ <strong className="text-stone-200">{course.duration}</strong>
-                  </span>
-                  <Link 
-                    href="/academy" 
-                    className="px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center hover:opacity-90"
-                    style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})`, color: COLORS.white }}
-                  >
-                    CONSULTAR INFORMACIÓN
-                  </Link>
-                </div>
-              </div>
-
-              <div className="absolute -top-40 -right-40 w-60 h-60 rounded-full filter blur-[80px] group-hover:opacity-100 opacity-0 transition-opacity duration-700" style={{ background: `${COLORS.pink}/10` }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// TESTIMONIALS SECTION
+// TESTIMONIOS
 // ============================================================
 function TestimonialsSection() {
-  const { data: testimonials } = useTestimonials()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(true)
 
-  const defaultTestimonials = [
-    {
-      comment: "La precisión de la manicura rusa aquí es excelente. Mis cutículas nunca lucieron tan limpias y prolijas, y el capping me duró un mes entero. ¡Súper recomendable!",
-      name: "Valeria Mendoza",
-      service: "Manicura Rusa & Capping"
-    },
-    {
-      comment: "Hice el curso en la academia y realmente impulsó mi trabajo. La paciencia de las instructoras y el nivel de detalle técnico es fantástico.",
-      name: "Agustina Silva",
-      service: "Alumna Academia"
-    },
-    {
-      comment: "Un lugar con un gusto excelente. Los diseños a mano alzada son divinos. No cambio este salón por ningún otro.",
-      name: "Carolina Rostagnol",
-      service: "Nail Art"
-    }
+  const testimonials = [
+    { comment: "La precisión de la manicura rusa aquí es excelente. ¡Súper recomendable!", name: "Valeria Mendoza", service: "Manicura Rusa" },
+    { comment: "Hice el curso en la academia y realmente impulsó mi trabajo.", name: "Agustina Silva", service: "Alumna" },
+    { comment: "Un lugar con un gusto excelente. No cambio este salón por ningún otro.", name: "Carolina Rostagnol", service: "Nail Art" }
   ]
 
-  const items = testimonials?.length ? testimonials : defaultTestimonials
-
   useEffect(() => {
-    if (!isPlaying) return
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % items.length)
+      setCurrentIndex((prev) => (prev + 1) % testimonials.length)
     }, 5000)
     return () => clearInterval(interval)
-  }, [isPlaying, items.length])
+  }, [])
 
   return (
-    <section className="py-32 bg-[#12100e] text-white border-t border-stone-900 relative overflow-hidden">
-      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.pink}/10` }} />
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.gold}/10` }} />
-
-      <div className="w-full max-w-4xl mx-auto px-4 relative z-10">
-        <div className="text-center mb-16 space-y-2">
-          <span className="text-xs font-bold tracking-[0.25em] uppercase block" style={{ color: COLORS.pink }}>
-            ✦ TESTIMONIOS ✦
-          </span>
-          <h2 className="text-4xl font-extralight tracking-tight">
+    <section className="py-32 bg-[#12100e] text-white border-t border-stone-900">
+      <div className="w-full max-w-4xl mx-auto px-4">
+        <div className="text-center mb-16">
+          <span className="text-xs font-bold tracking-[0.25em] uppercase" style={{ color: COLORS.pink }}>✦ TESTIMONIOS ✦</span>
+          <h2 className="text-4xl font-extralight tracking-tight mt-2">
             Lo que dicen <span className="font-serif italic" style={{ color: COLORS.gold }}>nuestras clientas</span>
           </h2>
         </div>
 
-        <div className="relative bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-3xl p-8 md:p-16 text-center shadow-2xl min-h-[340px] flex flex-col justify-center overflow-hidden">
-          <FaQuoteLeft className="text-stone-800 text-6xl absolute top-8 left-8 opacity-40 pointer-events-none" style={{ color: COLORS.gold }} />
-
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {items.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentIndex(i)}
-                className="h-1 rounded-full transition-all duration-300"
-                style={{
-                  width: i === currentIndex ? '24px' : '12px',
-                  background: i === currentIndex 
-                    ? `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` 
-                    : '#3d3d3d'
-                }}
-              />
-            ))}
-          </div>
+        <div className="relative bg-[#1a1715] border border-stone-800 rounded-3xl p-12 text-center min-h-[300px] flex flex-col justify-center">
+          <FaQuoteLeft className="text-stone-700 text-5xl absolute top-6 left-6 opacity-40" />
 
           <div className="space-y-6 transition-all duration-500">
-            <p className="text-lg md:text-xl text-stone-300 font-light leading-relaxed italic">
-              "{items[currentIndex]?.comment}"
+            <p className="text-lg md:text-xl text-stone-300 font-light italic">
+              "{testimonials[currentIndex].comment}"
             </p>
-
-            <div className="pt-4 flex flex-col items-center">
-              <span className="text-sm font-semibold text-stone-100 tracking-wide">
-                {items[currentIndex]?.name}
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-widest mt-1 px-2.5 py-0.5 rounded" style={{ color: COLORS.gold, background: `${COLORS.gold}/10`, border: `1px solid ${COLORS.gold}/20` }}>
-                {items[currentIndex]?.service || 'Clienta'}
-              </span>
+            <div>
+              <p className="font-semibold text-stone-100">{testimonials[currentIndex].name}</p>
+              <p className="text-xs text-[#C9A96E] mt-1">{testimonials[currentIndex].service}</p>
             </div>
           </div>
 
           {/* Controles */}
-          <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 flex gap-2">
-            <button 
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)}
-              className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-            >
-              <FaChevronLeft className="text-xs" />
-            </button>
-            <button 
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % items.length)}
-              className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-            >
-              <FaChevronRight className="text-xs" />
-            </button>
-          </div>
-
-          <button 
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="absolute right-4 md:right-6 bottom-4 md:bottom-6 w-8 h-8 rounded-full bg-stone-900 border border-stone-800 text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-          >
-            {isPlaying ? <FaPause className="text-[10px]" /> : <FaPlay className="text-[10px]" />}
+          <button onClick={() => setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)} 
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-stone-800 border border-stone-700 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all flex items-center justify-center">
+            <FaChevronLeft className="text-xs" />
+          </button>
+          <button onClick={() => setCurrentIndex((prev) => (prev + 1) % testimonials.length)} 
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-stone-800 border border-stone-700 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all flex items-center justify-center">
+            <FaChevronRight className="text-xs" />
           </button>
         </div>
       </div>
@@ -624,25 +316,21 @@ function TestimonialsSection() {
 }
 
 // ============================================================
-// HYGIENE SECTION
+// HIGIENE
 // ============================================================
 function HygieneSection() {
   return (
-    <section className="py-24 bg-[#0d0b0a] text-white border-t border-stone-900 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,#1c1917_0%,transparent_60%)] opacity-30" />
-      
-      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
-        <div className="bg-gradient-to-r from-[#141211] to-[#1e1917] border border-stone-850 rounded-3xl p-8 md:p-12 grid md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-4 flex justify-center md:justify-start">
-            <div className="w-24 h-24 rounded-2xl border border-[#C9A96E]/30 flex items-center justify-center text-4xl shadow-inner" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}/10, ${COLORS.gold}/10)` }}>
-              <FaShieldAlt className="animate-pulse duration-[4000ms]" style={{ color: COLORS.gold }} />
-            </div>
+    <section className="py-24 bg-[#0d0b0a] text-white border-t border-stone-900">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="bg-[#141211] border border-stone-800 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-8">
+          <div className="w-24 h-24 rounded-2xl border border-[#C9A96E]/30 flex items-center justify-center text-4xl" style={{ background: `${COLORS.pink}10` }}>
+            <FaShieldAlt style={{ color: COLORS.gold }} />
           </div>
-          <div className="md:col-span-8 space-y-3">
-            <span className="text-[10px] font-bold tracking-widest uppercase block" style={{ color: COLORS.gold }}>✦ PROTOCOLOS DE HIGIENE ✦</span>
-            <h3 className="text-2xl sm:text-3xl font-serif text-stone-100">Bioseguridad y Cuidado Integral</h3>
-            <p className="text-sm text-stone-400 font-light leading-relaxed">
-              Tu bienestar es nuestra prioridad. Todo nuestro instrumental metálico pasa por un proceso riguroso de tres etapas: desinfección por inmersión, lavado ultrasónico y esterilización térmica en autoclave. Los sobres esterilizados se abren en tu presencia al iniciar la sesión.
+          <div className="flex-1">
+            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: COLORS.gold }}>✦ PROTOCOLOS DE HIGIENE ✦</span>
+            <h3 className="text-2xl font-serif text-stone-100 mt-1">Bioseguridad y Cuidado Integral</h3>
+            <p className="text-sm text-stone-400 font-light mt-2">
+              Todo nuestro instrumental pasa por un proceso riguroso de tres etapas: desinfección, lavado ultrasónico y esterilización en autoclave.
             </p>
           </div>
         </div>
@@ -654,112 +342,100 @@ function HygieneSection() {
 // ============================================================
 // FOOTER
 // ============================================================
-function PremiumFooter() {
+function Footer() {
   return (
-    <footer className="bg-[#090807] text-stone-400 text-sm pt-24 pb-12 border-t border-stone-900 relative z-10">
-      <div className="w-full max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-stone-900">
-
-        <div className="space-y-5">
-          <h3 className="text-xl font-serif tracking-wide text-stone-100 italic">
-            Salon Fresh Nails<span style={{ color: COLORS.pink }}>.</span>
-          </h3>
-          <p className="text-xs text-stone-500 leading-relaxed font-light">
-            Redefiniendo el cuidado y la estética de tus uñas. Salud ungueal, diseños actuales y atención personalizada en un espacio diseñado para ti.
-          </p>
-          <div className="flex items-center gap-3 pt-2">
-            {[
-              { icon: <FaInstagram className="text-sm" />, href: "https://www.instagram.com/freshnails46" },
-              { icon: <FaFacebook className="text-sm" />, href: "#" },
-              { icon: <FaWhatsapp className="text-sm" />, href: "#" }
-            ].map((social, i) => (
-              <a 
-                key={i}
-                href={social.href} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="w-9 h-9 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-400 hover:text-white hover:border-[#C9A96E] transition-all duration-300"
-              >
-                {social.icon}
-              </a>
-            ))}
+    <footer className="bg-[#090807] text-stone-400 text-sm pt-16 pb-8 border-t border-stone-900">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-stone-900">
+          <div>
+            <h3 className="text-xl font-serif text-stone-100">Fresh Nails<span style={{ color: COLORS.pink }}>.</span></h3>
+            <p className="text-xs text-stone-500 mt-2">Redefiniendo el cuidado de tus uñas.</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Horarios</h4>
+            <ul className="text-xs space-y-1 mt-2">
+              <li>Lun-Vie: 09:00 - 20:00</li>
+              <li>Sáb: 09:00 - 18:00</li>
+              <li style={{ color: COLORS.pink }}>Dom: Cerrado</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Enlaces</h4>
+            <ul className="text-xs space-y-1 mt-2">
+              <li><Link href="#servicios" className="hover:text-[#C9A96E]">Servicios</Link></li>
+              <li><Link href="/reservas" className="hover:text-[#C9A96E]">Reservar</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Síguenos</h4>
+            <div className="flex gap-3 mt-2">
+              <a href="#" className="hover:text-[#C9A96E]"><FaInstagram /></a>
+              <a href="#" className="hover:text-[#C9A96E]"><FaFacebook /></a>
+              <a href="#" className="hover:text-[#C9A96E]"><FaWhatsapp /></a>
+            </div>
           </div>
         </div>
-
-        <div className="space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Horarios del Salón</h4>
-          <ul className="space-y-2 text-xs font-light">
-            <li className="flex justify-between pb-1 border-b border-stone-900">
-              <span>Lunes a Viernes</span>
-              <span className="text-stone-300">09:00 - 20:00 h</span>
-            </li>
-            <li className="flex justify-between pb-1 border-b border-stone-900">
-              <span>Sábados</span>
-              <span className="text-stone-300">09:00 - 18:00 h</span>
-            </li>
-            <li className="flex justify-between" style={{ color: COLORS.pink }}>
-              <span>Domingos & Feriados</span>
-              <span>Cerrado</span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Navegación</h4>
-          <ul className="space-y-2 text-xs font-light grid grid-cols-2 gap-2">
-            <li><Link href="#servicios" className="hover:text-[#C9A96E] transition-colors">Menú</Link></li>
-            <li><Link href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</Link></li>
-            <li><Link href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</Link></li>
-            <li><Link href="/contacto" className="hover:text-[#C9A96E] transition-colors">Contacto</Link></li>
-          </ul>
-        </div>
-
-        <div className="space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Novedades</h4>
-          <p className="text-xs text-stone-500 leading-relaxed font-light">
-            Recibe información sobre la apertura de agendas mensuales y nuevos talleres prácticos de la academia.
-          </p>
-          <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="Tu correo electrónico..." 
-              className="w-full bg-stone-900 border border-stone-800 focus:border-[#C9A96E] focus:outline-none text-xs rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 transition-colors"
-            />
-            <button 
-              className="w-full text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300 hover:opacity-90"
-              style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
-            >
-              SUSCRIBIRME
-            </button>
-          </form>
-        </div>
-
-      </div>
-
-      <div className="w-full max-w-7xl mx-auto px-4 pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-600 font-light gap-4">
-        <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-stone-400 transition-colors">Políticas de Cancelación</a>
-          <a href="#" className="hover:text-stone-400 transition-colors">Términos del Servicio</a>
-        </div>
+        <p className="text-[11px] text-stone-600 text-center mt-6">© 2026 Fresh Nails. Todos los derechos reservados.</p>
       </div>
     </footer>
   )
 }
 
 // ============================================================
-// MAIN
+// MAIN - COMPONENTE PRINCIPAL
 // ============================================================
 export default function Home() {
+  // Importamos Header y Footer de forma segura con try/catch
+  const [HeaderComponent, setHeaderComponent] = useState<any>(null)
+  const [FooterComponent, setFooterComponent] = useState<any>(null)
+
+  useEffect(() => {
+    try {
+      // Intentamos importar los componentes
+      import('@/components/Header').then(mod => {
+        setHeaderComponent(() => mod.default || mod.Header)
+      }).catch(() => {
+        // Si falla, usamos un Header simple
+        setHeaderComponent(() => function SimpleHeader() {
+          return (
+            <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
+              <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <span className="text-white font-serif text-lg">Fresh Nails</span>
+                <nav className="flex gap-6 text-xs text-stone-400">
+                  <Link href="#servicios" className="hover:text-[#C9A96E]">Servicios</Link>
+                  <Link href="/reservas" className="hover:text-[#C9A96E]">Reservar</Link>
+                </nav>
+              </div>
+            </header>
+          )
+        })
+      })
+
+      import('@/components/Footer').then(mod => {
+        setFooterComponent(() => mod.default || mod.Footer)
+      }).catch(() => {
+        // Si falla, usamos un Footer simple
+        setFooterComponent(() => function SimpleFooter() {
+          return <Footer />
+        })
+      })
+    } catch (e) {
+      console.log('Error loading components, using fallbacks')
+    }
+  }, [])
+
+  const Header = HeaderComponent || (() => null)
+  const FooterComp = FooterComponent || (() => null)
+
   return (
-    <main className="bg-[#0d0b0a] text-stone-300 min-h-screen overflow-x-hidden antialiased selection:bg-[#DB5B9A]/20 selection:text-[#DB5B9A]">
+    <main className="bg-[#0d0b0a] text-stone-300 min-h-screen overflow-x-hidden">
       <Header />
       <HeroSection />
       <FeaturedGallery />
       <ServicesSection />
-      <AcademySection />
       <TestimonialsSection />
       <HygieneSection />
-      <PremiumFooter />
+      <FooterComp />
     </main>
   )
 }
