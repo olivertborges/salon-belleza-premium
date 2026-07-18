@@ -22,7 +22,10 @@ import {
   FaPalette,
   FaScissors,
   FaBolt,
-  FaRegGem
+  FaRegGem,
+  FaImages,
+  FaPlay,
+  FaPause
 } from 'react-icons/fa'
 
 import Header from '@/components/Header'
@@ -30,41 +33,68 @@ import Footer from '@/components/Footer'
 import { useServices, useTestimonials } from '@/hooks/useData'
 
 // ============================================================
+// COLORES DE LA MARCA
+// ============================================================
+const COLORS = {
+  gold: '#C9A96E',
+  goldLight: '#E8D5A8',
+  goldDark: '#A8894A',
+  pink: '#DB5B9A',
+  pinkLight: '#E88AB8',
+  pinkDark: '#C43A7A',
+  copper: '#E5A46E',
+  copperLight: '#F0C49A',
+  dark: '#0d0b0a',
+  darkCard: '#141211',
+  darkBorder: '#1e1a18',
+  white: '#FAF8F5'
+}
+
+// ============================================================
+// IMÁGENES DE LA GALERÍA (reales de servicios)
+// ============================================================
+const GALLERY_IMAGES = [
+  {
+    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
+    title: 'Manicura Rusa',
+    category: 'Combinada'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
+    title: 'Extensiones Soft Gel',
+    category: 'Esculturales'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&fit=crop&q=90',
+    title: 'Nail Art',
+    category: 'Mano Alzada'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
+    title: 'Capping',
+    category: 'Protección'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
+    title: 'Diseño Geométrico',
+    category: 'Vanguardista'
+  },
+  {
+    url: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    title: 'Micropigmentación',
+    category: 'Cejas'
+  },
+]
+
+// ============================================================
 // ANIMACIONES GLOBALES
 // ============================================================
 const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 50 },
   visible: { 
     opacity: 1, 
     y: 0,
     transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-  }
-}
-
-const fadeInLeft = {
-  hidden: { opacity: 0, x: -60 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] }
-  }
-}
-
-const fadeInRight = {
-  hidden: { opacity: 0, x: 60 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] }
-  }
-}
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.92 },
-  visible: { 
-    opacity: 1, 
-    scale: 1,
-    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
   }
 }
 
@@ -73,17 +103,18 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.12,
+      staggerChildren: 0.1,
       delayChildren: 0.2
     }
   }
 }
 
 // ============================================================
-// HERO SECTION - CON IMAGEN DE MICROPIGMENTACIÓN
+// HERO SECTION - CON CARRUSEL DE FOTOS
 // ============================================================
 function HeroSection() {
   const [mounted, setMounted] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -91,11 +122,20 @@ function HeroSection() {
   })
 
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.8], [1, 0.92])
-  const y = useTransform(scrollYProgress, [0, 0.8], [0, 80])
+  const scale = useTransform(scrollYProgress, [0, 0.8], [1, 0.95])
+
+  const heroImages = [
+    'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
+    'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
+    'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  ]
 
   useEffect(() => {
     setMounted(true)
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length)
+    }, 4000)
+    return () => clearInterval(interval)
   }, [])
 
   return (
@@ -103,95 +143,64 @@ function HeroSection() {
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center bg-[#0d0b0a] text-white pt-32 pb-24 overflow-hidden"
     >
-      {/* Background con efecto de partículas y gradientes */}
+      {/* Fondo con partículas animadas */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-rose-900/15 rounded-full filter blur-[150px] animate-pulse duration-[8000ms]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-amber-950/15 rounded-full filter blur-[150px] animate-pulse duration-[6000ms]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-900/5 rounded-full filter blur-[120px] animate-pulse duration-[10000ms]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-[#DB5B9A]/10 rounded-full filter blur-[150px] animate-pulse duration-[8000ms]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-[#C9A96E]/10 rounded-full filter blur-[150px] animate-pulse duration-[6000ms]" />
         <div className="absolute inset-0 bg-[radial-gradient(#1c1917_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
       </div>
 
-      {/* Elementos flotantes decorativos */}
       <motion.div 
-        className="absolute top-1/4 left-[8%] text-rose-400/10 text-7xl hidden lg:block"
-        animate={{ 
-          y: [0, -20, 0, 20, 0],
-          rotate: [0, 5, 0, -5, 0]
-        }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      >
-        ✦
-      </motion.div>
-      <motion.div 
-        className="absolute bottom-1/3 right-[5%] text-amber-400/10 text-6xl hidden lg:block"
-        animate={{ 
-          y: [0, 20, 0, -20, 0],
-          rotate: [0, -5, 0, 5, 0]
-        }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-      >
-        ✦
-      </motion.div>
-
-      <motion.div 
-        style={{ opacity, scale, y }}
+        style={{ opacity, scale }}
         className="w-full max-w-7xl mx-auto px-4 relative z-10"
       >
         <div className="grid lg:grid-cols-12 gap-12 items-center">
 
           {/* Texto Hero */}
           <motion.div 
-            className="lg:col-span-7 space-y-8"
+            className="lg:col-span-6 space-y-8"
             initial="hidden"
             animate={mounted ? "visible" : "hidden"}
             variants={staggerContainer}
           >
             <motion.div 
               variants={fadeInUp}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-rose-500/10 border border-amber-500/30 px-5 py-2 rounded-full backdrop-blur-md"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-[#C9A96E]/10 to-[#DB5B9A]/10 border border-[#C9A96E]/30 px-5 py-2 rounded-full backdrop-blur-md"
             >
-              <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-              <p className="text-xs uppercase tracking-[0.3em] font-medium bg-gradient-to-r from-amber-200 to-rose-300 bg-clip-text text-transparent">
+              <span className="flex h-2 w-2 rounded-full bg-[#C9A96E] animate-ping" />
+              <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: COLORS.gold }}>
                 ✦ Fresh Nails Salon ✦
               </p>
             </motion.div>
 
-            <motion.h1 
-              variants={fadeInUp}
-              className="text-5xl sm:text-7xl lg:text-8xl font-extralight tracking-tight leading-[1.05]"
-            >
+            <motion.h1 variants={fadeInUp} className="text-5xl sm:text-7xl lg:text-8xl font-extralight tracking-tight leading-[1.05]">
               <span className="text-stone-100">Donde tus manos</span>
               <br />
-              <span className="font-serif italic font-normal bg-gradient-to-r from-rose-300 via-amber-200 to-rose-400 bg-clip-text text-transparent">
+              <span className="font-serif italic font-normal" style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 se vuelven arte
               </span>
             </motion.h1>
 
-            <motion.p 
-              variants={fadeInUp}
-              className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed"
-            >
+            <motion.p variants={fadeInUp} className="text-base sm:text-lg text-stone-400 font-light max-w-xl leading-relaxed">
               Especialistas en manicura combinada y extensiones esculturales. Creamos diseños vanguardistas que fusionan resistencia estructural y estética impecable.
             </motion.p>
 
-            <motion.div 
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 pt-4"
-            >
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
                 href="/reservas" 
-                className="relative group overflow-hidden rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 p-[1px] transition-all duration-300 shadow-[0_0_30px_rgba(225,29,72,0.2)] hover:shadow-[0_0_50px_rgba(225,29,72,0.4)]"
+                className="relative group overflow-hidden rounded-xl p-[1px] transition-all duration-300 shadow-[0_0_30px_rgba(219,91,154,0.2)] hover:shadow-[0_0_50px_rgba(219,91,154,0.4)]"
+                style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
               >
-                <div className="bg-stone-950 text-white group-hover:bg-transparent px-8 py-4 rounded-[11px] font-medium text-sm tracking-wider transition-colors duration-300 flex items-center justify-center gap-3">
+                <div className="bg-[#0d0b0a] text-white group-hover:bg-transparent px-8 py-4 rounded-[11px] font-medium text-sm tracking-wider transition-colors duration-300 flex items-center justify-center gap-3">
                   RESERVAR CITA
-                  <FaArrowRight className="text-xs group-hover:translate-x-1.5 transition-transform duration-300 text-rose-400 group-hover:text-white" />
+                  <FaArrowRight className="text-xs group-hover:translate-x-1.5 transition-transform duration-300" style={{ color: COLORS.gold }} />
                 </div>
               </Link>
               <Link 
                 href="#servicios" 
-                className="group bg-stone-900/60 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 px-8 py-4 rounded-xl font-medium text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-sm"
+                className="group bg-stone-900/60 hover:bg-stone-900 border border-stone-800 hover:border-[#C9A96E] px-8 py-4 rounded-xl font-medium text-sm tracking-wider transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-sm"
               >
-                <FaSparkles className="text-amber-400 text-xs group-hover:rotate-180 transition-transform duration-500" />
+                <FaSparkles className="text-xs group-hover:rotate-180 transition-transform duration-500" style={{ color: COLORS.gold }} />
                 VER SERVICIOS
               </Link>
             </motion.div>
@@ -201,63 +210,73 @@ function HeroSection() {
               className="grid grid-cols-3 gap-6 pt-12 border-t border-stone-900 max-w-md"
             >
               {[
-                { number: '100%', label: 'Esterilización Médica', color: 'text-amber-200' },
-                { number: 'Técnicas', label: 'Rusas Profesionales', color: 'text-rose-300' },
-                { number: '20K+', label: 'Uñas Esculpidas', color: 'text-stone-200' }
+                { number: '100%', label: 'Esterilización Médica', color: COLORS.gold },
+                { number: 'Técnicas', label: 'Rusas Profesionales', color: COLORS.pink },
+                { number: '20K+', label: 'Uñas Esculpidas', color: COLORS.copper }
               ].map((item, i) => (
                 <div key={i}>
-                  <p className={`text-2xl font-serif italic ${item.color}`}>{item.number}</p>
+                  <p className="text-2xl font-serif italic" style={{ color: item.color }}>{item.number}</p>
                   <p className="text-[10px] uppercase tracking-widest text-stone-500 mt-1">{item.label}</p>
                 </div>
               ))}
             </motion.div>
           </motion.div>
 
-          {/* Imagen Hero con efecto Glassmorphism */}
+          {/* Carrusel de imágenes Hero */}
           <motion.div 
-            className="lg:col-span-5 relative"
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-            animate={mounted ? { opacity: 1, scale: 1, y: 0 } : {}}
+            className="lg:col-span-6 relative"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={mounted ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative w-full max-w-md mx-auto">
-              {/* Marco decorativo */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 border border-rose-500/20 rounded-full blur-sm" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 border border-amber-500/20 rounded-full blur-sm" />
-              
-              <div className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl shadow-rose-500/10 border border-stone-800 bg-stone-950 group">
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent z-10 opacity-60" />
-                
+            <div className="relative w-full max-w-md mx-auto aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl border border-stone-800">
+              <AnimatePresence mode="wait">
                 <motion.img
-                  src="https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                  alt="Micropigmentación de cejas - Fresh Nails"
-                  className="w-full h-full object-cover transition-transform duration-[12s] ease-out group-hover:scale-110"
-                  initial={{ scale: 1.1 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
+                  key={currentSlide}
+                  src={heroImages[currentSlide]}
+                  alt="Fresh Nails Gallery"
+                  className="w-full h-full object-cover"
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
+              </AnimatePresence>
 
-                {/* Badge flotante */}
-                <motion.div 
-                  className="absolute bottom-6 left-6 right-6 z-20 bg-stone-900/85 backdrop-blur-xl border border-stone-800 p-5 rounded-2xl shadow-xl"
-                  whileHover={{ y: -4, boxShadow: "0 20px 60px rgba(225,29,72,0.15)" }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                      <FaGem className="text-amber-400 animate-pulse duration-[4000ms]" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-stone-200">Garantía Crystal Gloss</h4>
-                      <p className="text-[11px] text-stone-400 font-light mt-0.5">Brillo blindado por hasta 21 días</p>
-                    </div>
+              {/* Overlay con gradiente */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent opacity-60" />
+
+              {/* Badge flotante */}
+              <motion.div 
+                className="absolute bottom-6 left-6 right-6 z-20 bg-[#0d0b0a]/85 backdrop-blur-xl border border-[#C9A96E]/30 p-5 rounded-2xl shadow-xl"
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl border border-[#C9A96E]/30 flex items-center justify-center" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}/20, ${COLORS.gold}/20)` }}>
+                    <FaGem className="animate-pulse duration-[4000ms]" style={{ color: COLORS.gold }} />
                   </div>
-                </motion.div>
-
-                {/* Badge superior */}
-                <div className="absolute top-4 right-4 z-20 bg-rose-600/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-white border border-rose-400/30 shadow-lg shadow-rose-500/20">
-                  ✦ Micropigmentación
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-200">Garantía Crystal Gloss</h4>
+                    <p className="text-[11px] text-stone-400 font-light mt-0.5">Brillo blindado por hasta 21 días</p>
+                  </div>
                 </div>
+              </motion.div>
+
+              {/* Indicadores del carrusel */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                {heroImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      i === currentSlide 
+                        ? 'w-6' 
+                        : 'w-3 bg-stone-700 hover:bg-stone-500'
+                    }`}
+                    style={i === currentSlide ? { background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` } : {}}
+                  />
+                ))}
               </div>
             </div>
           </motion.div>
@@ -269,18 +288,89 @@ function HeroSection() {
 }
 
 // ============================================================
-// SERVICES SECTION - CON ANIMACIONES ESPECTACULARES
+// GALERÍA DESTACADA - CON MUCHO MOVIMIENTO
+// ============================================================
+function FeaturedGallery() {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
+  return (
+    <section className="py-24 bg-[#0d0b0a] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#1c1917_0%,transparent_70%)] opacity-30" />
+      
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+          className="text-center mb-16"
+        >
+          <motion.span variants={fadeInUp} className="text-xs font-bold tracking-[0.3em] uppercase inline-block px-4 py-1.5 rounded-full border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
+            ✦ GALERÍA DESTACADA ✦
+          </motion.span>
+          <motion.h2 variants={fadeInUp} className="text-4xl sm:text-5xl font-extralight tracking-tight mt-4">
+            Nuestros <span className="font-serif italic" style={{ color: COLORS.pink }}>trabajos</span> más recientes
+          </motion.h2>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {GALLERY_IMAGES.map((img, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: idx * 0.06 }}
+              viewport={{ once: true }}
+              className="relative aspect-square rounded-2xl overflow-hidden cursor-pointer group"
+              onMouseEnter={() => setHoveredIndex(idx)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <motion.img 
+                src={img.url} 
+                alt={img.title}
+                className="w-full h-full object-cover"
+                animate={{ 
+                  scale: hoveredIndex === idx ? 1.12 : 1,
+                  filter: hoveredIndex === idx ? 'brightness(0.9)' : 'brightness(1)'
+                }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              />
+              
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a] via-transparent to-transparent"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: hoveredIndex === idx ? 0.8 : 0 }}
+                transition={{ duration: 0.4 }}
+              />
+
+              <motion.div 
+                className="absolute bottom-0 left-0 right-0 p-4"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: hoveredIndex === idx ? 0 : 20, opacity: hoveredIndex === idx ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h4 className="text-white text-sm font-medium">{img.title}</h4>
+                <p className="text-xs" style={{ color: COLORS.gold }}>{img.category}</p>
+              </motion.div>
+
+              <div className="absolute top-3 left-3">
+                <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-[#C9A96E]/30" style={{ color: COLORS.gold, background: 'rgba(13,11,10,0.6)' }}>
+                  Fresh Nails
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// SERVICES SECTION
 // ============================================================
 function ServicesSection() {
   const { data: services } = useServices()
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"]
-  })
-
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0.6])
-  const y = useTransform(scrollYProgress, [0, 0.2], [60, 0])
 
   const defaultServices = [
     { 
@@ -289,8 +379,7 @@ function ServicesSection() {
       price: 45, 
       duration: 90, 
       image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop&q=80',
-      tag: 'Más Solicitado',
-      icon: <FaScissors className="text-rose-400" />
+      tag: 'Más Solicitado'
     },
     { 
       name: 'Extensiones Esculturales Soft Gel', 
@@ -298,8 +387,7 @@ function ServicesSection() {
       price: 65, 
       duration: 120, 
       image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80',
-      tag: 'Tendencia',
-      icon: <FaFeather className="text-amber-400" />
+      tag: 'Tendencia'
     },
     { 
       name: 'Nail Art de Autor (Mano Alzada)', 
@@ -307,28 +395,18 @@ function ServicesSection() {
       price: 55, 
       duration: 105, 
       image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80',
-      tag: 'Estilo Único',
-      icon: <FaPalette className="text-purple-400" />
+      tag: 'Estilo Único'
     },
   ]
 
   const displayServices = services?.length ? services : defaultServices
 
   return (
-    <section 
-      ref={sectionRef}
-      id="servicios" 
-      className="py-32 bg-[#12100e] text-white relative overflow-hidden"
-    >
-      {/* Elemento decorativo de fondo */}
-      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-rose-500/5 rounded-full filter blur-[120px]" />
-      <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-amber-500/5 rounded-full filter blur-[120px]" />
+    <section id="servicios" className="py-32 bg-[#12100e] text-white relative overflow-hidden">
+      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.pink}/5` }} />
+      <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full filter blur-[120px]" style={{ background: `${COLORS.gold}/5` }} />
 
-      <motion.div 
-        style={{ opacity, y }}
-        className="w-full max-w-7xl mx-auto px-4 relative z-10"
-      >
-        {/* Encabezado */}
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -336,25 +414,15 @@ function ServicesSection() {
           variants={staggerContainer}
           className="max-w-3xl mx-auto text-center mb-24 space-y-4"
         >
-          <motion.span 
-            variants={fadeInUp}
-            className="text-xs font-bold tracking-[0.3em] uppercase text-rose-500 bg-rose-500/5 border border-rose-500/20 px-4 py-1.5 rounded-full inline-block"
-          >
+          <motion.span variants={fadeInUp} className="text-xs font-bold tracking-[0.3em] uppercase inline-block px-4 py-1.5 rounded-full border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
             ✦ NUESTROS SERVICIOS ✦
           </motion.span>
-          <motion.h2 
-            variants={fadeInUp}
-            className="text-4xl sm:text-5xl font-extralight tracking-tight"
-          >
-            Tratamientos de <span className="font-serif italic text-amber-200">Fresh Nails</span>
+          <motion.h2 variants={fadeInUp} className="text-4xl sm:text-5xl font-extralight tracking-tight">
+            Tratamientos de <span className="font-serif italic" style={{ color: COLORS.pink }}>Fresh Nails</span>
           </motion.h2>
-          <motion.div 
-            variants={fadeInUp}
-            className="h-[2px] w-24 bg-gradient-to-r from-transparent via-rose-500 to-transparent mx-auto mt-4"
-          />
+          <motion.div variants={fadeInUp} className="h-[2px] w-24 mx-auto mt-4" style={{ background: `linear-gradient(to right, transparent, ${COLORS.gold}, transparent)` }} />
         </motion.div>
 
-        {/* Grid de Servicios */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -365,20 +433,11 @@ function ServicesSection() {
           {displayServices.map((service: any, idx: number) => (
             <motion.div
               key={idx}
-              variants={scaleIn}
-              whileHover={{ 
-                y: -12,
-                transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
-              }}
-              className="group bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-2xl overflow-hidden transition-all duration-500 hover:border-rose-500/30 hover:shadow-2xl hover:shadow-rose-500/5 flex flex-col justify-between"
+              variants={fadeInUp}
+              whileHover={{ y: -12, transition: { duration: 0.4 } }}
+              className="group bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-2xl overflow-hidden transition-all duration-500 hover:border-[#C9A96E]/30 hover:shadow-2xl hover:shadow-[#C9A96E]/5 flex flex-col justify-between"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-900">
-                <motion.div 
-                  className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-transparent to-transparent z-10"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 0.4 }}
-                  transition={{ duration: 0.4 }}
-                />
                 <motion.img 
                   src={service.image || defaultServices[idx % 3].image} 
                   alt={service.name}
@@ -386,36 +445,26 @@ function ServicesSection() {
                   whileHover={{ scale: 1.12 }}
                   transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 />
-
-                {/* Badge de categoría */}
-                <motion.span 
-                  className="absolute top-4 left-4 z-20 bg-stone-950/80 backdrop-blur-md border border-amber-500/30 text-[10px] font-bold text-amber-300 uppercase tracking-widest px-3 py-1 rounded-md"
-                  whileHover={{ scale: 1.05, borderColor: "#f59e0b" }}
-                >
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-transparent to-transparent z-10" />
+                
+                <span className="absolute top-4 left-4 z-20 bg-[#0d0b0a]/80 backdrop-blur-md border border-[#C9A96E]/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-md" style={{ color: COLORS.gold }}>
                   {service.tag || 'Fresh Nails'}
-                </motion.span>
+                </span>
 
-                {/* Precio */}
                 <motion.div 
-                  className="absolute bottom-4 right-4 z-20 bg-gradient-to-br from-rose-600 to-rose-700 font-serif italic text-white text-xl px-4 py-1.5 rounded-xl shadow-lg shadow-black/40"
+                  className="absolute bottom-4 right-4 z-20 font-serif italic text-white text-xl px-4 py-1.5 rounded-xl shadow-lg shadow-black/40"
+                  style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}, ${COLORS.pinkDark})` }}
                   whileHover={{ scale: 1.05 }}
                 >
                   ${service.price}
                 </motion.div>
-
-                {/* Icono flotante */}
-                <div className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10">
-                  {service.icon || <FaRegGem className="text-white/60 text-xs" />}
-                </div>
               </div>
 
               <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
-                  <motion.h3 
-                    className="text-xl font-medium tracking-tight text-stone-100 group-hover:text-rose-400 transition-colors duration-300"
-                  >
+                  <h3 className="text-xl font-medium tracking-tight text-stone-100 group-hover:text-[#DB5B9A] transition-colors duration-300">
                     {service.name}
-                  </motion.h3>
+                  </h3>
                   <p className="text-sm text-stone-400 font-light leading-relaxed">
                     {service.description}
                   </p>
@@ -423,38 +472,37 @@ function ServicesSection() {
 
                 <div className="pt-4 border-t border-stone-800/60 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs text-stone-400 font-light">
-                    <FaClock className="text-amber-400 text-xs" /> {service.duration || 90} Minutos
+                    <FaClock style={{ color: COLORS.gold }} className="text-xs" /> {service.duration || 90} Minutos
                   </span>
                   <Link 
                     href="/reservas" 
-                    className="inline-flex items-center gap-1 text-xs font-bold text-rose-400 group-hover:text-white transition-colors duration-300"
+                    className="inline-flex items-center gap-1 text-xs font-bold transition-colors duration-300" 
+                    style={{ color: COLORS.pink }}
                   >
                     AGENDAR CITA <FaArrowRight className="text-[10px] transform group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
               </div>
 
-              {/* Línea decorativa en hover */}
               <motion.div 
-                className="h-[2px] bg-gradient-to-r from-rose-500 to-amber-500"
+                className="h-[2px]"
                 initial={{ scaleX: 0, originX: 0 }}
                 whileHover={{ scaleX: 1 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold}, ${COLORS.copper})` }}
               />
             </motion.div>
           ))}
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   )
 }
 
 // ============================================================
-// ACADEMY SECTION - CON ANIMACIONES
+// ACADEMY SECTION
 // ============================================================
 function AcademySection() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-
   const masterclasses = [
     {
       level: 'Nivel Inicial / Intermedio',
@@ -473,11 +521,7 @@ function AcademySection() {
   ]
 
   return (
-    <section 
-      ref={sectionRef}
-      className="py-32 bg-[#0d0b0a] text-white relative overflow-hidden border-t border-stone-900"
-    >
-      {/* Fondo decorativo */}
+    <section className="py-32 bg-[#0d0b0a] text-white relative overflow-hidden border-t border-stone-900">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,#1c1917_0%,transparent_60%)] opacity-30" />
       
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
@@ -488,14 +532,14 @@ function AcademySection() {
           variants={staggerContainer}
           className="grid lg:grid-cols-12 gap-8 items-center mb-20"
         >
-          <motion.div variants={fadeInLeft} className="lg:col-span-6">
-            <span className="text-xs font-bold tracking-[0.3em] text-amber-400 block mb-2">✦ FRESH NAILS ACADEMY ✦</span>
+          <motion.div variants={fadeInUp} className="lg:col-span-6">
+            <span className="text-xs font-bold tracking-[0.3em] block mb-2" style={{ color: COLORS.gold }}>✦ FRESH NAILS ACADEMY ✦</span>
             <h2 className="text-4xl sm:text-5xl font-extralight tracking-tight leading-none">
               Perfecciona tu técnica y <br />
-              <span className="font-serif italic font-normal text-rose-400">Emprende con Éxito</span>
+              <span className="font-serif italic font-normal" style={{ color: COLORS.pink }}>Emprende con Éxito</span>
             </h2>
           </motion.div>
-          <motion.div variants={fadeInRight} className="lg:col-span-6">
+          <motion.div variants={fadeInUp} className="lg:col-span-6">
             <p className="text-stone-400 font-light text-sm sm:text-base leading-relaxed">
               Formamos a profesionales con técnicas actualizadas del mercado. Nuestros programas te dotarán de la precisión y herramientas necesarias para destacar en el sector de la estética de uñas.
             </p>
@@ -512,16 +556,16 @@ function AcademySection() {
           {masterclasses.map((course, index) => (
             <motion.div 
               key={index} 
-              variants={scaleIn}
+              variants={fadeInUp}
               whileHover={{ y: -8, transition: { duration: 0.4 } }}
-              className="bg-gradient-to-b from-[#141211] to-[#0f0d0c] border border-stone-850 rounded-3xl p-8 md:p-10 transition-all duration-500 group relative overflow-hidden hover:border-rose-500/20 hover:shadow-2xl hover:shadow-rose-500/5"
+              className="bg-gradient-to-b from-[#141211] to-[#0f0d0c] border border-stone-850 rounded-3xl p-8 md:p-10 transition-all duration-500 group relative overflow-hidden hover:border-[#C9A96E]/20 hover:shadow-2xl hover:shadow-[#C9A96E]/5"
             >
               <div className="flex flex-col h-full justify-between space-y-8">
                 <div className="space-y-4">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-amber-400/5 border border-amber-400/20 px-3 py-1 rounded-md inline-block">
+                  <span className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-md inline-block border border-[#C9A96E]/20" style={{ color: COLORS.gold }}>
                     {course.level}
                   </span>
-                  <h3 className="text-2xl sm:text-3xl font-serif text-stone-100 group-hover:text-rose-300 transition-colors duration-300">
+                  <h3 className="text-2xl sm:text-3xl font-serif text-stone-100 group-hover:text-[#DB5B9A] transition-colors duration-300">
                     {course.title}
                   </h3>
                   <p className="text-sm text-stone-400 font-light leading-relaxed">
@@ -531,21 +575,14 @@ function AcademySection() {
 
                 <div className="space-y-3 pt-4 border-t border-stone-850">
                   <p className="text-xs font-bold uppercase text-stone-400 tracking-wider flex items-center gap-2">
-                    <FaAward className="text-amber-400" /> Contenido del Curso:
+                    <FaAward style={{ color: COLORS.gold }} /> Contenido del Curso:
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {course.perks.map((perk, pIdx) => (
-                      <motion.div 
-                        key={pIdx} 
-                        className="flex items-center gap-2 text-xs text-stone-300 font-light"
-                        initial={{ opacity: 0, x: -10 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 + pIdx * 0.08 }}
-                        viewport={{ once: true }}
-                      >
-                        <FaCheckCircle className="text-rose-500 text-[10px] flex-shrink-0" />
+                      <div key={pIdx} className="flex items-center gap-2 text-xs text-stone-300 font-light">
+                        <FaCheckCircle className="text-[10px] flex-shrink-0" style={{ color: COLORS.pink }} />
                         <span>{perk}</span>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -557,7 +594,8 @@ function AcademySection() {
                   <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                     <Link 
                       href="/academy" 
-                      className="bg-stone-100 text-stone-950 hover:bg-gradient-to-r hover:from-rose-600 hover:to-amber-600 hover:text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center block"
+                      className="px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 text-center block"
+                      style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})`, color: COLORS.white }}
                     >
                       CONSULTAR INFORMACIÓN
                     </Link>
@@ -565,8 +603,7 @@ function AcademySection() {
                 </div>
               </div>
 
-              {/* Brillo decorativo */}
-              <div className="absolute -top-40 -right-40 w-60 h-60 bg-rose-500/5 rounded-full filter blur-[80px] group-hover:opacity-100 opacity-0 transition-opacity duration-700" />
+              <div className="absolute -top-40 -right-40 w-60 h-60 rounded-full filter blur-[80px] group-hover:opacity-100 opacity-0 transition-opacity duration-700" style={{ background: `${COLORS.pink}/5` }} />
             </motion.div>
           ))}
         </motion.div>
@@ -576,12 +613,13 @@ function AcademySection() {
 }
 
 // ============================================================
-// TESTIMONIALS SECTION - CON SLIDER ANIMADO
+// TESTIMONIALS SECTION
 // ============================================================
 function TestimonialsSection() {
   const { data: testimonials } = useTestimonials()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
 
   const defaultTestimonials = [
     {
@@ -603,19 +641,18 @@ function TestimonialsSection() {
 
   const items = testimonials?.length ? testimonials : defaultTestimonials
 
-  const nextSlide = () => {
-    setDirection(1)
-    setCurrentIndex((prev) => (prev + 1) % items.length)
-  }
-
-  const prevSlide = () => {
-    setDirection(-1)
-    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)
-  }
+  useEffect(() => {
+    if (!isPlaying) return
+    const interval = setInterval(() => {
+      setDirection(1)
+      setCurrentIndex((prev) => (prev + 1) % items.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [isPlaying, items.length])
 
   const variants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? 100 : -100,
+      x: direction > 0 ? 80 : -80,
       opacity: 0,
       scale: 0.92
     }),
@@ -626,7 +663,7 @@ function TestimonialsSection() {
       transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
     },
     exit: (direction: number) => ({
-      x: direction < 0 ? 100 : -100,
+      x: direction < 0 ? 80 : -80,
       opacity: 0,
       scale: 0.92,
       transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
@@ -635,8 +672,8 @@ function TestimonialsSection() {
 
   return (
     <section className="py-32 bg-[#12100e] text-white border-t border-stone-900 relative overflow-hidden">
-      <div className="absolute -top-20 -left-20 w-80 h-80 bg-purple-500/5 rounded-full filter blur-[100px]" />
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-rose-500/5 rounded-full filter blur-[100px]" />
+      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.pink}/5` }} />
+      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full filter blur-[100px]" style={{ background: `${COLORS.gold}/5` }} />
 
       <div className="w-full max-w-4xl mx-auto px-4 relative z-10">
         <motion.div 
@@ -646,18 +683,17 @@ function TestimonialsSection() {
           variants={staggerContainer}
           className="text-center mb-16 space-y-2"
         >
-          <motion.span variants={fadeInUp} className="text-xs font-bold tracking-[0.25em] text-rose-500 uppercase block">
+          <motion.span variants={fadeInUp} className="text-xs font-bold tracking-[0.25em] uppercase block" style={{ color: COLORS.pink }}>
             ✦ TESTIMONIOS ✦
           </motion.span>
           <motion.h2 variants={fadeInUp} className="text-4xl font-extralight tracking-tight">
-            Lo que dicen <span className="font-serif italic text-amber-200">nuestras clientas</span>
+            Lo que dicen <span className="font-serif italic" style={{ color: COLORS.gold }}>nuestras clientas</span>
           </motion.h2>
         </motion.div>
 
         <div className="relative bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-850 rounded-3xl p-8 md:p-16 text-center shadow-2xl min-h-[340px] flex flex-col justify-center overflow-hidden">
-          <FaQuoteLeft className="text-stone-800 text-6xl absolute top-8 left-8 opacity-40 pointer-events-none" />
+          <FaQuoteLeft className="text-stone-800 text-6xl absolute top-8 left-8 opacity-40 pointer-events-none" style={{ color: COLORS.gold }} />
 
-          {/* Indicadores de posición */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1.5">
             {items.map((_, i) => (
               <button
@@ -666,11 +702,13 @@ function TestimonialsSection() {
                   setDirection(i > currentIndex ? 1 : -1)
                   setCurrentIndex(i)
                 }}
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  i === currentIndex 
-                    ? 'w-6 bg-gradient-to-r from-rose-500 to-amber-500' 
-                    : 'w-3 bg-stone-700 hover:bg-stone-500'
-                }`}
+                className="h-1 rounded-full transition-all duration-300"
+                style={{
+                  width: i === currentIndex ? '24px' : '12px',
+                  background: i === currentIndex 
+                    ? `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` 
+                    : '#3d3d3d'
+                }}
               />
             ))}
           </div>
@@ -693,37 +731,39 @@ function TestimonialsSection() {
                 <span className="text-sm font-semibold text-stone-100 tracking-wide">
                   {items[currentIndex]?.name}
                 </span>
-                <span className="text-[10px] uppercase font-bold text-rose-400 tracking-widest mt-1 bg-rose-500/5 border border-rose-500/10 px-2.5 py-0.5 rounded">
+                <span className="text-[10px] uppercase font-bold tracking-widest mt-1 px-2.5 py-0.5 rounded" style={{ color: COLORS.gold, background: `${COLORS.gold}/10`, border: `1px solid ${COLORS.gold}/20` }}>
                   {items[currentIndex]?.service || 'Clienta'}
                 </span>
               </div>
             </motion.div>
           </AnimatePresence>
 
-          {/* Botones de navegación */}
-          <motion.button 
-            onClick={prevSlide} 
-            className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-rose-500 text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <FaChevronLeft className="text-xs" />
-          </motion.button>
-          <motion.button 
-            onClick={nextSlide} 
-            className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-rose-500 text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <FaChevronRight className="text-xs" />
-          </motion.button>
-
-          {/* Estrellas decorativas */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-amber-400/30 text-[8px]">
-            {[...Array(5)].map((_, i) => (
-              <FaStar key={i} className={i < Math.round(items[currentIndex]?.rating || 5) ? 'text-amber-400/50' : ''} />
-            ))}
+          {/* Controles */}
+          <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 flex gap-2">
+            <motion.button 
+              onClick={() => { setDirection(-1); setCurrentIndex((prev) => (prev - 1 + items.length) % items.length) }}
+              className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <FaChevronLeft className="text-xs" />
+            </motion.button>
+            <motion.button 
+              onClick={() => { setDirection(1); setCurrentIndex((prev) => (prev + 1) % items.length) }}
+              className="w-10 h-10 rounded-xl bg-stone-900 border border-stone-800 hover:border-[#C9A96E] text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <FaChevronRight className="text-xs" />
+            </motion.button>
           </div>
+
+          <button 
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="absolute right-4 md:right-6 bottom-4 md:bottom-6 w-8 h-8 rounded-full bg-stone-900 border border-stone-800 text-stone-400 hover:text-white transition-all duration-300 flex items-center justify-center"
+          >
+            {isPlaying ? <FaPause className="text-[10px]" /> : <FaPlay className="text-[10px]" />}
+          </button>
         </div>
       </div>
     </section>
@@ -746,16 +786,13 @@ function HygieneSection() {
           variants={staggerContainer}
           className="bg-gradient-to-r from-[#141211] to-[#1e1917] border border-stone-850 rounded-3xl p-8 md:p-12 grid md:grid-cols-12 gap-8 items-center"
         >
-          <motion.div 
-            variants={scaleIn}
-            className="md:col-span-4 flex justify-center md:justify-start"
-          >
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-4xl shadow-inner">
-              <FaShieldAlt className="animate-pulse duration-[4000ms]" />
+          <motion.div variants={fadeInUp} className="md:col-span-4 flex justify-center md:justify-start">
+            <div className="w-24 h-24 rounded-2xl border border-[#C9A96E]/30 flex items-center justify-center text-4xl shadow-inner" style={{ background: `linear-gradient(to bottom right, ${COLORS.pink}/10, ${COLORS.gold}/10)` }}>
+              <FaShieldAlt className="animate-pulse duration-[4000ms]" style={{ color: COLORS.gold }} />
             </div>
           </motion.div>
-          <motion.div variants={fadeInRight} className="md:col-span-8 space-y-3">
-            <span className="text-[10px] font-bold tracking-widest uppercase text-amber-400 block">✦ PROTOCOLOS DE HIGIENE ✦</span>
+          <motion.div variants={fadeInUp} className="md:col-span-8 space-y-3">
+            <span className="text-[10px] font-bold tracking-widest uppercase block" style={{ color: COLORS.gold }}>✦ PROTOCOLOS DE HIGIENE ✦</span>
             <h3 className="text-2xl sm:text-3xl font-serif text-stone-100">Bioseguridad y Cuidado Integral</h3>
             <p className="text-sm text-stone-400 font-light leading-relaxed">
               Tu bienestar es nuestra prioridad. Todo nuestro instrumental metálico pasa por un proceso riguroso de tres etapas: desinfección por inmersión, lavado ultrasónico y esterilización térmica en autoclave. Los sobres esterilizados se abren en tu presencia al iniciar la sesión.
@@ -768,7 +805,7 @@ function HygieneSection() {
 }
 
 // ============================================================
-// FOOTER PREMIUM
+// FOOTER
 // ============================================================
 function PremiumFooter() {
   return (
@@ -777,7 +814,7 @@ function PremiumFooter() {
 
         <div className="space-y-5">
           <h3 className="text-xl font-serif tracking-wide text-stone-100 italic">
-            Salon Fresh Nails<span className="text-rose-500">.</span>
+            Salon Fresh Nails<span style={{ color: COLORS.pink }}>.</span>
           </h3>
           <p className="text-xs text-stone-500 leading-relaxed font-light">
             Redefiniendo el cuidado y la estética de tus uñas. Salud ungueal, diseños actuales y atención personalizada en un espacio diseñado para ti.
@@ -793,8 +830,8 @@ function PremiumFooter() {
                 href={social.href} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="w-9 h-9 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-400 hover:text-white hover:border-rose-500 transition-colors"
-                whileHover={{ y: -3, scale: 1.05 }}
+                className="w-9 h-9 rounded-lg bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-400 hover:text-white transition-colors"
+                whileHover={{ y: -3, scale: 1.05, borderColor: COLORS.gold }}
                 whileTap={{ scale: 0.95 }}
               >
                 {social.icon}
@@ -814,7 +851,7 @@ function PremiumFooter() {
               <span>Sábados</span>
               <span className="text-stone-300">09:00 - 18:00 h</span>
             </li>
-            <li className="flex justify-between text-rose-400">
+            <li className="flex justify-between" style={{ color: COLORS.pink }}>
               <span>Domingos & Feriados</span>
               <span>Cerrado</span>
             </li>
@@ -824,10 +861,10 @@ function PremiumFooter() {
         <div className="space-y-4">
           <h4 className="text-xs font-bold uppercase tracking-widest text-stone-200">Navegación</h4>
           <ul className="space-y-2 text-xs font-light grid grid-cols-2 gap-2">
-            <li><Link href="#servicios" className="hover:text-rose-400 transition-colors">Menú</Link></li>
-            <li><Link href="/reservas" className="hover:text-rose-400 transition-colors">Reservar</Link></li>
-            <li><Link href="/academy" className="hover:text-rose-400 transition-colors">Academia</Link></li>
-            <li><Link href="/contacto" className="hover:text-rose-400 transition-colors">Contacto</Link></li>
+            <li><Link href="#servicios" className="hover:text-[#C9A96E] transition-colors">Menú</Link></li>
+            <li><Link href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</Link></li>
+            <li><Link href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</Link></li>
+            <li><Link href="/contacto" className="hover:text-[#C9A96E] transition-colors">Contacto</Link></li>
           </ul>
         </div>
 
@@ -836,19 +873,15 @@ function PremiumFooter() {
           <p className="text-xs text-stone-500 leading-relaxed font-light">
             Recibe información sobre la apertura de agendas mensuales y nuevos talleres prácticos de la academia.
           </p>
-          <motion.form 
-            className="space-y-2" 
-            onSubmit={(e) => e.preventDefault()}
-            whileHover={{ scale: 1.01 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
             <input 
               type="email" 
               placeholder="Tu correo electrónico..." 
-              className="w-full bg-stone-900 border border-stone-800 focus:border-rose-500 focus:outline-none text-xs rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 transition-colors"
+              className="w-full bg-stone-900 border border-stone-800 focus:border-[#C9A96E] focus:outline-none text-xs rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 transition-colors"
             />
             <motion.button 
-              className="w-full bg-stone-200 hover:bg-gradient-to-r hover:from-rose-600 hover:to-amber-600 text-stone-950 hover:text-white transition-all duration-300 text-xs font-bold uppercase tracking-widest py-3 rounded-xl"
+              className="w-full text-white text-xs font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300"
+              style={{ background: `linear-gradient(to right, ${COLORS.pink}, ${COLORS.gold})` }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -871,13 +904,14 @@ function PremiumFooter() {
 }
 
 // ============================================================
-// MAIN - PÁGINA PRINCIPAL
+// MAIN
 // ============================================================
 export default function Home() {
   return (
-    <main className="bg-[#0d0b0a] text-stone-300 min-h-screen overflow-x-hidden antialiased selection:bg-rose-500/20 selection:text-rose-300">
+    <main className="bg-[#0d0b0a] text-stone-300 min-h-screen overflow-x-hidden antialiased selection:bg-[#DB5B9A]/20 selection:text-[#DB5B9A]">
       <Header />
       <HeroSection />
+      <FeaturedGallery />
       <ServicesSection />
       <AcademySection />
       <TestimonialsSection />
