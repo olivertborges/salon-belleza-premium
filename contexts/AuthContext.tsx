@@ -15,6 +15,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => Promise<{ data: any; error: any }>
   signOut: () => Promise<void>
   refreshUserData: () => Promise<void>
+  // AÑADIDO: Método para rescate de emergencia del tenant
+  getEmergencyTenantId: () => Promise<string | null> 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -26,17 +28,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  
+
   // Evita llamadas concurrentes idénticas a la base de datos para el mismo userId
   const lastFetchedUserId = useRef<string | null>(null)
 
   const fetchUserDataAndRole = async (userId: string) => {
     if (!userId) return
     if (lastFetchedUserId.current === userId && role !== null) {
-      // Si ya tenemos los datos cargados para este usuario, no volvemos a pegarle a la base de datos
       return
     }
-    
+
     try {
       lastFetchedUserId.current = userId
 
@@ -89,6 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // AÑADIDO: Lógica de rescate de emergencia para evitar nulos en inserciones
+  const getEmergencyTenantId = async (): Promise<string | null> => {
+    if (tenantId) return tenantId
+    if (!user?.id) return null
+    const { data } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle()
+    if (data?.tenant_id) {
+      setTenantId(data.tenant_id)
+      return data.tenant_id
+    }
+    return null
+  }
+
   // Función de limpieza de estado
   const clearAuthState = () => {
     setUser(null)
@@ -104,9 +117,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Recuperar la sesión persistida directamente de Supabase (más fiable que parsear localStorage a mano)
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user && isMounted) {
           setUser(session.user)
           await fetchUserDataAndRole(session.user.id)
@@ -120,7 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // Listener reactivo a eventos de sesión de Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
 
@@ -146,7 +157,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUserData = async () => {
     if (user?.id) {
-      // Forzar recarga limpiando el tracker temporal
       lastFetchedUserId.current = null
       await fetchUserDataAndRole(user.id)
     }
@@ -164,11 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
         return { error }
       }
-
-      // No es necesario actualizar el estado manualmente aquí ni guardar en localStorage.
-      // El callback de onAuthStateChange detectará inmediatamente el "SIGNED_IN", 
-      // actualizará el usuario, traerá los roles correspondientes y apagará el loading de forma limpia.
-      
       return { error: null }
     } catch (err: any) {
       setLoading(false)
@@ -219,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, clientId, tenantId, points, loading, signIn, signUp, signOut, refreshUserData }}>
+    <AuthContext.Provider value={{ user, role, clientId, tenantId, points, loading, signIn, signUp, signOut, refreshUserData, getEmergencyTenantId }}>
       {children}
     </AuthContext.Provider>
   )
