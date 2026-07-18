@@ -24,7 +24,7 @@ type Photo = {
   is_active: boolean
   created_at: string
   source: 'admin' | 'client'
-  professional_id?: string | null // 👈 Agregado para soportar el ID del profesional
+  professional_id?: string | null
   client_name?: string | null
   client_id?: string | null
   before_image_url?: string | null
@@ -36,9 +36,7 @@ type Photo = {
   sort_order?: number
 }
 
-// Agregamos Micropigmentación y Peluquería al catálogo de categorías
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentacion', 'Peluquería']
-
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -72,7 +70,7 @@ const itemVariants = {
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
-  const { tenantId, user, loading: authLoading } = useAuth() // 👈 Extraemos 'user' para obtener el ID de quien sube la foto
+  const { tenantId, user, loading: authLoading } = useAuth()
 
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
@@ -105,8 +103,12 @@ export default function GaleriaAdminPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // Subir archivo a Supabase Storage
+  // ============================================================
+  // 🔥 SUBIR ARCHIVO A STORAGE - CORREGIDO
+  // ============================================================
   const uploadFile = async (file: File): Promise<string> => {
+    if (!tenantId) throw new Error('No hay tenant ID disponible')
+
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
     const filePath = `gallery/${tenantId}/${fileName}`
@@ -127,7 +129,9 @@ export default function GaleriaAdminPage() {
     return urlData.publicUrl
   }
 
-  // Manejar selección de archivo
+  // ============================================================
+  // MANEJAR SELECCIÓN DE ARCHIVO
+  // ============================================================
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -152,87 +156,118 @@ export default function GaleriaAdminPage() {
     reader.readAsDataURL(file)
   }
 
-  // Handle Submit
+  // ============================================================
+  // 🔥 HANDLE SUBMIT - CORREGIDO
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setSuccess(null);
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
 
-  try {
-    // 1. Obtención segura y centralizada del tenantId
-    let activeTenantId = tenantId;
-    
-    if (!activeTenantId && user?.id) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .maybeSingle();
+    try {
+      // Validar tenantId
+      let activeTenantId = tenantId
 
-      if (profileError) throw new Error("Error al validar tu perfil.");
-      if (profile?.tenant_id) {
-        activeTenantId = profile.tenant_id;
+      if (!activeTenantId && user?.id) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('tenant_id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profileError) throw new Error("Error al validar tu perfil.")
+        if (profile?.tenant_id) {
+          activeTenantId = profile.tenant_id
+        }
       }
+
+      if (!activeTenantId) {
+        throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.')
+      }
+
+      setUploading(true)
+
+      // Subir imagen si hay un archivo seleccionado
+      let imageUrl = formData.image_url
+      if (selectedFile) {
+        imageUrl = await uploadFile(selectedFile)
+      }
+
+      // Para nuevas fotos, la imagen es obligatoria
+      if (!editingPhoto && !imageUrl) {
+        throw new Error('⚠️ Debes seleccionar una imagen')
+      }
+
+      // Operación de base de datos
+      if (editingPhoto) {
+        const { error: updateError } = await supabase
+          .from('gallery')
+          .update({
+            image_url: imageUrl,
+            title: formData.title,
+            category: formData.category,
+            description: formData.description,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order
+          })
+          .eq('id', editingPhoto.id)
+          .eq('tenant_id', activeTenantId)
+
+        if (updateError) throw updateError
+        setSuccess('✨ ¡Foto actualizada exitosamente!')
+      } else {
+        const { error: insertError } = await supabase
+          .from('gallery')
+          .insert({
+            tenant_id: activeTenantId,
+            professional_id: user?.id || null,
+            image_url: imageUrl,
+            title: formData.title || null,
+            category: formData.category || 'Nail Art',
+            description: formData.description || null,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order || 0
+          })
+
+        if (insertError) throw insertError
+        setSuccess('✨ ¡Foto subida exitosamente!')
+      }
+
+      // Recargar fotos y resetear formulario
+      await fetchPhotos(false)
+      resetForm()
+      setShowModal(false)
+
+    } catch (err: any) {
+      console.error("Error en handleSubmit:", err)
+      setError(err.message || 'Ocurrió un error inesperado')
+    } finally {
+      setUploading(false)
     }
-
-    if (!activeTenantId) {
-      throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.');
-    }
-
-    // 2. Procesamiento de archivos (Tu lógica existente)
-    let imageUrl = formData.image_url;
-    if (file) {
-      // Nota: Asegúrate de que tu función uploadFile maneje el error internamente o lanza aquí
-      imageUrl = await uploadFile(file, activeTenantId); 
-    }
-
-    // 3. Operación de base de datos
-    if (editingPhoto) {
-      const { error } = await supabase
-        .from('gallery')
-        .update({
-          image_url: imageUrl,
-          title: formData.title,
-          category: formData.category,
-          description: formData.description,
-          is_active: formData.is_active,
-          sort_order: formData.sort_order
-        })
-        .eq('id', editingPhoto.id)
-        .eq('tenant_id', activeTenantId); // Filtro de seguridad crucial
-
-      if (error) throw error;
-      setSuccess('✨ ¡Foto actualizada exitosamente!');
-    } else {
-      const { error } = await supabase
-        .from('gallery')
-        .insert({
-          tenant_id: activeTenantId,
-          professional_id: user?.id || null,
-          image_url: imageUrl,
-          title: formData.title || null,
-          category: formData.category || 'Nail Art',
-          description: formData.description || null,
-          is_active: formData.is_active,
-          sort_order: formData.sort_order || 0
-        });
-
-      if (error) throw error;
-      setSuccess('✨ ¡Foto subida exitosamente!');
-    }
-
-    // 4. Cleanup
-    resetForm();
-    onClose();
-
-  } catch (err: any) {
-    console.error("Error en handleSubmit:", err);
-    setError(err.message || 'Ocurrió un error inesperado');
   }
-};
 
+  // ============================================================
+  // RESET FORM
+  // ============================================================
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      category: 'Nail Art',
+      description: '',
+      image_url: '',
+      is_active: true,
+      sort_order: 0
+    })
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    setUploadProgress(0)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    setEditingPhoto(null)
+  }
 
-  // Cargar fotos
+  // ============================================================
+  // CARGAR FOTOS
+  // ============================================================
   const fetchPhotos = async (showLoading = true) => {
     if (!tenantId) return
 
@@ -243,7 +278,7 @@ export default function GaleriaAdminPage() {
     try {
       let allPhotos: Photo[] = []
 
-      // 1. Admin photos
+      // Admin photos
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
@@ -257,7 +292,7 @@ export default function GaleriaAdminPage() {
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
           ...p,
           source: 'admin' as const,
-          professional_id: p.professional_id || null, // 👈 Conservamos el id mapeado desde la BD
+          professional_id: p.professional_id || null,
           client_name: null,
           client_id: null,
           before_image_url: null,
@@ -270,7 +305,7 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. Client photos
+      // Client photos
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -289,7 +324,7 @@ export default function GaleriaAdminPage() {
           is_active: p.is_active !== undefined ? p.is_active : true,
           created_at: p.created_at,
           source: 'client' as const,
-          professional_id: p.professional_id || null, // 👈 También mapeado en fotos de clientes por si acaso
+          professional_id: p.professional_id || null,
           client_name: p.client_name || 'Cliente',
           client_id: p.client_id || null,
           before_image_url: p.before_image_url || null,
@@ -323,7 +358,9 @@ export default function GaleriaAdminPage() {
     if (tenantId) fetchPhotos()
   }, [tenantId])
 
-  // Eliminar foto
+  // ============================================================
+  // ELIMINAR FOTO
+  // ============================================================
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
 
@@ -356,7 +393,9 @@ export default function GaleriaAdminPage() {
     }
   }
 
-  // Toggle activo
+  // ============================================================
+  // TOGGLE ACTIVO
+  // ============================================================
   const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
     if (source === 'client') {
@@ -385,6 +424,9 @@ export default function GaleriaAdminPage() {
     }
   }
 
+  // ============================================================
+  // LIGHTBOX
+  // ============================================================
   const openLightbox = (photo: Photo) => {
     setSelectedPhoto(photo)
     setShowLightbox(true)
@@ -446,7 +488,6 @@ export default function GaleriaAdminPage() {
       transition={{ duration: 0.5 }}
       className="space-y-6 p-1 max-w-7xl mx-auto"
     >
-
       {/* HEADER */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
@@ -512,19 +553,7 @@ export default function GaleriaAdminPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => { 
-                  setEditingPhoto(null)
-                  setSelectedFile(null)
-                  setPreviewUrl(null)
-                  setUploadProgress(0)
-                  if (fileInputRef.current) fileInputRef.current.value = ''
-                  setFormData({
-                    title: '',
-                    category: 'Nail Art',
-                    description: '',
-                    image_url: '',
-                    is_active: true,
-                    sort_order: 0
-                  })
+                  resetForm()
                   setShowModal(true)
                 }}
                 className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
@@ -1032,7 +1061,10 @@ export default function GaleriaAdminPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowModal(false)}
+            onClick={() => {
+              setShowModal(false)
+              resetForm()
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -1045,10 +1077,7 @@ export default function GaleriaAdminPage() {
               <button
                 onClick={() => {
                   setShowModal(false)
-                  setSelectedFile(null)
-                  setPreviewUrl(null)
-                  setUploadProgress(0)
-                  if (fileInputRef.current) fileInputRef.current.value = ''
+                  resetForm()
                 }}
                 className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
               >
@@ -1231,10 +1260,7 @@ export default function GaleriaAdminPage() {
                     type="button"
                     onClick={() => {
                       setShowModal(false)
-                      setSelectedFile(null)
-                      setPreviewUrl(null)
-                      setUploadProgress(0)
-                      if (fileInputRef.current) fileInputRef.current.value = ''
+                      resetForm()
                     }}
                     className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
                   >
