@@ -24,6 +24,7 @@ type Photo = {
   is_active: boolean
   created_at: string
   source: 'admin' | 'client'
+  professional_id?: string | null // 👈 Agregado para soportar el ID del profesional
   client_name?: string | null
   client_id?: string | null
   before_image_url?: string | null
@@ -69,7 +70,7 @@ const itemVariants = {
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
-  const { tenantId, loading: authLoading } = useAuth()
+  const { tenantId, user, loading: authLoading } = useAuth() // 👈 Extraemos 'user' para obtener el ID de quien sube la foto
 
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
@@ -193,6 +194,7 @@ export default function GaleriaAdminPage() {
           .from('gallery')
           .insert({
             tenant_id: tenantId,
+            professional_id: user?.id || null, // 👈 Se guarda el ID del profesional que sube la imagen
             image_url: imageUrl,
             title: formData.title || null,
             category: formData.category || 'Nail Art',
@@ -219,7 +221,7 @@ export default function GaleriaAdminPage() {
         sort_order: 0
       })
       if (fileInputRef.current) fileInputRef.current.value = ''
-      
+
       setTimeout(() => setSuccess(null), 3000)
       fetchPhotos(false)
 
@@ -258,6 +260,7 @@ export default function GaleriaAdminPage() {
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
           ...p,
           source: 'admin' as const,
+          professional_id: p.professional_id || null, // 👈 Conservamos el id mapeado desde la BD
           client_name: null,
           client_id: null,
           before_image_url: null,
@@ -289,6 +292,7 @@ export default function GaleriaAdminPage() {
           is_active: p.is_active !== undefined ? p.is_active : true,
           created_at: p.created_at,
           source: 'client' as const,
+          professional_id: p.professional_id || null, // 👈 También mapeado en fotos de clientes por si acaso
           client_name: p.client_name || 'Cliente',
           client_id: p.client_id || null,
           before_image_url: p.before_image_url || null,
@@ -325,14 +329,14 @@ export default function GaleriaAdminPage() {
   // Eliminar foto
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
-    
+
     if (source === 'client') {
       setError('⚠️ No se pueden eliminar fotos de clientes')
       setTimeout(() => setError(null), 3000)
       return
     }
     if (!confirm('¿Eliminar esta foto de la galería?')) return
-    
+
     try {
       const { error } = await supabase
         .from('gallery')
@@ -340,7 +344,7 @@ export default function GaleriaAdminPage() {
         .eq('id', id)
 
       if (error) throw error
-      
+
       setPhotos(photos.filter(p => p.id !== id))
       if (selectedPhoto?.id === id) {
         setShowLightbox(false)
@@ -363,7 +367,7 @@ export default function GaleriaAdminPage() {
       setTimeout(() => setError(null), 3000)
       return
     }
-    
+
     try {
       const { error } = await supabase
         .from('gallery')
@@ -371,7 +375,7 @@ export default function GaleriaAdminPage() {
         .eq('id', id)
 
       if (error) throw error
-      
+
       setPhotos(photos.map(p => 
         p.id === id ? { ...p, is_active: !currentStatus } : p
       ))
@@ -399,7 +403,7 @@ export default function GaleriaAdminPage() {
   const navigateLightbox = (direction: 'next' | 'prev') => {
     const currentIndex = photosFiltradas.findIndex(p => p.id === selectedPhoto?.id)
     if (currentIndex === -1) return
-    
+
     let newIndex
     if (direction === 'next') {
       newIndex = (currentIndex + 1) % photosFiltradas.length
@@ -457,7 +461,7 @@ export default function GaleriaAdminPage() {
         <div className="absolute inset-0 opacity-30 animate-pulse" style={brandGradient} />
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
         <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }} />
-        
+
         <div className="relative z-10 rounded-[23px] p-6 md:p-8 bg-white/95 dark:bg-[#0f0c1b]/95 backdrop-blur-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
@@ -506,7 +510,7 @@ export default function GaleriaAdminPage() {
               >
                 <LayoutGrid className="w-4 h-4" />
               </motion.button>
-              
+
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -569,7 +573,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* CATEGORÍAS - UNA AL LADO DE LA OTRA */}
+      {/* CATEGORÍAS */}
       <motion.div 
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -625,11 +629,7 @@ export default function GaleriaAdminPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className={`grid gap-4 ${
-          viewMode === 'grid' 
-            ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' 
-            : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
-        }`}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
       >
         <AnimatePresence mode="wait">
           {photosFiltradas.length === 0 ? (
@@ -657,7 +657,7 @@ export default function GaleriaAdminPage() {
             photosFiltradas.map((photo) => {
               const imageToShow = photo.after_image_url || photo.image_url || photo.before_image_url || ''
               const isClient = photo.source === 'client'
-              
+
               return (
                 <motion.div
                   key={`${photo.source}-${photo.id}`}
@@ -1089,7 +1089,7 @@ export default function GaleriaAdminPage() {
                         onChange={handleFileSelect}
                         className="hidden"
                       />
-                      
+
                       {previewUrl ? (
                         <div className="relative">
                           <img 
