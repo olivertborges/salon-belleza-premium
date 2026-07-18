@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useRouter } from 'next/navigation' // ⬅️ IMPORTADO PARA NAVEGACIÓN
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Camera, 
@@ -43,11 +44,13 @@ interface GalleryImage {
   polish_used?: string
   price?: string | number
   views?: number
+  professional_id?: string // ⬅️ AÑADIDO: ID del profesional asignado al diseño
 }
 
 export default function GaleriaPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
+  const router = useRouter() // ⬅️ HOOK INSTANCIADO
   const isDark = theme === 'dark'
 
   const galleryRef = useRef<HTMLDivElement>(null)
@@ -80,17 +83,28 @@ export default function GaleriaPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   
-  // Estado para alternar el modo "Solo Foto" (Pantalla completa)
   const [fullImageMode, setFullImageMode] = useState(false)
 
   useEffect(() => {
     loadGalleryData()
   }, [user])
 
-  // Resetear el modo pantalla completa al cerrar el lightbox
   useEffect(() => {
     if (!selectedImage) setFullImageMode(false)
   }, [selectedImage])
+
+  // 🛠️ FUNCIÓN ENCARGADA DE ENVIAR AL USUARIO A LA AGENDA
+  const handleBookingRedirect = (image: GalleryImage) => {
+    // Cerramos el modal antes de redirigir para evitar comportamientos fantasma en el DOM
+    setSelectedImage(null)
+
+    // Construimos la ruta dinámica con los parámetros
+    // Si la imagen de la base de datos no trae profesional asignado, mandamos un fallback o lo dejamos vacío
+    const profId = image.professional_id || ''
+    const designTitle = encodeURIComponent(image.title)
+    
+    router.push(`/agenda?professional=${profId}&style=${designTitle}`)
+  }
 
   const loadGalleryData = async () => {
     setLoading(true)
@@ -137,7 +151,8 @@ export default function GaleriaPage() {
           views: photo.views ?? 0,
           sensory_category: photo.sensory_category || 'glossy',
           polish_used: photo.polish_used || 'Fresh Nails Premium',
-          price: photo.price ? `$${photo.price}` : '$45.00'
+          price: photo.price ? `$${photo.price}` : '$45.00',
+          professional_id: photo.professional_id || '' // Mapeo del nuevo campo
         }))
 
         setPublicImages(mappedPublic)
@@ -461,9 +476,7 @@ export default function GaleriaPage() {
         )}
       </div>
 
-      {/* ============================================================
-          MODAL LIGHTBOX (CORREGIDO SIN SCROLL HORIZONTAL)
-      ============================================================ */}
+      {/* MODAL LIGHTBOX */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
@@ -473,7 +486,6 @@ export default function GaleriaPage() {
             exit={{ opacity: 0 }}
             onClick={() => setSelectedImage(null)}
           >
-            {/* Botón superior de cierre */}
             <button 
               onClick={() => setSelectedImage(null)}
               className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
@@ -482,7 +494,6 @@ export default function GaleriaPage() {
               <X className="w-6 h-6" />
             </button>
 
-            {/* Flechas de navegación entre fotos */}
             {filteredImages.length > 1 && (
               <>
                 <button 
@@ -500,7 +511,6 @@ export default function GaleriaPage() {
               </>
             )}
 
-            {/* Contenedor adaptativo principal */}
             <motion.div 
               className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-500 ease-out overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
                 fullImageMode ? 'max-w-4xl h-auto max-h-[90vh]' : 'max-w-5xl h-auto max-h-[90vh] md:max-h-[82vh]'
@@ -526,7 +536,6 @@ export default function GaleriaPage() {
                   }`}
                 />
 
-                {/* Botón flotante para alternar visualización limpia */}
                 <button
                   onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
                   className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
@@ -592,7 +601,7 @@ export default function GaleriaPage() {
                       </div>
                     </div>
 
-                    {/* Acciones inferiores */}
+                    {/* ✅ BOTÓN DE AGENDAR RE-PROGRAMADO CON REDIRECCIÓN DINÁMICA */}
                     <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
@@ -605,7 +614,11 @@ export default function GaleriaPage() {
                         <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                         {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                       </button>
-                      <button className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0">
+                      
+                      <button 
+                        onClick={() => handleBookingRedirect(selectedImage)}
+                        className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0"
+                      >
                         <Calendar className="w-3.5 h-3.5" /> Agendar
                       </button>
                     </div>
