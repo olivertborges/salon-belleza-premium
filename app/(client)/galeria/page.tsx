@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
 import { 
   Plus, 
@@ -58,7 +59,7 @@ export default function CentroOperaciones() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [cursorType, setCursorType] = useState<'default' | 'view'>('default');
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>({});
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [isAutoplayActive, setIsAutoplayActive] = useState(false);
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
@@ -289,7 +290,7 @@ export default function CentroOperaciones() {
         />
       ))}
 
-      {/* PANEL DE CONTROL SUPERIOR (Tus inputs y formulario intactos, estilizados estéticamente) */}
+      {/* PANEL DE CONTROL SUPERIOR */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 pt-20 pb-10 border-b border-neutral-200/50 dark:border-neutral-800/50 relative z-10">
         <div className="flex flex-col lg:flex-row gap-12 justify-between items-start">
           
@@ -380,7 +381,7 @@ export default function CentroOperaciones() {
         </div>
       </div>
 
-      {/* 1. INTERFAZ DE MOSAICO "SIN CUADRÍCULA" (Con los datos filtrados originales) */}
+      {/* INTERFAZ DE MOSAICO "SIN CUADRÍCULA" */}
       <main 
         ref={containerRef}
         className="max-w-7xl mx-auto px-6 md:px-12 pt-16 pb-32 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-20 items-start"
@@ -389,7 +390,6 @@ export default function CentroOperaciones() {
           const isHovered = hoveredId === img.id;
           const isLoaded = loadedImages.has(img.id);
 
-          // Alternancia asimétrica de rejilla para romper la rigidez (Regla 1)
           const gridClasses = [
             'md:col-span-4 mt-0',
             'md:col-span-5 md:mt-12',
@@ -399,7 +399,6 @@ export default function CentroOperaciones() {
             'md:col-span-3 md:mt-16'
           ][idx % 6];
 
-          // Ligeras rotaciones orgánicas "efecto mesa"
           const customRotation = [
             'hover:rotate-0 rotate-1',
             'hover:rotate-0 -rotate-1',
@@ -415,21 +414,18 @@ export default function CentroOperaciones() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.7, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }} // 2. Carga en cascada
+              transition={{ duration: 0.7, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
               onMouseEnter={() => { setHoveredId(img.id); setCursorType('view'); }}
               onMouseLeave={() => { setHoveredId(null); setCursorType('default'); }}
               onClick={() => setSelectedIdx(idx)}
             >
-              {/* Contenedor de la Imagen */}
               <div className={`relative w-full overflow-hidden rounded-2xl shadow-xs transition-transform duration-700 ease-[0.16,1,0.3,1] bg-neutral-100 dark:bg-neutral-900 ${customRotation}`}>
                 
-                {/* 6. LAZY LOAD CON GRADIENTE / COLOR DOMINANTE */}
                 <div 
                   style={{ backgroundColor: img.dominant_color }}
                   className={`w-full aspect-[4/5] transition-opacity duration-700 ${isLoaded ? 'opacity-0 absolute inset-0' : 'opacity-100 animate-pulse'}`}
                 />
 
-                {/* 2. Micro-interacción: Zoom lento y cambio de brillo */}
                 <img 
                   src={img.image_url} 
                   alt={img.title}
@@ -439,7 +435,6 @@ export default function CentroOperaciones() {
                   } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                 />
 
-                {/* BOTÓN DE ELIMINAR ORIGINAL (Intacto y accesible) */}
                 <button
                   onClick={(e) => handleDelete(img.id, e)}
                   className="absolute top-3 right-3 p-2 rounded-xl bg-white/90 dark:bg-neutral-900/90 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-xs border border-neutral-200/20 z-10"
@@ -448,12 +443,10 @@ export default function CentroOperaciones() {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
-                {/* INDICADOR DE PRIVACIDAD ORIGINAL */}
                 <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-black/40 backdrop-blur-xs text-[8px] font-mono text-white/80 uppercase tracking-widest">
                   {img.is_public ? 'Público' : 'Privado'}
                 </div>
 
-                {/* 5. EFECTO POLAROID INTERACTIVO (Likes) */}
                 <button 
                   onClick={(e) => handleLike(e, img.id, idx)}
                   className={`absolute bottom-4 right-4 p-2.5 rounded-full bg-white/95 dark:bg-neutral-900/95 shadow-md text-neutral-900 dark:text-white transition-all duration-500 transform ${
@@ -464,7 +457,6 @@ export default function CentroOperaciones() {
                 </button>
               </div>
 
-              {/* 5. INFORMACIÓN FLOTANTE CON SUBRAYADO PROGRESIVO */}
               <div className="mt-4 space-y-1 px-1">
                 <h3 className="font-serif text-lg tracking-wide text-neutral-800 dark:text-neutral-100 relative inline-block">
                   {img.title}
@@ -480,7 +472,7 @@ export default function CentroOperaciones() {
         })}
       </main>
 
-      {/* 3. TRANSICIONES DE CINE / LIGHTBOX EXPANDIDO */}
+      {/* TRANSICIONES DE CINE / LIGHTBOX EXPANDIDO */}
       <AnimatePresence>
         {selectedIdx !== null && (
           <motion.div 
@@ -501,7 +493,6 @@ export default function CentroOperaciones() {
 
             <div className="w-full max-w-5xl h-full flex items-center justify-center relative">
               
-              {/* 4. NAVEGACIÓN INVISIBLE LATERAL */}
               <div 
                 className="absolute left-0 inset-y-0 w-1/5 z-30 cursor-none flex items-center justify-start p-4 group/nav"
                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
@@ -520,7 +511,6 @@ export default function CentroOperaciones() {
                 </div>
               </div>
 
-              {/* Contenedor de la vista de cine */}
               <motion.div 
                 key={selectedIdx}
                 className="bg-neutral-900 text-white rounded-3xl overflow-hidden max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 shadow-2xl border border-white/10 relative z-20 h-auto md:max-h-[85vh]"
@@ -537,13 +527,11 @@ export default function CentroOperaciones() {
                     className="w-full h-full object-cover"
                   />
                   
-                  {/* 4. CONTADOR MINIMALISTA */}
                   <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-lg text-[9px] font-mono tracking-widest text-white/90 uppercase border border-white/10">
                     {String(selectedIdx + 1).padStart(2, '0')} / {String(filteredImages.length).padStart(2, '0')}
                   </div>
                 </div>
 
-                {/* Detalle y Métricas de Administración */}
                 <div className="p-8 sm:p-12 flex flex-col justify-between bg-neutral-900 space-y-6 overflow-y-auto">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
