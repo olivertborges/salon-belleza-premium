@@ -6,12 +6,22 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
+  Camera, 
   Heart, 
   X, 
+  Sparkles, 
   Loader,     
-  ArrowRight,
-  ArrowLeft,
-  Eye
+  Image as ImageIcon,
+  ArrowDown,
+  Calendar,
+  Eye,
+  ZoomIn,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Grid3x3,
+  LayoutList,
+  Plus
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -26,450 +36,877 @@ interface GalleryImage {
   created_at: string
   client_name?: string
   likes?: number
+  uploaded_by_admin?: boolean
+  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
+  polish_used?: string
+  price?: string | number
   views?: number
-  dominant_color?: string
+  before_image_url?: string | null
+  after_image_url?: string | null
 }
 
 export default function GaleriaPage() {
   const { user, tenantId } = useAuth()
-  
-  // Refs
-  const containerRef = useRef<HTMLDivElement>(null)
-  const cursorRef = useRef<HTMLDivElement>(null)
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
+  const galleryRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const beforeInputRef = useRef<HTMLInputElement>(null)
+
+  // Estados principales
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [activeTab, setActiveTab] = useState<'public' | 'personal'>('public')
+  const [sensoryFilter, setSensoryFilter] = useState<'all' | 'glossy' | '3d' | 'minimal' | 'abstract'>('all')
 
   // Estados de datos
-  const [loading, setLoading] = useState(true)
-  const [images, setImages] = useState<GalleryImage[]>([])
+  const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
+  const [clientImages, setClientImages] = useState<GalleryImage[]>([])
+  const [clientId, setClientId] = useState<string | null>(null)
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set())
+  const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry')
 
-  // Estados de la experiencia cinematográfica (NUEVOS)
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const [cursorType, setCursorType] = useState<'default' | 'view' | 'next'>('default')
-  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([])
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
-  const [isAutoplayActive, setIsAutoplayActive] = useState(false)
-  const autoplayTimer = useRef<NodeJS.Timeout | null>(null)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  // Micro-interacciones
+  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
+  const [likedAnimating, setLikedAnimating] = useState<string | null>(null)
 
-  // 7. CURSOR PERSONALIZADO
+  // Modal de subida
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploadBeforeFile, setUploadBeforeFile] = useState<File | null>(null)
+  const [uploadBeforePreview, setUploadBeforePreview] = useState<string | null>(null)
+  const [uploadTitle, setUploadTitle] = useState('')
+  const [uploadDescription, setUploadDescription] = useState('')
+  const [uploadCategory, setUploadCategory] = useState<'glossy' | '3d' | 'minimal' | 'abstract'>('glossy')
+  const [uploadPrice, setUploadPrice] = useState('')
+  const [uploadPolish, setUploadPolish] = useState('')
+  const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
+
+  // Lightbox
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+
+  // ============================================================
+  // CARGAR DATOS DESDE SUPABASE
+  // ============================================================
   useEffect(() => {
-    const moveCursor = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-      resetAutoplayTimer()
-    }
-    window.addEventListener('mousemove', moveCursor)
-    return () => window.removeEventListener('mousemove', moveCursor)
-  }, [])
+    loadGalleryData()
+  }, [user])
 
-  // Auto-play pausado (NUEVO)
-  const resetAutoplayTimer = () => {
-    setIsAutoplayActive(false)
-    if (autoplayTimer.current) clearTimeout(autoplayTimer.current)
-    autoplayTimer.current = setTimeout(() => {
-      if (selectedIdx === null) setIsAutoplayActive(true)
-    }, 5000)
-  }
+  const loadGalleryData = async () => {
+    setLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const activeUserId = session?.user?.id || user?.id
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isAutoplayActive && images.length > 1) {
-      interval = setInterval(() => {
-        const container = containerRef.current
-        if (container) {
-          const scrollAmount = container.scrollLeft + 400
-          if (scrollAmount >= container.scrollWidth - container.clientWidth) {
-            container.scrollTo({ left: 0, behavior: 'smooth' })
-          } else {
-            container.scrollBy({ left: 400, behavior: 'smooth' })
-          }
+      if (activeUserId) {
+        const { data: cliente } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('auth_user_id', activeUserId)
+          .maybeSingle()
+
+        if (cliente?.id) {
+          setClientId(cliente.id)
+          const { data: personalPhotos } = await supabase
+            .from('client_gallery')
+            .select('*')
+            .eq('client_id', cliente.id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+
+          if (personalPhotos) setClientImages(personalPhotos)
         }
-      }, 3000)
-    }
-    return () => clearInterval(interval)
-  }, [isAutoplayActive, images])
-
-  // Carga de datos
-  useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('client_gallery')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-        
-        const colors = ['#F5F0EB', '#EBE4DC', '#F0E8DD', '#E8DDD2', '#F2EBE6', '#E5DDD5']
-        const formatted = (data || []).map((img, i) => ({
-          ...img,
-          dominant_color: img.dominant_color || colors[i % colors.length],
-          client_name: img.client_name || 'Fresh Nails',
-          likes: img.likes || 0,
-          views: img.views || 0
-        }))
-        setImages(formatted)
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
       }
-    }
-    fetchGallery()
-    resetAutoplayTimer()
-    return () => { if (autoplayTimer.current) clearTimeout(autoplayTimer.current) }
-  }, [])
 
-  // 3. NAVEGACIÓN POR TECLADO (NUEVO)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedIdx === null) return
-      if (e.key === 'ArrowRight') handleNext()
-      if (e.key === 'ArrowLeft') handlePrev()
-      if (e.key === 'Escape') setSelectedIdx(null)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedIdx, images])
+      const { data: publicPhotos, error: publicError } = await supabase
+        .from('client_gallery')
+        .select('*')
+        .eq('is_active', true)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(40)
 
-  // 5. ONDA EXPANSIVA (RIPPLE) (NUEVO)
-  const handleScreenClick = (e: React.MouseEvent) => {
-    const newRipple = { 
-      id: Date.now(), 
-      x: e.clientX, 
-      y: e.clientY 
-    }
-    setRipples(prev => [...prev, newRipple])
-    setTimeout(() => {
-      setRipples(prev => prev.filter(r => r.id !== newRipple.id))
-    }, 700)
-  }
+      if (publicError) throw publicError
 
-  const handleNext = () => {
-    if (selectedIdx !== null && images.length > 0) {
-      setSelectedIdx((selectedIdx + 1) % images.length)
+      if (publicPhotos) {
+        const mappedPublic = publicPhotos.map((photo: any) => ({
+          ...photo,
+          client_name: photo.client_name || (photo.client_id ? 'Cliente' : 'Fresh Nails'),
+          uploaded_by_admin: !photo.client_id,
+          likes: photo.likes ?? 0,
+          views: photo.views ?? 0,
+          sensory_category: photo.sensory_category || 'glossy',
+          polish_used: photo.polish_used || 'Fresh Nails Premium',
+          price: photo.price ? `$${photo.price}` : '$45.00',
+          before_image_url: photo.before_image_url || null,
+          after_image_url: photo.after_image_url || null
+        }))
+
+        setPublicImages(mappedPublic)
+      }
+    } catch (error) {
+      console.error('Error cargando la galería:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handlePrev = () => {
-    if (selectedIdx !== null && images.length > 0) {
-      setSelectedIdx((selectedIdx - 1 + images.length) % images.length)
+  // ============================================================
+  // FILTROS
+  // ============================================================
+  const filteredImages = publicImages.filter(
+    img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
+  )
+
+  // ============================================================
+  // LIKES
+  // ============================================================
+  const handleLike = (id: string) => {
+    setLikedAnimating(id)
+    setTimeout(() => setLikedAnimating(null), 500)
+
+    setLikedImages(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 1) - 1 } : img))
+      } else {
+        next.add(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 0) + 1 } : img))
+      }
+      return next
+    })
+  }
+
+  // ============================================================
+  // SUBIR IMAGEN
+  // ============================================================
+  const handleUpload = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const activeUserId = session?.user?.id || user?.id
+
+    if (!uploadFile || !activeUserId) {
+      setUploadStatus({ type: 'error', message: 'Debes seleccionar una imagen y estar autenticado.' })
+      return
+    }
+
+    setUploading(true)
+    setUploadStatus({ type: null, message: '' })
+
+    try {
+      let resolvedTenantId = tenantId || session?.user?.user_metadata?.tenant_id || session?.user?.app_metadata?.tenant_id
+
+      if (!resolvedTenantId) {
+        const { data: clientRow } = await supabase
+          .from('clients')
+          .select('tenant_id')
+          .eq('auth_user_id', activeUserId)
+          .maybeSingle()
+        if (clientRow?.tenant_id) resolvedTenantId = clientRow.tenant_id
+      }
+
+      if (!resolvedTenantId) throw new Error("Falta el identificador del salón.")
+
+      const isAdmin = session?.user?.user_metadata?.role === 'admin' || session?.user?.app_metadata?.role === 'admin'
+
+      const fileExt = uploadFile.name.split('.').pop()
+      const folder = isAdmin ? 'salon' : clientId || 'guests'
+      const fileName = `${folder}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(fileName, uploadFile)
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(fileName)
+      let afterImageUrl = urlData.publicUrl
+
+      let beforeImageUrl = null
+      if (uploadBeforeFile) {
+        const beforeFileName = `before/${Date.now()}_${uploadBeforeFile.name}`
+        const { error: beforeError } = await supabase.storage
+          .from('gallery')
+          .upload(beforeFileName, uploadBeforeFile)
+
+        if (!beforeError) {
+          const { data: beforeUrlData } = supabase.storage.from('gallery').getPublicUrl(beforeFileName)
+          beforeImageUrl = beforeUrlData.publicUrl
+        }
+      }
+
+      const newImage = {
+        client_id: isAdmin ? null : clientId,
+        tenant_id: resolvedTenantId,
+        image_url: afterImageUrl,
+        title: uploadTitle || (isAdmin ? 'Estilo de Vanguardia' : 'Mi Diseño'),
+        description: uploadDescription || '',
+        before_image_url: beforeImageUrl,
+        after_image_url: afterImageUrl,
+        price: parseFloat(uploadPrice) || 45.00,
+        polish_used: uploadPolish || 'Fresh Nails Premium',
+        sensory_category: uploadCategory,
+        is_active: true,
+        is_public: true,
+        created_at: new Date().toISOString()
+      }
+
+      const { data: insertData, error: dbError } = await supabase
+        .from('client_gallery')
+        .insert([newImage])
+        .select()
+
+      if (dbError) throw dbError
+
+      if (insertData && insertData[0]) {
+        const localCreated: GalleryImage = {
+          ...insertData[0],
+          client_name: isAdmin ? 'Fresh Nails' : 'Tú',
+          uploaded_by_admin: isAdmin,
+          likes: 0,
+          views: 0,
+          sensory_category: uploadCategory,
+          polish_used: uploadPolish || 'Fresh Nails Premium',
+          price: `$${parseFloat(uploadPrice) || 45.00}`,
+          before_image_url: beforeImageUrl,
+          after_image_url: afterImageUrl
+        }
+
+        setPublicImages(prev => [localCreated, ...prev])
+        if (!isAdmin) setClientImages(prev => [insertData[0], ...prev])
+      }
+
+      setUploadStatus({ type: 'success', message: '¡Diseño publicado exitosamente!' })
+      setTimeout(() => {
+        setShowUploadModal(false)
+        setUploadTitle('')
+        setUploadDescription('')
+        setUploadPrice('')
+        setUploadPolish('')
+        setUploadFile(null)
+        setPreviewUrl(null)
+        setUploadBeforeFile(null)
+        setUploadBeforePreview(null)
+        setUploadStatus({ type: null, message: '' })
+      }, 1200)
+
+    } catch (e: any) {
+      setUploadStatus({ type: 'error', message: e.message || 'Error al guardar.' })
+    } finally {
+      setUploading(false)
     }
   }
 
-  const handleLike = async (e: React.MouseEvent, id: string, index: number) => {
-    e.stopPropagation()
-    const nextLikes = new Set(likedImages)
-    let updatedLikes = images[index].likes || 0
+  // ============================================================
+  // LIGHTBOX NAVEGACIÓN
+  // ============================================================
+  const openLightbox = (img: GalleryImage) => {
+    const index = filteredImages.findIndex(i => i.id === img.id)
+    setLightboxIndex(index >= 0 ? index : 0)
+    setSelectedImage(img)
+  }
 
-    if (nextLikes.has(id)) {
-      nextLikes.delete(id)
-      updatedLikes = Math.max(0, updatedLikes - 1)
+  const navigateLightbox = (direction: 'next' | 'prev') => {
+    if (!selectedImage) return
+    const currentIndex = filteredImages.findIndex(i => i.id === selectedImage.id)
+    let newIndex
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % filteredImages.length
     } else {
-      nextLikes.add(id)
-      updatedLikes += 1
+      newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
     }
-    setLikedImages(nextLikes)
-    
-    const updatedImages = [...images]
-    updatedImages[index].likes = updatedLikes
-    setImages(updatedImages)
-
-    await supabase.from('client_gallery').update({ likes: updatedLikes }).eq('id', id)
+    setLightboxIndex(newIndex)
+    setSelectedImage(filteredImages[newIndex])
   }
 
+  // ============================================================
+  // SCROLL SUAVE AL GALERÍA
+  // ============================================================
+  const scrollToGallery = () => {
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
-        <Loader className="w-5 h-5 text-neutral-800 dark:text-neutral-200 animate-spin stroke-[1]" />
-        <p className="text-[10px] tracking-[0.25em] uppercase text-neutral-400 font-mono">Cargando galería...</p>
+      <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
+        <Loader className="w-6 h-6 text-[#C9A96E] animate-spin stroke-[1.5]" />
+        <span className="text-[10px] tracking-[0.3em] uppercase text-neutral-400 font-light">Cargando galería...</span>
       </div>
     )
   }
 
   return (
-    <div 
-      onClick={handleScreenClick}
-      className="min-h-screen bg-[#FAF9F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-700 relative overflow-x-hidden select-none cursor-none"
-    >
-      {/* 7. CURSOR PERSONALIZADO (NUEVO) */}
-      <div 
-        ref={cursorRef}
-        style={{ 
-          left: mousePosition.x - 16, 
-          top: mousePosition.y - 16 
-        }}
-        className={`fixed w-8 h-8 rounded-full pointer-events-none z-[999] transition-all duration-200 border flex items-center justify-center ${
-          cursorType === 'view' 
-            ? 'scale-[2.5] bg-white/10 border-white/60' 
-            : cursorType === 'next'
-            ? 'scale-[1.5] bg-white/20 border-white/40'
-            : 'scale-100 bg-transparent border-white/30'
-        }`}
-      >
-        {cursorType === 'view' && (
-          <span className="text-[6px] tracking-[0.15em] text-white uppercase font-bold">Ver</span>
-        )}
-        {cursorType === 'next' && (
-          <ArrowRight className="w-4 h-4 text-white" />
+    <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
+
+      {/* ============================================================
+          HERO - MINIMALISTA Y ELEGANTE
+      ============================================================ */}
+      <section className="relative h-[70vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <img 
+            src="https://images.unsplash.com/photo-1604654894610-df490651e56c?q=80&w=1600&auto=format&fit=crop"
+            alt="Hero"
+            className="w-full h-full object-cover brightness-75"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FAF8F5] dark:from-neutral-950 via-transparent to-transparent" />
+        </div>
+
+        <div className="relative z-10 text-center max-w-3xl px-6">
+          <span className="text-[#C9A96E] text-[10px] tracking-[0.4em] uppercase font-light block mb-4">✦ Portfolio ✦</span>
+          <h1 className="text-5xl md:text-7xl font-light font-serif tracking-wide text-white drop-shadow-2xl">
+            Galería de Arte
+          </h1>
+          <p className="text-white/70 text-sm tracking-[0.2em] uppercase font-light mt-4 max-w-md mx-auto">
+            Descubre la colección de diseños exclusivos
+          </p>
+          <button 
+            onClick={scrollToGallery}
+            className="mt-8 px-8 py-3 rounded-full border border-white/30 text-white text-[10px] tracking-[0.25em] uppercase font-light hover:bg-white hover:text-neutral-900 transition-all duration-500 backdrop-blur-sm flex items-center gap-3 mx-auto"
+          >
+            Explorar <ArrowDown className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </section>
+
+      {/* ============================================================
+          GALERÍA PRINCIPAL
+      ============================================================ */}
+      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-16 relative z-20">
+
+        {/* TARJETA DE CONTROLES - FLOTANTE */}
+        <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-6 mb-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Tabs */}
+            <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
+              <button
+                onClick={() => setActiveTab('public')}
+                className={`px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                  activeTab === 'public' 
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
+                    : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
+                }`}
+              >
+                Colección
+              </button>
+              <button
+                onClick={() => setActiveTab('personal')}
+                className={`px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                  activeTab === 'personal' 
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
+                    : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
+                }`}
+              >
+                Mis Fotos <span className="ml-1 text-[8px] opacity-60">({clientImages.length})</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Vista */}
+              <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
+                <button
+                  onClick={() => setViewMode('masonry')}
+                  className={`p-1.5 rounded-full transition-all duration-300 ${
+                    viewMode === 'masonry' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'
+                  }`}
+                >
+                  <Grid3x3 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-full transition-all duration-300 ${
+                    viewMode === 'grid' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'
+                  }`}
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Subir */}
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="px-5 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] transition-all duration-300 flex items-center gap-2"
+              >
+                <Plus className="w-3.5 h-3.5" /> Subir
+              </button>
+            </div>
+          </div>
+
+          {/* Filtros - solo en colección pública */}
+          {activeTab === 'public' && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
+              {[
+                { id: 'all', label: 'Todo', icon: '✦' },
+                { id: 'glossy', label: 'Glossy', icon: '✨' },
+                { id: '3d', label: '3D', icon: '💎' },
+                { id: 'minimal', label: 'Minimal', icon: '🌿' },
+                { id: 'abstract', label: 'Abstracto', icon: '🎨' }
+              ].map((btn) => (
+                <button
+                  key={btn.id}
+                  onClick={() => setSensoryFilter(btn.id as any)}
+                  className={`px-4 py-1.5 rounded-full text-[9px] tracking-[0.1em] font-medium transition-all duration-300 ${
+                    sensoryFilter === btn.id 
+                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900' 
+                      : 'bg-neutral-100/50 dark:bg-neutral-800/30 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  <span className="mr-1">{btn.icon}</span> {btn.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================
+            CONTENIDO - PINTEREST MASONRY
+        ============================================================ */}
+        {activeTab === 'public' ? (
+          <>
+            {filteredImages.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 mx-auto rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                  <ImageIcon className="w-6 h-6 text-neutral-400" />
+                </div>
+                <p className="text-sm text-neutral-400 font-light">No hay imágenes en esta categoría</p>
+              </div>
+            ) : (
+              <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'}>
+                {filteredImages.map((img, idx) => {
+                  const isLiked = likedImages.has(img.id)
+                  const isHovered = hoveredImageId === img.id
+
+                  // Alturas variables para masonry
+                  const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
+                  const heightClass = heights[idx % heights.length]
+
+                  return (
+                    <motion.div
+                      key={img.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: (idx % 6) * 0.06 }}
+                      className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''}`}
+                      onMouseEnter={() => setHoveredImageId(img.id)}
+                      onMouseLeave={() => setHoveredImageId(null)}
+                    >
+                      <div 
+                        onClick={() => openLightbox(img)}
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 ${
+                          viewMode === 'masonry' ? '' : `h-full ${heightClass}`
+                        } ${isHovered ? 'shadow-2xl scale-[1.02] z-10' : 'shadow-sm'}`}
+                      >
+                        {/* Imagen */}
+                        <img 
+                          src={img.image_url} 
+                          alt={img.title}
+                          className={`w-full h-full object-cover transition-all duration-700 ${
+                            isHovered ? 'scale-105 brightness-90' : 'scale-100'
+                          }`}
+                          loading="lazy"
+                        />
+
+                        {/* Overlay en hover */}
+                        <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${
+                          isHovered ? 'opacity-100' : 'opacity-0'
+                        }`}>
+                          <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                            <h3 className="font-serif text-lg font-light tracking-wide truncate">
+                              {img.title}
+                            </h3>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[10px] text-white/60 font-light">
+                                {img.client_name || 'Fresh Nails'}
+                              </span>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleLike(img.id); }} 
+                                className={`p-1.5 rounded-full transition-all duration-300 ${
+                                  isLiked ? 'text-red-500' : 'text-white/60 hover:text-white'
+                                } ${likedAnimating === img.id ? 'animate-ping' : ''}`}
+                              >
+                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Badge categoría */}
+                        <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium">
+                          {img.sensory_category || 'Exclusivo'}
+                        </div>
+
+                        {/* Contador de likes - siempre visible */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full text-[8px] text-white/60">
+                          <Heart className="w-2.5 h-2.5 fill-current" />
+                          {img.likes || 0}
+                        </div>
+
+                        {/* Badge Antes/Después */}
+                        {img.before_image_url && img.after_image_url && (
+                          <div className="absolute bottom-3 left-3 bg-[#C9A96E]/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[6px] text-white tracking-[0.2em] uppercase font-bold">
+                            Antes/Después
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        ) : (
+          /* ============================================================
+             SECCIÓN PERSONAL - FOTOS DE LA CLIENTA
+          ============================================================ */}
+          <div>
+            {clientImages.length === 0 ? (
+              <div className="text-center py-20 bg-white/50 dark:bg-neutral-800/30 rounded-3xl border border-dashed border-neutral-200 dark:border-neutral-700">
+                <div className="w-20 h-20 mx-auto rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                  <Camera className="w-8 h-8 text-neutral-400" />
+                </div>
+                <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Tu historial está vacío</h3>
+                <p className="text-xs text-neutral-400 font-light mt-1 max-w-xs mx-auto">
+                  Sube tus primeros diseños para mantener un seguimiento de tu evolución
+                </p>
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="mt-4 px-6 py-2 rounded-full bg-neutral-900 text-white text-[10px] tracking-[0.15em] uppercase font-light hover:bg-[#C9A96E] transition-colors"
+                >
+                  Subir mi primera foto
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {clientImages.map((img) => (
+                  <div
+                    key={img.id}
+                    onClick={() => openLightbox(img)}
+                    className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800"
+                  >
+                    <img 
+                      src={img.image_url} 
+                      alt={img.title}
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h4 className="text-sm font-light truncate">{img.title}</h4>
+                        <p className="text-[9px] text-white/50">
+                          {new Date(img.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* 5. RIPPLES (ONDAS EXPANSIVAS) (NUEVO) */}
-      {ripples.map(r => (
-        <span 
-          key={r.id} 
-          style={{ left: r.x, top: r.y }} 
-          className="fixed w-6 h-6 rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 z-[998] border border-white/30 animate-[ping_0.7s_ease-out_1]"
-        />
-      ))}
-
-      {/* ENCABEZADO */}
-      <header className="max-w-7xl mx-auto px-8 pt-24 pb-12 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <span className="text-[10px] tracking-[0.4em] uppercase text-neutral-400 font-bold block">Galería</span>
-            <h1 className="text-4xl md:text-6xl font-light font-serif tracking-wide leading-none">
-              Fresh Nails <br /><span className="italic font-normal text-neutral-400">Atelier</span>
-            </h1>
-          </div>
-          <p className="text-xs text-neutral-400 font-light max-w-xs leading-relaxed uppercase tracking-wider">
-            {images.length} obras · Diseño orgánico
-          </p>
-        </div>
-      </header>
-
-      {/* 1. DISEÑO MOSAICO ASIMÉTRICO (NUEVO) */}
-      <main 
-        ref={containerRef}
-        className="max-w-7xl mx-auto px-6 md:px-12 pb-32 columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-8 space-y-8"
-      >
-        {images.map((img, idx) => {
-          const isHovered = hoveredId === img.id
-          const isLoaded = loadedImages.has(img.id)
-          
-          // Alturas aleatorias para efecto orgánico
-          const heights = ['h-[500px]', 'h-[400px]', 'h-[600px]', 'h-[450px]', 'h-[550px]', 'h-[380px]']
-          const heightClass = heights[idx % heights.length]
-
-          // Rotaciones sutiles
-          const rotations = ['rotate-1', '-rotate-1', 'rotate-2', '-rotate-2', 'rotate-0']
-          const rotation = rotations[idx % rotations.length]
-
-          return (
-            <motion.div
-              key={img.id}
-              className={`break-inside-avoid relative group cursor-none ${rotation}`}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ 
-                duration: 0.7, 
-                delay: (idx % 4) * 0.08, 
-                ease: [0.16, 1, 0.3, 1] 
-              }}
-              onMouseEnter={() => { 
-                setHoveredId(img.id)
-                setCursorType('view')
-              }}
-              onMouseLeave={() => { 
-                setHoveredId(null)
-                setCursorType('default')
-              }}
-              onClick={() => setSelectedIdx(idx)}
-            >
-              <div className={`relative w-full ${heightClass} overflow-hidden rounded-2xl shadow-sm transition-transform duration-700`}>
-                
-                {/* 6. CARGA INTELIGENTE CON COLOR DOMINANTE (NUEVO) */}
-                <div 
-                  style={{ backgroundColor: img.dominant_color }}
-                  className={`absolute inset-0 transition-opacity duration-700 ${
-                    isLoaded ? 'opacity-0' : 'opacity-100 animate-pulse'
-                  }`}
-                />
-
-                {/* 2. ZOOM Y BRILLO EN HOVER (NUEVO) */}
-                <img 
-                  src={img.image_url} 
-                  alt={img.title}
-                  onLoad={() => setLoadedImages(prev => new Set([...prev, img.id]))}
-                  className={`w-full h-full object-cover transition-all duration-[1.8s] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    isHovered ? 'scale-110 brightness-90' : 'scale-100'
-                  } ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                />
-
-                {/* 5. EFECTO POLAROID (NUEVO) */}
-                <div 
-                  className={`absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent transition-opacity duration-500 ${
-                    isHovered ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
-
-                {/* 5. INFORMACIÓN FLOTANTE CON SUBRAYADO (NUEVO) */}
-                <div className={`absolute bottom-0 left-0 right-0 p-6 text-white transition-all duration-500 transform ${
-                  isHovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-                }`}>
-                  <h3 className="font-serif text-xl tracking-wide relative inline-block">
-                    {img.title}
-                    <span className={`absolute bottom-0 left-0 h-[2px] bg-white transition-all duration-700 ${
-                      isHovered ? 'w-full' : 'w-0'
-                    }`} />
-                  </h3>
-                  <p className="text-[10px] tracking-[0.15em] uppercase opacity-70 font-mono mt-1">
-                    {img.client_name}
-                  </p>
-                </div>
-
-                {/* Botón Like flotante */}
-                <button 
-                  onClick={(e) => handleLike(e, img.id, idx)}
-                  className={`absolute top-4 right-4 p-2.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg transition-all duration-500 transform ${
-                    isHovered ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${
-                    likedImages.has(img.id) ? 'fill-red-500 text-red-500' : 'text-neutral-700'
-                  }`} />
-                </button>
-
-                {/* Contador de vistas */}
-                <div className={`absolute top-4 left-4 flex items-center gap-1.5 text-white/80 text-[9px] font-mono tracking-wider transition-all duration-500 ${
-                  isHovered ? 'opacity-100' : 'opacity-0'
-                }`}>
-                  <Eye className="w-3 h-3" />
-                  {img.views}
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
-      </main>
-
-      {/* 3. MODAL CINEMATOGRÁFICO (NUEVO COMPLETAMENTE) */}
+      {/* ============================================================
+          LIGHTBOX - CINEMATOGRÁFICO
+      ============================================================ */}
       <AnimatePresence>
-        {selectedIdx !== null && images[selectedIdx] && (
+        {selectedImage && (
           <motion.div 
-            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-lg flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            onClick={() => setSelectedIdx(null)}
+            onClick={() => setSelectedImage(null)}
           >
-            {/* Botón cerrar */}
             <button 
-              onClick={() => setSelectedIdx(null)}
-              className="absolute top-6 right-6 p-3 text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 z-50"
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white transition-colors z-10"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
 
-            <div className="w-full max-w-6xl h-full flex items-center justify-center relative">
-              
-              {/* 4. NAVEGACIÓN LATERAL INVISIBLE (NUEVO) */}
-              <div 
-                className="absolute left-0 inset-y-0 w-1/3 z-30 flex items-center justify-start p-4 group/nav cursor-none"
-                onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                onMouseEnter={() => setCursorType('next')}
-                onMouseLeave={() => setCursorType('default')}
-              >
-                <div className="p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full text-white/40 group-hover/nav:text-white group-hover/nav:bg-white/10 transition-all opacity-0 group-hover/nav:opacity-100 -translate-x-4 group-hover/nav:translate-x-0">
-                  <ArrowLeft className="w-5 h-5" />
-                </div>
-              </div>
+            {/* Navegación */}
+            {filteredImages.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                  className="absolute left-4 md:left-8 p-3 text-white/40 hover:text-white transition-colors z-10 bg-black/20 hover:bg-black/40 rounded-full"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                  className="absolute right-4 md:right-8 p-3 text-white/40 hover:text-white transition-colors z-10 bg-black/20 hover:bg-black/40 rounded-full"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
 
-              <div 
-                className="absolute right-0 inset-y-0 w-1/3 z-30 flex items-center justify-end p-4 group/nav cursor-none"
-                onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                onMouseEnter={() => setCursorType('next')}
-                onMouseLeave={() => setCursorType('default')}
-              >
-                <div className="p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full text-white/40 group-hover/nav:text-white group-hover/nav:bg-white/10 transition-all opacity-0 group-hover/nav:opacity-100 translate-x-4 group-hover/nav:translate-x-0">
-                  <ArrowRight className="w-5 h-5" />
-                </div>
-              </div>
-
-              {/* 3. EXPANSIÓN FLUIDA (NUEVO) */}
-              <motion.div 
-                key={selectedIdx}
-                className="bg-neutral-900 rounded-3xl overflow-hidden max-w-5xl w-full grid grid-cols-1 lg:grid-cols-5 shadow-2xl border border-white/10 relative z-20"
-                initial={{ scale: 0.92, y: 30, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.92, y: 30, opacity: 0 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 200, mass: 0.8 }}
-                onClick={(e) => e.stopPropagation()}
-              >
+            <motion.div 
+              className="max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden bg-neutral-900"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-5">
                 {/* Imagen */}
-                <div className="lg:col-span-3 relative bg-neutral-950 flex items-center justify-center min-h-[400px] lg:min-h-[600px]">
+                <div className="md:col-span-3 bg-neutral-950 flex items-center justify-center min-h-[400px] md:min-h-[500px]">
                   <img 
-                    src={images[selectedIdx].image_url} 
-                    alt={images[selectedIdx].title} 
-                    className="w-full h-full object-cover"
+                    src={selectedImage.image_url} 
+                    alt={selectedImage.title}
+                    className="w-full h-full object-contain max-h-[80vh]"
                   />
-                  
-                  {/* 4. CONTADOR MINIMALISTA (NUEVO) */}
-                  <div className="absolute bottom-6 left-6 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-mono tracking-[0.2em] text-white/80 border border-white/10">
-                    {String(selectedIdx + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
-                  </div>
                 </div>
 
-                {/* Ficha descriptiva */}
-                <div className="lg:col-span-2 p-8 lg:p-10 flex flex-col justify-between bg-neutral-900 min-h-[300px]">
-                  <div className="space-y-6">
-                    <div>
-                      <span className="text-[9px] tracking-[0.25em] font-bold text-neutral-500 uppercase block mb-2">
-                        Obra
+                {/* Info */}
+                <div className="md:col-span-2 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full">
+                        {selectedImage.sensory_category || 'Exclusivo'}
                       </span>
-                      <h2 className="font-serif text-2xl lg:text-3xl font-light tracking-wide text-white">
-                        {images[selectedIdx].title}
-                      </h2>
+                      {selectedImage.before_image_url && (
+                        <span className="text-[8px] tracking-[0.2em] uppercase bg-[#C9A96E]/30 px-3 py-1 rounded-full text-[#C9A96E]">
+                          Antes/Después
+                        </span>
+                      )}
                     </div>
-                    
-                    {images[selectedIdx].description && (
-                      <div className="bg-white/5 p-5 rounded-xl border border-white/5">
-                        <p className="text-sm font-light leading-relaxed text-neutral-300">
-                          {images[selectedIdx].description}
-                        </p>
-                      </div>
+
+                    <h2 className="font-serif text-2xl font-light tracking-wide">
+                      {selectedImage.title}
+                    </h2>
+
+                    {selectedImage.description && (
+                      <p className="text-sm text-neutral-400 font-light leading-relaxed">
+                        {selectedImage.description}
+                      </p>
                     )}
 
-                    <div className="flex items-center gap-6 text-xs text-neutral-500">
-                      <span className="flex items-center gap-2">
-                        <Eye className="w-4 h-4" />
-                        {images[selectedIdx].views} vistas
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Heart className={`w-4 h-4 ${
-                          likedImages.has(images[selectedIdx].id) ? 'fill-red-500 text-red-500' : ''
-                        }`} />
-                        {images[selectedIdx].likes} inspiraciones
-                      </span>
+                    <div className="space-y-2 pt-4 border-t border-white/10 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Artista</span>
+                        <span>{selectedImage.client_name || 'Fresh Nails'}</span>
+                      </div>
+                      {selectedImage.polish_used && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-500">Esmaltado</span>
+                          <span className="text-right text-sm">{selectedImage.polish_used}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Visualizaciones</span>
+                        <span>{selectedImage.views || 0}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-white/10 flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-6 border-t border-white/10 mt-4">
                     <div>
-                      <span className="text-[8px] uppercase font-bold text-neutral-500 tracking-wider block">
-                        Artista
-                      </span>
-                      <span className="text-sm font-light text-neutral-200">
-                        {images[selectedIdx].client_name}
-                      </span>
+                      <span className="text-[8px] uppercase text-neutral-500 tracking-wider block">Inversión</span>
+                      <span className="text-2xl font-serif text-[#C9A96E]">{selectedImage.price || '$45.00'}</span>
                     </div>
                     <button 
-                      onClick={(e) => handleLike(e, images[selectedIdx].id, selectedIdx)}
-                      className="px-6 py-3 bg-white text-neutral-900 rounded-xl text-[10px] uppercase tracking-[0.15em] font-bold hover:bg-neutral-200 transition-all flex items-center gap-2"
+                      onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
+                      className={`px-6 py-2.5 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center gap-2 ${
+                        likedImages.has(selectedImage.id) 
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
                     >
-                      <Heart className={`w-4 h-4 ${
-                        likedImages.has(images[selectedIdx].id) ? 'fill-current text-red-500' : ''
-                      }`} /> 
-                      Inspirar
+                      <Heart className={`w-4 h-4 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
+                      {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                     </button>
                   </div>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================================
+          MODAL DE SUBIDA - LIMPIO Y MODERNO
+      ============================================================ */}
+      <AnimatePresence>
+        {showUploadModal && (
+          <motion.div 
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowUploadModal(false)}
+          >
+            <motion.div 
+              className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Look</h3>
+                <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Título */}
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Nombre del Diseño *</label>
+                  <input 
+                    type="text" 
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="Ej: Glossy Chrome Effect" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:border-[#C9A96E] transition-colors"
+                  />
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Descripción</label>
+                  <textarea 
+                    value={uploadDescription}
+                    onChange={(e) => setUploadDescription(e.target.value)}
+                    placeholder="Detalles del esmaltado, técnicas usadas..." 
+                    rows={2}
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:border-[#C9A96E] transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Imagen Principal */}
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Imagen Final *</label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer hover:border-[#C9A96E] transition-colors relative min-h-[120px] flex items-center justify-center"
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadFile(e.target.files[0])
+                          const reader = new FileReader()
+                          reader.onload = (event) => setPreviewUrl(event.target?.result as string)
+                          reader.readAsDataURL(e.target.files[0])
+                        }
+                      }} 
+                      className="hidden" 
+                      accept="image/*" 
+                    />
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <div className="space-y-2">
+                        <Camera className="w-8 h-8 mx-auto text-neutral-300 dark:text-neutral-600" />
+                        <p className="text-xs text-neutral-400">Haz clic para subir la foto</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Imagen Antes */}
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Imagen de Antes (Opcional)</label>
+                  <div 
+                    onClick={() => beforeInputRef.current?.click()}
+                    className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-4 text-center cursor-pointer hover:border-[#C9A96E] transition-colors relative min-h-[80px] flex items-center justify-center"
+                  >
+                    <input 
+                      ref={beforeInputRef}
+                      type="file" 
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setUploadBeforeFile(e.target.files[0])
+                          const reader = new FileReader()
+                          reader.onload = (event) => setUploadBeforePreview(event.target?.result as string)
+                          reader.readAsDataURL(e.target.files[0])
+                        }
+                      }} 
+                      className="hidden" 
+                      accept="image/*" 
+                    />
+                    {uploadBeforePreview ? (
+                      <img src={uploadBeforePreview} alt="Antes" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <span className="text-xs text-neutral-400">Subir foto antes del tratamiento</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Precio y Categoría - 2 columnas */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Precio</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">$</span>
+                      <input 
+                        type="number" 
+                        value={uploadPrice}
+                        onChange={(e) => setUploadPrice(e.target.value)}
+                        placeholder="45.00" 
+                        step="0.01"
+                        className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:border-[#C9A96E] transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Categoría</label>
+                    <select 
+                      value={uploadCategory} 
+                      onChange={(e) => setUploadCategory(e.target.value as any)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:border-[#C9A96E] transition-colors"
+                    >
+                      <option value="glossy">✨ Glossy</option>
+                      <option value="3d">💎 3D</option>
+                      <option value="minimal">🌿 Minimal</option>
+                      <option value="abstract">🎨 Abstracto</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Esmaltado */}
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Productos Usados</label>
+                  <input 
+                    type="text" 
+                    value={uploadPolish}
+                    onChange={(e) => setUploadPolish(e.target.value)}
+                    placeholder="Ej: OPI Neon Pink + Chrome Powder" 
+                    className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm focus:outline-none focus:border-[#C9A96E] transition-colors"
+                  />
+                </div>
+
+                {uploadStatus.type && (
+                  <div className={`p-3 rounded-xl text-xs text-center ${
+                    uploadStatus.type === 'success' 
+                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' 
+                      : 'bg-red-50 dark:bg-red-900/20 text-red-500'
+                  }`}>
+                    {uploadStatus.message}
+                  </div>
+                )}
+
+                <button
+                  disabled={uploading}
+                  onClick={handleUpload}
+                  className="w-full py-3.5 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs tracking-[0.15em] uppercase font-medium rounded-xl hover:opacity-90 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+                >
+                  {uploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {uploading ? 'Publicando...' : 'Publicar en Portfolio'}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
