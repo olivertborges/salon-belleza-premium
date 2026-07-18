@@ -11,7 +11,6 @@ import {
   Columns,
   ChevronRight,
   Maximize2,
-  Eye,
   Scissors,
   CheckCircle2
 } from 'lucide-react'
@@ -88,14 +87,13 @@ export default function GaleriaInnovadoraPage() {
     const isAdding = !favorites.some(f => f.id === img.id)
     if (isAdding) {
       setActiveHeartId(img.id)
-      setTimeout(() => setActiveHeartId(null), 400) // Duración del pulso
+      setTimeout(() => setActiveHeartId(null), 400)
     }
     setFavorites(prev => 
       prev.some(f => f.id === img.id) ? prev.filter(f => f.id !== img.id) : [...prev, img]
     )
   }
 
-  // Categorías exclusivas del sector belleza y estética avanzada
   const categories = {
     mirada: allImages.filter(i => i.sensory_category === 'mirada' || !i.sensory_category),
     glow: allImages.filter(i => i.sensory_category === 'glow'),
@@ -118,13 +116,13 @@ export default function GaleriaInnovadoraPage() {
   return (
     <div className="bg-[#070708] text-neutral-200 min-h-screen pb-32 font-sans antialiased overflow-x-hidden selection:bg-neutral-800 selection:text-white">
       
-      {/* DESTELLES LUXURY DE FONDO (Gradientes dinámicos) */}
+      {/* DESTELLES LUXURY DE FONDO */}
       <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-rose-950/10 rounded-full filter blur-[140px] pointer-events-none animate-pulse duration-[6s]" />
       <div className="absolute top-[30vh] right-0 w-[400px] h-[500px] bg-neutral-900/30 rounded-full filter blur-[120px] pointer-events-none" />
 
       {/* CABECERA ESTILO SALÓN PREMIUM */}
       <header className="max-w-7xl mx-auto px-6 pt-24 pb-12 space-y-4 relative z-10">
-        <div className="flex items-center gap-2 animate-fade-in">
+        <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-rose-400/80 animate-spin duration-1000" />
           <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-400 font-medium">Catálogo de Alta Estética & Diseño Visual</span>
         </div>
@@ -154,7 +152,7 @@ export default function GaleriaInnovadoraPage() {
                 </span>
               </div>
 
-              {/* Slider Horizontal con Scroll Fluido de Alta Sensibilidad */}
+              {/* Slider Horizontal con Scroll Fluido */}
               <div className="flex gap-6 overflow-x-auto pr-6 md:pr-16 pt-2 pb-6 scrollbar-none snap-x snap-mandatory scroll-smooth">
                 {images.map((img) => {
                   const isFav = favorites.some(f => f.id === img.id)
@@ -164,20 +162,20 @@ export default function GaleriaInnovadoraPage() {
                       key={img.id}
                       className="w-[290px] md:w-[390px] shrink-0 snap-start space-y-4 group relative"
                     >
-                      {/* Marco Magnético de la Foto */}
+                      {/* Marco de la Foto */}
                       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[2.25rem] bg-neutral-950 border border-neutral-900 shadow-2xl transition-all duration-500 group-hover:border-neutral-700/50 group-hover:shadow-rose-950/10">
                         
                         <img 
                           src={img.image_url} 
                           alt={img.title} 
-                          className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all骨 duration-700 ease-out group-hover:scale-[1.04]"
+                          className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-700 ease-out group-hover:scale-[1.04]"
                           loading="lazy"
                         />
                         
-                        {/* Máscara de Sombra de Enfoque */}
+                        {/* Máscara de Sombra */}
                         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/90 opacity-90 transition-opacity duration-300 group-hover:opacity-80" />
 
-                        {/* Botones de Acción Rápida Reactivos */}
+                        {/* Botones de Acción Rápida */}
                         <div className="absolute top-5 right-5 flex flex-col gap-2.5 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform md:translate-y-2 md:group-hover:translate-y-0">
                           <button 
                             onClick={() => toggleFavorite(img)}
@@ -188,13 +186,13 @@ export default function GaleriaInnovadoraPage() {
                           <button 
                             onClick={() => handleAddToCompare(img)}
                             className={`p-3 rounded-full backdrop-blur-xl border bg-black/30 transition-all duration-300 ${slotA?.id === img.id || slotB?.id === img.id ? 'border-amber-500/50 text-amber-400 bg-amber-950/20 scale-105' : 'border-white/10 text-white hover:bg-black/60'}`}
-                            title="Añadir para comparar texturas"
+                            title="Añadir para comparar"
                           >
                             <Columns className="w-4 h-4" />
                           </button>
                         </div>
 
-                        {/* Ficha Informativa Inferior que se Eleva */}
+                        {/* Ficha Informativa Inferior */}
                         <div className="absolute bottom-6 left-6 right-6 space-y-3 transform transition-transform duration-300">
                           <div className="flex items-center gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-neutral-400" />
@@ -224,11 +222,10 @@ export default function GaleriaInnovadoraPage() {
         })}
       </main>
 
-      {/* ESTUDIO DE COMPARACIÓN INTERACTIVO (PANTALLA DIVIDIDA REAL DE ALTA EXPERIENCIA) */}
+      {/* ESTUDIO DE COMPARACIÓN INTERACTIVO */}
       {compareMode && (
         <div className="fixed inset-0 z-50 bg-[#050506] flex flex-col animate-in fade-in zoom-in-95 duration-300">
           
-          {/* Cabecera Técnica de Belleza */}
           <div className="p-4 md:p-6 border-b border-neutral-900/80 flex items-center justify-between bg-[#070708]">
             <div className="space-y-0.5">
               <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-white flex items-center gap-2">
@@ -244,10 +241,9 @@ export default function GaleriaInnovadoraPage() {
             </button>
           </div>
 
-          {/* Canvas Dividido Cinemático */}
           <div className="flex-1 grid grid-cols-2 bg-black h-full relative">
             
-            {/* Panel de Muestra A */}
+            {/* Panel A */}
             <div className="relative border-r border-neutral-900/60 h-full bg-neutral-950 flex items-center justify-center overflow-hidden group/split">
               {slotA ? (
                 <div className="w-full h-full animate-in slide-in-from-left duration-500">
@@ -263,7 +259,7 @@ export default function GaleriaInnovadoraPage() {
                   >
                     <X className="w-3 h-3" />
                   </button>
-                </>
+                </div>
               ) : (
                 <div className="text-center p-6 space-y-3 animate-pulse">
                   <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center mx-auto text-neutral-600 font-mono text-xs">A</div>
@@ -273,7 +269,7 @@ export default function GaleriaInnovadoraPage() {
               )}
             </div>
 
-            {/* Panel de Muestra B */}
+            {/* Panel B */}
             <div className="relative h-full bg-neutral-950 flex items-center justify-center overflow-hidden group/split">
               {slotB ? (
                 <div className="w-full h-full animate-in slide-in-from-right duration-500">
@@ -289,7 +285,7 @@ export default function GaleriaInnovadoraPage() {
                   >
                     <X className="w-3 h-3" />
                   </button>
-                </>
+                </div>
               ) : (
                 <div className="text-center p-6 space-y-3 animate-pulse">
                   <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center mx-auto text-neutral-600 font-mono text-xs">B</div>
@@ -300,7 +296,6 @@ export default function GaleriaInnovadoraPage() {
             </div>
           </div>
 
-          {/* Barra de Conversión o Salida */}
           <div className="p-5 bg-[#070708] border-t border-neutral-900/80 flex items-center justify-between">
             <span className="text-[11px] text-neutral-400 font-light italic">¿Definiste tu cambio ideal?</span>
             <button 
@@ -335,10 +330,9 @@ export default function GaleriaInnovadoraPage() {
           onClick={() => setSelectedImage(null)}
         >
           <div 
-            className="bg-[#0c0c0e] border border-neutral-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl transition-all scale-in duration-300"
+            className="bg-[#0c0c0e] border border-neutral-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl transition-all duration-300"
             onClick={e => e.stopPropagation()}
           >
-            {/* Foto Ampliada */}
             <div className="aspect-square relative w-full bg-neutral-900 overflow-hidden">
               <img src={selectedImage.image_url} alt="" className="w-full h-full object-cover transition-transform duration-700 hover:scale-110 cursor-zoom-in" />
               <button 
@@ -349,7 +343,6 @@ export default function GaleriaInnovadoraPage() {
               </button>
             </div>
             
-            {/* Metadatos del Trabajo Estético */}
             <div className="p-7 space-y-5">
               <div>
                 <span className="text-[9px] text-rose-400 bg-rose-950/40 border border-rose-900/50 px-2.5 py-1 rounded-full uppercase tracking-widest font-mono font-medium">
