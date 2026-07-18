@@ -9,7 +9,6 @@ import {
   Heart, 
   X, 
   Sparkles, 
-  Loader,     
   ArrowDown,
   Plus,
   Calendar,
@@ -17,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Grid3x3,
-  LayoutList
+  LayoutList,
+  ImageOff
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -33,11 +33,22 @@ interface GalleryImage {
   client_name?: string
   likes?: number
   uploaded_by_admin?: boolean
-  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract' | 'Micropigmentacion' | 'Peluquería'
+  sensory_category?: string
+  category?: string // Añadido formalmente para soporte de panel admin
   polish_used?: string
   price: number
   views?: number
   professional_id?: string 
+}
+
+// Función auxiliar para normalizar texto (quita tildes, mayúsculas y espacios extras)
+const normalizeText = (text: string | null | undefined): string => {
+  if (!text) return ''
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Elimina tildes/acentos
 }
 
 export default function GaleriaPage() {
@@ -61,6 +72,7 @@ export default function GaleriaPage() {
   const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry')
 
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set())
 
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
@@ -72,16 +84,20 @@ export default function GaleriaPage() {
   const [uploadPolish, setUploadPolish] = useState('')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
-  // 🔥 MODAL - Estado simple sin Framer Motion
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [fullImageMode, setFullImageMode] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Cambio aplicado: Ahora filtra buscando tanto en sensory_category como en category (Base de datos del Admin)
+  // Lógica de filtrado inteligente corregida para evitar fallos de mayúsculas/tildes
   const filteredImages = useMemo(() => {
     return publicImages.filter(img => {
       if (sensoryFilter === 'all') return true
-      return img.sensory_category === sensoryFilter || (img as any).category === sensoryFilter
+      
+      const filterClean = normalizeText(sensoryFilter)
+      const sensoryClean = normalizeText(img.sensory_category)
+      const categoryClean = normalizeText(img.category)
+
+      return sensoryClean === filterClean || categoryClean === filterClean
     })
   }, [publicImages, sensoryFilter])
 
@@ -114,13 +130,14 @@ export default function GaleriaPage() {
         }
       }
 
+      // Trae las fotos. Escenario corregido: Nos aseguramos de traer explícitamente "category" de la BD
       const { data: publicPhotos, error: publicError } = await supabase
         .from('client_gallery')
         .select('*')
         .eq('is_active', true)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
-        .limit(40)
+        .limit(50)
 
       if (publicError) throw publicError
 
@@ -131,7 +148,8 @@ export default function GaleriaPage() {
           uploaded_by_admin: !photo.client_id,
           likes: photo.likes ?? 0,
           views: photo.views ?? 0,
-          sensory_category: photo.sensory_category || 'glossy',
+          sensory_category: photo.sensory_category || '',
+          category: photo.category || '',
           polish_used: photo.polish_used || 'Fresh Nails Premium',
           price: photo.price ? Number(photo.price) : 45.00,
           professional_id: photo.professional_id || '' 
@@ -151,7 +169,7 @@ export default function GaleriaPage() {
   }, [loadGalleryData])
 
   // ============================================================
-  // 🔥 MODAL - Control con timeout para evitar doble apertura
+  // LIGHTBOX CONTROLS
   // ============================================================
   const openLightbox = useCallback((img: GalleryImage) => {
     if (isModalOpen) return
@@ -170,20 +188,14 @@ export default function GaleriaPage() {
     }, 250)
   }, [])
 
-  // Cerrar con ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isModalOpen) {
-        closeLightbox()
-      }
+      if (e.key === 'Escape' && isModalOpen) closeLightbox()
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [isModalOpen, closeLightbox])
 
-  // ============================================================
-  // NAVEGACIÓN DEL LIGHTBOX
-  // ============================================================
   const navigateLightbox = useCallback((direction: 'next' | 'prev') => {
     if (!selectedImage) return
     const currentIndex = filteredImages.findIndex(i => i.id === selectedImage.id)
@@ -199,38 +211,26 @@ export default function GaleriaPage() {
   }, [selectedImage, filteredImages])
 
   // ============================================================
-  // HANDLE BOOKING
+  // ACCIONES
   // ============================================================
-  const bookingRef = useRef(false)
-
   const handleBookingRedirect = useCallback((image: GalleryImage) => {
-    if (bookingRef.current) return
-    bookingRef.current = true
-
     const profId = image.professional_id || ''
     const designTitle = encodeURIComponent(image.title)
     const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
 
     closeLightbox()
-
     setTimeout(() => {
       router.push(targetUrl)
-      setTimeout(() => {
-        bookingRef.current = false
-      }, 500)
     }, 300)
   }, [router, closeLightbox])
 
-  // ============================================================
-  // LIKES
-  // ============================================================
   const handleLike = useCallback((id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     setLikedImages(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
         next.delete(id)
-        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 1) - 1 } : img))
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: Math.max(0, (img.likes || 1) - 1) } : img))
       } else {
         next.add(id)
         setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 0) + 1 } : img))
@@ -238,6 +238,14 @@ export default function GaleriaPage() {
       return next
     })
   }, [])
+
+  const handleImageError = (id: string) => {
+    setBrokenImages(prev => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
 
   // ============================================================
   // SUBIR IMAGEN
@@ -269,7 +277,6 @@ export default function GaleriaPage() {
       if (!resolvedTenantId) throw new Error("Falta el identificador del salón.")
 
       const isAdmin = session?.user?.user_metadata?.role === 'admin' || session?.user?.app_metadata?.role === 'admin'
-
       const fileExt = uploadFile.name.split('.').pop()
       const folder = isAdmin ? 'salon' : clientId || 'guests'
       const fileName = `${folder}/${Date.now()}.${fileExt}`
@@ -292,6 +299,7 @@ export default function GaleriaPage() {
         price: parseFloat(uploadPrice) || 45.00,
         polish_used: uploadPolish || 'Fresh Nails Premium',
         sensory_category: uploadCategory,
+        category: uploadCategory, // Escenario corregido: Guardamos en ambos campos para consistencia total
         is_active: true,
         is_public: true,
         created_at: new Date().toISOString()
@@ -311,7 +319,8 @@ export default function GaleriaPage() {
           uploaded_by_admin: isAdmin,
           likes: 0,
           views: 0,
-          sensory_category: uploadCategory as any,
+          sensory_category: uploadCategory,
+          category: uploadCategory,
           polish_used: uploadPolish || 'Fresh Nails Premium',
           price: parseFloat(uploadPrice) || 45.00
         }
@@ -339,22 +348,13 @@ export default function GaleriaPage() {
     }
   }
 
-  const scrollToGallery = () => {
-    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
       {/* HERO */}
       <section className="relative h-[60vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/15 via-[#FAF8F5] to-[#C9A96E]/5 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
-        <svg 
-          className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20"
-          viewBox="0 0 1000 600"
-          preserveAspectRatio="xMidYMid meet"
-        >
+        <svg className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
           <path d="M 0 100 Q 150 20 250 120 T 500 80 T 750 150 T 1000 60" stroke="#C9A96E" strokeWidth="1.5" fill="none" opacity="0.6" />
           <path d="M 0 180 Q 200 300 350 200 T 600 280 T 850 180 T 1000 250" stroke="#C9A96E" strokeWidth="1" fill="none" opacity="0.4" />
-          <circle cx="500" cy="350" r="4" fill="#C9A96E" opacity="0.15" />
         </svg>
 
         <div className="relative z-10 text-center max-w-3xl px-6">
@@ -365,7 +365,7 @@ export default function GaleriaPage() {
           <h1 className="text-5xl md:text-7xl font-light font-serif tracking-wide text-neutral-800 dark:text-white">Galería de Arte</h1>
           <div className="w-12 h-[2px] bg-[#C9A96E] mx-auto my-6" />
           <button 
-            onClick={scrollToGallery}
+            onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
             className="mt-8 px-8 py-3 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] tracking-[0.25em] uppercase font-medium hover:bg-[#C9A96E] transition-all flex items-center gap-3 mx-auto shadow-lg"
           >
             Explorar <ArrowDown className="w-3.5 h-3.5" />
@@ -417,7 +417,6 @@ export default function GaleriaPage() {
           {activeTab === 'public' && (
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 font-medium mr-2">Filtrar:</span>
-              {/* Cambio aplicado: Array extendido con Micropigmentación y Peluquería */}
               {[
                 { id: 'all', label: 'Todo', icon: '✦' },
                 { id: 'glossy', label: 'Glossy', icon: '✨' },
@@ -431,7 +430,7 @@ export default function GaleriaPage() {
                   key={btn.id}
                   onClick={() => setSensoryFilter(btn.id)}
                   className={`px-4 py-1.5 rounded-full text-[9px] font-medium transition-all ${
-                    sensoryFilter === btn.id ? 'bg-[#C9A96E] text-white shadow-md' : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500'
+                    normalizeText(sensoryFilter) === normalizeText(btn.id) ? 'bg-[#C9A96E] text-white shadow-md' : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500'
                   }`}
                 >
                   <span className="mr-1">{btn.icon}</span> {btn.label}
@@ -441,112 +440,129 @@ export default function GaleriaPage() {
           )}
         </div>
 
-        {/* LISTADO DE IMÁGENES */}
-        {activeTab === 'public' ? (
+        {/* LOADING STATE */}
+        {loading ? (
+          <div className="text-center py-20 flex flex-col items-center justify-center gap-3">
+            <div className="w-6 h-6 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-neutral-400 tracking-wider">Cargando galería de arte...</p>
+          </div>
+        ) : (
           <>
-            {filteredImages.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-sm text-neutral-400 font-light">No hay imágenes en esta categoría</p>
-              </div>
-            ) : (
-              <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'}>
-                {filteredImages.map((img, idx) => {
-                  const isLiked = likedImages.has(img.id)
-                  const isHovered = hoveredImageId === img.id
-                  const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
-                  const heightClass = heights[idx % heights.length]
+            {/* VISTA PÚBLICA */}
+            {activeTab === 'public' ? (
+              filteredImages.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-sm text-neutral-400 font-light">No hay imágenes disponibles en esta categoría</p>
+                </div>
+              ) : (
+                <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'}>
+                  {filteredImages.map((img, idx) => {
+                    const isLiked = likedImages.has(img.id)
+                    const isHovered = hoveredImageId === img.id
+                    const isBroken = brokenImages.has(img.id)
+                    const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
+                    const heightClass = heights[idx % heights.length]
 
-                  return (
-                    <div
-                      key={img.id}
-                      className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''} transition-all duration-300 ${
-                        isHovered ? 'scale-[1.02] z-10' : 'scale-100'
-                      }`}
-                      onMouseEnter={() => setHoveredImageId(img.id)}
-                      onMouseLeave={() => setHoveredImageId(null)}
-                    >
-                      <div 
-                        onClick={() => openLightbox(img)}
-                        className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 ${
-                          viewMode === 'masonry' ? '' : `h-full ${heightClass}`
-                        } ${isHovered ? 'shadow-2xl' : 'shadow-sm'}`}
+                    return (
+                      <div
+                        key={img.id}
+                        className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''} transition-all duration-300 ${
+                          isHovered ? 'scale-[1.02] z-10' : 'scale-100'
+                        }`}
+                        onMouseEnter={() => setHoveredImageId(img.id)}
+                        onMouseLeave={() => setHoveredImageId(null)}
                       >
-                        <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                          <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                            <h3 className="font-serif text-lg font-light tracking-wide truncate">{img.title}</h3>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-[10px] text-white/60">{img.client_name || 'Fresh Nails'}</span>
-                              <button 
-                                onClick={(e) => handleLike(img.id, e)} 
-                                className={`p-1.5 rounded-full transition-transform active:scale-125 ${isLiked ? 'text-red-500' : 'text-white/60'}`}
-                              >
-                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                              </button>
+                        <div 
+                          onClick={() => !isBroken && openLightbox(img)}
+                          className={`relative rounded-2xl overflow-hidden group transition-all duration-500 bg-neutral-100 dark:bg-neutral-900 ${
+                            isBroken ? 'cursor-not-allowed' : 'cursor-pointer'
+                          } ${viewMode === 'masonry' ? '' : `h-full ${heightClass}`} ${isHovered ? 'shadow-2xl' : 'shadow-sm'}`}
+                        >
+                          {isBroken ? (
+                            <div className="w-full h-[250px] flex flex-col items-center justify-center gap-2 text-neutral-400 p-4">
+                              <ImageOff className="w-5 h-5 opacity-60" />
+                              <span className="text-[10px] tracking-wider uppercase">Imagen no disponible</span>
                             </div>
+                          ) : (
+                            <img 
+                              src={img.image_url} 
+                              alt={img.title} 
+                              className="w-full h-full object-cover" 
+                              loading="lazy"
+                              onError={() => handleImageError(img.id)}
+                            />
+                          )}
+
+                          {!isBroken && (
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                              <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                                <h3 className="font-serif text-lg font-light tracking-wide truncate">{img.title}</h3>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-[10px] text-white/60">{img.client_name}</span>
+                                  <button 
+                                    onClick={(e) => handleLike(img.id, e)} 
+                                    className={`p-1.5 rounded-full transition-transform active:scale-125 ${isLiked ? 'text-red-500' : 'text-white/60'}`}
+                                  >
+                                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[7px] text-white tracking-[0.15em] uppercase font-medium max-w-[120px] truncate">
+                            {normalizeText(img.sensory_category) === 'micropigmentacion' || normalizeText(img.category) === 'micropigmentacion' 
+                              ? '✒️ Micropigmentación' 
+                              : normalizeText(img.sensory_category) === 'peluqueria' || normalizeText(img.category) === 'peluqueria'
+                              ? '✂️ Peluquería'
+                              : img.sensory_category || '✦ Estilo'}
                           </div>
                         </div>
-                        <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium">
-                          {img.sensory_category === 'Micropigmentacion' ? 'Micropigmentación' : img.sensory_category || 'Exclusivo'}
-                        </div>
                       </div>
+                    )
+                  })}
+                </div>
+              )
+            ) : (
+              /* VISTA PERSONAL */
+              clientImages.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-sm text-neutral-400 font-light">Aún no tienes fotos guardadas en tu cuenta</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {clientImages.map((img) => (
+                    <div key={img.id} onClick={() => openLightbox(img)} className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800 hover:shadow-lg transition-all">
+                      <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                  )
-                })}
-              </div>
+                  ))}
+                </div>
+              )
             )}
           </>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {clientImages.map((img) => (
-              <div key={img.id} onClick={() => openLightbox(img)} className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800 hover:shadow-lg transition-all">
-                <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            ))}
-          </div>
         )}
       </div>
 
       {/* ============================================================
-          🔥 MODAL LIGHTBOX - SIN FRAMER MOTION (CSS Puro)
+          MODAL LIGHTBOX 
       ============================================================ */}
       {isModalOpen && selectedImage && (
-        <div 
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden animate-fadeIn"
-          onClick={closeLightbox}
-        >
-          {/* Botón cerrar */}
-          <button 
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
-          >
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden animate-fadeIn" onClick={closeLightbox}>
+          <button onClick={closeLightbox} className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm">
             <X className="w-6 h-6" />
           </button>
 
-          {/* Navegación */}
           {activeTab === 'public' && filteredImages.length > 1 && (
             <>
-              <button 
-                onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
-              >
+              <button onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }} className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20">
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
-              >
+              <button onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }} className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20">
                 <ChevronRight className="w-6 h-6" />
               </button>
             </>
           )}
 
-          {/* Contador */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
-            {filteredImages.findIndex(i => i.id === selectedImage.id) + 1} / {filteredImages.length}
-          </div>
-
-          {/* Modal Content */}
           <div 
             ref={modalRef}
             className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-300 overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
@@ -554,89 +570,51 @@ export default function GaleriaPage() {
             } animate-scaleIn`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Lado de la imagen */}
             <div 
               className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 flex-1 ${
                 fullImageMode ? 'w-full min-h-[60vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] md:min-h-0'
               }`}
               onClick={() => setFullImageMode(!fullImageMode)}
             >
-              <img 
-                src={selectedImage.image_url} 
-                alt={selectedImage.title}
-                className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${
-                  fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'
-                }`}
-              />
-
-              <button
-                onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }}
-                className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20"
-              >
+              <img src={selectedImage.image_url} alt={selectedImage.title} className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'}`} />
+              <button onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }} className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20">
                 <Maximize2 className="w-3.5 h-3.5" />
                 <span>{fullImageMode ? 'Ver Info' : 'Solo Foto'}</span>
               </button>
             </div>
 
-            {/* Lado de información */}
             {!fullImageMode && (
               <div className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0 animate-slideIn">
                 <div className="space-y-4">
                   <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
-                    {selectedImage.sensory_category === 'Micropigmentacion' ? 'Micropigmentación' : selectedImage.sensory_category || 'Exclusivo'}
+                    {normalizeText(selectedImage.sensory_category) === 'micropigmentacion' || normalizeText(selectedImage.category) === 'micropigmentacion' ? 'Micropigmentación' : normalizeText(selectedImage.sensory_category) === 'peluqueria' || normalizeText(selectedImage.category) === 'peluqueria' ? 'Peluquería' : selectedImage.sensory_category || 'Diseño'}
                   </span>
 
-                  <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">
-                    {selectedImage.title}
-                  </h2>
-
-                  {selectedImage.description && (
-                    <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">
-                      {selectedImage.description}
-                    </p>
-                  )}
+                  <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">{selectedImage.title}</h2>
+                  {selectedImage.description && <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">{selectedImage.description}</p>}
 
                   <div className="space-y-2.5 pt-4 border-t border-white/10">
                     <div className="flex justify-between items-center text-xs md:text-sm gap-2">
                       <span className="text-neutral-500 shrink-0">Artista</span>
-                      <span className="text-white/90 font-light truncate">{selectedImage.client_name || 'Fresh Nails'}</span>
+                      <span className="text-white/90 font-light truncate">{selectedImage.client_name}</span>
                     </div>
-                    {selectedImage.polish_used && (
-                      <div className="flex justify-between items-center text-xs md:text-sm gap-2">
-                        <span className="text-neutral-500 shrink-0">Esmaltado</span>
-                        <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-xs md:text-sm">
-                      <span className="text-neutral-500">Visualizaciones</span>
-                      <span className="text-white/90 font-light">{selectedImage.views || 0}</span>
+                    <div className="flex justify-between items-center text-xs md:text-sm gap-2">
+                      <span className="text-neutral-500 shrink-0">Esmaltado / Detalles</span>
+                      <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used || 'Fresh Nails Premium'}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                      <span className="text-neutral-500 text-xs md:text-sm">Precio</span>
-                      <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">
-                        ${Number(selectedImage.price).toFixed(2)}
-                      </span>
+                      <span className="text-neutral-500 text-xs md:text-sm">Precio estimado</span>
+                      <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">${Number(selectedImage.price || 45).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }}
-                    className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
-                      likedImages.has(selectedImage.id) 
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                        : 'bg-white/10 text-white hover:bg-white/20'
-                    }`}
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }} className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${likedImages.has(selectedImage.id) ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                     <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                     {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                   </button>
-
-                  <button 
-                    onClick={() => handleBookingRedirect(selectedImage)}
-                    className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0"
-                  >
+                  <button onClick={() => handleBookingRedirect(selectedImage)} className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0">
                     <Calendar className="w-3.5 h-3.5" /> Agendar
                   </button>
                 </div>
@@ -645,47 +623,6 @@ export default function GaleriaPage() {
           </div>
         </div>
       )}
-
-      {/* ============================================================
-          STYLES GLOBALES PARA ANIMACIONES CSS
-      ============================================================ */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleIn {
-          from { 
-            transform: scale(0.92);
-            opacity: 0;
-            transform-origin: center center;
-          }
-          to { 
-            transform: scale(1);
-            opacity: 1;
-            transform-origin: center center;
-          }
-        }
-        @keyframes slideIn {
-          from { 
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.25s ease-out forwards;
-        }
-        .animate-scaleIn {
-          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out forwards;
-        }
-      `}</style>
 
       {/* MODAL DE SUBIDA */}
       {showUploadModal && (
@@ -701,15 +638,15 @@ export default function GaleriaPage() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="text-[10px] text-neutral-500 uppercase block mb-1">Nombre del Diseño *</label>
-                <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ej: Glossy Chrome" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
+                <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ej: Micropigmentación Cejas" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
               </div>
               <div>
                 <label className="text-[10px] text-neutral-500 uppercase block mb-1">Descripción</label>
-                <textarea value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Detalles..." rows={2} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm resize-none" />
+                <textarea value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Detalles o cuidados..." rows={2} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm resize-none" />
               </div>
               <div>
                 <label className="text-[10px] text-neutral-500 uppercase block mb-1">Imagen Final *</label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer relative min-h-[120px] flex items-center justify-center">
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer relative min-h-[120px] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -724,18 +661,17 @@ export default function GaleriaPage() {
                     className="hidden" 
                     accept="image/*" 
                   />
-                  {previewUrl ? <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : <p className="text-xs text-neutral-400">Subir foto</p>}
+                  {previewUrl ? <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : <p className="text-xs text-neutral-400">Presiona para cargar archivo</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Precio</label>
+                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Precio ($)</label>
                   <input type="number" value={uploadPrice} onChange={(e) => setUploadPrice(e.target.value)} placeholder="45.00" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría</label>
-                  {/* Cambio aplicado: Opciones extendidas en el selector del formulario */}
-                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm">
+                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría principal</label>
+                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm text-neutral-800 dark:text-neutral-200">
                     <option value="glossy">✨ Glossy</option>
                     <option value="3d">💎 3D</option>
                     <option value="minimal">🌿 Minimal</option>
@@ -752,13 +688,22 @@ export default function GaleriaPage() {
                 </div>
               )}
 
-              <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 text-white text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:bg-neutral-800">
-                {uploading ? 'Publicando...' : 'Publicar en Galería'}
+              <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:opacity-90">
+                {uploading ? 'Subiendo archivo...' : 'Publicar en Galería'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(15px); } to { opacity: 1; transform: translateX(0); } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        .animate-scaleIn { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slideIn { animation: slideIn 0.25s ease-out forwards; }
+      `}</style>
     </div>
   )
 }
