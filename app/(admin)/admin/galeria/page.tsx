@@ -37,7 +37,7 @@ type Photo = {
 }
 
 // Agregamos Micropigmentación y Peluquería al catálogo de categorías
-const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentación', 'Peluquería']
+const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentacion', 'Peluquería']
 
 
 const containerVariants = {
