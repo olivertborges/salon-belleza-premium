@@ -54,14 +54,19 @@ export default function GaleriaInnovadoraPage() {
   const [activeHeartId, setActiveHeartId] = useState<string | null>(null)
 
   useEffect(() => {
-    loadGalleryData()
-    if (user) {
-      loadPrivateImages()
+    const initGallery = async () => {
+      setLoading(true)
+      await loadGalleryData()
+      if (user) {
+        await loadPrivateImages()
+      }
+      setLoading(false)
     }
+    initGallery()
   }, [user])
 
+  // 1. CARGA DE LOOKS PÚBLICOS
   const loadGalleryData = async () => {
-    setLoading(true)
     try {
       const { data: publicPhotos, error } = await supabase
         .from('client_gallery')
@@ -84,14 +89,14 @@ export default function GaleriaInnovadoraPage() {
     } catch (error) {
       console.error('Error cargando galería pública:', error)
       toast.error('No se pudo cargar el catálogo público')
-    } finally {
-      setLoading(false)
     }
   }
 
+  // 2. REPARADO: CARGA CORRECTA DE FOTOS ASOCIADAS A LA CLIENTA DESDE LA DB
   const loadPrivateImages = async () => {
     if (!user) return
     try {
+      // Corregida la consulta para traer todas las imágenes de la base de datos que correspondan al id de esta clienta
       const { data: userPhotos, error } = await supabase
         .from('client_gallery')
         .select('*')
@@ -99,12 +104,23 @@ export default function GaleriaInnovadoraPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setPrivateImages(userPhotos || [])
+      
+      // Mapeamos las propiedades para asegurar la consistencia visual en la UI
+      const mappedPrivate = (userPhotos || []).map((photo: any) => ({
+        ...photo,
+        client_name: photo.client_name || 'Mis Fotos',
+        sensory_category: photo.sensory_category || 'tendencia',
+        price: photo.price ? `$${photo.price}` : 'Servicio Contratado'
+      }))
+
+      setPrivateImages(mappedPrivate)
     } catch (error) {
-      console.error('Error cargando fotos privadas:', error)
+      console.error('Error al consultar las fotos de la clienta en la DB:', error)
+      toast.error('Error al sincronizar tus fotos privadas')
     }
   }
 
+  // 3. SUBIDA Y GUARDADO EN DB
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
     if (!user) {
@@ -119,38 +135,34 @@ export default function GaleriaInnovadoraPage() {
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
       const filePath = `gallery/${fileName}`
 
-      // 1. Subir imagen al Storage
       const { error: uploadError } = await supabase.storage
         .from('salon-assets')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
-      // 2. Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('salon-assets')
         .getPublicUrl(filePath)
 
-      // 3. Registrar en la base de datos como privada
-      const { data: newPhoto, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('client_gallery')
         .insert([
           {
             client_id: user.id,
             image_url: publicUrl,
-            title: `Mi sesión - ${new Date().toLocaleDateString()}`,
+            title: `Evolución - ${new Date().toLocaleDateString()}`,
             description: 'Foto de seguimiento privado de mis tratamientos.',
             is_public: false,
             is_active: true,
             sensory_category: 'tendencia'
           }
         ])
-        .select()
 
       if (dbError) throw dbError
 
       toast.success('¡Foto de seguimiento guardada!')
-      loadPrivateImages()
+      await loadPrivateImages() // Recarga inmediata desde la base de datos
     } catch (error) {
       console.error('Error al subir:', error)
       toast.error('Error al procesar la imagen')
@@ -228,17 +240,17 @@ export default function GaleriaInnovadoraPage() {
       <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-rose-200/40 dark:bg-rose-950/10 rounded-full filter blur-[140px] pointer-events-none animate-pulse duration-[6s]" />
       <div className="absolute top-[30vh] right-0 w-[400px] h-[500px] bg-neutral-100 dark:bg-neutral-900/30 rounded-full filter blur-[120px] pointer-events-none" />
 
-      {/* CABECERA ADAPTATIVA */}
+      {/* CABECERA */}
       <header className="max-w-7xl mx-auto px-6 pt-24 pb-6 space-y-4 relative z-10">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400/80 animate-spin duration-1000" />
           <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-500 dark:text-neutral-400 font-medium">Estudio de Belleza Avanzado</span>
         </div>
-        <h1 className="text-4xl md:text-7xl font-light font-serif tracking-tight text-neutral-900 dark:text-white lowercase transition-all duration-500 hover:tracking-normal">
+        <h1 className="text-4xl md:text-7xl font-light font-serif tracking-tight text-neutral-900 dark:text-white lowercase transition-all duration-500">
           galería de <span className="italic text-neutral-400 dark:text-neutral-500 font-normal">resultados</span>
         </h1>
         
-        {/* SELECTOR DE PESTAÑAS PREMIUM */}
+        {/* SELECTOR DE PESTAÑAS */}
         <div className="flex items-center gap-3 pt-6 border-b border-neutral-200 dark:border-neutral-900 max-w-md">
           <button 
             onClick={() => setActiveTab('public')}
@@ -263,7 +275,6 @@ export default function GaleriaInnovadoraPage() {
             return (
               <div key={categoryName} className="space-y-6 transition-all duration-300">
                 
-                {/* Título de Línea de Estética */}
                 <div className="flex items-center justify-between pr-6 md:pr-16 border-b border-neutral-200 dark:border-neutral-900/60 pb-3 group">
                   <h2 className="text-sm font-light tracking-[0.25em] uppercase text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 inline-block opacity-70 group-hover:scale-150 transition-transform duration-300" />
@@ -282,7 +293,6 @@ export default function GaleriaInnovadoraPage() {
                   </span>
                 </div>
 
-                {/* Slider Horizontal */}
                 <div className="flex gap-6 overflow-x-auto pr-6 md:pr-16 pt-2 pb-6 scrollbar-none snap-x snap-mandatory scroll-smooth">
                   {images.map((img) => {
                     const isFav = favorites.some(f => f.id === img.id)
@@ -310,7 +320,7 @@ export default function GaleriaInnovadoraPage() {
                             </button>
                           </div>
 
-                          {/* Info de tarjeta */}
+                          {/* Info */}
                           <div className="absolute bottom-6 left-6 right-6 space-y-3">
                             <p className="text-[9px] font-mono tracking-widest text-neutral-300 uppercase">{img.client_name}</p>
                             <h3 className="font-serif text-2xl text-white font-light tracking-wide leading-none">{img.title}</h3>
@@ -336,11 +346,10 @@ export default function GaleriaInnovadoraPage() {
         </main>
       )}
 
-      {/* VISTA 2: PANEL DE FOTOS PRIVADAS DE LA CLIENTA */}
+      {/* VISTA 2: PANEL DE FOTOS PRIVADAS SINCRO CON LA BASE DE DATOS */}
       {activeTab === 'private' && (
         <main className="max-w-7xl mx-auto px-6 mt-12 relative z-10 space-y-10">
           
-          {/* Tarjeta de Subida */}
           <div className="bg-neutral-50 dark:bg-[#0c0c0e] border border-neutral-200 dark:border-neutral-900 p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
             <div className="space-y-1 text-center md:text-left">
               <h3 className="text-base font-serif font-light tracking-wide text-neutral-900 dark:text-white">Área de Seguimiento Personalizado</h3>
@@ -374,7 +383,7 @@ export default function GaleriaInnovadoraPage() {
           ) : privateImages.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-neutral-200 dark:border-neutral-900 rounded-[2rem]">
               <Camera className="w-8 h-8 text-neutral-300 mx-auto mb-3" />
-              <p className="text-sm text-neutral-500">Aún no has subido fotos de tu tratamiento actual. ¡Comienza hoy!</p>
+              <p className="text-sm text-neutral-500">Aún no hay fotos cargadas en tu historial. ¡Comienza subiendo la primera!</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
@@ -383,7 +392,7 @@ export default function GaleriaInnovadoraPage() {
                   <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
-                  {/* Acciones Rápidas sobre fotos privadas */}
+                  {/* Acciones Rápidas */}
                   <div className="absolute top-3 right-3 flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
                     <button 
                       onClick={() => handleAddToCompare(img)}
@@ -411,10 +420,9 @@ export default function GaleriaInnovadoraPage() {
         </main>
       )}
 
-      {/* ESTUDIO DE COMPARACIÓN EN PANTALLA DIVIDIDA */}
+      {/* SIMULADOR EN PANTALLA DIVIDIDA */}
       {compareMode && (
         <div className="fixed inset-0 z-50 bg-neutral-50 dark:bg-[#050506] flex flex-col animate-in fade-in zoom-in-95 duration-300 transition-colors duration-500">
-          
           <div className="p-4 md:p-6 border-b border-neutral-200 dark:border-neutral-900/80 flex items-center justify-between bg-white dark:bg-[#070708]">
             <div className="space-y-0.5">
               <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
@@ -422,22 +430,15 @@ export default function GaleriaInnovadoraPage() {
               </h3>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Compara diseños de catálogo o evalúa tu propia evolución de tratamiento</p>
             </div>
-            <button 
-              onClick={() => setCompareMode(false)}
-              className="p-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 rounded-full text-neutral-500 dark:text-neutral-400"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <button onClick={() => setCompareMode(false)} className="p-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 text-neutral-500"><X className="w-4 h-4" /></button>
           </div>
 
           <div className="flex-1 grid grid-cols-2 bg-neutral-200 dark:bg-black h-full relative">
-            
-            {/* Panel A */}
             <div className="relative border-r border-neutral-300 dark:border-neutral-900/60 h-full bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
               {slotA ? (
                 <div className="w-full h-full animate-in slide-in-from-left duration-500">
                   <img src={slotA.image_url} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-xl p-4 rounded-2xl border border-white/5 max-w-[85%]">
                     <p className="text-[10px] font-mono uppercase text-rose-300 tracking-wider">Muestra Seleccionada</p>
                     <p className="text-sm font-medium text-white truncate mt-0.5">{slotA.title}</p>
@@ -446,18 +447,17 @@ export default function GaleriaInnovadoraPage() {
                 </div>
               ) : (
                 <div className="text-center p-6 space-y-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-400 dark:border-neutral-700 flex items-center justify-center mx-auto text-neutral-400 dark:text-neutral-600 font-mono text-xs">A</div>
+                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-400 flex items-center justify-center mx-auto text-neutral-400 text-xs">A</div>
                   <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-medium">Primer Look Vacío</p>
                 </div>
               )}
             </div>
 
-            {/* Panel B */}
             <div className="relative h-full bg-white dark:bg-neutral-950 flex items-center justify-center overflow-hidden">
               {slotB ? (
                 <div className="w-full h-full animate-in slide-in-from-right duration-500">
                   <img src={slotB.image_url} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-6 left-6 bg-black/40 backdrop-blur-xl p-4 rounded-2xl border border-white/5 max-w-[85%]">
                     <p className="text-[10px] font-mono uppercase text-rose-300 tracking-wider">Muestra Seleccionada</p>
                     <p className="text-sm font-medium text-white truncate mt-0.5">{slotB.title}</p>
@@ -466,7 +466,7 @@ export default function GaleriaInnovadoraPage() {
                 </div>
               ) : (
                 <div className="text-center p-6 space-y-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-400 dark:border-neutral-700 flex items-center justify-center mx-auto text-neutral-400 dark:text-neutral-600 font-mono text-xs">B</div>
+                  <div className="w-8 h-8 rounded-full border border-dashed border-neutral-400 flex items-center justify-center mx-auto text-neutral-400 text-xs">B</div>
                   <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-medium">Segundo Look Vacío</p>
                 </div>
               )}
@@ -474,12 +474,8 @@ export default function GaleriaInnovadoraPage() {
           </div>
 
           <div className="p-5 bg-white dark:bg-[#070708] border-t border-neutral-200 dark:border-neutral-900/80 flex items-center justify-between">
-            <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-light italic">¿Evaluaste tu look ideal?</span>
-            <button 
-              onClick={() => { setCompareMode(false); alert('Abriendo sistema de reserva...'); }}
-              className="px-6 py-3.5 bg-neutral-900 text-white dark:bg-white dark:text-black font-semibold text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-40"
-              disabled={!slotA && !slotB}
-            >
+            <span className="text-[11px] text-neutral-500 italic">¿Evaluaste tu look ideal?</span>
+            <button onClick={() => { setCompareMode(false); alert('Abriendo sistema de reserva...'); }} className="px-6 py-3.5 bg-neutral-900 text-white dark:bg-white dark:text-black font-semibold text-[10px] uppercase tracking-widest rounded-xl disabled:opacity-40" disabled={!slotA && !slotB}>
               Solicitar Asesoría con Estos Looks
             </button>
           </div>
@@ -488,10 +484,7 @@ export default function GaleriaInnovadoraPage() {
 
       {/* DISPARADOR FLOTANTE DE COMPARADOR */}
       {(slotA || slotB) && !compareMode && (
-        <button 
-          onClick={() => setCompareMode(true)}
-          className="fixed bottom-6 right-6 z-40 bg-neutral-900 text-white dark:bg-white dark:text-black px-5 py-3.5 rounded-full flex items-center gap-2.5 shadow-2xl text-[11px] tracking-wider uppercase font-semibold border dark:border-neutral-200/20"
-        >
+        <button onClick={() => setCompareMode(true)} className="fixed bottom-6 right-6 z-40 bg-neutral-900 text-white dark:bg-white dark:text-black px-5 py-3.5 rounded-full flex items-center gap-2.5 shadow-2xl text-[11px] tracking-wider uppercase font-semibold border dark:border-neutral-200/20">
           <div className="relative flex items-center justify-center w-2 h-2">
             <span className="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-ping" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
