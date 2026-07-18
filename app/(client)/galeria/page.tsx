@@ -39,8 +39,6 @@ interface GalleryImage {
   polish_used?: string
   price?: string | number
   views?: number
-  before_image_url?: string | null
-  after_image_url?: string | null
 }
 
 export default function GaleriaPage() {
@@ -69,8 +67,6 @@ export default function GaleriaPage() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [uploadBeforeFile, setUploadBeforeFile] = useState<File | null>(null)
-  const [uploadBeforePreview, setUploadBeforePreview] = useState<string | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadCategory, setUploadCategory] = useState<'glossy' | '3d' | 'minimal' | 'abstract'>('glossy')
@@ -79,6 +75,7 @@ export default function GaleriaPage() {
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   useEffect(() => {
     loadGalleryData()
@@ -129,9 +126,7 @@ export default function GaleriaPage() {
           views: photo.views ?? 0,
           sensory_category: photo.sensory_category || 'glossy',
           polish_used: photo.polish_used || 'Fresh Nails Premium',
-          price: photo.price ? `$${photo.price}` : '$45.00',
-          before_image_url: photo.before_image_url || null,
-          after_image_url: photo.after_image_url || null
+          price: photo.price ? `$${photo.price}` : '$45.00'
         }))
 
         setPublicImages(mappedPublic)
@@ -205,27 +200,12 @@ export default function GaleriaPage() {
       const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(fileName)
       let afterImageUrl = urlData.publicUrl
 
-      let beforeImageUrl = null
-      if (uploadBeforeFile) {
-        const beforeFileName = `before/${Date.now()}_${uploadBeforeFile.name}`
-        const { error: beforeError } = await supabase.storage
-          .from('gallery')
-          .upload(beforeFileName, uploadBeforeFile)
-
-        if (!beforeError) {
-          const { data: beforeUrlData } = supabase.storage.from('gallery').getPublicUrl(beforeFileName)
-          beforeImageUrl = beforeUrlData.publicUrl
-        }
-      }
-
       const newImage = {
         client_id: isAdmin ? null : clientId,
         tenant_id: resolvedTenantId,
         image_url: afterImageUrl,
         title: uploadTitle || (isAdmin ? 'Estilo de Vanguardia' : 'Mi Diseño'),
         description: uploadDescription || '',
-        before_image_url: beforeImageUrl,
-        after_image_url: afterImageUrl,
         price: parseFloat(uploadPrice) || 45.00,
         polish_used: uploadPolish || 'Fresh Nails Premium',
         sensory_category: uploadCategory,
@@ -250,9 +230,7 @@ export default function GaleriaPage() {
           views: 0,
           sensory_category: uploadCategory,
           polish_used: uploadPolish || 'Fresh Nails Premium',
-          price: `$${parseFloat(uploadPrice) || 45.00}`,
-          before_image_url: beforeImageUrl,
-          after_image_url: afterImageUrl
+          price: `$${parseFloat(uploadPrice) || 45.00}`
         }
 
         setPublicImages(prev => [localCreated, ...prev])
@@ -268,8 +246,6 @@ export default function GaleriaPage() {
         setUploadPolish('')
         setUploadFile(null)
         setPreviewUrl(null)
-        setUploadBeforeFile(null)
-        setUploadBeforePreview(null)
         setUploadStatus({ type: null, message: '' })
       }, 1200)
 
@@ -281,6 +257,8 @@ export default function GaleriaPage() {
   }
 
   const openLightbox = (img: GalleryImage) => {
+    const index = filteredImages.findIndex(i => i.id === img.id)
+    setLightboxIndex(index >= 0 ? index : 0)
     setSelectedImage(img)
   }
 
@@ -293,6 +271,7 @@ export default function GaleriaPage() {
     } else {
       newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
     }
+    setLightboxIndex(newIndex)
     setSelectedImage(filteredImages[newIndex])
   }
 
@@ -311,17 +290,12 @@ export default function GaleriaPage() {
 
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
-      {/* ============================================================
-          HERO - CON GRADIENTE Y DECORACIÓN (sin imagen externa)
-      ============================================================ */}
+      {/* HERO */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/20 via-[#FAF8F5] to-[#C9A96E]/10 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
-        {/* Elementos decorativos */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
           <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-[#C9A96E]/10 blur-3xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#C9A96E]/5 blur-3xl" />
-          
-          {/* Líneas decorativas sutiles */}
           <div className="absolute top-20 left-10 w-32 h-[1px] bg-[#C9A96E]/20 rotate-12" />
           <div className="absolute bottom-20 right-10 w-32 h-[1px] bg-[#C9A96E]/20 -rotate-12" />
           <div className="absolute top-1/3 right-1/4 w-16 h-[1px] bg-[#C9A96E]/20 rotate-45" />
@@ -352,17 +326,11 @@ export default function GaleriaPage() {
         </div>
       </section>
 
-      {/* ============================================================
-          GALERÍA
-      ============================================================ */}
+      {/* GALERÍA */}
       <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-20">
-
-        {/* ============================================================
-            CONTROLES FLOTANTES - FILTROS REDISEÑADOS
-        ============================================================ */}
+        {/* CONTROLES FLOTANTES */}
         <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-5 mb-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Tabs */}
             <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1 w-full md:w-auto">
               <button
                 onClick={() => setActiveTab('public')}
@@ -387,7 +355,6 @@ export default function GaleriaPage() {
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-              {/* Vista */}
               <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
                 <button
                   onClick={() => setViewMode('masonry')}
@@ -407,7 +374,6 @@ export default function GaleriaPage() {
                 </button>
               </div>
 
-              {/* Subir */}
               <button
                 onClick={() => setShowUploadModal(true)}
                 className="px-4 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] dark:hover:bg-[#C9A96E] transition-all duration-300 flex items-center gap-2"
@@ -417,9 +383,6 @@ export default function GaleriaPage() {
             </div>
           </div>
 
-          {/* ============================================================
-              FILTROS - REDISEÑADOS CON ESTILO "PILDORAS ELEGANTES"
-          ============================================================ */}
           {activeTab === 'public' && (
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
               <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 dark:text-neutral-500 font-medium mr-2">
@@ -451,9 +414,7 @@ export default function GaleriaPage() {
           )}
         </div>
 
-        {/* ============================================================
-            CONTENIDO - LAS FOTOS NO SE TOCAN
-        ============================================================ */}
+        {/* CONTENIDO */}
         {activeTab === 'public' ? (
           <>
             {filteredImages.length === 0 ? (
@@ -528,12 +489,6 @@ export default function GaleriaPage() {
                           <Heart className="w-2.5 h-2.5 fill-current" />
                           {img.likes || 0}
                         </div>
-
-                        {img.before_image_url && img.after_image_url && (
-                          <div className="absolute bottom-3 left-3 bg-[#C9A96E]/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[6px] text-white tracking-[0.2em] uppercase font-bold">
-                            Antes/Después
-                          </div>
-                        )}
                       </div>
                     </motion.div>
                   )
@@ -590,72 +545,80 @@ export default function GaleriaPage() {
       </div>
 
       {/* ============================================================
-          LIGHTBOX
+          LIGHTBOX - CORREGIDO Y MEJORADO
       ============================================================ */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-lg flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedImage(null)}
           >
+            {/* Fondo con blur */}
+            <div className="absolute inset-0 bg-black/80" />
+
+            {/* Botón cerrar */}
             <button 
               onClick={() => setSelectedImage(null)}
-              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white transition-colors z-10"
+              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
+            {/* Navegación */}
             {filteredImages.length > 1 && (
               <>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                  className="absolute left-4 md:left-8 p-3 text-white/40 hover:text-white transition-colors z-10 bg-black/20 hover:bg-black/40 rounded-full"
+                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                  className="absolute right-4 md:right-8 p-3 text-white/40 hover:text-white transition-colors z-10 bg-black/20 hover:bg-black/40 rounded-full"
+                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </>
             )}
 
+            {/* Contador */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
+              {lightboxIndex + 1} / {filteredImages.length}
+            </div>
+
+            {/* Modal - CORREGIDO */}
             <motion.div 
-              className="max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden bg-neutral-900"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 30 }}
+              className="relative z-10 w-full max-w-5xl max-h-[85vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="grid grid-cols-1 md:grid-cols-5">
-                <div className="md:col-span-3 bg-neutral-950 flex items-center justify-center min-h-[400px] md:min-h-[500px]">
+              <div className="flex flex-col md:flex-row h-full">
+                {/* Imagen */}
+                <div className="md:w-3/5 bg-neutral-950 flex items-center justify-center p-4 min-h-[300px] md:min-h-[500px]">
                   <img 
                     src={selectedImage.image_url} 
                     alt={selectedImage.title}
-                    className="w-full h-full object-contain max-h-[80vh]"
+                    className="w-full h-full object-contain max-h-[70vh] md:max-h-[75vh] rounded-lg"
                   />
                 </div>
 
-                <div className="md:col-span-2 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between">
+                {/* Info */}
+                <div className="md:w-2/5 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto max-h-[300px] md:max-h-none">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full">
                         {selectedImage.sensory_category || 'Exclusivo'}
                       </span>
-                      {selectedImage.before_image_url && (
-                        <span className="text-[8px] tracking-[0.2em] uppercase bg-[#C9A96E]/30 px-3 py-1 rounded-full text-[#C9A96E]">
-                          Antes/Después
-                        </span>
-                      )}
                     </div>
 
-                    <h2 className="font-serif text-2xl font-light tracking-wide">
+                    <h2 className="font-serif text-2xl md:text-3xl font-light tracking-wide">
                       {selectedImage.title}
                     </h2>
 
@@ -690,7 +653,7 @@ export default function GaleriaPage() {
                     </div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id); }}
-                      className={`px-6 py-2.5 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center gap-2 ${
+                      className={`px-5 py-2.5 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center gap-2 ${
                         likedImages.has(selectedImage.id) 
                           ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
                           : 'bg-white/10 text-white hover:bg-white/20'
@@ -707,9 +670,7 @@ export default function GaleriaPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================================================
-          MODAL DE SUBIDA
-      ============================================================ */}
+      {/* MODAL DE SUBIDA */}
       <AnimatePresence>
         {showUploadModal && (
           <motion.div 
@@ -783,34 +744,6 @@ export default function GaleriaPage() {
                         <Camera className="w-8 h-8 mx-auto text-neutral-300 dark:text-neutral-600" />
                         <p className="text-xs text-neutral-400">Haz clic para subir la foto</p>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Imagen de Antes (Opcional)</label>
-                  <div 
-                    onClick={() => beforeInputRef.current?.click()}
-                    className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-4 text-center cursor-pointer hover:border-[#C9A96E] transition-colors relative min-h-[80px] flex items-center justify-center"
-                  >
-                    <input 
-                      ref={beforeInputRef}
-                      type="file" 
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setUploadBeforeFile(e.target.files[0])
-                          const reader = new FileReader()
-                          reader.onload = (event) => setUploadBeforePreview(event.target?.result as string)
-                          reader.readAsDataURL(e.target.files[0])
-                        }
-                      }} 
-                      className="hidden" 
-                      accept="image/*" 
-                    />
-                    {uploadBeforePreview ? (
-                      <img src={uploadBeforePreview} alt="Antes" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
-                    ) : (
-                      <span className="text-xs text-neutral-400">Subir foto antes del tratamiento</span>
                     )}
                   </div>
                 </div>
