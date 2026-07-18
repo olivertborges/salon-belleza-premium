@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -74,42 +74,22 @@ export default function GaleriaPage() {
 
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [fullImageMode, setFullImageMode] = useState(false)
+  
+  // 🔥 NEW: Control para evitar doble apertura del modal
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const modalTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Pre-carga automática de la ruta agenda
-  useEffect(() => {
-    router.prefetch('/agenda')
-  }, [router])
+  // 🔥 FIX: Usar useMemo para los filtros y evitar re-renders innecesarios
+  const filteredImages = useMemo(() => {
+    return publicImages.filter(
+      img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
+    )
+  }, [publicImages, sensoryFilter])
 
-  useEffect(() => {
-    loadGalleryData()
-  }, [user])
-
-  useEffect(() => {
-    if (!selectedImage) setFullImageMode(false)
-  }, [selectedImage])
-
-  // 🔥 Solución definitiva contra el doble render/recarga usando manipulación de historial nativa + router client-side
-  const handleBookingRedirect = (image: GalleryImage) => {
-    const profId = image.professional_id || ''
-    const designTitle = encodeURIComponent(image.title)
-    const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
-
-    // 1. Limpiamos estados del modal para desmontar elementos gráficos pesados
-    setSelectedImage(null)
-    setFullImageMode(false)
-
-    // 2. Modificamos la URL en segundo plano mediante pushState nativo del navegador.
-    if (typeof window !== 'undefined') {
-      window.history.pushState({ ...window.history.state, as: targetUrl, url: targetUrl }, '', targetUrl)
-    }
-
-    // 3. Ejecutamos la redirección puramente interna controlando que no se dispare un reset del scroll
-    setTimeout(() => {
-      router.push(targetUrl, { scroll: false })
-    }, 50)
-  }
-
-  const loadGalleryData = async () => {
+  // ============================================================
+  // LOAD DATA - con useCallback para evitar re-renders
+  // ============================================================
+  const loadGalleryData = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -135,7 +115,6 @@ export default function GaleriaPage() {
         }
       }
 
-      // Corregido: Sin comillas literales
       const { data: publicPhotos, error: publicError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -166,13 +145,101 @@ export default function GaleriaPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
-  const filteredImages = publicImages.filter(
-    img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
-  )
+  useEffect(() => {
+    loadGalleryData()
+  }, [loadGalleryData])
 
-  const handleLike = (id: string) => {
+  // ============================================================
+  // 🔥 FIX: Control de apertura/cierre del modal
+  // ============================================================
+  const openLightbox = useCallback((img: GalleryImage) => {
+    // Prevenir doble apertura
+    if (isModalOpen) return
+    
+    // Limpiar cualquier timeout pendiente
+    if (modalTimeoutRef.current) {
+      clearTimeout(modalTimeoutRef.current)
+      modalTimeoutRef.current = null
+    }
+    
+    setIsModalOpen(true)
+    setSelectedImage(img)
+    setFullImageMode(false)
+  }, [isModalOpen])
+
+  const closeLightbox = useCallback(() => {
+    setIsModalOpen(false)
+    // Esperar a que termine la animación antes de limpiar el estado
+    modalTimeoutRef.current = setTimeout(() => {
+      setSelectedImage(null)
+      setFullImageMode(false)
+    }, 300)
+  }, [])
+
+  // Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (modalTimeoutRef.current) {
+        clearTimeout(modalTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // ============================================================
+  // NAVEGACIÓN DEL LIGHTBOX
+  // ============================================================
+  const navigateLightbox = useCallback((direction: 'next' | 'prev') => {
+    if (!selectedImage) return
+    const currentIndex = filteredImages.findIndex(i => i.id === selectedImage.id)
+    if (currentIndex === -1) return
+
+    let newIndex
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % filteredImages.length
+    } else {
+      newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
+    }
+    setSelectedImage(filteredImages[newIndex])
+  }, [selectedImage, filteredImages])
+
+  // ============================================================
+  // HANDLE BOOKING - con prevención de doble ejecución
+  // ============================================================
+  const bookingRef = useRef(false)
+  
+  const handleBookingRedirect = useCallback((image: GalleryImage) => {
+    // Prevenir ejecución doble
+    if (bookingRef.current) return
+    bookingRef.current = true
+    
+    const profId = image.professional_id || ''
+    const designTitle = encodeURIComponent(image.title)
+    const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
+
+    // Cerrar modal primero
+    setIsModalOpen(false)
+    
+    setTimeout(() => {
+      setSelectedImage(null)
+      setFullImageMode(false)
+    }, 200)
+
+    // Redirigir después de cerrar el modal
+    setTimeout(() => {
+      router.push(targetUrl)
+      // Resetear el flag después de la navegación
+      setTimeout(() => {
+        bookingRef.current = false
+      }, 500)
+    }, 400)
+  }, [router])
+
+  // ============================================================
+  // LIKES
+  // ============================================================
+  const handleLike = useCallback((id: string) => {
     setLikedImages(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -184,8 +251,11 @@ export default function GaleriaPage() {
       }
       return next
     })
-  }
+  }, [])
 
+  // ============================================================
+  // SUBIR IMAGEN
+  // ============================================================
   const handleUpload = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const activeUserId = session?.user?.id || user?.id
@@ -283,28 +353,13 @@ export default function GaleriaPage() {
     }
   }
 
-  const openLightbox = (img: GalleryImage) => {
-    setSelectedImage(img)
-  }
-
-  const navigateLightbox = (direction: 'next' | 'prev') => {
-    if (!selectedImage) return
-    const currentIndex = filteredImages.findIndex(i => i.id === selectedImage.id)
-    if (currentIndex === -1) return
-
-    let newIndex
-    if (direction === 'next') {
-      newIndex = (currentIndex + 1) % filteredImages.length
-    } else {
-      newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length
-    }
-    setSelectedImage(filteredImages[newIndex])
-  }
-
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
@@ -476,18 +531,19 @@ export default function GaleriaPage() {
         )}
       </div>
 
-      {/* MODAL LIGHTBOX */}
-      <AnimatePresence>
-        {selectedImage && (
+      {/* MODAL LIGHTBOX - CORREGIDO */}
+      <AnimatePresence mode="wait">
+        {isModalOpen && selectedImage && (
           <motion.div 
+            key="lightbox"
             className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSelectedImage(null)}
+            onClick={closeLightbox}
           >
             <button 
-              onClick={() => setSelectedImage(null)}
+              onClick={closeLightbox}
               className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
               title="Cerrar modal"
             >
