@@ -4,20 +4,23 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
+  Camera, 
   Heart, 
   X, 
   Sparkles, 
+  Loader,     
+  Image as ImageIcon,
   ArrowDown,
-  Plus,
-  Calendar,
-  Maximize2,
+  Eye,
+  Upload,
   ChevronLeft,
   ChevronRight,
   Grid3x3,
   LayoutList,
-  ImageOff
+  Plus,
+  Calendar
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -33,37 +36,26 @@ interface GalleryImage {
   client_name?: string
   likes?: number
   uploaded_by_admin?: boolean
-  sensory_category?: string
-  category?: string // Añadido formalmente para soporte de panel admin
+  sensory_category?: 'glossy' | '3d' | 'minimal' | 'abstract'
   polish_used?: string
-  price: number
+  price?: string | number
   views?: number
-  professional_id?: string 
-}
-
-// Función auxiliar para normalizar texto (quita tildes, mayúsculas y espacios extras)
-const normalizeText = (text: string | null | undefined): string => {
-  if (!text) return ''
-  return text
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Elimina tildes/acentos
+  source?: 'admin' | 'client'  // 🔥 Nuevo campo para identificar origen
 }
 
 export default function GaleriaPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
-  const router = useRouter()
+  const isDark = theme === 'dark'
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
+  const beforeInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState<'public' | 'personal'>('public')
-  const [sensoryFilter, setSensoryFilter] = useState<string>('all')
+  const [sensoryFilter, setSensoryFilter] = useState<'all' | 'glossy' | '3d' | 'minimal' | 'abstract'>('all')
 
   const [publicImages, setPublicImages] = useState<GalleryImage[]>([])
   const [clientImages, setClientImages] = useState<GalleryImage[]>([])
@@ -72,44 +64,150 @@ export default function GaleriaPage() {
   const [viewMode, setViewMode] = useState<'masonry' | 'grid'>('masonry')
 
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null)
-  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set())
 
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploadBeforeFile, setUploadBeforeFile] = useState<File | null>(null)
+  const [uploadBeforePreview, setUploadBeforePreview] = useState<string | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
-  const [uploadCategory, setUploadCategory] = useState<string>('glossy')
+  const [uploadCategory, setUploadCategory] = useState<'glossy' | '3d' | 'minimal' | 'abstract'>('glossy')
   const [uploadPrice, setUploadPrice] = useState('')
   const [uploadPolish, setUploadPolish] = useState('')
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' })
 
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
-  const [fullImageMode, setFullImageMode] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Lógica de filtrado inteligente corregida para evitar fallos de mayúsculas/tildes
-  const filteredImages = useMemo(() => {
-    return publicImages.filter(img => {
-      if (sensoryFilter === 'all') return true
-      
-      const filterClean = normalizeText(sensoryFilter)
-      const sensoryClean = normalizeText(img.sensory_category)
-      const categoryClean = normalizeText(img.category)
+  // ============================================================
+  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID
+  // ============================================================
+  const getTenantId = useCallback(async (): Promise<string | null> => {
+    if (tenantId) return tenantId
 
-      return sensoryClean === filterClean || categoryClean === filterClean
-    })
-  }, [publicImages, sensoryFilter])
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return null
+
+    if (session.user.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
+    }
+
+    if (session.user.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', session.user.id)
+      .maybeSingle()
+
+    if (profile?.tenant_id) return profile.tenant_id
+
+    const { data: client } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle()
+
+    if (client?.tenant_id) return client.tenant_id
+
+    return null
+  }, [tenantId])
 
   // ============================================================
-  // LOAD DATA
+  // 🔥 CARGAR DATOS - CONSULTA AMBAS TABLAS
   // ============================================================
   const loadGalleryData = useCallback(async () => {
     setLoading(true)
     try {
+      const activeTenantId = await getTenantId()
+      
+      if (!activeTenantId) {
+        console.warn('⚠️ No se encontró tenantId')
+        setLoading(false)
+        return
+      }
+
+      console.log('🔍 Cargando galería para tenant:', activeTenantId)
+
       const { data: { session } } = await supabase.auth.getSession()
       const activeUserId = session?.user?.id || user?.id
 
+      let allImages: GalleryImage[] = []
+
+      // ============================================================
+      // 1. FOTOS DE ADMIN (tabla gallery)
+      // ============================================================
+      const { data: adminPhotos, error: adminError } = await supabase
+        .from('gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false })
+
+      if (adminError) {
+        console.error('Error cargando fotos de admin:', adminError)
+      } else if (adminPhotos) {
+        console.log(`📸 Encontradas ${adminPhotos.length} fotos de admin`)
+        const mappedAdmin = adminPhotos.map((p: any) => ({
+          ...p,
+          source: 'admin' as const,
+          client_name: p.client_name || 'Fresh Nails',
+          uploaded_by_admin: true,
+          likes: p.likes ?? 0,
+          views: p.views ?? 0,
+          sensory_category: p.sensory_category || 'glossy',
+          polish_used: p.polish_used || 'Fresh Nails Premium',
+          price: p.price ? `$${p.price}` : '$45.00'
+        }))
+        allImages = [...allImages, ...mappedAdmin]
+      }
+
+      // ============================================================
+      // 2. FOTOS DE CLIENTES (tabla client_gallery)
+      // ============================================================
+      const { data: clientPhotos, error: clientError } = await supabase
+        .from('client_gallery')
+        .select('*')
+        .eq('tenant_id', activeTenantId)
+        .eq('is_active', true)
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+
+      if (clientError) {
+        console.error('Error cargando fotos de clientes:', clientError)
+      } else if (clientPhotos) {
+        console.log(`📸 Encontradas ${clientPhotos.length} fotos de clientes`)
+        const mappedClient = clientPhotos.map((p: any) => ({
+          ...p,
+          source: 'client' as const,
+          client_name: p.client_name || 'Cliente',
+          uploaded_by_admin: false,
+          likes: p.likes ?? 0,
+          views: p.views ?? 0,
+          sensory_category: p.sensory_category || 'glossy',
+          polish_used: p.polish_used || 'Fresh Nails Premium',
+          price: p.price ? `$${p.price}` : '$45.00',
+          image_url: p.after_image_url || p.image_url || p.before_image_url || ''
+        }))
+        allImages = [...allImages, ...mappedClient]
+      }
+
+      // Ordenar por fecha (más reciente primero)
+      allImages.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      console.log(`✅ Total: ${allImages.length} fotos cargadas`)
+      setPublicImages(allImages)
+
+      // ============================================================
+      // 3. FOTOS PERSONALES DEL CLIENTE (si está logueado)
+      // ============================================================
       if (activeUserId) {
         const { data: cliente } = await supabase
           .from('clients')
@@ -126,56 +224,58 @@ export default function GaleriaPage() {
             .eq('is_active', true)
             .order('created_at', { ascending: false })
 
-          if (personalPhotos) setClientImages(personalPhotos)
+          if (personalPhotos) {
+            setClientImages(personalPhotos)
+            console.log(`📸 Encontradas ${personalPhotos.length} fotos personales del cliente`)
+          }
         }
       }
 
-      // Trae las fotos. Escenario corregido: Nos aseguramos de traer explícitamente "category" de la BD
-      const { data: publicPhotos, error: publicError } = await supabase
-        .from('client_gallery')
-        .select('*')
-        .eq('is_active', true)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (publicError) throw publicError
-
-      if (publicPhotos) {
-        const mappedPublic = publicPhotos.map((photo: any) => ({
-          ...photo,
-          client_name: photo.client_name || (photo.client_id ? 'Cliente' : 'Fresh Nails'),
-          uploaded_by_admin: !photo.client_id,
-          likes: photo.likes ?? 0,
-          views: photo.views ?? 0,
-          sensory_category: photo.sensory_category || '',
-          category: photo.category || '',
-          polish_used: photo.polish_used || 'Fresh Nails Premium',
-          price: photo.price ? Number(photo.price) : 45.00,
-          professional_id: photo.professional_id || '' 
-        }))
-
-        setPublicImages(mappedPublic)
-      }
     } catch (error) {
       console.error('Error cargando la galería:', error)
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, getTenantId])
 
   useEffect(() => {
     loadGalleryData()
   }, [loadGalleryData])
 
   // ============================================================
-  // LIGHTBOX CONTROLS
+  // FILTROS
+  // ============================================================
+  const filteredImages = useMemo(() => {
+    return publicImages.filter(
+      img => sensoryFilter === 'all' || img.sensory_category === sensoryFilter
+    )
+  }, [publicImages, sensoryFilter])
+
+  // ============================================================
+  // LIKES
+  // ============================================================
+  const handleLike = useCallback((id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setLikedImages(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 1) - 1 } : img))
+      } else {
+        next.add(id)
+        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 0) + 1 } : img))
+      }
+      return next
+    })
+  }, [])
+
+  // ============================================================
+  // MODAL - LIGHTBOX
   // ============================================================
   const openLightbox = useCallback((img: GalleryImage) => {
     if (isModalOpen) return
     setIsModalOpen(true)
     setSelectedImage(img)
-    setFullImageMode(false)
     document.body.style.overflow = 'hidden'
   }, [isModalOpen])
 
@@ -184,17 +284,8 @@ export default function GaleriaPage() {
     document.body.style.overflow = 'unset'
     setTimeout(() => {
       setSelectedImage(null)
-      setFullImageMode(false)
     }, 250)
   }, [])
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isModalOpen) closeLightbox()
-    }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
-  }, [isModalOpen, closeLightbox])
 
   const navigateLightbox = useCallback((direction: 'next' | 'prev') => {
     if (!selectedImage) return
@@ -210,151 +301,41 @@ export default function GaleriaPage() {
     setSelectedImage(filteredImages[newIndex])
   }, [selectedImage, filteredImages])
 
-  // ============================================================
-  // ACCIONES
-  // ============================================================
-  const handleBookingRedirect = useCallback((image: GalleryImage) => {
-    const profId = image.professional_id || ''
-    const designTitle = encodeURIComponent(image.title)
-    const targetUrl = `/agenda?professional=${profId}&style=${designTitle}`
-
-    closeLightbox()
-    setTimeout(() => {
-      router.push(targetUrl)
-    }, 300)
-  }, [router, closeLightbox])
-
-  const handleLike = useCallback((id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    setLikedImages(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: Math.max(0, (img.likes || 1) - 1) } : img))
-      } else {
-        next.add(id)
-        setPublicImages(imgs => imgs.map(img => img.id === id ? { ...img, likes: (img.likes || 0) + 1 } : img))
+  // Cerrar con ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        closeLightbox()
       }
-      return next
-    })
-  }, [])
-
-  const handleImageError = (id: string) => {
-    setBrokenImages(prev => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
-  }
-
-  // ============================================================
-  // SUBIR IMAGEN
-  // ============================================================
-  const handleUpload = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    const activeUserId = session?.user?.id || user?.id
-
-    if (!uploadFile || !activeUserId) {
-      setUploadStatus({ type: 'error', message: 'Debes seleccionar una imagen y estar autenticado.' })
-      return
     }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [isModalOpen, closeLightbox])
 
-    setUploading(true)
-    setUploadStatus({ type: null, message: '' })
-
-    try {
-      let resolvedTenantId = tenantId || session?.user?.user_metadata?.tenant_id || session?.user?.app_metadata?.tenant_id
-
-      if (!resolvedTenantId) {
-        const { data: clientRow } = await supabase
-          .from('clients')
-          .select('tenant_id')
-          .eq('auth_user_id', activeUserId)
-          .maybeSingle()
-        if (clientRow?.tenant_id) resolvedTenantId = clientRow.tenant_id
-      }
-
-      if (!resolvedTenantId) throw new Error("Falta el identificador del salón.")
-
-      const isAdmin = session?.user?.user_metadata?.role === 'admin' || session?.user?.app_metadata?.role === 'admin'
-      const fileExt = uploadFile.name.split('.').pop()
-      const folder = isAdmin ? 'salon' : clientId || 'guests'
-      const fileName = `${folder}/${Date.now()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(fileName, uploadFile)
-
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(fileName)
-      let afterImageUrl = urlData.publicUrl
-
-      const newImage = {
-        client_id: isAdmin ? null : clientId,
-        tenant_id: resolvedTenantId,
-        image_url: afterImageUrl,
-        title: uploadTitle || (isAdmin ? 'Diseño Exclusivo' : 'Mi Diseño'),
-        description: uploadDescription || '',
-        price: parseFloat(uploadPrice) || 45.00,
-        polish_used: uploadPolish || 'Fresh Nails Premium',
-        sensory_category: uploadCategory,
-        category: uploadCategory, // Escenario corregido: Guardamos en ambos campos para consistencia total
-        is_active: true,
-        is_public: true,
-        created_at: new Date().toISOString()
-      }
-
-      const { data: insertData, error: dbError } = await supabase
-        .from('client_gallery')
-        .insert([newImage])
-        .select()
-
-      if (dbError) throw dbError
-
-      if (insertData && insertData[0]) {
-        const localCreated: GalleryImage = {
-          ...insertData[0],
-          client_name: isAdmin ? 'Fresh Nails' : 'Tú',
-          uploaded_by_admin: isAdmin,
-          likes: 0,
-          views: 0,
-          sensory_category: uploadCategory,
-          category: uploadCategory,
-          polish_used: uploadPolish || 'Fresh Nails Premium',
-          price: parseFloat(uploadPrice) || 45.00
-        }
-
-        setPublicImages(prev => [localCreated, ...prev])
-        if (!isAdmin) setClientImages(prev => [insertData[0], ...prev])
-      }
-
-      setUploadStatus({ type: 'success', message: '¡Diseño publicado exitosamente!' })
-      setTimeout(() => {
-        setShowUploadModal(false)
-        setUploadTitle('')
-        setUploadDescription('')
-        setUploadPrice('')
-        setUploadPolish('')
-        setUploadFile(null)
-        setPreviewUrl(null)
-        setUploadStatus({ type: null, message: '' })
-      }, 1200)
-
-    } catch (e: any) {
-      setUploadStatus({ type: 'error', message: e.message || 'Error al guardar.' })
-    } finally {
-      setUploading(false)
-    }
+  // ============================================================
+  // RENDER
+  // ============================================================
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-4">
+        <Loader className="w-6 h-6 text-[#C9A96E] animate-spin stroke-[1.5]" />
+        <span className="text-[10px] tracking-[0.3em] uppercase text-neutral-400 font-light">Cargando galería...</span>
+      </div>
+    )
   }
 
   return (
     <div className="bg-[#FAF8F5] dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-300">
       {/* HERO */}
       <section className="relative h-[60vh] min-h-[450px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#C9A96E]/15 via-[#FAF8F5] to-[#C9A96E]/5 dark:from-[#C9A96E]/10 dark:via-neutral-950 dark:to-[#C9A96E]/5">
-        <svg className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+        <svg 
+          className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20"
+          viewBox="0 0 1000 600"
+          preserveAspectRatio="xMidYMid meet"
+        >
           <path d="M 0 100 Q 150 20 250 120 T 500 80 T 750 150 T 1000 60" stroke="#C9A96E" strokeWidth="1.5" fill="none" opacity="0.6" />
           <path d="M 0 180 Q 200 300 350 200 T 600 280 T 850 180 T 1000 250" stroke="#C9A96E" strokeWidth="1" fill="none" opacity="0.4" />
+          <circle cx="500" cy="350" r="4" fill="#C9A96E" opacity="0.15" />
         </svg>
 
         <div className="relative z-10 text-center max-w-3xl px-6">
@@ -373,15 +354,18 @@ export default function GaleriaPage() {
         </div>
       </section>
 
-      {/* CONTROLES DE LA GALERÍA */}
+      {/* GALERÍA */}
       <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-20">
+        {/* CONTROLES FLOTANTES */}
         <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-xl border border-neutral-200/50 dark:border-neutral-800/50 p-4 md:p-5 mb-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1 w-full md:w-auto">
               <button
                 onClick={() => setActiveTab('public')}
                 className={`flex-1 md:flex-none px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
-                  activeTab === 'public' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-400'
+                  activeTab === 'public' 
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
+                    : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
                 }`}
               >
                 Colección
@@ -389,7 +373,9 @@ export default function GaleriaPage() {
               <button
                 onClick={() => setActiveTab('personal')}
                 className={`flex-1 md:flex-none px-5 py-2 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
-                  activeTab === 'personal' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-400'
+                  activeTab === 'personal' 
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' 
+                    : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600'
                 }`}
               >
                 Mis Fotos <span className="ml-1 text-[8px] opacity-60">({clientImages.length})</span>
@@ -398,312 +384,350 @@ export default function GaleriaPage() {
 
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
               <div className="flex gap-1 bg-neutral-100 dark:bg-neutral-800/50 rounded-full p-1">
-                <button onClick={() => setViewMode('masonry')} className={`p-1.5 rounded-full ${viewMode === 'masonry' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'}`}>
+                <button
+                  onClick={() => setViewMode('masonry')}
+                  className={`p-1.5 rounded-full transition-all duration-300 ${
+                    viewMode === 'masonry' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'
+                  }`}
+                >
                   <Grid3x3 className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-full ${viewMode === 'grid' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'}`}>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-full transition-all duration-300 ${
+                    viewMode === 'grid' ? 'bg-white dark:bg-neutral-700 shadow-sm' : 'text-neutral-400'
+                  }`}
+                >
                   <LayoutList className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="px-4 py-2 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#C9A96E] transition-all flex items-center gap-2"
-              >
-                <Plus className="w-3.5 h-3.5" /> Subir
-              </button>
             </div>
           </div>
 
           {activeTab === 'public' && (
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-neutral-200/50 dark:border-neutral-800/50">
-              <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 font-medium mr-2">Filtrar:</span>
+              <span className="text-[8px] tracking-[0.2em] uppercase text-neutral-400 dark:text-neutral-500 font-medium mr-2">
+                Filtrar:
+              </span>
               {[
                 { id: 'all', label: 'Todo', icon: '✦' },
                 { id: 'glossy', label: 'Glossy', icon: '✨' },
                 { id: '3d', label: '3D', icon: '💎' },
                 { id: 'minimal', label: 'Minimal', icon: '🌿' },
-                { id: 'abstract', label: 'Abstracto', icon: '🎨' },
-                { id: 'Micropigmentacion', label: 'Micropigmentación', icon: '✒️' },
-                { id: 'Peluquería', label: 'Peluquería', icon: '✂️' }
+                { id: 'abstract', label: 'Abstracto', icon: '🎨' }
               ].map((btn) => (
                 <button
                   key={btn.id}
-                  onClick={() => setSensoryFilter(btn.id)}
-                  className={`px-4 py-1.5 rounded-full text-[9px] font-medium transition-all ${
-                    normalizeText(sensoryFilter) === normalizeText(btn.id) ? 'bg-[#C9A96E] text-white shadow-md' : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-500'
+                  onClick={() => setSensoryFilter(btn.id as any)}
+                  className={`group relative px-4 py-1.5 rounded-full text-[9px] tracking-[0.05em] font-medium transition-all duration-300 ${
+                    sensoryFilter === btn.id 
+                      ? 'bg-[#C9A96E] text-white shadow-md shadow-[#C9A96E]/20 scale-105' 
+                      : 'bg-neutral-100/80 dark:bg-neutral-800/50 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
                   }`}
                 >
                   <span className="mr-1">{btn.icon}</span> {btn.label}
+                  {sensoryFilter === btn.id && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/80 animate-pulse" />
+                  )}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* LOADING STATE */}
-        {loading ? (
-          <div className="text-center py-20 flex flex-col items-center justify-center gap-3">
-            <div className="w-6 h-6 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-neutral-400 tracking-wider">Cargando galería de arte...</p>
-          </div>
-        ) : (
+        {/* CONTENIDO */}
+        {activeTab === 'public' ? (
           <>
-            {/* VISTA PÚBLICA */}
-            {activeTab === 'public' ? (
-              filteredImages.length === 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-sm text-neutral-400 font-light">No hay imágenes disponibles en esta categoría</p>
+            {filteredImages.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 mx-auto rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                  <ImageIcon className="w-6 h-6 text-neutral-400" />
                 </div>
-              ) : (
-                <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'}>
-                  {filteredImages.map((img, idx) => {
-                    const isLiked = likedImages.has(img.id)
-                    const isHovered = hoveredImageId === img.id
-                    const isBroken = brokenImages.has(img.id)
-                    const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
-                    const heightClass = heights[idx % heights.length]
+                <p className="text-sm text-neutral-400 font-light">No hay imágenes en esta categoría</p>
+                <p className="text-xs text-neutral-400 font-light mt-1">Las fotos subidas por el administrador aparecerán aquí automáticamente</p>
+              </div>
+            ) : (
+              <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'}>
+                {filteredImages.map((img, idx) => {
+                  const isLiked = likedImages.has(img.id)
+                  const isHovered = hoveredImageId === img.id
+                  const isAdmin = img.source === 'admin'
 
-                    return (
-                      <div
-                        key={img.id}
-                        className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''} transition-all duration-300 ${
-                          isHovered ? 'scale-[1.02] z-10' : 'scale-100'
-                        }`}
-                        onMouseEnter={() => setHoveredImageId(img.id)}
-                        onMouseLeave={() => setHoveredImageId(null)}
+                  const heights = ['h-[320px]', 'h-[400px]', 'h-[280px]', 'h-[360px]', 'h-[440px]', 'h-[300px]']
+                  const heightClass = heights[idx % heights.length]
+
+                  return (
+                    <motion.div
+                      key={`${img.source}-${img.id}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: (idx % 6) * 0.06 }}
+                      className={`break-inside-avoid ${viewMode === 'grid' ? heightClass : ''}`}
+                      onMouseEnter={() => setHoveredImageId(img.id)}
+                      onMouseLeave={() => setHoveredImageId(null)}
+                    >
+                      <div 
+                        onClick={() => openLightbox(img)}
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 ${
+                          viewMode === 'masonry' ? '' : `h-full ${heightClass}`
+                        } ${isHovered ? 'shadow-2xl scale-[1.02] z-10' : 'shadow-sm'}`}
                       >
-                        <div 
-                          onClick={() => !isBroken && openLightbox(img)}
-                          className={`relative rounded-2xl overflow-hidden group transition-all duration-500 bg-neutral-100 dark:bg-neutral-900 ${
-                            isBroken ? 'cursor-not-allowed' : 'cursor-pointer'
-                          } ${viewMode === 'masonry' ? '' : `h-full ${heightClass}`} ${isHovered ? 'shadow-2xl' : 'shadow-sm'}`}
-                        >
-                          {isBroken ? (
-                            <div className="w-full h-[250px] flex flex-col items-center justify-center gap-2 text-neutral-400 p-4">
-                              <ImageOff className="w-5 h-5 opacity-60" />
-                              <span className="text-[10px] tracking-wider uppercase">Imagen no disponible</span>
-                            </div>
-                          ) : (
-                            <img 
-                              src={img.image_url} 
-                              alt={img.title} 
-                              className="w-full h-full object-cover" 
-                              loading="lazy"
-                              onError={() => handleImageError(img.id)}
-                            />
-                          )}
+                        <img 
+                          src={img.image_url} 
+                          alt={img.title}
+                          className={`w-full h-full object-cover transition-all duration-700 ${
+                            isHovered ? 'scale-105 brightness-90' : 'scale-100'
+                          }`}
+                          loading="lazy"
+                        />
 
-                          {!isBroken && (
-                            <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                              <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                                <h3 className="font-serif text-lg font-light tracking-wide truncate">{img.title}</h3>
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-[10px] text-white/60">{img.client_name}</span>
-                                  <button 
-                                    onClick={(e) => handleLike(img.id, e)} 
-                                    className={`p-1.5 rounded-full transition-transform active:scale-125 ${isLiked ? 'text-red-500' : 'text-white/60'}`}
-                                  >
-                                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                                  </button>
-                                </div>
-                              </div>
+                        <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-500 ${
+                          isHovered ? 'opacity-100' : 'opacity-0'
+                        }`}>
+                          <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                            <h3 className="font-serif text-lg font-light tracking-wide truncate">
+                              {img.title}
+                            </h3>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[10px] text-white/60 font-light">
+                                {img.client_name || (isAdmin ? 'Fresh Nails' : 'Cliente')}
+                              </span>
+                              <button 
+                                onClick={(e) => handleLike(img.id, e)} 
+                                className={`p-1.5 rounded-full transition-all duration-300 ${
+                                  isLiked ? 'text-red-500' : 'text-white/60 hover:text-white'
+                                }`}
+                              >
+                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                              </button>
                             </div>
-                          )}
-
-                          <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[7px] text-white tracking-[0.15em] uppercase font-medium max-w-[120px] truncate">
-                            {normalizeText(img.sensory_category) === 'micropigmentacion' || normalizeText(img.category) === 'micropigmentacion' 
-                              ? '✒️ Micropigmentación' 
-                              : normalizeText(img.sensory_category) === 'peluqueria' || normalizeText(img.category) === 'peluqueria'
-                              ? '✂️ Peluquería'
-                              : img.sensory_category || '✦ Estilo'}
                           </div>
                         </div>
+
+                        {/* Badge de origen */}
+                        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium ${
+                          isAdmin ? 'bg-pink-500/80' : 'bg-amber-500/80'
+                        }`}>
+                          {isAdmin ? '👑 Fresh Nails' : '👤 Cliente'}
+                        </div>
+
+                        {/* Badge categoría */}
+                        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[7px] text-white/80 tracking-[0.2em] uppercase font-medium">
+                          {img.sensory_category || 'Exclusivo'}
+                        </div>
+
+                        {/* Contador de likes */}
+                        <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full text-[8px] text-white/60">
+                          <Heart className="w-2.5 h-2.5 fill-current" />
+                          {img.likes || 0}
+                        </div>
+
+                        {/* Precio (solo para fotos de admin) */}
+                        {isAdmin && img.price && (
+                          <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[8px] text-[#C9A96E] font-medium">
+                            {img.price}
+                          </div>
+                        )}
                       </div>
-                    )
-                  })}
-                </div>
-              )
-            ) : (
-              /* VISTA PERSONAL */
-              clientImages.length === 0 ? (
-                <div className="text-center py-20">
-                  <p className="text-sm text-neutral-400 font-light">Aún no tienes fotos guardadas en tu cuenta</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {clientImages.map((img) => (
-                    <div key={img.id} onClick={() => openLightbox(img)} className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800 hover:shadow-lg transition-all">
-                      <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                  ))}
-                </div>
-              )
+                    </motion.div>
+                  )
+                })}
+              </div>
             )}
           </>
+        ) : (
+          <div>
+            {clientImages.length === 0 ? (
+              <div className="text-center py-20 bg-white/50 dark:bg-neutral-800/30 rounded-3xl border border-dashed border-neutral-200 dark:border-neutral-700">
+                <div className="w-20 h-20 mx-auto rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                  <Camera className="w-8 h-8 text-neutral-400" />
+                </div>
+                <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Tu historial está vacío</h3>
+                <p className="text-xs text-neutral-400 font-light mt-1 max-w-xs mx-auto">
+                  Sube tus primeros diseños para mantener un seguimiento de tu evolución
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {clientImages.map((img) => (
+                  <div
+                    key={img.id}
+                    onClick={() => openLightbox(img)}
+                    className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-neutral-100 dark:bg-neutral-800"
+                  >
+                    <img 
+                      src={img.image_url} 
+                      alt={img.title}
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h4 className="text-sm font-light truncate">{img.title}</h4>
+                        <p className="text-[9px] text-white/50">
+                          {new Date(img.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
       {/* ============================================================
-          MODAL LIGHTBOX 
+          LIGHTBOX
       ============================================================ */}
-      {isModalOpen && selectedImage && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden animate-fadeIn" onClick={closeLightbox}>
-          <button onClick={closeLightbox} className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm">
-            <X className="w-6 h-6" />
-          </button>
-
-          {activeTab === 'public' && filteredImages.length > 1 && (
-            <>
-              <button onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }} className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }} className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20">
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-
+      <AnimatePresence>
+        {isModalOpen && selectedImage && (
           <div 
-            ref={modalRef}
-            className={`relative z-10 w-full flex flex-col md:flex-row bg-neutral-900 transition-all duration-300 overflow-hidden rounded-2xl shadow-2xl flex-nowrap ${
-              fullImageMode ? 'max-w-4xl h-auto max-h-[90vh]' : 'max-w-5xl h-auto max-h-[90vh] md:max-h-[82vh]'
-            } animate-scaleIn`}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 overflow-hidden animate-fadeIn"
+            onClick={closeLightbox}
           >
-            <div 
-              className={`bg-neutral-950 flex items-center justify-center p-3 md:p-6 overflow-hidden relative group cursor-pointer transition-all duration-500 flex-1 ${
-                fullImageMode ? 'w-full min-h-[60vh] md:min-h-[80vh]' : 'w-full md:w-[58%] min-h-[35vh] md:min-h-0'
-              }`}
-              onClick={() => setFullImageMode(!fullImageMode)}
+            <button 
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
             >
-              <img src={selectedImage.image_url} alt={selectedImage.title} className={`w-auto h-auto object-contain rounded-lg shadow-2xl transition-all duration-500 ${fullImageMode ? 'max-h-[70vh] md:max-h-[76vh] scale-[1.01]' : 'max-h-[40vh] md:max-h-[72vh]'}`} />
-              <button onClick={(e) => { e.stopPropagation(); setFullImageMode(!fullImageMode); }} className="absolute bottom-4 right-4 p-2.5 bg-black/60 hover:bg-[#C9A96E] text-white rounded-xl backdrop-blur-md transition-all duration-300 flex items-center gap-2 text-[9px] tracking-widest uppercase shadow-lg border border-white/5 z-20">
-                <Maximize2 className="w-3.5 h-3.5" />
-                <span>{fullImageMode ? 'Ver Info' : 'Solo Foto'}</span>
-              </button>
+              <X className="w-6 h-6" />
+            </button>
+
+            {filteredImages.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
+              {filteredImages.findIndex(i => i.id === selectedImage.id) + 1} / {filteredImages.length}
             </div>
 
-            {!fullImageMode && (
-              <div className="w-full md:w-[42%] p-5 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto overflow-x-hidden max-h-[45vh] md:max-h-none border-t border-white/5 md:border-t-0 md:border-l border-white/5 shrink-0 animate-slideIn">
-                <div className="space-y-4">
-                  <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full inline-block text-neutral-300">
-                    {normalizeText(selectedImage.sensory_category) === 'micropigmentacion' || normalizeText(selectedImage.category) === 'micropigmentacion' ? 'Micropigmentación' : normalizeText(selectedImage.sensory_category) === 'peluqueria' || normalizeText(selectedImage.category) === 'peluqueria' ? 'Peluquería' : selectedImage.sensory_category || 'Diseño'}
-                  </span>
+            <div 
+              className="relative z-10 w-full max-w-5xl max-h-[90vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl animate-scaleIn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col md:flex-row h-full">
+                {/* Imagen */}
+                <div className="md:w-3/5 bg-neutral-950 flex items-center justify-center p-4 min-h-[300px] md:min-h-[500px]">
+                  <img 
+                    src={selectedImage.image_url} 
+                    alt={selectedImage.title}
+                    className="w-full h-full object-contain max-h-[70vh] md:max-h-[75vh] rounded-lg"
+                  />
+                </div>
 
-                  <h2 className="font-serif text-xl md:text-3xl font-light tracking-wide text-white leading-tight break-words">{selectedImage.title}</h2>
-                  {selectedImage.description && <p className="text-xs md:text-sm text-neutral-400 font-light leading-relaxed break-words">{selectedImage.description}</p>}
+                {/* Info */}
+                <div className="md:w-2/5 p-6 md:p-8 bg-neutral-900 text-white flex flex-col justify-between overflow-y-auto">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[8px] tracking-[0.2em] uppercase bg-white/10 px-3 py-1 rounded-full">
+                        {selectedImage.sensory_category || 'Exclusivo'}
+                      </span>
+                      {selectedImage.source === 'admin' && (
+                        <span className="text-[8px] tracking-[0.2em] uppercase bg-pink-500/30 px-3 py-1 rounded-full text-pink-300">
+                          Fresh Nails
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="space-y-2.5 pt-4 border-t border-white/10">
-                    <div className="flex justify-between items-center text-xs md:text-sm gap-2">
-                      <span className="text-neutral-500 shrink-0">Artista</span>
-                      <span className="text-white/90 font-light truncate">{selectedImage.client_name}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs md:text-sm gap-2">
-                      <span className="text-neutral-500 shrink-0">Esmaltado / Detalles</span>
-                      <span className="text-white/90 font-light text-right truncate">{selectedImage.polish_used || 'Fresh Nails Premium'}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                      <span className="text-neutral-500 text-xs md:text-sm">Precio estimado</span>
-                      <span className="text-xl md:text-2xl font-serif text-[#C9A96E]">${Number(selectedImage.price || 45).toFixed(2)}</span>
+                    <h2 className="font-serif text-2xl md:text-3xl font-light tracking-wide">
+                      {selectedImage.title}
+                    </h2>
+
+                    {selectedImage.description && (
+                      <p className="text-sm text-neutral-400 font-light leading-relaxed">
+                        {selectedImage.description}
+                      </p>
+                    )}
+
+                    <div className="space-y-2 pt-4 border-t border-white/10 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Artista</span>
+                        <span>{selectedImage.client_name || 'Fresh Nails'}</span>
+                      </div>
+                      {selectedImage.polish_used && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-500">Esmaltado</span>
+                          <span className="text-right text-sm">{selectedImage.polish_used}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Visualizaciones</span>
+                        <span>{selectedImage.views || 0}</span>
+                      </div>
+                      {selectedImage.price && (
+                        <div className="flex justify-between pt-2 border-t border-white/5">
+                          <span className="text-neutral-500">Precio</span>
+                          <span className="text-2xl font-serif text-[#C9A96E]">{selectedImage.price}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3 pt-5 border-t border-white/10 mt-5 md:mt-8">
-                  <button onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }} className={`flex-1 py-2.5 md:py-3 rounded-full text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${likedImages.has(selectedImage.id) ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-white/10 text-white hover:bg-white/20'}`}>
-                    <Heart className={`w-3.5 h-3.5 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
-                    {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
-                  </button>
-                  <button onClick={() => handleBookingRedirect(selectedImage)} className="px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-[#C9A96E] text-white text-[9px] md:text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-1.5 shadow-md shrink-0">
-                    <Calendar className="w-3.5 h-3.5" /> Agendar
-                  </button>
+                  <div className="flex items-center gap-3 pt-6 border-t border-white/10 mt-4">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }}
+                      className={`flex-1 py-3 rounded-full text-[10px] tracking-[0.15em] uppercase font-medium transition-all flex items-center justify-center gap-2 ${
+                        likedImages.has(selectedImage.id) 
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
+                      {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
+                    </button>
+                    
+                    <button 
+                      className="px-5 py-3 rounded-full bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase font-medium hover:bg-[#B8955A] transition-all flex items-center gap-2"
+                    >
+                      <Calendar className="w-3.5 h-3.5" /> Agendar
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE SUBIDA */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowUploadModal(false)}>
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-              <h3 className="text-sm font-medium tracking-wide">Publicar Nuevo Diseño</h3>
-              <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Nombre del Diseño *</label>
-                <input type="text" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Ej: Micropigmentación Cejas" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
-              </div>
-              <div>
-                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Descripción</label>
-                <textarea value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Detalles o cuidados..." rows={2} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm resize-none" />
-              </div>
-              <div>
-                <label className="text-[10px] text-neutral-500 uppercase block mb-1">Imagen Final *</label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl p-6 text-center cursor-pointer relative min-h-[120px] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setUploadFile(e.target.files[0])
-                        const reader = new FileReader()
-                        reader.onload = (event) => setPreviewUrl(event.target?.result as string)
-                        reader.readAsDataURL(e.target.files[0])
-                      }
-                    }} 
-                    className="hidden" 
-                    accept="image/*" 
-                  />
-                  {previewUrl ? <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-xl" /> : <p className="text-xs text-neutral-400">Presiona para cargar archivo</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Precio ($)</label>
-                  <input type="number" value={uploadPrice} onChange={(e) => setUploadPrice(e.target.value)} placeholder="45.00" className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-sm" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-neutral-500 uppercase block mb-1">Categoría principal</label>
-                  <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-950 text-sm text-neutral-800 dark:text-neutral-200">
-                    <option value="glossy">✨ Glossy</option>
-                    <option value="3d">💎 3D</option>
-                    <option value="minimal">🌿 Minimal</option>
-                    <option value="abstract">🎨 Abstracto</option>
-                    <option value="Micropigmentacion">✒️ Micropigmentación</option>
-                    <option value="Peluquería">✂️ Peluquería</option>
-                  </select>
-                </div>
-              </div>
-
-              {uploadStatus.type && (
-                <div className={`p-3 rounded-xl text-xs text-center ${uploadStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                  {uploadStatus.message}
-                </div>
-              )}
-
-              <button disabled={uploading} onClick={handleUpload} className="w-full py-3.5 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs uppercase font-medium rounded-xl disabled:opacity-40 transition-all hover:opacity-90">
-                {uploading ? 'Subiendo archivo...' : 'Publicar en Galería'}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
+      {/* ============================================================
+          STYLES GLOBALES
+      ============================================================ */}
       <style jsx global>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(15px); } to { opacity: 1; transform: translateX(0); } }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
-        .animate-scaleIn { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-slideIn { animation: slideIn 0.25s ease-out forwards; }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { 
+            transform: scale(0.92);
+            opacity: 0;
+          }
+          to { 
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.25s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}</style>
+
     </div>
   )
 }
