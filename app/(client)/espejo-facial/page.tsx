@@ -9,7 +9,7 @@ interface FaceSimulatorProps {
   isPremiumUser: boolean;
 }
 
-// 1. Cambiamos la exportación nombrada a una constante interna
+// Componente del simulador de video + canvas
 const FaceSimulator: React.FC<FaceSimulatorProps> = ({
   volumeType,
   pigmentationColor,
@@ -20,27 +20,32 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
   const [landmarker, setLandmarker] = useState<FaceLandmarker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Inicializar MediaPipe Face Landmarker en el Cliente
+  // 1. Inicializar MediaPipe Face Landmarker en el Cliente apuntando a CDN estable
   useEffect(() => {
     async function initExtension() {
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-      );
-      const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numFaces: 1
-      });
-      setLandmarker(faceLandmarker);
-      setIsLoading(false);
+      try {
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        );
+        const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            delegate: "GPU"
+          },
+          outputFaceBlendshapes: true,
+          runningMode: "VIDEO",
+          numFaces: 1
+        });
+        setLandmarker(faceLandmarker);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error inicializando MediaPipe en Fresh Nails:", error);
+      }
     }
     initExtension();
   }, []);
 
-  // Activar la Cámara Frontal con especificaciones optimizadas para móvil
+  // 2. Activar la Cámara Frontal optimizada para web apps móviles
   useEffect(() => {
     if (!videoRef.current) return;
 
@@ -53,10 +58,10 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
       audio: false
     }).then((stream) => {
       if (videoRef.current) videoRef.current.srcObject = stream;
-    }).catch(err => console.error("Error accediendo a la cámara en Fresh Nails:", err));
+    }).catch(err => console.error("Error accediendo a la cámara frontal:", err));
   }, [isLoading]);
 
-  // Bucle de Renderizado y Detección en Tiempo Real
+  // 3. Bucle de Renderizado y Cómputo Anatómico en Tiempo Real
   useEffect(() => {
     let animationFrameId: number;
     if (!landmarker || !videoRef.current || !canvasRef.current) return;
@@ -69,28 +74,32 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
         const video = videoRef.current;
         const canvas = canvasRef.current;
 
-        // Ajustar dimensiones del Canvas al contenedor exacto
+        // Ajustar resolución interna al tamaño real del flujo de video
         if (canvas.width !== video.videoWidth) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
         }
 
-        // Limpiar lienzo anterior
+        // Limpiar lienzo previo
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Detectar puntos faciales
+        // Capturar landmarks faciales
         const startTimeMs = performance.now();
         const results = landmarker.detectForVideo(video, startTimeMs);
 
         if (results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
-
-          // --- CONTROL CAPA PREMIUM ---
           const canRenderAdvanced = isPremiumUser || (volumeType !== '3D' && volumeType !== '4D');
 
-          // MÓDULO MICROPIGMENTACIÓN DE LABIOS
+          // ============================================================
+          // MÓDULO MICROPIGMENTACIÓN DE LABIOS PROFESIONAL (Volumen Radial)
+          // ============================================================
           if (pigmentationColor !== 'none') {
-            const lipIndices = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 308, 415, 310, 311, 312, 13, 82, 81, 80, 191];
+            const lipIndices = [
+              61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 
+              308, 415, 310, 311, 312, 13, 82, 81, 80, 191, 95
+            ];
+
             ctx.save();
             ctx.beginPath();
             lipIndices.forEach((index, i) => {
@@ -101,39 +110,102 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
               else ctx.lineTo(x, y);
             });
             ctx.closePath();
-            ctx.fillStyle = pigmentationColor;
-            ctx.globalAlpha = 0.45; 
-            ctx.globalCompositeOperation = 'multiply'; 
+
+            // Centro anatómico del labio superior para proyectar luces y sombras tridimensionales
+            const centerUpperLip = landmarks[0];
+            const centerX = centerUpperLip.x * canvas.width;
+            const centerY = centerUpperLip.y * canvas.height;
+            
+            const gradient = ctx.createRadialGradient(
+              centerX, centerY, canvas.width * 0.01, 
+              centerX, centerY, canvas.width * 0.16
+            );
+            gradient.addColorStop(0, pigmentationColor);
+            gradient.addColorStop(1, '#110005'); // Oscurecimiento perimetral sutil
+
+            ctx.fillStyle = gradient;
+            ctx.globalAlpha = 0.38; // Opacidad fluida translúcida
+            ctx.globalCompositeOperation = 'multiply'; // Respeta arrugas y poros de los labios reales
             ctx.fill();
             ctx.restore();
           }
 
-          // MÓDULO PESTAÑAS
+          // ============================================================
+          // MÓDULO PESTAÑAS ULTRA-REALISTAS (Curvas Bézier & Degradado)
+          // ============================================================
           if (volumeType !== 'none' && canRenderAdvanced) {
-            const leftEyeTop = [33, 246, 161, 160, 159, 158, 157, 173, 133];
+            const leftEyeTop = [133, 173, 157, 158, 159, 160, 161, 246, 33];
+            const rightEyeTop = [362, 398, 384, 385, 386, 387, 388, 466, 263];
 
-            ctx.save();
-            ctx.strokeStyle = '#111111';
-            ctx.lineWidth = volumeType === '2D' ? 2 : volumeType === '3D' ? 3.5 : 5; 
-            ctx.lineCap = 'round';
+            const drawProfessionalLashes = (eyeIndices: number[], isRightEye: boolean) => {
+              ctx.save();
+              
+              // Ajustes físicos según el tipo de volumen seleccionado
+              const baseLineWidth = volumeType === '2D' ? 1.4 : volumeType === '3D' ? 2.1 : 3.0;
+              const lashLength = volumeType === '4D' ? 15 : volumeType === '3D' ? 11 : 7.5;
+              
+              const innerCorner = landmarks[eyeIndices[0]];
+              const outerCorner = landmarks[eyeIndices[eyeIndices.length - 1]];
+              const eyeCenterX = (innerCorner.x + outerCorner.x) / 2 * canvas.width;
 
-            ctx.beginPath();
-            leftEyeTop.forEach((index, i) => {
-              const point = landmarks[index];
-              const x = point.x * canvas.width;
-              const y = point.y * canvas.height;
+              eyeIndices.forEach((index, i) => {
+                // Previene que aparezcan pestañas anormales en la zona lagrimal extrema
+                if (i < 1 || i > eyeIndices.length - 2) return;
 
-              if (i === 0) ctx.moveTo(x, y);
-              else {
-                ctx.lineTo(x, y);
-                ctx.moveTo(x, y);
-                const lashLength = volumeType === '4D' ? 14 : 10;
-                ctx.lineTo(x, y - lashLength); 
-                ctx.moveTo(x, y);
-              }
-            });
-            ctx.stroke();
-            ctx.restore();
+                const point = landmarks[index];
+                const x = point.x * canvas.width;
+                const y = point.y * canvas.height;
+
+                // Densidad de filamentos para simular volumen híbrido/ruso
+                const lashCount = volumeType === '4D' ? 3 : volumeType === '3D' ? 2 : 1;
+
+                for (let j = 0; j < lashCount; j++) {
+                  // Variación controlada para romper simetrías mecánicas de apariencia artificial
+                  const jitterX = (Math.random() - 0.5) * 2.5;
+                  const lashScale = 0.85 + Math.random() * 0.35;
+                  const currentLength = lashLength * lashScale;
+
+                  // Las pestañas se abren armónicamente hacia afuera de la línea central del ojo
+                  const distanceFromCenter = x - eyeCenterX;
+                  const spreadFactor = distanceFromCenter * 0.14 + (isRightEye ? 4.5 : -4.5); 
+
+                  const startX = x + (j * 0.4);
+                  const startY = y;
+                  
+                  // cp1: Caída corta del folículo piloso
+                  const cp1x = startX + spreadFactor * 0.18;
+                  const cp1y = startY + 1.8;
+
+                  // cp2: Curvatura hacia arriba del filamento
+                  const cp2x = startX + spreadFactor * 0.65;
+                  const cp2y = startY - currentLength * 0.55;
+
+                  // Punta fina
+                  const endX = startX + spreadFactor + jitterX;
+                  const endY = startY - currentLength;
+
+                  // Difuminado de la punta para emular el grosor decreciente del cabello real
+                  const lashGrad = ctx.createLinearGradient(startX, startY, endX, endY);
+                  lashGrad.addColorStop(0, '#0d0d0d');
+                  lashGrad.addColorStop(0.75, '#1c1c1c');
+                  lashGrad.addColorStop(1, 'rgba(28, 28, 28, 0.15)');
+
+                  ctx.beginPath();
+                  ctx.moveTo(startX, startY);
+                  ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+
+                  ctx.strokeStyle = lashGrad;
+                  ctx.lineWidth = baseLineWidth * (1 - (j * 0.18));
+                  ctx.lineCap = 'round';
+                  ctx.stroke();
+                }
+              });
+              ctx.restore();
+            };
+
+            // Dibujar pestañas anatómicamente simétricas basadas en coordenadas
+            drawProfessionalLashes(leftEyeTop, false);
+            drawProfessionalLashes(rightEyeTop, true);
           }
         }
       }
@@ -145,11 +217,12 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
   }, [landmarker, volumeType, pigmentationColor, isPremiumUser]);
 
   return (
-    <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-white/10 bg-neutral-950">
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/5 bg-neutral-950 shadow-2xl">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
-          <span className="text-sm font-light text-neutral-400 tracking-widest animate-pulse">
-            INICIALIZANDO ESPEJO VIRTUAL...
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-md z-20 space-y-3">
+          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-medium text-neutral-400 tracking-widest animate-pulse uppercase">
+            Cargando Motores de Estilo IA...
           </span>
         </div>
       )}
@@ -168,60 +241,75 @@ const FaceSimulator: React.FC<FaceSimulatorProps> = ({
   );
 };
 
-// 2. CREAMOS Y EXPORTAMOS POR DEFECTO LA COMPONENTE PÁGINA QUE NEXT.JS NECESITA
+// ============================================================
+// EXPORTACIÓN DEFAULT EXIGIDA POR NEXT.JS APP ROUTER
+// ============================================================
 export default function EspejoFacialPage() {
-  // Aquí puedes conectar controles de UI reales más adelante para cambiar estos estados
-  const [volume, setVolume] = useState<'2D' | '3D' | '4D' | 'none'>('2D');
-  const [color, setColor] = useState<string>('#E65C7B'); // Color de labios inicial de prueba
+  const [volume, setVolume] = useState<'2D' | '3D' | '4D' | 'none'>('3D');
+  const [color, setColor] = useState<string>('#E65C7B'); 
   const [premium, setPremium] = useState<boolean>(true);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-neutral-900 text-white">
-      <div className="w-full max-w-3xl space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight text-center">Espejo Facial Inteligente</h1>
+    <main className="flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center p-2 md:p-6 bg-transparent text-white">
+      <div className="w-full max-w-3xl space-y-6">
+        <div className="text-center space-y-1">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-neutral-100 via-stone-200 to-neutral-400 bg-clip-text text-transparent">
+            Espejo Virtual de Estilo Pro
+          </h1>
+          <p className="text-xs text-neutral-400 font-light max-w-md mx-auto">
+            Visualiza servicios de micropigmentación de labios y extensiones de pestañas con precisión milimétrica sobre tu rostro.
+          </p>
+        </div>
         
-        {/* Inyección de tu simulador */}
+        {/* Simulador Completo */}
         <FaceSimulator 
           volumeType={volume} 
           pigmentationColor={color} 
           isPremiumUser={premium} 
         />
         
-        {/* Panel de control básico de pruebas rápidas */}
-        <div className="grid grid-cols-3 gap-2 bg-neutral-950 p-4 rounded-xl border border-white/5 text-xs">
-          <div>
-            <p className="mb-1 text-neutral-400">Volumen Pestañas</p>
+        {/* Panel Interactivo de Pruebas Continuas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-neutral-950/50 p-4 rounded-2xl border border-white/5 backdrop-blur-xl text-xs shadow-xl">
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-neutral-400 font-medium">Volumen Pestañas</label>
             <select 
               value={volume} 
               onChange={(e) => setVolume(e.target.value as any)}
-              className="bg-neutral-800 p-1.5 rounded w-full border border-neutral-700"
+              className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800 focus:border-pink-500/50 focus:outline-none transition-colors text-stone-200 cursor-pointer font-medium"
             >
-              <option value="none">Ninguno</option>
-              <option value="2D">2D</option>
-              <option value="3D">3D (Premium)</option>
-              <option value="4D">4D (Premium)</option>
+              <option value="none">Ninguno (Línea Natural)</option>
+              <option value="2D">Efecto Rímel 2D</option>
+              <option value="3D">Volumen Tecnológico 3D</option>
+              <option value="4D">Mega Volumen Glamour 4D</option>
             </select>
           </div>
-          <div>
-            <p className="mb-1 text-neutral-400">Tono Labios</p>
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-neutral-400 font-medium">Tono Micropigmentación</label>
             <select 
               value={color} 
               onChange={(e) => setColor(e.target.value)}
-              className="bg-neutral-800 p-1.5 rounded w-full border border-neutral-700"
+              className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800 focus:border-pink-500/50 focus:outline-none transition-colors text-stone-200 cursor-pointer font-medium"
             >
-              <option value="none">Sin color</option>
-              <option value="#E65C7B">Rosa Fresh</option>
-              <option value="#D4AF37">Dorado Glam (Prueba)</option>
-              <option value="#800020">Borgonia Profundo</option>
+              <option value="none">Sin pigmento (Color natural)</option>
+              <option value="#E65C7B">Rosa Fresh Velvet</option>
+              <option value="#B83B5E">Rojo Rubí Satinado</option>
+              <option value="#6B2D5C">Borgonia Mate Profundo</option>
+              <option value="#D4AF37">Efecto Gloss Destello Dorado</option>
             </select>
           </div>
-          <div>
-            <p className="mb-1 text-neutral-400">Suscripción</p>
+
+          <div className="flex flex-col space-y-1.5 justify-end">
+            <label className="text-neutral-400 font-medium sm:block hidden">&nbsp;</label>
             <button 
               onClick={() => setPremium(!premium)}
-              className={`p-1.5 rounded w-full border font-bold ${premium ? 'bg-emerald-950 border-emerald-500 text-emerald-300' : 'bg-neutral-800 border-neutral-700 text-neutral-400'}`}
+              className={`p-2.5 rounded-xl border font-bold tracking-wide transition-all duration-300 ${
+                premium 
+                  ? 'bg-pink-500/10 border-pink-500/30 text-pink-400 hover:bg-pink-500/20' 
+                  : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
+              }`}
             >
-              {premium ? 'PREMIUM ACTIVO' : 'FREE USER'}
+              {premium ? '✨ ENTORNO PREMIUM' : 'CAMBIAR A FREE'}
             </button>
           </div>
         </div>
