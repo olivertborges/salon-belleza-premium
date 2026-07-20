@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,17 +12,12 @@ import {
   Clock, Calendar, Tag, Users, Edit3,
   Check, Eye, EyeOff, User, DollarSign,
   Palette, Scissors, TrendingUp, Heart,
-  FileImage, Layers, Search, SlidersHorizontal,
-  Grid, BarChart3, RefreshCw, ArrowUpDown,
-  Download, Share2, Info, CheckCircle2, AlertCircle
+  FileImage
 } from 'lucide-react'
 
-// ==========================================
-// DEFINICIÓN DE TIPOS E INTERFACES COMPLETAS
-// ==========================================
 type Photo = {
   id: string
-  image_url: string | null
+  image_url: string
   title: string | null
   category: string | null
   description: string | null
@@ -30,7 +25,6 @@ type Photo = {
   created_at: string
   source: 'admin' | 'client'
   professional_id?: string | null
-  professional_name?: string | null
   client_name?: string | null
   client_id?: string | null
   before_image_url?: string | null
@@ -39,112 +33,68 @@ type Photo = {
   polish_used?: string | null
   sensory_category?: string | null
   views?: number
-  likes?: number
   sort_order?: number
-  tags?: string[] | null
-}
-
-type Professional = {
-  id: string
-  full_name: string
-  role?: string
-}
-
-type GalleryStats = {
-  totalPhotos: number
-  adminPhotos: number
-  clientPhotos: number
-  totalViews: number
-  totalLikes: number
-  beforeAfterCount: number
 }
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentacion', 'Peluquería']
-const sensoryCategories = ['Clásico', 'Audaz', 'Minimalista', 'Elegante', 'Glitter/Brillante', 'Nude/Natural', 'Temático']
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
   const { tenantId, user, loading: authLoading } = useAuth()
 
-  // Estados de carga y datos principales
   const [photos, setPhotos] = useState<Photo[]>([])
-  const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
-  
-  // Estados de filtros avanzados, orden y búsquedas
   const [categoryFilter, setCategoryFilter] = useState('Todas')
-  const [sensoryFilter, setSensoryFilter] = useState('Todos')
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'admin' | 'client'>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'views' | 'likes' | 'order'>('date_desc')
-  const [viewMode, setViewMode] = useState<'grid' | 'masonry' | 'compact'>('grid')
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
-  const [showStatsPanel, setShowStatsPanel] = useState(false)
-
-  // Estados de modales y visualización (Lightbox)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [showLightbox, setShowLightbox] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
-  const [sliderPosition, setSliderPosition] = useState(50)
+  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('grid')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
-
-  // Mensajes de feedback del sistema
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-
-  // Estados para archivos multimedia y previsualizaciones (Soporta Normal o Antes/Después)
-  const [isBeforeAfter, setIsBeforeAfter] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [selectedBeforeFile, setSelectedBeforeFile] = useState<File | null>(null)
-  const [previewBeforeUrl, setPreviewBeforeUrl] = useState<string | null>(null)
-  const [selectedAfterFile, setSelectedAfterFile] = useState<File | null>(null)
-  const [previewAfterUrl, setPreviewAfterUrl] = useState<string | null>(null)
-
-  // Referencias HTML
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const beforeFileInputRef = useRef<HTMLInputElement>(null)
-  const afterFileInputRef = useRef<HTMLInputElement>(null)
 
-  // Datos estructurados del formulario
   const [formData, setFormData] = useState({
     title: '',
     category: 'Nail Art',
-    sensory_category: 'Clásico',
     description: '',
     image_url: '',
-    before_image_url: '',
-    after_image_url: '',
     is_active: true,
-    sort_order: 0,
-    professional_id: '',
-    price: '',
-    polish_used: '',
-    tagsInput: ''
+    sort_order: 0
   })
 
-  // Estilos de marca dinámicos basados en la configuración del Tenant
-  const brandGradient = useMemo(() => ({
+  const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
-  }), [settings])
+  }
 
-  const primaryBgStyle = useMemo(() => ({
-    backgroundColor: settings?.primary_color || '#DB5B9A'
-  }), [settings])
-
-  // Resolución segura del Tenant ID mediante fallback encadenado
+  // ============================================================
+  // 🔥 FUNCIÓN PARA OBTENER TENANT_ID
+  // ============================================================
   const getTenantId = useCallback(async (): Promise<string | null> => {
+    // 1. Primero del contexto
     if (tenantId) return tenantId
+
+    // 2. De la sesión
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return null
-    if (session.user.user_metadata?.tenant_id) return session.user.user_metadata.tenant_id
-    if (session.user.app_metadata?.tenant_id) return session.user.app_metadata.tenant_id
-    
+
+    // 3. De user_metadata
+    if (session.user.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
+    }
+
+    // 4. De app_metadata
+    if (session.user.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    // 5. De profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('tenant_id')
@@ -152,196 +102,144 @@ export default function GaleriaAdminPage() {
       .maybeSingle()
 
     if (profile?.tenant_id) return profile.tenant_id
+
+    // 6. De clients
+    const { data: client } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle()
+
+    if (client?.tenant_id) return client.tenant_id
+
     return null
   }, [tenantId])
 
-  // Cargar lista de profesionales para asignaciones en la galería
-  const fetchProfessionals = useCallback(async (activeTenantId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('tenant_id', activeTenantId)
-        .order('full_name', { ascending: true })
-
-      if (!error && data) {
-        setProfessionals(data)
-      }
-    } catch (err) {
-      console.error('Error cargando profesionales:', err)
-    }
-  }, [])
-
-  // CARGAR FOTOS DE MÚLTIPLES ORÍGENES (ADMIN Y CLIENTES) CON TODA LA DATA ASOCIADA
+  // ============================================================
+  // 🔥 CARGAR FOTOS - CORREGIDO CON FALLBACK
+  // ============================================================
   const fetchPhotos = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true)
       else setRefreshing(true)
       setError(null)
 
+      // Obtener tenantId
       let activeTenantId = await getTenantId()
+
       if (!activeTenantId) {
+        console.warn('⚠️ No se encontró tenantId, usando modo demostración')
         setPhotos([])
         setLoading(false)
         setRefreshing(false)
         return
       }
 
-      // Disparar la carga de profesionales en paralelo
-      fetchProfessionals(activeTenantId)
+      console.log('🔍 Cargando fotos para tenant:', activeTenantId)
 
       let allPhotos: Photo[] = []
 
-      // 1. Extracción de datos desde la galería del Administrador
+      // 1. Fotos de admin (tabla gallery)
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
         .eq('tenant_id', activeTenantId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (adminError) {
         console.error('Error cargando fotos de admin:', adminError)
       } else if (adminPhotos) {
+        console.log(`📸 Encontradas ${adminPhotos.length} fotos de admin`)
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
           ...p,
           source: 'admin' as const,
-          image_url: p.image_url || p.after_image_url || p.before_image_url || null,
-          before_image_url: p.before_image_url || null,
-          after_image_url: p.after_image_url || null,
           professional_id: p.professional_id || null,
-          client_name: p.client_name || null,
-          client_id: p.client_id || null,
-          price: p.price || null,
-          polish_used: p.polish_used || null,
-          sensory_category: p.sensory_category || 'Clásico',
-          views: p.views || 0,
-          likes: p.likes || 0,
-          sort_order: p.sort_order || 0,
-          tags: p.tags || []
+          client_name: null,
+          client_id: null,
+          before_image_url: null,
+          after_image_url: null,
+          price: null,
+          polish_used: null,
+          sensory_category: null,
+          views: 0
         }))
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. Extracción de datos desde la galería de aportes de Clientes
+      // 2. Fotos de clientes (tabla client_gallery)
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
         .eq('tenant_id', activeTenantId)
+        .order('created_at', { ascending: false })
 
       if (clientError) {
         console.error('Error cargando fotos de clientes:', clientError)
       } else if (clientPhotos) {
+        console.log(`📸 Encontradas ${clientPhotos.length} fotos de clientes`)
         const mappedClientPhotos = clientPhotos.map((p: any) => ({
           id: p.id,
           image_url: p.after_image_url || p.image_url || p.before_image_url || '',
-          title: p.title || 'Aporte de Cliente',
+          title: p.title || 'Trabajo de cliente',
           category: p.category || 'Nail Art',
-          sensory_category: p.sensory_category || 'Clásico',
           description: p.description || '',
           is_active: p.is_active !== undefined ? p.is_active : true,
           created_at: p.created_at,
           source: 'client' as const,
           professional_id: p.professional_id || null,
-          client_name: p.client_name || 'Cliente Anónimo',
+          client_name: p.client_name || 'Cliente',
           client_id: p.client_id || null,
           before_image_url: p.before_image_url || null,
           after_image_url: p.after_image_url || null,
           price: p.price || null,
           polish_used: p.polish_used || null,
+          sensory_category: p.sensory_category || null,
           views: p.views || 0,
-          likes: p.likes || 0,
-          sort_order: p.sort_order || 0,
-          tags: p.tags || []
+          sort_order: p.sort_order || 0
         }))
         allPhotos = [...allPhotos, ...mappedClientPhotos]
       }
 
+      // Ordenar por fecha (más reciente primero)
+      allPhotos.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      console.log(`✅ Total: ${allPhotos.length} fotos cargadas`)
       setPhotos(allPhotos)
 
     } catch (err: any) {
-      setError('No se pudo sincronizar la galería multimedia.')
+      console.error('❌ Error cargando galería:', err)
+      setError(err.message || 'Error al cargar la galería')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [getTenantId, fetchProfessionals])
+  }, [getTenantId])
 
+  // ============================================================
+  // 🔥 EFECTO PARA CARGAR FOTOS - CON DEPENDENCIAS CORRECTAS
+  // ============================================================
   useEffect(() => {
-    fetchPhotos(true)
+    let mounted = true
+
+    const loadData = async () => {
+      if (!mounted) return
+      await fetchPhotos(true)
+    }
+
+    loadData()
+
+    return () => {
+      mounted = false
+    }
   }, [fetchPhotos])
 
-  // Mapear nombres de profesionales de forma optimizada
-  const professionalMap = useMemo(() => {
-    const map: Record<string, string> = {}
-    professionals.forEach(p => {
-      map[p.id] = p.full_name
-    })
-    return map
-  }, [professionals])
-
-  // CÁLCULO DE MÉTRICAS Y ESTADÍSTICAS DEL PANEL INTACTO
-  const stats = useMemo<GalleryStats>(() => {
-    return photos.reduce((acc, current) => {
-      acc.totalPhotos++
-      if (current.source === 'admin') acc.adminPhotos++
-      if (current.source === 'client') acc.clientPhotos++
-      if (current.before_image_url && current.after_image_url) acc.beforeAfterCount++
-      acc.totalViews += (current.views || 0)
-      acc.totalLikes += (current.likes || 0)
-      return acc
-    }, { totalPhotos: 0, adminPhotos: 0, clientPhotos: 0, totalViews: 0, totalLikes: 0, beforeAfterCount: 0 })
-  }, [photos])
-
-  // MOTOR FILTRADO Y ORDENAMIENTO COMPLETO Y AVANZADO
-  const filteredAndSortedPhotos = useMemo(() => {
-    let result = [...photos]
-
-    // Filtro por Categorías principales
-    if (categoryFilter !== 'Todas') {
-      result = result.filter(p => p.category === categoryFilter)
-    }
-
-    // Filtro por Categoría Sensorial / Estilo
-    if (sensoryFilter !== 'Todos') {
-      result = result.filter(p => p.sensory_category === sensoryFilter)
-    }
-
-    // Filtro de Origen
-    if (sourceFilter !== 'all') {
-      result = result.filter(p => p.source === sourceFilter)
-    }
-
-    // Filtro por Estado de Visibilidad pública
-    if (statusFilter !== 'all') {
-      const targetStatus = statusFilter === 'active'
-      result = result.filter(p => p.is_active === targetStatus)
-    }
-
-    // Buscador global por texto (títulos, descripciones, etiquetas, esmaltes)
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim()
-      result = result.filter(p => 
-        (p.title && p.title.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.polish_used && p.polish_used.toLowerCase().includes(q)) ||
-        (p.client_name && p.client_name.toLowerCase().includes(q)) ||
-        (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
-      )
-    }
-
-    // Clasificación y ordenamiento avanzado de datos
-    result.sort((a, b) => {
-      if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      if (sortBy === 'views') return (b.views || 0) - (a.views || 0)
-      if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0)
-      if (sortBy === 'order') return (a.sort_order || 0) - (b.sort_order || 0)
-      return 0
-    })
-
-    return result
-  }, [photos, categoryFilter, sensoryFilter, sourceFilter, statusFilter, searchQuery, sortBy])
-
-  // MANEJO DE SUBIDAS A STORAGE
+  // ============================================================
+  // SUBIR ARCHIVO A STORAGE
+  // ============================================================
   const uploadFile = async (file: File, tenantId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
@@ -349,34 +247,50 @@ export default function GaleriaAdminPage() {
 
     const { error: uploadError } = await supabase.storage
       .from('gallery')
-      .upload(filePath, file, { cacheControl: '3600', upsert: false })
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
 
     if (uploadError) throw uploadError
 
-    const { data: urlData } = supabase.storage.from('gallery').getPublicUrl(filePath)
+    const { data: urlData } = supabase.storage
+      .from('gallery')
+      .getPublicUrl(filePath)
+
     return urlData.publicUrl
   }
 
-  const handleFileSelectGeneric = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFile: React.Dispatch<React.SetStateAction<File | null>>,
-    setPreview: React.Dispatch<React.SetStateAction<string | null>>
-  ) => {
+  // ============================================================
+  // MANEJAR SELECCIÓN DE ARCHIVO
+  // ============================================================
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setError('⚠️ Por favor selecciona un formato de imagen válido (PNG, JPEG, WEBP).')
+      setError('⚠️ Por favor selecciona una imagen válida')
+      setTimeout(() => setError(null), 3000)
       return
     }
 
-    setFile(file)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('⚠️ La imagen no puede superar los 10MB')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    setSelectedFile(file)
     const reader = new FileReader()
-    reader.onloadend = () => setPreview(reader.result as string)
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string)
+    }
     reader.readAsDataURL(file)
   }
 
-  // SUBMIT COMPLETO SIN SIMPLIFICACIONES (MANEJA LA METADATA AVANZADA Y ANTES/DESPUÉS)
+  // ============================================================
+  // HANDLE SUBMIT
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -384,80 +298,53 @@ export default function GaleriaAdminPage() {
 
     try {
       const activeTenantId = await getTenantId()
-      if (!activeTenantId) throw new Error('⚠️ Sesión o Salón no válido.')
+      if (!activeTenantId) {
+        throw new Error('⚠️ No se pudo identificar tu salón. Intenta recargar la página.')
+      }
 
       setUploading(true)
 
       let imageUrl = formData.image_url
-      let beforeUrl = formData.before_image_url
-      let afterUrl = formData.after_image_url
-
-      // Procesar carga si es un elemento nuevo
-      if (!editingPhoto) {
-        if (isBeforeAfter) {
-          if (!selectedBeforeFile || !selectedAfterFile) {
-            throw new Error('⚠️ Es obligatorio cargar ambas capturas para el formato interactivo.')
-          }
-          beforeUrl = await uploadFile(selectedBeforeFile, activeTenantId)
-          afterUrl = await uploadFile(selectedAfterFile, activeTenantId)
-          imageUrl = afterUrl
-        } else {
-          if (!selectedFile) throw new Error('⚠️ Debes seleccionar una imagen para la publicación.')
-          imageUrl = await uploadFile(selectedFile, activeTenantId)
-          beforeUrl = ''
-          afterUrl = ''
-        }
-      } else {
-        // En caso de edición, si se seleccionaron archivos nuevos, se reemplazan
-        if (isBeforeAfter) {
-          if (selectedBeforeFile) beforeUrl = await uploadFile(selectedBeforeFile, activeTenantId)
-          if (selectedAfterFile) {
-            afterUrl = await uploadFile(selectedAfterFile, activeTenantId)
-            imageUrl = afterUrl
-          }
-        } else {
-          if (selectedFile) imageUrl = await uploadFile(selectedFile, activeTenantId)
-        }
+      if (selectedFile) {
+        imageUrl = await uploadFile(selectedFile, activeTenantId)
       }
 
-      // Procesamiento de etiquetas (Tags) split por comas
-      const tagsArray = formData.tagsInput
-        ? formData.tagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t !== '')
-        : []
-
-      const payload = {
-        tenant_id: activeTenantId,
-        professional_id: formData.professional_id || null,
-        image_url: imageUrl || null,
-        before_image_url: beforeUrl || null,
-        after_image_url: afterUrl || null,
-        title: formData.title || null,
-        category: formData.category,
-        sensory_category: formData.sensory_category,
-        description: formData.description || null,
-        is_active: formData.is_active,
-        sort_order: formData.sort_order || 0,
-        price: formData.price ? parseFloat(formData.price) : null,
-        polish_used: formData.polish_used || null,
-        tags: tagsArray
+      if (!editingPhoto && !imageUrl) {
+        throw new Error('⚠️ Debes seleccionar una imagen')
       }
 
       if (editingPhoto) {
         const { error: updateError } = await supabase
           .from('gallery')
-          .update(payload)
+          .update({
+            image_url: imageUrl,
+            title: formData.title,
+            category: formData.category,
+            description: formData.description,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order
+          })
           .eq('id', editingPhoto.id)
           .eq('tenant_id', activeTenantId)
 
         if (updateError) throw updateError
-        setSuccess('✨ Publicación de portafolio actualizada correctamente.')
+        setSuccess('✨ ¡Foto actualizada exitosamente!')
       } else {
         const { error: insertError } = await supabase
           .from('gallery')
-          .insert(payload)
+          .insert({
+            tenant_id: activeTenantId,
+            professional_id: user?.id || null,
+            image_url: imageUrl,
+            title: formData.title || null,
+            category: formData.category || 'Nail Art',
+            description: formData.description || null,
+            is_active: formData.is_active,
+            sort_order: formData.sort_order || 0
+          })
 
         if (insertError) throw insertError
-        setSuccess('✨ Nueva obra guardada y añadida al catálogo.')
+        setSuccess('✨ ¡Foto subida exitosamente!')
       }
 
       await fetchPhotos(false)
@@ -465,81 +352,103 @@ export default function GaleriaAdminPage() {
       setShowModal(false)
 
     } catch (err: any) {
-      setError(err.message || 'Error al guardar la información en la galería.')
+      console.error("Error en handleSubmit:", err)
+      setError(err.message || 'Ocurrió un error inesperado')
     } finally {
       setUploading(false)
     }
   }
 
+  // ============================================================
+  // RESET FORM
+  // ============================================================
   const resetForm = () => {
     setFormData({
       title: '',
       category: 'Nail Art',
-      sensory_category: 'Clásico',
       description: '',
       image_url: '',
-      before_image_url: '',
-      after_image_url: '',
       is_active: true,
-      sort_order: 0,
-      professional_id: '',
-      price: '',
-      polish_used: '',
-      tagsInput: ''
+      sort_order: 0
     })
     setSelectedFile(null)
     setPreviewUrl(null)
-    setSelectedBeforeFile(null)
-    setPreviewBeforeUrl(null)
-    setSelectedAfterFile(null)
-    setPreviewAfterUrl(null)
-    setIsBeforeAfter(false)
+    setUploadProgress(0)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setEditingPhoto(null)
   }
 
+  // ============================================================
+  // ELIMINAR FOTO
+  // ============================================================
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
+
     if (source === 'client') {
-      setError('⚠️ Las fotos de reseñas de clientes deben ser moderadas desde el módulo de valoraciones.')
+      setError('⚠️ No se pueden eliminar fotos de clientes')
+      setTimeout(() => setError(null), 3000)
       return
     }
-    if (!confirm('¿Estás seguro de que deseas eliminar permanentemente este registro de la galería?')) return
-
-    try {
-      const { error } = await supabase.from('gallery').delete().eq('id', id)
-      if (error) throw error
-      setPhotos(photos.filter(p => p.id !== id))
-      if (selectedPhoto?.id === id) closeLightbox()
-      setSuccess('🗑️ Registro purgado de las bases de datos.')
-    } catch (err) {
-      setError('No se pudo ejecutar la eliminación del archivo.')
-    }
-  }
-
-  const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent, source?: string) => {
-    if (e) e.stopPropagation()
-    const targetTable = source === 'client' ? 'client_gallery' : 'gallery'
+    if (!confirm('¿Eliminar esta foto de la galería?')) return
 
     try {
       const { error } = await supabase
-        .from(targetTable)
+        .from('gallery')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setPhotos(photos.filter(p => p.id !== id))
+      if (selectedPhoto?.id === id) {
+        setShowLightbox(false)
+        setSelectedPhoto(null)
+      }
+      setSuccess('🗑️ Foto eliminada')
+      setTimeout(() => setSuccess(null), 2000)
+    } catch (err: any) {
+      console.error('Error al eliminar:', err)
+      setError(err.message || 'Error al eliminar la foto')
+      setTimeout(() => setError(null), 3000)
+    }
+  }
+
+  // ============================================================
+  // TOGGLE ACTIVO
+  // ============================================================
+  const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent, source?: string) => {
+    if (e) e.stopPropagation()
+    if (source === 'client') {
+      setError('⚠️ No se puede cambiar estado de fotos de clientes')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('gallery')
         .update({ is_active: !currentStatus })
         .eq('id', id)
 
       if (error) throw error
-      setPhotos(photos.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p))
-      setSuccess(!currentStatus ? '👁️ El elemento ahora es visible de cara al público.' : '👁️ Publicación oculta del portafolio público.')
-    } catch (err) {
-      setError('No se pudo alterar el estado de visibilidad.')
+
+      setPhotos(photos.map(p => 
+        p.id === id ? { ...p, is_active: !currentStatus } : p
+      ))
+      setSuccess(currentStatus ? '👁️ Foto ocultada' : '👁️ Foto visible')
+      setTimeout(() => setSuccess(null), 2000)
+    } catch (err: any) {
+      console.error('Error cambiando estado:', err)
+      setError(err.message || 'Error al cambiar estado')
+      setTimeout(() => setError(null), 3000)
     }
   }
 
-  // ACCIONES DE NAVEGACIÓN COMPLETA DE LIGHTBOX
+  // ============================================================
+  // LIGHTBOX
+  // ============================================================
   const openLightbox = (photo: Photo) => {
-    const index = filteredAndSortedPhotos.findIndex(p => p.id === photo.id)
     setSelectedPhoto(photo)
-    setLightboxIndex(index !== -1 ? index : 0)
-    setSliderPosition(50)
     setShowLightbox(true)
     document.body.style.overflow = 'hidden'
   }
@@ -551,633 +460,880 @@ export default function GaleriaAdminPage() {
   }
 
   const navigateLightbox = (direction: 'next' | 'prev') => {
-    if (filteredAndSortedPhotos.length === 0) return
-    let newIndex = direction === 'next' ? lightboxIndex + 1 : lightboxIndex - 1
-    
-    if (newIndex >= filteredAndSortedPhotos.length) newIndex = 0
-    if (newIndex < 0) newIndex = filteredAndSortedPhotos.length - 1
+    const currentIndex = photosFiltradas.findIndex(p => p.id === selectedPhoto?.id)
+    if (currentIndex === -1) return
 
-    setLightboxIndex(newIndex)
-    setSelectedPhoto(filteredAndSortedPhotos[newIndex])
-    setSliderPosition(50)
+    let newIndex
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % photosFiltradas.length
+    } else {
+      newIndex = (currentIndex - 1 + photosFiltradas.length) % photosFiltradas.length
+    }
+    setSelectedPhoto(photosFiltradas[newIndex])
+  }
+
+  const photosFiltradas = photos.filter(p => 
+    categoryFilter === 'Todas' || p.category === categoryFilter
+  )
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showLightbox) return
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowLeft') navigateLightbox('prev')
+      if (e.key === 'ArrowRight') navigateLightbox('next')
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showLightbox, selectedPhoto, photosFiltradas])
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: settings?.primary_color || '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+          Cargando galería...
+        </p>
+      </div>
+    )
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-4 max-w-7xl mx-auto dark:text-stone-100">
-      
-      {/* HEADER COMPLETO ORIGINAL */}
-      <div className="relative overflow-hidden rounded-3xl p-[2px] shadow-2xl" style={brandGradient}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6 p-1 max-w-7xl mx-auto w-full overflow-x-hidden"
+    >
+      {/* HEADER */}
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
+        className="relative overflow-hidden rounded-3xl p-[2px] shadow-2xl" 
+        style={brandGradient}
+      >
+        <div className="absolute inset-0 opacity-30 animate-pulse" style={brandGradient} />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }} />
+
         <div className="relative z-10 rounded-[23px] p-6 md:p-8 bg-white/95 dark:bg-[#0f0c1b]/95 backdrop-blur-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="p-4 rounded-2xl text-white shadow-xl shrink-0" style={primaryBgStyle}>
-                <Camera className="w-6 h-6" />
-              </div>
+              <motion.div 
+                whileHover={{ rotate: -10, scale: 1.1 }}
+                className="p-4 rounded-2xl text-white shadow-xl shrink-0" 
+                style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+              >
+                <Camera className="w-6 h-6 md:w-7 md:h-7" />
+              </motion.div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" style={{ color: settings?.primary_color || '#DB5B9A' }}>✨ Catálogo Técnico y Curaduría</p>
-                <h2 className="text-2xl md:text-4xl font-serif font-extrabold text-stone-900 dark:text-white mt-1">Control de Galería</h2>
-                <p className="text-xs text-stone-500 dark:text-stone-400">Administra el portafolio comercial, visualiza métricas de impacto y aprueba multimedia de clientes.</p>
+                <motion.p 
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" 
+                  style={{ color: settings?.primary_color || '#DB5B9A' }}
+                >
+                  ✨ Galería Unificada
+                </motion.p>
+                <motion.h2 
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-2xl md:text-4xl font-serif font-extrabold text-stone-900 dark:text-white mt-1"
+                >
+                  <span className="bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Todas</span> las Fotos
+                </motion.h2>
+                <motion.p 
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-xs text-stone-500 dark:text-pink-100/60 mt-1"
+                >
+                  {photos.length} obras • Admin + Clientes
+                </motion.p>
               </div>
             </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <button 
-                onClick={() => setShowStatsPanel(!showStatsPanel)}
-                className="p-2.5 rounded-xl border bg-white dark:bg-[#130f24] hover:bg-stone-50 text-stone-600 dark:text-stone-300 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>{showStatsPanel ? 'Ocultar Métricas' : 'Métricas'}</span>
-              </button>
 
-              <button 
-                onClick={() => fetchPhotos(false)}
-                disabled={refreshing}
-                className="p-2.5 rounded-xl border bg-white dark:bg-[#130f24] hover:bg-stone-50 text-stone-600 dark:text-stone-300"
+            <div className="flex items-center gap-3 self-start md:self-auto">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode(viewMode === 'grid' ? 'masonry' : 'grid')}
+                className="p-2.5 rounded-xl border bg-white/50 dark:bg-[#1a1430]/40 border-pink-100/60 dark:border-fuchsia-950 text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+                <LayoutGrid className="w-4 h-4" />
+              </motion.button>
 
-              <button 
-                onClick={() => { resetForm(); setShowModal(true); }}
-                className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-transform hover:scale-[1.02]"
-                style={primaryBgStyle}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => { 
+                  resetForm()
+                  setShowModal(true)
+                }}
+                className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
+                style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
               >
                 <UploadCloud className="w-4 h-4" />
-                <span>Subir Contenido</span>
-              </button>
+                <span className="hidden sm:inline">Subir Foto</span>
+                <span className="sm:hidden">+</span>
+              </motion.button>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* PANEL DE MÉTRICAS E HISTOGRAMA DE VISTAS COMPLETO */}
-      <AnimatePresence>
-        {showStatsPanel && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-5 bg-stone-50 dark:bg-[#130f24] rounded-2xl border border-stone-200/60 dark:border-stone-800">
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Total Portafolio</p>
-                <p className="text-xl font-bold mt-1 text-stone-800 dark:text-white">{stats.totalPhotos}</p>
-              </div>
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Por el Salón</p>
-                <p className="text-xl font-bold mt-1 text-pink-500">{stats.adminPhotos}</p>
-              </div>
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Por Clientes</p>
-                <p className="text-xl font-bold mt-1 text-amber-500">{stats.clientPhotos}</p>
-              </div>
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Antes y Después</p>
-                <p className="text-xl font-bold mt-1 text-purple-500">{stats.beforeAfterCount}</p>
-              </div>
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Impresiones / Vistas</p>
-                <p className="text-xl font-bold mt-1 text-blue-500 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-500" /> {stats.totalViews}
-                </p>
-              </div>
-              <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Interacciones (Likes)</p>
-                <p className="text-xl font-bold mt-1 text-red-500 flex items-center gap-1">
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500" /> {stats.totalLikes}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* COMPONENTE DE SEGUIMIENTO DE NOTIFICACIONES */}
+      {/* MENSAJES */}
       <AnimatePresence>
         {error && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-500 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" /> <span>{error}</span>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs"
+          >
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+              <X className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
           </motion.div>
         )}
+
         {success && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-xs text-emerald-500 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> <span>{success}</span>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs"
+          >
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* BLOQUE DE CONTROLES: BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS */}
-      <div className="bg-white dark:bg-[#130f24] rounded-2xl border p-4 space-y-4 shadow-xs">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 w-4 h-4 text-stone-400" />
-            <input 
-              type="text" 
-              placeholder="Buscar por título, etiquetas, técnica, esmalte utilizado o cliente..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-stone-50/50 dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-stone-400"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${showAdvancedFilters ? 'bg-stone-100 dark:bg-stone-800' : 'bg-white dark:bg-[#130f24]'}`}
+      {/* CATEGORÍAS */}
+      <div className="w-full overflow-x-auto pb-2 scrollbar-hide">
+        <motion.div 
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-nowrap gap-1.5 w-max"
+        >
+          {categories.map((cat, index) => (
+            <motion.button
+              key={cat}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 * index }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap shrink-0 ${
+                categoryFilter === cat
+                  ? 'text-white shadow-lg'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-pink-100 bg-white dark:bg-[#130f24] border border-pink-100/60 dark:border-fuchsia-950'
+              }`}
+              style={categoryFilter === cat ? { backgroundColor: settings?.primary_color || '#DB5B9A' } : {}}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>Filtros</span>
-            </button>
-            
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2.5 rounded-xl border bg-white dark:bg-[#130f24] text-xs font-medium"
-            >
-              <option value="date_desc">Más recientes primero</option>
-              <option value="date_asc">Más antiguos primero</option>
-              <option value="views">Mayor popularidad (Vistas)</option>
-              <option value="likes">Más valorados (Likes)</option>
-              <option value="order">Orden manual estricto</option>
-            </select>
-
-            <div className="border rounded-xl p-1 flex items-center gap-1 bg-stone-50 dark:bg-stone-900">
-              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode === 'grid' ? 'bg-white dark:bg-stone-800 shadow-xs' : 'text-stone-400'}`}><Grid className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('masonry')} className={`p-1.5 rounded-lg ${viewMode === 'masonry' ? 'bg-white dark:bg-stone-800 shadow-xs' : 'text-stone-400'}`}><LayoutGrid className="w-4 h-4" /></button>
-            </div>
-          </div>
-        </div>
-
-        {/* FILTROS AVANZADOS EXPANDIBLES ORIGINALES */}
-        <AnimatePresence>
-          {showAdvancedFilters && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 border-t dark:border-stone-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Origen del Archivo</label>
-                <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as any)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="all">Todos los orígenes (Admin + Clientes)</option>
-                  <option value="admin">Creados únicamente por el Administrador</option>
-                  <option value="client">Subidos por Clientes / Reseñas</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Filtro Sensorial o Estilo</label>
-                <select value={sensoryFilter} onChange={(e) => setSensoryFilter(e.target.value)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="Todos">Todos los estilos estéticos</option>
-                  {sensoryCategories.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Visibilidad Comercial</label>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="all">Ver todo el catálogo</option>
-                  <option value="active">Solo elementos visibles en web</option>
-                  <option value="inactive">Solo elementos archivados/ocultos</option>
-                </select>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {cat}
+              {cat !== 'Todas' && (
+                <span className="ml-1 text-[8px] opacity-70">
+                  ({photos.filter(p => p.category === cat).length})
+                </span>
+              )}
+            </motion.button>
+          ))}
+        </motion.div>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS */}
-      <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shrink-0 ${
-              categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24]'
-            }`}
-            style={categoryFilter === cat ? primaryBgStyle : {}}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      {/* CONTADOR */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-between"
+      >
+        <p className="text-xs text-stone-400 dark:text-stone-500 font-mono">
+          Mostrando <span className="font-bold text-stone-700 dark:text-pink-100">{photosFiltradas.length}</span> {photosFiltradas.length === 1 ? 'obra' : 'obras'}
+          <span className="ml-2 text-[10px]">
+            <span className="text-pink-500">●</span> Admin: {photos.filter(p => p.source === 'admin').length}
+            <span className="ml-2 text-amber-500">●</span> Clientes: {photos.filter(p => p.source === 'client').length}
+          </span>
+        </p>
+        {refreshing && (
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+        )}
+      </motion.div>
 
-      {/* RENDERIZADO DE CONTENIDO: SOPORTE MASONRY O REGULAR GRID */}
-      {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-stone-400">
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-          <p className="text-xs font-medium">Procesando portafolio comercial...</p>
-        </div>
-      ) : filteredAndSortedPhotos.length === 0 ? (
-        <div className="py-20 text-center border-2 border-dashed rounded-2xl bg-stone-50/50 dark:bg-[#130f24]/30">
-          <ImageIcon className="w-10 h-10 mx-auto text-stone-300 mb-2" />
-          <p className="text-sm font-medium text-stone-500">No se encontraron registros que coincidan con la búsqueda.</p>
-        </div>
-      ) : (
-        <div className={viewMode === 'masonry' ? 'columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4' : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'}>
-          {filteredAndSortedPhotos.map((photo) => {
-            const isSlider = photo.before_image_url && photo.after_image_url
-            const currentThumbnail = photo.after_image_url || photo.image_url || ''
-
-            return (
-              <div
-                key={`${photo.source}-${photo.id}`}
-                onClick={() => openLightbox(photo)}
-                onMouseEnter={() => setHoveredId(photo.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                className={`group relative rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border shadow-xs transition-all ${
-                  viewMode === 'masonry' ? 'break-inside-avoid mb-4' : 'aspect-square'
-                } ${!photo.is_active ? 'opacity-60 grayscale-[30%]' : ''}`}
+      {/* GRID DE FOTOS */}
+      <motion.div 
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.05,
+              delayChildren: 0.1
+            }
+          }
+        }}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+      >
+        <AnimatePresence mode="wait">
+          {photosFiltradas.length === 0 ? (
+            <motion.div 
+              variants={{
+                hidden: { opacity: 0, scale: 0.9 },
+                visible: { opacity: 1, scale: 1 }
+              }}
+              className="col-span-full text-center py-20 border border-dashed rounded-3xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
+            >
+              <motion.div 
+                animate={{ 
+                  y: [0, -10, 0],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity,
+                  repeatType: "reverse"
+                }}
               >
-                <img 
-                  src={currentThumbnail} 
-                  alt={photo.title || ''} 
-                  className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ${viewMode === 'masonry' ? 'h-auto max-h-[450px]' : ''}`}
-                />
-                
-                {/* Badges superiores de metadata */}
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
-                  <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${photo.source === 'client' ? 'bg-amber-500/95' : 'bg-pink-500/95'}`}>
-                    {photo.source === 'client' ? `👤 ${photo.client_name || 'Cliente'}` : '👑 Studio'}
-                  </span>
-                  {isSlider && (
-                    <span className="text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-purple-600 text-white flex items-center gap-1 shadow-xs">
-                      <Scissors className="w-2.5 h-2.5" /> Slider
-                    </span>
-                  )}
-                  {!photo.is_active && (
-                    <span className="text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-900/90 text-white">
-                      Oculto
-                    </span>
-                  )}
-                </div>
+                <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+              </motion.div>
+              <p className="text-sm font-mono text-stone-400">No hay fotos en esta categoría</p>
+              <p className="text-xs text-stone-400/60 mt-1">Agrega tus primeros trabajos al portafolio</p>
+            </motion.div>
+          ) : (
+            photosFiltradas.map((photo) => {
+              const imageToShow = photo.after_image_url || photo.image_url || photo.before_image_url || ''
+              const isClient = photo.source === 'client'
 
-                {/* Overlays de control avanzados en Hover */}
-                <AnimatePresence>
-                  {hoveredId === photo.id && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-stone-950/70 p-3 flex flex-col justify-between text-white">
-                      <div className="flex justify-end gap-1.5">
-                        <button onClick={(e) => { e.stopPropagation(); openLightbox(photo); }} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all"><ZoomIn className="w-3.5 h-3.5" /></button>
-                        {photo.source === 'admin' && (
-                          <>
-                            <button onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingPhoto(photo)
-                              setIsBeforeAfter(!!(photo.before_image_url && photo.after_image_url))
-                              setFormData({
-                                title: photo.title || '',
-                                category: photo.category || 'Nail Art',
-                                sensory_category: photo.sensory_category || 'Clásico',
-                                description: photo.description || '',
-                                image_url: photo.image_url || '',
-                                before_image_url: photo.before_image_url || '',
-                                after_image_url: photo.after_image_url || '',
-                                is_active: photo.is_active,
-                                sort_order: photo.sort_order || 0,
-                                professional_id: photo.professional_id || '',
-                                price: photo.price ? photo.price.toString() : '',
-                                polish_used: photo.polish_used || '',
-                                tagsInput: photo.tags ? photo.tags.join(', ') : ''
-                              })
-                              setShowModal(true)
-                            }} className="p-2 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/30 rounded-xl transition-all"><Edit3 className="w-3.5 h-3.5" /></button>
-                            <button onClick={(e) => toggleActive(photo.id, photo.is_active, e, photo.source)} className="p-2 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 rounded-xl transition-all">{photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}</button>
-                            <button onClick={(e) => deletePhoto(photo.id, e, photo.source)} className="p-2 bg-red-500/20 hover:bg-red-600 border border-red-500/30 rounded-xl transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-xs font-bold truncate line-clamp-1">{photo.title || 'Trabajo del Salón'}</h4>
-                        <p className="text-[10px] text-stone-300 truncate line-clamp-1 mt-0.5">{photo.category} • {photo.sensory_category}</p>
-                        <div className="flex items-center gap-3 mt-1.5 text-[9px] text-stone-400 font-mono border-t border-white/10 pt-1.5">
-                          <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {photo.views || 0}</span>
-                          <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {photo.likes || 0}</span>
-                          {photo.price && <span className="flex items-center text-emerald-400">${photo.price}</span>}
-                        </div>
-                      </div>
+              return (
+                <motion.div
+                  key={`${photo.source}-${photo.id}`}
+                  variants={{
+                    hidden: { opacity: 0, scale: 0.9, y: 20 },
+                    visible: { 
+                      opacity: 1, 
+                      scale: 1, 
+                      y: 0,
+                      transition: { 
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 24
+                      }
+                    },
+                    exit: { 
+                      opacity: 0, 
+                      scale: 0.8,
+                      transition: { duration: 0.2 }
+                    }
+                  }}
+                  layoutId={`photo-${photo.id}`}
+                  onHoverStart={() => setHoveredId(photo.id)}
+                  onHoverEnd={() => setHoveredId(null)}
+                  onClick={() => openLightbox(photo)}
+                  className={`group relative aspect-square rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border shadow-sm hover:shadow-2xl transition-shadow duration-500 ${
+                    isClient 
+                      ? 'border-amber-300/40 dark:border-amber-800/40' 
+                      : 'border-pink-100/60 dark:border-fuchsia-950'
+                  } ${!photo.is_active ? 'opacity-60' : ''}`}
+                >
+                  <motion.img 
+                    src={imageToShow} 
+                    alt={photo.title || 'Muestra de trabajo'} 
+                    className="w-full h-full object-cover"
+                    animate={{ 
+                      scale: hoveredId === photo.id ? 1.08 : 1
+                    }}
+                    transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
+                  />
+
+                  <div className="absolute top-3 left-3">
+                    <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-md ${
+                      isClient 
+                        ? 'bg-amber-500/80 text-white' 
+                        : 'bg-pink-500/80 text-white'
+                    }`}>
+                      {isClient ? '👤 Cliente' : '👑 Admin'}
+                    </span>
+                  </div>
+
+                  {isClient && photo.price && (
+                    <div className="absolute top-3 right-3">
+                      <span className="bg-emerald-500/80 backdrop-blur-md text-white text-[8px] font-mono px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <DollarSign className="w-2.5 h-2.5" />
+                        {photo.price}
+                      </span>
+                    </div>
+                  )}
+
+                  {isClient && photo.client_name && (
+                    <div className="absolute bottom-3 left-3">
+                      <span className="text-white/80 text-[8px] font-mono flex items-center gap-1 backdrop-blur-sm bg-black/30 px-2 py-0.5 rounded-full">
+                        <User className="w-2.5 h-2.5" />
+                        {photo.client_name}
+                      </span>
+                    </div>
+                  )}
+
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+
+                  <motion.div 
+                    className="absolute top-3 right-3"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ 
+                      opacity: hoveredId === photo.id ? 1 : 0.6,
+                      y: hoveredId === photo.id ? 0 : -5
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
+                      <Tag className="w-2.5 h-2.5 inline mr-1" />
+                      {photo.category || 'Sin categoría'}
+                    </span>
+                  </motion.div>
+
+                  {photo.title && (
+                    <motion.div 
+                      className="absolute bottom-12 left-3 right-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ 
+                        opacity: hoveredId === photo.id ? 1 : 0,
+                        y: hoveredId === photo.id ? 0 : 10
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <p className="text-white/90 text-xs font-bold truncate">
+                        {photo.title}
+                      </p>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </div>
-            )
-          })}
-        </div>
-      )}
 
-      {/* LIGHTBOX AVANZADO CON INTERACCIÓN ANTES/DESPUÉS Y NAVEGACIÓN COMPLETA */}
+                  <motion.div 
+                    className="absolute bottom-3 right-3 flex gap-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: hoveredId === photo.id ? 1 : 0,
+                      y: hoveredId === photo.id ? 0 : 10
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openLightbox(photo)
+                      }}
+                      className="p-2 bg-white/20 backdrop-blur-md hover:bg-white/40 text-white rounded-xl transition-all"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </motion.button>
+
+                    {!isClient && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingPhoto(photo)
+                            setFormData({
+                              title: photo.title || '',
+                              category: photo.category || 'Nail Art',
+                              description: photo.description || '',
+                              image_url: photo.image_url || '',
+                              is_active: photo.is_active,
+                              sort_order: photo.sort_order || 0
+                            })
+                            setSelectedFile(null)
+                            setPreviewUrl(null)
+                            if (fileInputRef.current) fileInputRef.current.value = ''
+                            setShowModal(true)
+                          }}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-blue-500/60 text-white rounded-xl transition-all"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => toggleActive(photo.id, photo.is_active, e, photo.source)}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-amber-500/60 text-white rounded-xl transition-all"
+                        >
+                          {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1, backgroundColor: '#ef4444' }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => deletePhoto(photo.id, e, photo.source)}
+                          className="p-2 bg-white/20 backdrop-blur-md hover:bg-red-500 text-white rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </>
+                    )}
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute bottom-3 left-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hoveredId === photo.id ? 1 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-white/80 font-mono text-[9px] flex items-center gap-1.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {new Date(photo.created_at).toLocaleDateString('es-ES', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
+                    </p>
+                  </motion.div>
+
+                  <motion.div 
+                    className="absolute inset-0 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: hoveredId === photo.id 
+                        ? `inset 0 0 30px ${settings?.primary_color || '#DB5B9A'}20` 
+                        : 'inset 0 0 0px transparent'
+                    }}
+                    transition={{ duration: 0.4 }}
+                  />
+                </motion.div>
+              )
+            })
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {showLightbox && selectedPhoto && (
-          <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
-            
-            {/* Contenedor Visual Principal */}
-            <div className="relative flex-1 flex items-center justify-center p-4 h-[65vh] md:h-full" onClick={(e) => e.stopPropagation()}>
-              <button onClick={closeLightbox} className="absolute top-6 right-6 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white z-50 md:hidden"><X className="w-5 h-5" /></button>
-              
-              {/* Controles Laterales de Navegación del Carrusel */}
-              <button onClick={() => navigateLightbox('prev')} className="absolute left-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40"><ChevronLeft className="w-6 h-6" /></button>
-              <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40"><ChevronRight className="w-6 h-6" /></button>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            onClick={closeLightbox}
+          >
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ delay: 0.2 }}
+              onClick={closeLightbox}
+              className="absolute top-6 right-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10"
+            >
+              <X className="w-6 h-6" />
+            </motion.button>
 
-              {selectedPhoto.before_image_url && selectedPhoto.after_image_url ? (
-                /* COMPONENTE INTERACTIVO DE DESLIZAMIENTO (SLIDER) REAL */
-                <div className="relative w-full max-w-2xl aspect-square md:max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl bg-stone-900 border border-white/5 select-none">
-                  <img src={selectedPhoto.after_image_url} alt="Después" className="w-full h-full object-cover pointer-events-none" />
-                  
-                  <div 
-                    className="absolute inset-0 top-0 left-0 overflow-hidden" 
-                    style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
-                  >
-                    <img src={selectedPhoto.before_image_url} alt="Antes" className="w-full h-full object-cover pointer-events-none" />
+            {photosFiltradas.length > 1 && (
+              <>
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev') }}
+                  className="absolute left-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next') }}
+                  className="absolute right-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all z-10"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </motion.button>
+              </>
+            )}
+
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-5xl w-full max-h-[85vh]"
+            >
+              <img 
+                src={selectedPhoto.after_image_url || selectedPhoto.image_url || selectedPhoto.before_image_url || ''} 
+                alt={selectedPhoto.title || 'Galería'} 
+                className="w-full h-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+              />
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl"
+              >
+                <div className="flex flex-wrap items-center justify-between text-white gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      selectedPhoto.source === 'client' 
+                        ? 'bg-amber-500/80' 
+                        : 'bg-pink-500/80'
+                    }`}>
+                      {selectedPhoto.source === 'client' ? '👤 Cliente' : '👑 Admin'}
+                    </span>
+                    {selectedPhoto.title && (
+                      <span className="text-sm font-bold text-white/90">
+                        {selectedPhoto.title}
+                      </span>
+                    )}
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-white/10">
+                      <Tag className="w-3 h-3 inline mr-1.5" />
+                      {selectedPhoto.category || 'Sin categoría'}
+                    </span>
                   </div>
-
-                  {/* Input Invisible del Slider */}
-                  <div className="absolute inset-0 w-full h-full flex items-center">
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      value={sliderPosition} 
-                      onChange={(e) => setSliderPosition(Number(e.target.value))}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
-                    />
-                    {/* Línea Divisoria */}
-                    <div className="absolute top-0 bottom-0 w-[2px] bg-white shadow-xl pointer-events-none z-20" style={{ left: `${sliderPosition}%` }}>
-                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white text-stone-900 font-bold text-xs flex items-center justify-center shadow-2xl border border-stone-300 pointer-events-none">
-                        ↔
-                      </div>
-                    </div>
-                  </div>
-
-                  <span className="absolute bottom-4 left-4 bg-stone-950/80 text-white text-[9px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-md z-10 border border-white/10">← ANTES</span>
-                  <span className="absolute bottom-4 right-4 bg-stone-950/80 text-white text-[9px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-md z-10 border border-white/10">DESPUÉS →</span>
-                </div>
-              ) : (
-                /* Imagen Fija Tradicional */
-                <img src={selectedPhoto.image_url || ''} alt={selectedPhoto.title || ''} className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl" />
-              )}
-            </div>
-
-            {/* Barra de Información Lateral (Metadata Detallada) Intacta */}
-            <div className="w-full md:w-96 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
-              <div className="space-y-6">
-                <div className="hidden md:flex justify-between items-center">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle Técnico</span>
-                  <button onClick={closeLightbox} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white"><X className="w-4 h-4" /></button>
-                </div>
-
-                <div>
-                  <span className="px-2.5 py-1 bg-white/10 rounded-md text-[9px] font-mono font-bold uppercase tracking-wider">{selectedPhoto.category}</span>
-                  <h3 className="text-xl font-serif font-bold text-white mt-3">{selectedPhoto.title || 'Trabajo sin Título'}</h3>
-                  <p className="text-xs text-stone-400 mt-2 leading-relaxed">{selectedPhoto.description || 'Sin descripción técnica añadida.'}</p>
-                </div>
-
-                <div className="space-y-3 pt-4 border-t border-white/10 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-stone-400 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Estilo:</span>
-                    <span className="font-medium text-white">{selectedPhoto.sensory_category || 'Clásico'}</span>
-                  </div>
-                  
-                  {selectedPhoto.professional_id && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-stone-400 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Profesional:</span>
-                      <span className="font-medium text-white">{professionalMap[selectedPhoto.professional_id] || 'Asignado'}</span>
-                    </div>
-                  )}
-
-                  {selectedPhoto.polish_used && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-stone-400 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Material / Esmalte:</span>
-                      <span className="font-medium text-pink-400 font-mono">{selectedPhoto.polish_used}</span>
-                    </div>
-                  )}
-
-                  {selectedPhoto.price && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-stone-400 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Valor Comercial:</span>
-                      <span className="font-bold text-emerald-400">${selectedPhoto.price}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-stone-400 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Registro:</span>
-                    <span className="font-mono text-stone-300">{new Date(selectedPhoto.created_at).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/40 font-mono">
+                      {photosFiltradas.findIndex(p => p.id === selectedPhoto.id) + 1} / {photosFiltradas.length}
+                    </span>
+                    {selectedPhoto.source === 'admin' && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingPhoto(selectedPhoto)
+                            setFormData({
+                              title: selectedPhoto.title || '',
+                              category: selectedPhoto.category || 'Nail Art',
+                              description: selectedPhoto.description || '',
+                              image_url: selectedPhoto.image_url || '',
+                              is_active: selectedPhoto.is_active,
+                              sort_order: selectedPhoto.sort_order || 0
+                            })
+                            setSelectedFile(null)
+                            setPreviewUrl(null)
+                            if (fileInputRef.current) fileInputRef.current.value = ''
+                            setShowModal(true)
+                            setShowLightbox(false)
+                          }}
+                          className="p-2 bg-blue-500/20 hover:bg-blue-500/80 text-white rounded-xl transition-all"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => deletePhoto(selectedPhoto.id, e, selectedPhoto.source)}
+                          className="p-2 bg-red-500/20 hover:bg-red-500/80 text-white rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {selectedPhoto.tags && selectedPhoto.tags.length > 0 && (
-                  <div className="pt-4 border-t border-white/10">
-                    <span className="block text-[10px] uppercase font-bold text-stone-400 mb-2 font-mono">Etiquetas de Búsqueda</span>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedPhoto.tags.map(t => <span key={t} className="px-2 py-0.5 bg-white/5 border border-white/5 text-stone-300 rounded text-[9px] font-mono">#{t}</span>)}
-                    </div>
+                {selectedPhoto.source === 'client' && (
+                  <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-white/10">
+                    {selectedPhoto.client_name && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <User className="w-3 h-3" />
+                        {selectedPhoto.client_name}
+                      </span>
+                    )}
+                    {selectedPhoto.price && (
+                      <span className="text-xs text-emerald-400 flex items-center gap-1.5">
+                        <DollarSign className="w-3 h-3" />
+                        ${selectedPhoto.price}
+                      </span>
+                    )}
+                    {selectedPhoto.polish_used && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <Palette className="w-3 h-3" />
+                        {selectedPhoto.polish_used}
+                      </span>
+                    )}
+                    {selectedPhoto.sensory_category && (
+                      <span className="text-xs text-white/60 flex items-center gap-1.5">
+                        <Heart className="w-3 h-3" />
+                        {selectedPhoto.sensory_category}
+                      </span>
+                    )}
+                    {selectedPhoto.views !== undefined && (
+                      <span className="text-xs text-white/40 flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3" />
+                        {selectedPhoto.views} vistas
+                      </span>
+                    )}
+                    {selectedPhoto.before_image_url && selectedPhoto.after_image_url && (
+                      <span className="text-xs text-amber-400 flex items-center gap-1.5">
+                        <Scissors className="w-3 h-3" />
+                        Antes / Después
+                      </span>
+                    )}
                   </div>
                 )}
-              </div>
 
-              {/* Acciones del Administrador sobre la foto en Lightbox */}
-              {selectedPhoto.source === 'admin' && (
-                <div className="pt-6 border-t border-white/10 flex gap-2">
-                  <button 
-                    onClick={(e) => {
-                      closeLightbox()
-                      setEditingPhoto(selectedPhoto)
-                      setIsBeforeAfter(!!(selectedPhoto.before_image_url && selectedPhoto.after_image_url))
-                      setFormData({
-                        title: selectedPhoto.title || '',
-                        category: selectedPhoto.category || 'Nail Art',
-                        sensory_category: selectedPhoto.sensory_category || 'Clásico',
-                        description: selectedPhoto.description || '',
-                        image_url: selectedPhoto.image_url || '',
-                        before_image_url: selectedPhoto.before_image_url || '',
-                        after_image_url: selectedPhoto.after_image_url || '',
-                        is_active: selectedPhoto.is_active,
-                        sort_order: selectedPhoto.sort_order || 0,
-                        professional_id: selectedPhoto.professional_id || '',
-                        price: selectedPhoto.price ? selectedPhoto.price.toString() : '',
-                        polish_used: selectedPhoto.polish_used || '',
-                        tagsInput: selectedPhoto.tags ? selectedPhoto.tags.join(', ') : ''
-                      })
-                      setShowModal(true)
-                    }}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Edit3 className="w-4 h-4" /> Editar Obra
-                  </button>
-                  <button 
-                    onClick={(e) => deletePhoto(selectedPhoto.id, e, selectedPhoto.source)}
-                    className="p-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
+                {selectedPhoto.description && (
+                  <p className="text-xs text-white/60 mt-2 line-clamp-2">
+                    {selectedPhoto.description}
+                  </p>
+                )}
+              </motion.div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* MODAL COMPLETO DE SUBIDA / EDICIÓN CON TODA LA METADATA ORIGINAL */}
+      {/* MODAL */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.95, opacity: 0 }} 
-              onClick={(e) => e.stopPropagation()} 
-              className="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#130f24] border border-stone-200 dark:border-stone-800 p-6 shadow-2xl max-h-[92vh] overflow-y-auto"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => {
+              setShowModal(false)
+              resetForm()
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg rounded-3xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <button onClick={() => { setShowModal(false); resetForm(); }} className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"><X className="w-5 h-5" /></button>
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  resetForm()
+                }}
+                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-              <div className="flex items-center gap-3 mb-5">
-                <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
-                  <Layers className="w-5 h-5" />
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+                  {editingPhoto ? <Edit3 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
                 </div>
-                <h3 className="text-lg font-serif font-extrabold text-stone-900 dark:text-white">
-                  {editingPhoto ? 'Modificar Registro de Obra' : 'Subir Nueva Creación al Portafolio'}
+                <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
+                  {editingPhoto ? 'Editar Foto' : 'Subir Foto'}
                 </h3>
               </div>
 
-              {/* Selector de formato dinámico */}
-              {!editingPhoto && (
-                <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 dark:bg-stone-900/60 rounded-xl mb-4 border">
-                  <button type="button" onClick={() => setIsBeforeAfter(false)} className={`py-2 text-xs font-bold rounded-lg transition-all ${!isBeforeAfter ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs' : 'text-stone-400 dark:text-stone-500'}`}>
-                    Imagen Estándar / Galería Simple
-                  </button>
-                  <button type="button" onClick={() => setIsBeforeAfter(true)} className={`py-2 text-xs font-bold rounded-lg transition-all ${isBeforeAfter ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs' : 'text-stone-400 dark:text-stone-500'}`}>
-                    Formato Interactivo Antes/Después
-                  </button>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-4">
-                
-                {/* INTERFAZ DINÁMICA DE MULTIMEDIA */}
-                {isBeforeAfter ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-stone-500 dark:text-stone-400 mb-1 font-mono">Foto del Antes (Estado inicial) *</label>
-                      <div onClick={() => beforeFileInputRef.current?.click()} className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[130px] flex flex-col justify-center items-center bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                        <input ref={beforeFileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedBeforeFile, setPreviewBeforeUrl)} className="hidden" />
-                        {previewBeforeUrl ? (
-                          <div className="relative group">
-                            <img src={previewBeforeUrl} alt="Antes" className="max-h-24 rounded object-contain mx-auto" />
-                            <p className="text-[8px] text-stone-400 mt-1 font-mono">Haga clic para cambiar</p>
-                          </div>
-                        ) : formData.before_image_url ? (
-                          <img src={formData.before_image_url} alt="Antes actual" className="max-h-24 rounded object-contain mx-auto" />
-                        ) : (
-                          <>
-                            <FileImage className="w-5 h-5 text-stone-400 mb-1" />
-                            <span className="text-[10px] text-stone-500 font-medium">Examinar Antes</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-stone-500 dark:text-stone-400 mb-1 font-mono">Foto del Después (Resultado) *</label>
-                      <div onClick={() => afterFileInputRef.current?.click()} className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[130px] flex flex-col justify-center items-center bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                        <input ref={afterFileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedAfterFile, setPreviewAfterUrl)} className="hidden" />
-                        {previewAfterUrl ? (
-                          <div className="relative group">
-                            <img src={previewAfterUrl} alt="Después" className="max-h-24 rounded object-contain mx-auto" />
-                            <p className="text-[8px] text-stone-400 mt-1 font-mono">Haga clic para cambiar</p>
-                          </div>
-                        ) : formData.after_image_url ? (
-                          <img src={formData.after_image_url} alt="Después actual" className="max-h-24 rounded object-contain mx-auto" />
-                        ) : (
-                          <>
-                            <FileImage className="w-5 h-5 text-stone-400 mb-1" />
-                            <span className="text-[10px] text-stone-500 font-medium">Examinar Después</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+                {/* ÁREA DE SUBIDA DE ARCHIVO */}
+                {!editingPhoto && (
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">Imagen de Trabajo Principal *</label>
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      Seleccionar Imagen *
+                    </label>
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all hover:border-pink-500/50 ${
+                        previewUrl 
+                          ? 'border-pink-500/50 bg-pink-50/10' 
+                          : 'border-stone-300 dark:border-fuchsia-950 hover:bg-pink-50/5'
+                      }`}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+
                       {previewUrl ? (
-                        <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
-                      ) : formData.image_url ? (
-                        <img src={formData.image_url} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
+                        <div className="relative">
+                          <img 
+                            src={previewUrl} 
+                            alt="Vista previa" 
+                            className="max-h-48 mx-auto rounded-lg object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedFile(null)
+                              setPreviewUrl(null)
+                              if (fileInputRef.current) fileInputRef.current.value = ''
+                            }}
+                            className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       ) : (
-                        <div className="py-2">
-                          <ImageIcon className="w-7 h-7 mx-auto text-stone-400 mb-1" />
-                          <p className="text-xs text-stone-600 dark:text-stone-300">Presiona para cargar el archivo multimedia</p>
+                        <div className="py-4">
+                          <FileImage className="w-12 h-12 mx-auto text-stone-400 dark:text-stone-600 mb-3" />
+                          <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+                            Haz clic para seleccionar
+                          </p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
+                            JPEG, PNG, WebP • Máx. 10MB
+                          </p>
+                        </div>
+                      )}
+
+                      {uploading && uploadProgress > 0 && (
+                        <div className="mt-3">
+                          <div className="w-full bg-stone-200 dark:bg-fuchsia-950/50 rounded-full h-2 overflow-hidden">
+                            <motion.div 
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${uploadProgress}%` }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </div>
+                          <p className="text-xs text-stone-400 mt-1">{uploadProgress}% subido</p>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* FILA DE TEXTOS BÁSICOS */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Título del Servicio</label>
-                    <input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1" placeholder="Ej: Kapping Gel con Deco Francesa" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Profesional que Ejecutó</label>
-                    <select value={formData.professional_id} onChange={(e) => setFormData({...formData, professional_id: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs">
-                      <option value="">No asignar / Salón General</option>
-                      {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {/* FILA DE METADATA AVANZADA COMPLETA ORIGINAL */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Categoría Principal</label>
-                    <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs">
-                      {categories.filter(c => c !== 'Todas').map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Estilo / Sensorial</label>
-                    <select value={formData.sensory_category} onChange={(e) => setFormData({...formData, sensory_category: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs">
-                      {sensoryCategories.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Precio de Venta (Ref)</label>
-                    <input type="number" step="any" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs" placeholder="Ej: 2500" />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Material / Esmalte</label>
-                    <input type="text" value={formData.polish_used} onChange={(e) => setFormData({...formData, polish_used: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs" placeholder="Ej: OPI Sec 22" />
-                  </div>
-                </div>
-
-                {/* INPUT DE ETIQUETAS / TAGS COMAS COMPLETO */}
+                {/* Título */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Etiquetas Clave (Separadas por comas)</label>
-                  <input type="text" value={formData.tagsInput} onChange={(e) => setFormData({...formData, tagsInput: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs" placeholder="Ej: matte, stiletto, neón, halloween" />
-                </div>
-
-                {/* DESCRIPCIÓN */}
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Descripción Técnica Ampliada</label>
-                  <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs resize-none" placeholder="Escribe detalles técnicos, duración del proceso o cuidados requeridos..." />
-                </div>
-
-                {/* VISIBILIDAD Y PRIORIDAD DE ORDENAMIENTO */}
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} className="w-4 h-4 rounded border-stone-300 text-pink-500 focus:ring-0" />
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Habilitar visibilidad inmediata en catálogo comercial</span>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Título
                   </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono uppercase font-bold text-stone-400">Orden (Sort):</span>
-                    <input type="number" value={formData.sort_order} onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})} className="w-14 p-1 border rounded-lg text-center text-xs bg-white text-stone-900" />
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    placeholder="Título de la obra"
+                  />
+                </div>
+
+                {/* Categoría */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Categoría
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  >
+                    {categories.filter(c => c !== 'Todas').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm resize-none"
+                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    placeholder="Descripción de la obra..."
+                  />
+                </div>
+
+                {/* Solo para edición: mostrar URL actual */}
+                {editingPhoto && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      Imagen actual
+                    </label>
+                    <div className="relative rounded-xl overflow-hidden border border-pink-100/60 dark:border-fuchsia-950">
+                      <img 
+                        src={formData.image_url} 
+                        alt="Imagen actual" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Checkboxes */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                      className="w-4 h-4 rounded border-pink-300 text-pink-500 focus:ring-pink-500"
+                    />
+                    <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Visible</span>
+                  </label>
+
+                  <div className="flex-1 min-w-[80px]">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1">
+                      Orden
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sort_order}
+                      onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-1.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    />
                   </div>
                 </div>
 
-                {/* BOTONES ACCIONADORES DEL FORMULARIO */}
-                <div className="flex gap-3 pt-3 border-t dark:border-stone-800">
-                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300">Cancelar</button>
-                  <button type="submit" disabled={uploading} className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md" style={primaryBgStyle}>
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    {uploading ? 'Guardando cambios...' : 'Confirmar y Guardar'}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false)
+                      resetForm()
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    {uploading ? 'Subiendo...' : (editingPhoto ? 'Actualizar' : 'Guardar')}
                   </button>
                 </div>
-
               </form>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
