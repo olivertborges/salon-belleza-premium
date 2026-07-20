@@ -72,7 +72,7 @@ const itemVariants = {
 
 export default function AdminUsuariosPage() {
   const { settings } = useSettings()
-  const { tenantId, user, role } = useAuth()
+  const { tenantId, user, role, loading: authLoading } = useAuth()
 
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,6 +87,7 @@ export default function AdminUsuariosPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [showDebug, setShowDebug] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -112,6 +113,12 @@ export default function AdminUsuariosPage() {
   // 1. CARGAR USUARIOS
   // ============================================================
   const fetchUsers = async (showLoading = true) => {
+    // ⚠️ No ejecutar si no hay tenantId Y no hay usuario autenticado
+    if (!tenantId && !user) {
+      addDebugLog(`⏳ Esperando autenticación...`)
+      return
+    }
+
     if (showLoading) setLoading(true)
     else setRefreshing(true)
     setError(null)
@@ -163,15 +170,35 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // ============================================================
+  // 2. EFECTO PRINCIPAL - SOLO EJECUTAR CUANDO ESTÁ MONTADO Y AUTENTICADO
+  // ============================================================
   useEffect(() => {
-    addDebugLog(`🚀 Iniciando página de usuarios`)
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    // Solo ejecutar cuando el componente está montado y la autenticación ha terminado
+    if (!mounted) return
+    if (authLoading) {
+      addDebugLog(`⏳ Auth loading...`)
+      return
+    }
+
+    addDebugLog(`🚀 Iniciando página de usuarios (mounted: ${mounted})`)
     addDebugLog(`👤 Rol del usuario: ${role || 'no definido'}`)
     addDebugLog(`📧 Email: ${user?.email || 'no logueado'}`)
-    fetchUsers()
-  }, [tenantId])
+
+    if (user && role) {
+      fetchUsers()
+    } else {
+      addDebugLog(`⏳ Esperando usuario y rol...`)
+      setLoading(false)
+    }
+  }, [mounted, authLoading, user, role, tenantId])
 
   // ============================================================
-  // 2. CREAR USUARIO - CON TOKEN EN HEADER
+  // 3. CREAR USUARIO
   // ============================================================
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -253,7 +280,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 3. EDITAR USUARIO
+  // 4. EDITAR USUARIO
   // ============================================================
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -295,7 +322,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 4. ACTIVAR / DESACTIVAR
+  // 5. ACTIVAR / DESACTIVAR
   // ============================================================
   const toggleUserStatus = async (user: UserProfile) => {
     if (!user.id) return
@@ -325,7 +352,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 5. ELIMINAR USUARIO
+  // 6. ELIMINAR USUARIO
   // ============================================================
   const deleteUser = async (user: UserProfile) => {
     if (!user.id) return
@@ -365,7 +392,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 6. RESETEAR CONTRASEÑA
+  // 7. RESETEAR CONTRASEÑA
   // ============================================================
   const resetPassword = async (email: string) => {
     if (!confirm(`¿Enviar enlace de recuperación a ${email}?`)) return
@@ -393,7 +420,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 7. AGREGAR PUNTOS DE FIDELIDAD
+  // 8. AGREGAR PUNTOS DE FIDELIDAD
   // ============================================================
   const addLoyaltyPoints = async (user: UserProfile, points: number) => {
     if (!user.id) return
@@ -424,7 +451,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 8. ABRIR MODALES
+  // 9. ABRIR MODALES
   // ============================================================
   const openEditModal = (user: UserProfile) => {
     addDebugLog(`✏️ Abriendo edición de: ${user.full_name}`)
@@ -455,7 +482,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 9. FILTROS
+  // 10. FILTROS
   // ============================================================
   const filteredUsers = users.filter(user => {
     const matchSearch = 
@@ -469,7 +496,7 @@ export default function AdminUsuariosPage() {
   })
 
   // ============================================================
-  // 10. ESTADÍSTICAS
+  // 11. ESTADÍSTICAS
   // ============================================================
   const totalUsuarios = users.length
   const totalAdmins = users.filter(u => u.role === 'admin' || u.role === 'owner').length
@@ -477,7 +504,24 @@ export default function AdminUsuariosPage() {
   const totalClientes = users.filter(u => u.role === 'client').length
 
   // ============================================================
-  // 11. VERIFICAR PERMISOS
+  // 12. LOADING - ESPERAR A QUE LA AUTENTICACIÓN ESTÉ LISTA
+  // ============================================================
+  if (authLoading || !mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: settings?.primary_color || '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+          Cargando...
+        </p>
+      </div>
+    )
+  }
+
+  // ============================================================
+  // 13. VERIFICAR PERMISOS
   // ============================================================
   if (role !== 'admin' && role !== 'owner') {
     return (
@@ -507,24 +551,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 12. LOADING
-  // ============================================================
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="relative">
-          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: settings?.primary_color || '#DB5B9A' }} />
-          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
-        </div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-          Cargando usuarios...
-        </p>
-      </div>
-    )
-  }
-
-  // ============================================================
-  // 13. RENDER
+  // 14. RENDER
   // ============================================================
   return (
     <motion.div 
