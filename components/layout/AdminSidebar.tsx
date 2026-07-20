@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, Sliders, UsersRound, Crown,
   Sun, Moon, ChevronLeft, ChevronRight, Power, X,
-  Menu, Gem, Heart, Star, Zap, Award, Palette, Gift
+  Menu, Gem, Heart, Star, Zap, Award, Palette, Gift, User
 } from 'lucide-react'
 
 interface AdminSidebarProps {
