@@ -26,6 +26,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loadingNotis, setLoadingNotis] = useState(true)
   const [animateBell, setAnimateBell] = useState(false)
 
+  // ==========================================
+  // CONTROL DE USUARIO PREMIUM
+  // ==========================================
+  // Cambia esto por tu flag real de base de datos, por ejemplo: user?.user_metadata?.is_premium
+  const isPremiumUser = true 
+
   const isDark = theme === 'dark'
 
   useEffect(() => {
@@ -113,6 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
+  // Menú base para todas las clientas
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -125,6 +132,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
   ]
+
+  // Inyección dinámica de las herramientas de Inteligencia Artificial si es Premium
+  if (isPremiumUser) {
+    menuItems.push(
+      { icon: Sparkles, label: 'Espejo Facial IA', href: '/client/espejo-facial' },
+      { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/client/disenador-unas' },
+      { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/client/estudio-ia' }
+    )
+  }
 
   const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
   const primerNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.split(' ')[0] : 'Clienta'
@@ -155,8 +171,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? 'bg-[#09090b] text-zinc-100' 
         : 'bg-gradient-to-br from-stone-50 via-pink-50/30 to-stone-100 text-stone-900'
     }`}>
-      
-      {/* GLOW DE FONDO DECORATIVO (Solo modo oscuro para dar profundidad de neón) */}
+
+      {/* GLOW DE FONDO DECORATIVO */}
       {isDark && (
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-600/5 blur-[150px] pointer-events-none rounded-full z-0" />
       )}
@@ -211,6 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
+            const isPremiumLink = item.href.startsWith('/client/')
 
             return (
               <Link 
@@ -222,28 +239,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     ? isDark 
                       ? 'bg-gradient-to-r from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/30 text-pink-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
                       : 'bg-gradient-to-r from-pink-500/5 via-pink-500/[0.01] to-transparent border-pink-200/60 text-pink-600 shadow-sm'
-                    : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-stone-100/60 dark:hover:bg-zinc-900/40'
+                    : isPremiumLink
+                      ? 'border-transparent text-amber-600/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-300 hover:bg-amber-500/5'
+                      : 'border-transparent text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-stone-100/60 dark:hover:bg-zinc-900/40'
                 }`}
               >
                 {/* Indicador Flotante Activo */}
                 {isActive && (
-                  <span className="absolute left-0 w-1 h-6 bg-gradient-to-b from-pink-500 to-rose-500 rounded-r-full animate-fade-in" />
+                  <span className={`absolute left-0 w-1 h-6 rounded-r-full animate-fade-in ${
+                    isPremiumLink 
+                      ? 'bg-gradient-to-b from-amber-400 to-yellow-500' 
+                      : 'bg-gradient-to-b from-pink-500 to-rose-500'
+                  }`} />
                 )}
 
                 {/* Contenedor del Ícono */}
                 <div className={`p-2 rounded-lg border transition-all duration-300 transform group-hover:scale-105 ${
                   isActive 
-                    ? 'bg-gradient-to-br from-pink-500 to-rose-500 border-transparent text-white shadow-md shadow-pink-500/10'
-                    : 'bg-stone-50 border-stone-200/40 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-zinc-900/50 dark:border-zinc-800/60 dark:text-zinc-500 dark:group-hover:border-pink-500/30 dark:group-hover:text-pink-400'
+                    ? isPremiumLink
+                      ? 'bg-gradient-to-br from-amber-400 to-yellow-500 border-transparent text-black shadow-md shadow-amber-500/10'
+                      : 'bg-gradient-to-br from-pink-500 to-rose-500 border-transparent text-white shadow-md shadow-pink-500/10'
+                    : isPremiumLink
+                      ? 'bg-amber-500/5 border-amber-500/10 text-amber-500 group-hover:border-amber-400'
+                      : 'bg-stone-50 border-stone-200/40 text-stone-400 group-hover:border-pink-200 group-hover:text-pink-500 dark:bg-zinc-900/50 dark:border-zinc-800/60 dark:text-zinc-500 dark:group-hover:border-pink-500/30 dark:group-hover:text-pink-400'
                 }`}>
                   <Icon className={`w-4 h-4 transition-transform duration-500 ${isActive ? '' : 'group-hover:rotate-6'}`} />
                 </div>
-                
+
                 <span className="tracking-wide font-medium">{item.label}</span>
 
                 {item.href === '/promociones' && (
                   <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
                     HOT
+                  </span>
+                )}
+
+                {isPremiumLink && !isActive && (
+                  <span className="ml-auto text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    IA
                   </span>
                 )}
               </Link>
@@ -306,7 +339,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
-            {/* Notificaciones con campana oscilante */}
+            {/* Notificaciones */}
             <Link 
               href="/notificaciones"
               className={`relative p-2.5 rounded-xl border transition-all active:scale-95 ${
