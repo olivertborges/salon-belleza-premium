@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -21,39 +20,37 @@ export async function POST(request: Request) {
     }
 
     // ============================================================
-    // CREAR CLIENTE DE SUPABASE CON LAS COOKIES (NEXT.JS 15)
+    // OBTENER EL TOKEN DE LA CABECERA
     // ============================================================
-    const cookieStore = await cookies()
-    
-    const supabase = createServerClient(
+    const authHeader = request.headers.get('authorization')
+    console.log('🔑 Auth header:', authHeader ? 'Presente' : 'Ausente')
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ No hay token de autorización')
+      return NextResponse.json(
+        { error: 'No autorizado - Token no proporcionado' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.split(' ')[1]
+    console.log('🔑 Token recibido:', token ? '✅ Sí' : '❌ No')
+
+    // ============================================================
+    // VERIFICAR EL TOKEN CON SUPABASE
+    // ============================================================
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
-          },
-          remove(name: string, options: any) {
-            cookieStore.delete({ name, ...options })
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    console.log('✅ Cliente Supabase creado con cookies')
+    // Verificar el token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
 
-    // ============================================================
-    // VERIFICAR QUE EL USUARIO ESTÁ AUTENTICADO Y ES ADMIN
-    // ============================================================
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
     if (userError || !user) {
-      console.log('❌ Error obteniendo usuario:', userError)
+      console.log('❌ Error verificando token:', userError)
       return NextResponse.json(
-        { error: 'No autorizado - Usuario no autenticado' },
+        { error: 'No autorizado - Token inválido' },
         { status: 401 }
       )
     }
@@ -86,23 +83,16 @@ export async function POST(request: Request) {
     }
 
     // ============================================================
-    // CREAR CLIENTE ADMIN PARA CREAR USUARIO
+    // CREAR CLIENTE ADMIN
     // ============================================================
-    const supabaseAdmin = createServerClient(
+    const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
-          },
-          remove(name: string, options: any) {
-            cookieStore.delete({ name, ...options })
-          },
-        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
     )
 
