@@ -26,12 +26,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loadingNotis, setLoadingNotis] = useState(true)
   const [animateBell, setAnimateBell] = useState(false)
 
-  // ==========================================
-  // CONTROL DE USUARIO PREMIUM
-  // ==========================================
-  // Cambia esto por tu flag real de base de datos, por ejemplo: user?.user_metadata?.is_premium
-  const isPremiumUser = true 
-
   const isDark = theme === 'dark'
 
   useEffect(() => {
@@ -119,7 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
-  // Menú base para todas las clientas
+  // Menú unificado y 100% visible para desarrollo continuo
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -131,16 +125,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Camera, label: 'Galería & Looks', href: '/galeria' },
     { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
+    
+    // Módulos de Inteligencia Artificial (Visibles fijos en Dev)
+    { icon: Sparkles, label: 'Espejo Facial IA', href: '/client/espejo-facial' },
+    { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/client/disenador-unas' },
+    { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/client/estudio-ia' }
   ]
-
-  // Inyección dinámica de las herramientas de Inteligencia Artificial si es Premium
-  if (isPremiumUser) {
-    menuItems.push(
-      { icon: Sparkles, label: 'Espejo Facial IA', href: '/client/espejo-facial' },
-      { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/client/disenador-unas' },
-      { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/client/estudio-ia' }
-    )
-  }
 
   const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
   const primerNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.split(' ')[0] : 'Clienta'
