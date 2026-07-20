@@ -49,8 +49,8 @@ interface Cita {
 export default function AdminAgendaPage() {
   const { settings } = useSettings()
 
-  // Estados de datos
-  const [citas, setCitas] = useState<Cita[]>([])
+  // Estados de datos - ✅ USAMOS any[] PARA EVITAR EL ERROR NEVER
+  const [citas, setCitas] = useState<any[]>([])
   const [staff, setStaff] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
@@ -62,7 +62,7 @@ export default function AdminAgendaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('week') 
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedCita, setSelectedCita] = useState<Cita | null>(null)
+  const [selectedCita, setSelectedCita] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -171,7 +171,7 @@ export default function AdminAgendaPage() {
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ date: nuevaFecha, time: nuevaHora } as any) // ✅ CORREGIDO
+        .update({ date: nuevaFecha, time: nuevaHora } as any)
         .eq('id', appointmentId)
 
       if (error) throw error
@@ -246,7 +246,7 @@ export default function AdminAgendaPage() {
         staff: staffRes.data?.find(s => s.id === cita.professional_id) || null
       }))
 
-      setCitas(citasConRelaciones as Cita[])
+      setCitas(citasConRelaciones)
       setStaff(staffRes.data || [])
       setServices(servicesRes.data || [])
       setClients(clientsRes.data || [])
@@ -342,7 +342,7 @@ export default function AdminAgendaPage() {
   const citasPendientes = citas.filter(c => c.status === 'pending').length
   const totalCitasVista = citas.filter(c => c.status !== 'blocked' && c.status !== 'cancelled').length
 
-  const abrirDetalleCita = (cita: Cita) => {
+  const abrirDetalleCita = (cita: any) => {
     setSelectedCita(cita)
     setIsEditing(false)
     setShowDetailModal(true)
@@ -352,7 +352,7 @@ export default function AdminAgendaPage() {
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: nuevoEstado } as any) // ✅ CORREGIDO
+        .update({ status: nuevoEstado } as any)
         .eq('id', id)
 
       if (error) throw error
@@ -402,7 +402,7 @@ export default function AdminAgendaPage() {
 
       const { error } = await supabase
         .from('appointments')
-        .update(updateData as any) // ✅ CORREGIDO
+        .update(updateData as any)
         .eq('id', selectedCita.id)
 
       if (error) throw error
@@ -440,7 +440,7 @@ export default function AdminAgendaPage() {
 
       const { data, error } = await supabase
         .from('appointments')
-        .insert([appointmentData] as any) // ✅ CORREGIDO
+        .insert([appointmentData] as any)
         .select()
 
       if (error) {
@@ -453,7 +453,7 @@ export default function AdminAgendaPage() {
       }
 
       if (data && data.length > 0) {
-        setCitas(prev => [...prev, data[0] as Cita])
+        setCitas(prev => [...prev, data[0]])
       }
 
       setShowNewAppointment(false)
