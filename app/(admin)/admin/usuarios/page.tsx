@@ -171,7 +171,7 @@ export default function AdminUsuariosPage() {
   }, [tenantId])
 
   // ============================================================
-  // 2. CREAR USUARIO - CON DEBUG
+  // 2. CREAR USUARIO - CON TOKEN EN HEADER
   // ============================================================
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -184,11 +184,6 @@ export default function AdminUsuariosPage() {
     addDebugLog(`  - Email: ${formData.email}`)
     addDebugLog(`  - Nombre: ${formData.full_name}`)
     addDebugLog(`  - Rol: ${formData.role}`)
-    addDebugLog(`  - Nivel: ${formData.level}`)
-    addDebugLog(`  - Teléfono: ${formData.phone || '(vacío)'}`)
-    addDebugLog(`  - tenantId: ${tenantId || 'null'}`)
-    addDebugLog(`  - Usuario actual: ${user?.email || 'no logueado'}`)
-    addDebugLog(`  - Rol actual: ${role || 'no definido'}`)
 
     // Verificar permisos
     if (role !== 'admin' && role !== 'owner') {
@@ -200,12 +195,25 @@ export default function AdminUsuariosPage() {
     }
 
     try {
+      // Obtener la sesión actual para obtener el token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        addDebugLog(`❌ No hay sesión activa`, 'error')
+        setError('❌ No hay sesión activa. Por favor, inicia sesión nuevamente.')
+        setTimeout(() => setError(null), 5000)
+        return
+      }
+
+      addDebugLog(`🔑 Token obtenido: ${session.access_token ? '✅ Sí' : '❌ No'}`)
+
       addDebugLog(`📤 Enviando petición a /api/auth/create-user...`)
 
       const response = await fetch('/api/auth/create-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           email: formData.email,
