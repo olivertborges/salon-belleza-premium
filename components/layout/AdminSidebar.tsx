@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, Sliders, UsersRound, Crown,
-  Sun, Moon, ChevronLeft, ChevronRight, User, Power, X,
+  Sun, Moon, ChevronLeft, ChevronRight, Power, X,
   Menu, Gem, Heart, Star, Zap, Award, Palette, Gift
 } from 'lucide-react'
 
