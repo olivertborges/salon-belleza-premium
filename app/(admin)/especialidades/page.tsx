@@ -2,17 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { 
-  FaArrowLeft, 
-  FaCrown, 
-  FaSparkles, 
-  FaToggleOn, 
-  FaToggleOff, 
-  FaPlus, 
-  FaTrashAlt, 
-  FaSearch, 
-  FaCalendarPlus 
-} from 'react-icons/fa'
+import { FaArrowLeft, FaCrown, FaPlus, FaSearch, FaToggleOff, FaToggleOn, FaTrashAlt } from 'react-icons/fa'
+import { Sparkles } from 'lucide-react'
 
 export default function EspecialidadesPage() {
   const [isAdmin, setIsAdmin] = useState(false)

@@ -28,11 +28,27 @@ import { DroppableSlot } from '@/components/agenda/DroppableSlot'
 
 type ViewMode = 'day' | 'week' | 'month'
 
+// ✅ INTERFAZ PARA CITAS
+interface Cita {
+  id: string
+  client_id: string
+  professional_id: string | null
+  service_id: string
+  date: string
+  time: string
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'blocked'
+  total_price: number
+  notes: string | null
+  clients?: { id: string; name: string } | null
+  services?: { id: string; name: string; price: number } | null
+  staff?: { id: string; name: string } | null
+}
+
 export default function AdminAgendaPage() {
   const { settings } = useSettings()
 
   // Estados de datos
-  const [citas, setCitas] = useState<any[]>([])
+  const [citas, setCitas] = useState<Cita[]>([])
   const [staff, setStaff] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
@@ -44,7 +60,7 @@ export default function AdminAgendaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('week') 
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedCita, setSelectedCita] = useState<any>(null)
+  const [selectedCita, setSelectedCita] = useState<Cita | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -153,7 +169,7 @@ export default function AdminAgendaPage() {
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ date: nuevaFecha, time: nuevaHora })
+        .update({ date: nuevaFecha, time: nuevaHora } as any)
         .eq('id', appointmentId)
 
       if (error) throw error
@@ -228,7 +244,7 @@ export default function AdminAgendaPage() {
         staff: staffRes.data?.find(s => s.id === cita.professional_id) || null
       }))
 
-      setCitas(citasConRelaciones)
+      setCitas(citasConRelaciones as Cita[])
       setStaff(staffRes.data || [])
       setServices(servicesRes.data || [])
       setClients(clientsRes.data || [])
@@ -324,7 +340,7 @@ export default function AdminAgendaPage() {
   const citasPendientes = citas.filter(c => c.status === 'pending').length
   const totalCitasVista = citas.filter(c => c.status !== 'blocked' && c.status !== 'cancelled').length
 
-  const abrirDetalleCita = (cita: any) => {
+  const abrirDetalleCita = (cita: Cita) => {
     setSelectedCita(cita)
     setIsEditing(false)
     setShowDetailModal(true)
@@ -334,7 +350,7 @@ export default function AdminAgendaPage() {
     try {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: nuevoEstado })
+        .update({ status: nuevoEstado } as any)
         .eq('id', id)
 
       if (error) throw error
@@ -372,17 +388,19 @@ export default function AdminAgendaPage() {
   const actualizarCita = async () => {
     if (!selectedCita) return
     try {
+      const updateData = {
+        client_id: selectedCita.clients?.id || selectedCita.client_id,
+        professional_id: selectedCita.staff?.id || selectedCita.professional_id,
+        service_id: selectedCita.services?.id || selectedCita.service_id,
+        date: selectedCita.date,
+        time: selectedCita.time,
+        notes: selectedCita.notes,
+        total_price: selectedCita.total_price
+      }
+
       const { error } = await supabase
         .from('appointments')
-        .update({
-          client_id: selectedCita.clients?.id || selectedCita.client_id,
-          professional_id: selectedCita.staff?.id || selectedCita.professional_id,
-          service_id: selectedCita.services?.id || selectedCita.service_id,
-          date: selectedCita.date,
-          time: selectedCita.time,
-          notes: selectedCita.notes,
-          total_price: selectedCita.total_price
-        })
+        .update(updateData as any)
         .eq('id', selectedCita.id)
 
       if (error) throw error
@@ -407,20 +425,20 @@ export default function AdminAgendaPage() {
     }
 
     try {
+      const appointmentData = {
+        client_id: newCita.clientId,
+        professional_id: newCita.staffId || null,
+        service_id: newCita.serviceId,
+        date: newCita.date,
+        time: newCita.time,
+        status: 'pending' as const,
+        total_price: services.find(s => s.id === newCita.serviceId)?.price || 0,
+        notes: newCita.notes
+      }
+
       const { data, error } = await supabase
         .from('appointments')
-        .insert([
-          {
-            client_id: newCita.clientId,
-            professional_id: newCita.staffId || null,
-            service_id: newCita.serviceId,
-            date: newCita.date,
-            time: newCita.time,
-            status: 'pending',
-            total_price: services.find(s => s.id === newCita.serviceId)?.price || 0,
-            notes: newCita.notes
-          }
-        ])
+        .insert([appointmentData] as any)
         .select()
 
       if (error) {
@@ -433,7 +451,7 @@ export default function AdminAgendaPage() {
       }
 
       if (data && data.length > 0) {
-        setCitas(prev => [...prev, data[0]])
+        setCitas(prev => [...prev, data[0] as Cita])
       }
 
       setShowNewAppointment(false)
