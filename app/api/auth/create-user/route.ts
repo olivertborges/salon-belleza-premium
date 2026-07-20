@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -20,62 +21,50 @@ export async function POST(request: Request) {
     }
 
     // ============================================================
-    // CREAR CLIENTE DE SUPABASE CON LAS VARIABLES DE ENTORNO
+    // CREAR CLIENTE DE SUPABASE CON LAS COOKIES (NEXT.JS 15)
     // ============================================================
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    console.log('✅ Cliente Supabase Admin creado')
-
-    // ============================================================
-    // VERIFICAR QUE EL USUARIO QUE HACE LA PETICIÓN ES ADMIN
-    // ============================================================
-    // Cliente normal para verificar sesión
-    const supabaseClient = createClient(
+    const cookieStore = await cookies()
+    
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.delete({ name, ...options })
+          },
+        },
       }
     )
 
-    // Verificar si hay una sesión activa
-    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+    console.log('✅ Cliente Supabase creado con cookies')
+
+    // ============================================================
+    // VERIFICAR QUE EL USUARIO ESTÁ AUTENTICADO Y ES ADMIN
+    // ============================================================
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
     
-    if (sessionError) {
-      console.log('❌ Error obteniendo sesión:', sessionError)
+    if (userError || !user) {
+      console.log('❌ Error obteniendo usuario:', userError)
       return NextResponse.json(
-        { error: 'Error de autenticación' },
+        { error: 'No autorizado - Usuario no autenticado' },
         { status: 401 }
       )
     }
 
-    if (!session) {
-      console.log('❌ No hay sesión activa')
-      return NextResponse.json(
-        { error: 'No autorizado - No hay sesión activa' },
-        { status: 401 }
-      )
-    }
-
-    console.log('👤 Usuario autenticado:', session.user.email)
+    console.log('👤 Usuario autenticado:', user.email)
 
     // Verificar que el usuario es admin en profiles
-    const { data: adminProfile, error: profileError } = await supabaseClient
+    const { data: adminProfile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (profileError) {
@@ -95,6 +84,27 @@ export async function POST(request: Request) {
         { status: 403 }
       )
     }
+
+    // ============================================================
+    // CREAR CLIENTE ADMIN PARA CREAR USUARIO
+    // ============================================================
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: any) {
+            cookieStore.delete({ name, ...options })
+          },
+        },
+      }
+    )
 
     // ============================================================
     // CREAR USUARIO CON LA API DE ADMIN
@@ -153,7 +163,6 @@ export async function POST(request: Request) {
 
       if (profileInsertError) {
         console.log('❌ Error insertando perfil:', profileInsertError)
-        // Intentamos eliminar el usuario de Auth si falla el perfil
         await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
         return NextResponse.json(
           { error: profileInsertError.message || 'Error al crear el perfil' },
