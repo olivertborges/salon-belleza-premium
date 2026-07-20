@@ -11,7 +11,7 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  Filter, User, MoreVertical, Gift
+  Filter, User, MoreVertical, Gift, Bug
 } from 'lucide-react'
 
 type UserProfile = {
@@ -72,7 +72,7 @@ const itemVariants = {
 
 export default function AdminUsuariosPage() {
   const { settings } = useSettings()
-  const { tenantId } = useAuth()
+  const { tenantId, user, role } = useAuth()
 
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,6 +85,8 @@ export default function AdminUsuariosPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [showDebug, setShowDebug] = useState(true)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -99,6 +101,13 @@ export default function AdminUsuariosPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
+  // Función para agregar logs
+  const addDebugLog = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    const timestamp = new Date().toLocaleTimeString()
+    const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔍'
+    setDebugLogs(prev => [`${emoji} [${timestamp}] ${message}`, ...prev].slice(0, 30))
+  }
+
   // ============================================================
   // 1. CARGAR USUARIOS
   // ============================================================
@@ -107,18 +116,24 @@ export default function AdminUsuariosPage() {
     else setRefreshing(true)
     setError(null)
 
+    addDebugLog(`🔄 Cargando usuarios... (tenantId: ${tenantId || 'null'})`)
+
     try {
       let query = supabase.from('profiles').select('*')
       
       if (tenantId) {
         query = query.eq('tenant_id', tenantId)
+        addDebugLog(`📦 Filtrando por tenant_id: ${tenantId}`)
+      } else {
+        addDebugLog(`⚠️ No hay tenant_id, cargando todos los usuarios`)
       }
       
       const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) {
+        addDebugLog(`❌ Error cargando usuarios: ${error.message}`, 'error')
         if (error.message?.includes('tenant_id')) {
-          console.log('⚠️ Falló con tenant_id, intentando sin filtro...')
+          addDebugLog(`⚠️ Falló con tenant_id, intentando sin filtro...`)
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('profiles')
             .select('*')
@@ -126,16 +141,19 @@ export default function AdminUsuariosPage() {
           
           if (fallbackError) throw fallbackError
           setUsers(fallbackData || [])
+          addDebugLog(`✅ ${fallbackData?.length || 0} usuarios cargados (sin filtro)`, 'success')
         } else {
           throw error
         }
       } else {
         setUsers(data || [])
+        addDebugLog(`✅ ${data?.length || 0} usuarios cargados correctamente`, 'success')
       }
       
       setSuccess('Usuarios cargados correctamente')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
+      addDebugLog(`❌ Error: ${err.message}`, 'error')
       console.error('Error cargando usuarios:', err)
       setError(err.message || 'Error al cargar los usuarios')
       setTimeout(() => setError(null), 3000)
@@ -146,18 +164,44 @@ export default function AdminUsuariosPage() {
   }
 
   useEffect(() => {
+    addDebugLog(`🚀 Iniciando página de usuarios`)
+    addDebugLog(`👤 Rol del usuario: ${role || 'no definido'}`)
+    addDebugLog(`📧 Email: ${user?.email || 'no logueado'}`)
     fetchUsers()
   }, [tenantId])
 
   // ============================================================
-  // 2. CREAR USUARIO - VÍA API (NO SOBRESCRIBE SESIÓN)
+  // 2. CREAR USUARIO - CON DEBUG
   // ============================================================
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
+    addDebugLog(`🚀 Iniciando creación de usuario...`)
+    
     setError(null)
     setSuccess(null)
 
+    addDebugLog(`📝 Datos del formulario:`)
+    addDebugLog(`  - Email: ${formData.email}`)
+    addDebugLog(`  - Nombre: ${formData.full_name}`)
+    addDebugLog(`  - Rol: ${formData.role}`)
+    addDebugLog(`  - Nivel: ${formData.level}`)
+    addDebugLog(`  - Teléfono: ${formData.phone || '(vacío)'}`)
+    addDebugLog(`  - tenantId: ${tenantId || 'null'}`)
+    addDebugLog(`  - Usuario actual: ${user?.email || 'no logueado'}`)
+    addDebugLog(`  - Rol actual: ${role || 'no definido'}`)
+
+    // Verificar permisos
+    if (role !== 'admin' && role !== 'owner') {
+      const msg = `❌ No tienes permisos. Tu rol es: ${role || 'sin rol'}`
+      addDebugLog(msg, 'error')
+      setError(`❌ No tienes permisos para crear usuarios. Tu rol es: ${role || 'sin rol'}`)
+      setTimeout(() => setError(null), 5000)
+      return
+    }
+
     try {
+      addDebugLog(`📤 Enviando petición a /api/auth/create-user...`)
+
       const response = await fetch('/api/auth/create-user', {
         method: 'POST',
         headers: {
@@ -174,12 +218,17 @@ export default function AdminUsuariosPage() {
         })
       })
 
+      addDebugLog(`📥 Status de respuesta: ${response.status}`)
+
       const data = await response.json()
+      addDebugLog(`📥 Datos de respuesta: ${JSON.stringify(data)}`)
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al crear el usuario')
+        addDebugLog(`❌ Error en la API: ${data.error || 'Error desconocido'}`, 'error')
+        throw new Error(data.error || `Error ${response.status}: ${response.statusText}`)
       }
 
+      addDebugLog(`✅ Usuario ${formData.full_name} creado exitosamente como ${formData.role}`, 'success')
       setSuccess(`✅ Usuario ${formData.full_name} creado como ${formData.role}`)
       setTimeout(() => setSuccess(null), 3000)
       
@@ -188,9 +237,10 @@ export default function AdminUsuariosPage() {
       fetchUsers(false)
 
     } catch (err: any) {
+      addDebugLog(`❌ Error: ${err.message}`, 'error')
       console.error('Error creando usuario:', err)
       setError(err.message || 'Error al crear el usuario')
-      setTimeout(() => setError(null), 3000)
+      setTimeout(() => setError(null), 5000)
     }
   }
 
@@ -202,6 +252,8 @@ export default function AdminUsuariosPage() {
     if (!editingUser) return
     setError(null)
     setSuccess(null)
+
+    addDebugLog(`✏️ Editando usuario: ${editingUser.full_name}`)
 
     try {
       const updateData: any = {
@@ -219,6 +271,7 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
+      addDebugLog(`✅ Usuario ${formData.full_name} actualizado`, 'success')
       setSuccess(`✅ Usuario ${formData.full_name} actualizado`)
       setTimeout(() => setSuccess(null), 3000)
       
@@ -226,6 +279,7 @@ export default function AdminUsuariosPage() {
       setEditingUser(null)
       fetchUsers(false)
     } catch (err: any) {
+      addDebugLog(`❌ Error actualizando: ${err.message}`, 'error')
       console.error('Error actualizando usuario:', err)
       setError(err.message || 'Error al actualizar el usuario')
       setTimeout(() => setError(null), 3000)
@@ -240,6 +294,8 @@ export default function AdminUsuariosPage() {
     setError(null)
     setSuccess(null)
 
+    addDebugLog(`🔄 Cambiando estado de ${user.full_name} a ${!user.is_active ? 'activo' : 'inactivo'}`)
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -248,10 +304,12 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
+      addDebugLog(`✅ Estado cambiado: ${!user.is_active ? 'Activo' : 'Inactivo'}`, 'success')
       setSuccess(user.is_active ? '👤 Usuario desactivado' : '✅ Usuario activado')
       setTimeout(() => setSuccess(null), 2000)
       fetchUsers(false)
     } catch (err: any) {
+      addDebugLog(`❌ Error cambiando estado: ${err.message}`, 'error')
       console.error('Error cambiando estado:', err)
       setError(err.message || 'Error al cambiar estado')
       setTimeout(() => setError(null), 3000)
@@ -266,6 +324,7 @@ export default function AdminUsuariosPage() {
     
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (currentUser?.id === user.id) {
+      addDebugLog(`❌ No puedes eliminar tu propio usuario`, 'error')
       setError('❌ No puedes eliminar tu propio usuario')
       setTimeout(() => setError(null), 3000)
       return
@@ -275,6 +334,8 @@ export default function AdminUsuariosPage() {
     setError(null)
     setSuccess(null)
 
+    addDebugLog(`🗑️ Eliminando usuario: ${user.full_name}`)
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -283,10 +344,12 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
+      addDebugLog(`✅ Usuario ${user.full_name} eliminado`, 'success')
       setSuccess(`✅ Usuario ${user.full_name} eliminado`)
       setTimeout(() => setSuccess(null), 2000)
       fetchUsers(false)
     } catch (err: any) {
+      addDebugLog(`❌ Error eliminando: ${err.message}`, 'error')
       console.error('Error eliminando usuario:', err)
       setError(err.message || 'Error al eliminar usuario')
       setTimeout(() => setError(null), 3000)
@@ -301,6 +364,8 @@ export default function AdminUsuariosPage() {
     setError(null)
     setSuccess(null)
 
+    addDebugLog(`📧 Enviando recuperación a: ${email}`)
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`
@@ -308,9 +373,11 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
+      addDebugLog(`✅ Enlace enviado a ${email}`, 'success')
       setSuccess(`📧 Enlace de recuperación enviado a ${email}`)
       setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
+      addDebugLog(`❌ Error enviando recuperación: ${err.message}`, 'error')
       console.error('Error enviando recuperación:', err)
       setError(err.message || 'Error al enviar enlace')
       setTimeout(() => setError(null), 3000)
@@ -325,6 +392,8 @@ export default function AdminUsuariosPage() {
     setError(null)
     setSuccess(null)
 
+    addDebugLog(`⭐ Agregando ${points} puntos a ${user.full_name}`)
+
     try {
       const newPoints = (user.loyalty_points || 0) + points
       const { error } = await supabase
@@ -334,10 +403,12 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
+      addDebugLog(`✅ ${points} puntos agregados a ${user.full_name}`, 'success')
       setSuccess(`⭐ ${points} puntos agregados a ${user.full_name}`)
       setTimeout(() => setSuccess(null), 2000)
       fetchUsers(false)
     } catch (err: any) {
+      addDebugLog(`❌ Error agregando puntos: ${err.message}`, 'error')
       console.error('Error agregando puntos:', err)
       setError(err.message || 'Error al agregar puntos')
       setTimeout(() => setError(null), 3000)
@@ -348,6 +419,7 @@ export default function AdminUsuariosPage() {
   // 8. ABRIR MODALES
   // ============================================================
   const openEditModal = (user: UserProfile) => {
+    addDebugLog(`✏️ Abriendo edición de: ${user.full_name}`)
     setEditingUser(user)
     setFormData({
       email: user.email,
@@ -361,6 +433,7 @@ export default function AdminUsuariosPage() {
   }
 
   const openCreateModal = () => {
+    addDebugLog(`📝 Abriendo modal de creación de usuario`)
     setEditingUser(null)
     setFormData({
       email: '',
@@ -396,7 +469,37 @@ export default function AdminUsuariosPage() {
   const totalClientes = users.filter(u => u.role === 'client').length
 
   // ============================================================
-  // 11. LOADING
+  // 11. VERIFICAR PERMISOS
+  // ============================================================
+  if (role !== 'admin' && role !== 'owner') {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4 p-4 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+          <Shield className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-serif font-bold text-stone-900 dark:text-white">
+          Acceso Denegado
+        </h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 max-w-md">
+          No tienes permisos para acceder a esta página. 
+          <br />
+          Tu rol actual es: <span className="font-bold text-rose-500">{role || 'sin rol'}</span>
+          <br />
+          Solo los administradores pueden gestionar usuarios.
+        </p>
+        <button
+          onClick={() => window.location.href = '/dashboard'}
+          className="px-6 py-3 rounded-xl text-white text-sm font-bold transition-all hover:scale-105"
+          style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    )
+  }
+
+  // ============================================================
+  // 12. LOADING
   // ============================================================
   if (loading) {
     return (
@@ -413,7 +516,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 12. RENDER
+  // 13. RENDER
   // ============================================================
   return (
     <motion.div 
@@ -500,6 +603,54 @@ export default function AdminUsuariosPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* BOTÓN PARA MOSTRAR/OCULTAR DEBUG */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider border bg-white/50 dark:bg-[#1a1430]/40 border-pink-100/60 dark:border-fuchsia-950 text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+        >
+          <Bug className="w-3.5 h-3.5" />
+          {showDebug ? 'Ocultar Debug' : 'Mostrar Debug'}
+        </button>
+      </div>
+
+      {/* PANEL DE DEBUG */}
+      {showDebug && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-3 max-h-48 overflow-y-auto shadow-inner"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-pink-500 dark:text-pink-400 flex items-center gap-2">
+              <Bug className="w-3 h-3" />
+              Registro de Depuración
+            </p>
+            <button
+              onClick={() => setDebugLogs([])}
+              className="text-[9px] font-mono text-stone-400 hover:text-pink-500 transition-colors"
+            >
+              Limpiar
+            </button>
+          </div>
+          <div className="space-y-0.5 font-mono text-[9px] leading-relaxed">
+            {debugLogs.length === 0 ? (
+              <p className="text-stone-400 dark:text-stone-500 italic">Esperando acciones...</p>
+            ) : (
+              debugLogs.map((log, index) => (
+                <div key={index} className={`py-0.5 border-b border-pink-50/10 last:border-0 ${
+                  log.includes('❌') ? 'text-rose-500 dark:text-rose-400' :
+                  log.includes('✅') ? 'text-emerald-600 dark:text-emerald-400' :
+                  'text-stone-600 dark:text-stone-400'
+                }`}>
+                  {log}
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* MENSAJES */}
       <AnimatePresence>
@@ -916,6 +1067,19 @@ export default function AdminUsuariosPage() {
                         <option key={l.value} value={l.value}>{l.label}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                {/* PANEL DE DEBUG EN EL MODAL */}
+                <div className="rounded-xl bg-stone-50 dark:bg-[#0f0c1b] border border-stone-200 dark:border-fuchsia-950/50 p-3 max-h-32 overflow-y-auto">
+                  <p className="text-[8px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1">🔍 Debug - Últimos pasos</p>
+                  <div className="space-y-0.5 font-mono text-[8px] text-stone-500 dark:text-stone-400 break-all">
+                    {debugLogs.slice(0, 5).map((log, i) => (
+                      <div key={i} className={`${log.includes('❌') ? 'text-rose-500' : log.includes('✅') ? 'text-emerald-500' : ''}`}>
+                        {log}
+                      </div>
+                    ))}
+                    {debugLogs.length === 0 && <p className="italic">Esperando acciones...</p>}
                   </div>
                 </div>
 
