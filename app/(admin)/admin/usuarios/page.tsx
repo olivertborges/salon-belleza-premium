@@ -11,7 +11,7 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  MoreVertical, Filter, ChevronDown, User
+  Filter, User, MoreVertical
 } from 'lucide-react'
 
 type UserProfile = {
@@ -26,10 +26,10 @@ type UserProfile = {
 }
 
 const ROLES = [
-  { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown },
-  { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award },
-  { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog },
-  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User }
+  { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown, bg: 'bg-pink-500/10 text-pink-500' },
+  { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award, bg: 'bg-amber-500/10 text-amber-500' },
+  { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog, bg: 'bg-violet-500/10 text-violet-500' },
+  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User, bg: 'bg-emerald-500/10 text-emerald-500' }
 ]
 
 const containerVariants = {
@@ -73,7 +73,6 @@ export default function AdminUsuariosPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  // Formulario
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -86,7 +85,6 @@ export default function AdminUsuariosPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // Cargar usuarios
   const fetchUsers = async (showLoading = true) => {
     if (!tenantId) return
     
@@ -98,7 +96,6 @@ export default function AdminUsuariosPage() {
     setError(null)
 
     try {
-      // Obtener usuarios de la tabla profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -123,7 +120,6 @@ export default function AdminUsuariosPage() {
     if (tenantId) fetchUsers()
   }, [tenantId])
 
-  // Crear usuario
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -131,7 +127,6 @@ export default function AdminUsuariosPage() {
     setSuccess(null)
 
     try {
-      // 1. Crear usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -148,7 +143,6 @@ export default function AdminUsuariosPage() {
       if (authError) throw authError
 
       if (authData.user) {
-        // 2. Crear perfil en profiles
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
@@ -177,7 +171,6 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // Editar usuario
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingUser) return
@@ -209,7 +202,6 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // Cambiar estado (Activar/Desactivar)
   const toggleUserStatus = async (user: UserProfile) => {
     if (!user.id) return
     setError(null)
@@ -233,11 +225,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // Eliminar usuario (solo si es admin/owner)
   const deleteUser = async (user: UserProfile) => {
     if (!user.id) return
     
-    // Prevenir eliminación de uno mismo
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (currentUser?.id === user.id) {
       setError('❌ No puedes eliminar tu propio usuario')
@@ -250,7 +240,6 @@ export default function AdminUsuariosPage() {
     setSuccess(null)
 
     try {
-      // Opción: Eliminar perfil (el usuario queda sin acceso)
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -268,7 +257,6 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // Resetear contraseña
   const resetPassword = async (email: string) => {
     if (!confirm(`¿Enviar enlace de recuperación a ${email}?`)) return
     setError(null)
@@ -290,7 +278,6 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // Abrir modal de edición
   const openEditModal = (user: UserProfile) => {
     setEditingUser(user)
     setFormData({
@@ -303,7 +290,6 @@ export default function AdminUsuariosPage() {
     setShowModal(true)
   }
 
-  // Abrir modal de creación
   const openCreateModal = () => {
     setEditingUser(null)
     setFormData({
@@ -316,7 +302,6 @@ export default function AdminUsuariosPage() {
     setShowModal(true)
   }
 
-  // Filtros
   const filteredUsers = users.filter(user => {
     const matchSearch = 
       user.nombre?.toLowerCase().includes(search.toLowerCase()) ||
@@ -328,7 +313,6 @@ export default function AdminUsuariosPage() {
     return matchSearch && matchRole && matchStatus
   })
 
-  // Estadísticas
   const totalUsuarios = users.length
   const totalAdmins = users.filter(u => u.role === 'admin' || u.role === 'owner').length
   const totalStaff = users.filter(u => u.role === 'staff').length
@@ -353,7 +337,7 @@ export default function AdminUsuariosPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6 p-1 max-w-7xl mx-auto"
+      className="space-y-6 p-1 max-w-4xl mx-auto"
     >
 
       {/* HEADER */}
@@ -465,7 +449,7 @@ export default function AdminUsuariosPage() {
         )}
       </AnimatePresence>
 
-      {/* KPIS */}
+      {/* KPIS - 2 columnas en móvil, 4 en escritorio */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
           <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
@@ -508,16 +492,16 @@ export default function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* FILTROS */}
+      {/* FILTROS - EN UNA SOLA FILA */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-3 p-3 rounded-2xl border flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 transition-all duration-300">
+        <div className="flex items-center gap-3 p-3 rounded-2xl border flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
           <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
           <input 
             type="text" 
             placeholder="Buscar por nombre o email..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
+            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full min-w-0"
           />
           {search && (
             <button 
@@ -529,11 +513,11 @@ export default function AdminUsuariosPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none"
+            className="px-3 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[120px]"
             style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
           >
             <option value="todos">Todos los roles</option>
@@ -545,136 +529,151 @@ export default function AdminUsuariosPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none"
+            className="px-3 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[110px]"
             style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
           >
-            <option value="todos">Todos los estados</option>
+            <option value="todos">Todos</option>
             <option value="activos">Activos</option>
             <option value="inactivos">Inactivos</option>
           </select>
         </div>
       </div>
 
-      {/* TABLA DE USUARIOS */}
-      <div className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-pink-100/60 dark:border-fuchsia-950/50">
-              <tr className="text-left">
-                <th className="px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-bold">Usuario</th>
-                <th className="px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-bold hidden md:table-cell">Email</th>
-                <th className="px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-bold">Rol</th>
-                <th className="px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-bold hidden lg:table-cell">Estado</th>
-                <th className="px-4 py-3 text-[10px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-bold text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-stone-400 dark:text-stone-500 text-xs">
-                    <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    No se encontraron usuarios
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((user, index) => {
-                  const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[3]
-                  const RoleIcon = roleConfig.icon
-                  const isActive = user.is_active
+      {/* GRID DE TARJETAS - SIN TABLA, SIN SCROLL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AnimatePresence>
+          {filteredUsers.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full text-center py-12 border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
+            >
+              <Users className="w-10 h-10 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
+              <p className="text-xs text-stone-400 dark:text-stone-500">No se encontraron usuarios</p>
+            </motion.div>
+          ) : (
+            filteredUsers.map((user, index) => {
+              const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[3]
+              const RoleIcon = roleConfig.icon
+              const isActive = user.is_active
 
-                  return (
-                    <motion.tr 
-                      key={user.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * index }}
-                      className="border-b border-pink-50/60 dark:border-fuchsia-950/30 hover:bg-pink-50/30 dark:hover:bg-fuchsia-950/10 transition-colors"
+              return (
+                <motion.div
+                  key={user.id}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={{ delay: 0.05 * index }}
+                  className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-md transition-all"
+                >
+                  {/* HEADER DE TARJETA */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${
+                        user.role === 'admin' || user.role === 'owner' 
+                          ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
+                          : user.role === 'staff'
+                            ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                      }`}>
+                        {user.nombre?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">
+                          {user.nombre || 'Usuario'}
+                        </p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* BADGE DE ESTADO */}
+                    <div className="shrink-0">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
+                        <RoleIcon className="w-3 h-3" />
+                        {roleConfig.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* DETALLES */}
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                    {user.telefono && (
+                      <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{user.telefono}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        Creado: {new Date(user.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 col-span-2">
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold ${
+                        isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                        {isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ACCIONES */}
+                  <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => toggleUserStatus(user)}
+                      className={`p-2 rounded-xl transition-colors ${
+                        isActive 
+                          ? 'hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500' 
+                          : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-stone-400 hover:text-emerald-500'
+                      }`}
+                      title={isActive ? 'Desactivar' : 'Activar'}
                     >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 ${
-                            user.role === 'admin' || user.role === 'owner' 
-                              ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
-                              : user.role === 'staff'
-                                ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                          }`}>
-                            {user.nombre?.charAt(0).toUpperCase() || 'U'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-stone-800 dark:text-pink-100 truncate">
-                              {user.nombre || 'Usuario'}
-                            </p>
-                            <p className="text-[10px] text-stone-400 dark:text-stone-500 truncate md:hidden">
-                              {user.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-stone-600 dark:text-stone-400">{user.email}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
-                          <RoleIcon className="w-3 h-3" />
-                          {roleConfig.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold ${
-                          isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                          {isActive ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => toggleUserStatus(user)}
-                            className="p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
-                            title={isActive ? 'Desactivar' : 'Activar'}
-                          >
-                            {isActive ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5" />}
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => openEditModal(user)}
-                            className="p-1.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 text-stone-400 hover:text-blue-500 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => resetPassword(user.email)}
-                            className="p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
-                            title="Resetear contraseña"
-                          >
-                            <Key className="w-3.5 h-3.5" />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => deleteUser(user)}
-                            className="p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 text-stone-400 hover:text-rose-500 transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </motion.button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => openEditModal(user)}
+                      className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 text-stone-400 hover:text-blue-500 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => resetPassword(user.email)}
+                      className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
+                      title="Resetear contraseña"
+                    >
+                      <Key className="w-4 h-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => deleteUser(user)}
+                      className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 text-stone-400 hover:text-rose-500 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )
+            })
+          )}
+        </AnimatePresence>
       </div>
 
       {/* MODAL DE CREACIÓN/EDICIÓN */}
