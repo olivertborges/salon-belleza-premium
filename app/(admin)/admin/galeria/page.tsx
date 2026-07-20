@@ -735,15 +735,15 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO DEFINITIVAMENTE */}
-      <div className="w-full overflow-visible">
-        <div className="flex flex-wrap gap-1.5 w-full">
+      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO DEFINITIVAMENTE SIN SCROLL */}
+      <div className="w-full overflow-hidden">
+        <div className="flex flex-wrap gap-1.5 -m-0.5 p-0.5">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24]'
+              className={`m-0.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24] dark:border-stone-700'
               }`}
               style={categoryFilter === cat ? primaryBgStyle : {}}
             >
