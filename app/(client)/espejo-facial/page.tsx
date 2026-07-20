@@ -1,3 +1,4 @@
+'use client';
 import React, { useRef, useEffect, useState } from 'react';
 // Nota: Las librerías de MediaPipe se cargan dinámicamente en el cliente para no romper el SSR de Next.js
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
