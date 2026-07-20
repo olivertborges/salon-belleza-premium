@@ -675,7 +675,7 @@ export default function GaleriaAdminPage() {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-stone-50/50 dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-stone-400"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button 
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all ${showAdvancedFilters ? 'bg-stone-100 dark:bg-stone-800' : 'bg-white dark:bg-[#130f24]'}`}
@@ -735,14 +735,14 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO DEFINITIVAMENTE SIN SCROLL */}
-      <div className="w-full overflow-hidden">
-        <div className="flex flex-wrap gap-1.5 -m-0.5 p-0.5">
+      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO PARA MÓVIL */}
+      <div className="w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-1.5">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`m-0.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all text-center ${
                 categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24] dark:border-stone-700'
               }`}
               style={categoryFilter === cat ? primaryBgStyle : {}}
