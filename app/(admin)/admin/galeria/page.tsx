@@ -735,13 +735,13 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO PARA SCROLL HORIZONTAL NATIVO */}
-      <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x">
+      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO: SIN SCROLL HORIZONTAL */}
+      <div className="flex flex-wrap gap-1.5 mb-2">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategoryFilter(cat)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
               categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24]'
             }`}
             style={categoryFilter === cat ? primaryBgStyle : {}}
@@ -1088,7 +1088,7 @@ export default function GaleriaAdminPage() {
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">Imagen de Trabajo Principal *</label>
                     <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                      <input fileInputRef={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
                       {previewUrl ? (
                         <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
                       ) : formData.image_url ? (
