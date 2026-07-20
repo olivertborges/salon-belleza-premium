@@ -11,25 +11,38 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  Filter, User, MoreVertical
+  Filter, User, MoreVertical, Gift
 } from 'lucide-react'
 
 type UserProfile = {
   id: string
+  tenant_id: string | null
   email: string
-  nombre: string
+  full_name: string | null
+  phone: string | null
+  avatar_url: string | null
   role: 'admin' | 'owner' | 'staff' | 'client'
-  telefono: string | null
+  loyalty_points: number
+  level: string
+  referral_code: string | null
+  referred_by: string | null
+  preferences: any
   is_active: boolean
   created_at: string
-  last_sign_in_at: string | null
+  updated_at: string
 }
 
 const ROLES = [
-  { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown, bg: 'bg-pink-500/10 text-pink-500' },
-  { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award, bg: 'bg-amber-500/10 text-amber-500' },
-  { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog, bg: 'bg-violet-500/10 text-violet-500' },
-  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User, bg: 'bg-emerald-500/10 text-emerald-500' }
+  { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown },
+  { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award },
+  { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog },
+  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User }
+]
+
+const LEVELS = [
+  { value: 'bronze', label: 'Bronce', color: 'from-amber-600 to-amber-400' },
+  { value: 'silver', label: 'Plata', color: 'from-gray-400 to-gray-300' },
+  { value: 'gold', label: 'Oro', color: 'from-yellow-500 to-yellow-300' }
 ]
 
 const containerVariants = {
@@ -76,23 +89,22 @@ export default function AdminUsuariosPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    nombre: '',
-    telefono: '',
-    role: 'staff'
+    full_name: '',
+    phone: '',
+    role: 'staff',
+    level: 'bronze'
   })
 
   const brandGradient = {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
+  // CARGAR USUARIOS
   const fetchUsers = async (showLoading = true) => {
     if (!tenantId) return
     
-    if (showLoading) {
-      setLoading(true)
-    } else {
-      setRefreshing(true)
-    }
+    if (showLoading) setLoading(true)
+    else setRefreshing(true)
     setError(null)
 
     try {
@@ -120,6 +132,7 @@ export default function AdminUsuariosPage() {
     if (tenantId) fetchUsers()
   }, [tenantId])
 
+  // CREAR USUARIO
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -127,14 +140,16 @@ export default function AdminUsuariosPage() {
     setSuccess(null)
 
     try {
+      // 1. Crear usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
-            nombre: formData.nombre,
-            telefono: formData.telefono,
+            full_name: formData.full_name,
+            phone: formData.phone,
             role: formData.role,
+            level: formData.level,
             tenant_id: tenantId
           }
         }
@@ -143,25 +158,39 @@ export default function AdminUsuariosPage() {
       if (authError) throw authError
 
       if (authData.user) {
+        // 2. Crear perfil en profiles con las columnas exactas
+        const profileData = {
+          id: authData.user.id,
+          tenant_id: tenantId,
+          email: formData.email,
+          full_name: formData.full_name || null,
+          phone: formData.phone || null,
+          role: formData.role,
+          level: formData.level || 'bronze',
+          is_active: true,
+          loyalty_points: 0,
+          avatar_url: null,
+          referral_code: null,
+          referred_by: null,
+          preferences: {}
+        }
+
+        console.log('📝 Datos a insertar en profiles:', profileData)
+
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            nombre: formData.nombre,
-            telefono: formData.telefono,
-            role: formData.role,
-            tenant_id: tenantId,
-            is_active: true
-          })
+          .insert([profileData])
 
-        if (profileError) throw profileError
+        if (profileError) {
+          console.error('❌ Error insertando perfil:', profileError)
+          throw profileError
+        }
 
-        setSuccess(`✅ Usuario ${formData.nombre} creado como ${formData.role}`)
+        setSuccess(`✅ Usuario ${formData.full_name} creado como ${formData.role}`)
         setTimeout(() => setSuccess(null), 3000)
         
         setShowModal(false)
-        setFormData({ email: '', password: '', nombre: '', telefono: '', role: 'staff' })
+        setFormData({ email: '', password: '', full_name: '', phone: '', role: 'staff', level: 'bronze' })
         fetchUsers(false)
       }
     } catch (err: any) {
@@ -171,6 +200,7 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // EDITAR USUARIO
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingUser) return
@@ -178,18 +208,24 @@ export default function AdminUsuariosPage() {
     setSuccess(null)
 
     try {
+      const updateData: any = {
+        full_name: formData.full_name || null,
+        phone: formData.phone || null,
+        role: formData.role,
+        level: formData.level || 'bronze',
+        updated_at: new Date().toISOString()
+      }
+
+      console.log('📝 Datos a actualizar:', updateData)
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          nombre: formData.nombre,
-          telefono: formData.telefono,
-          role: formData.role
-        })
+        .update(updateData)
         .eq('id', editingUser.id)
 
       if (error) throw error
 
-      setSuccess(`✅ Usuario ${formData.nombre} actualizado`)
+      setSuccess(`✅ Usuario ${formData.full_name} actualizado`)
       setTimeout(() => setSuccess(null), 3000)
       
       setShowModal(false)
@@ -202,6 +238,7 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // ACTIVAR/DESACTIVAR
   const toggleUserStatus = async (user: UserProfile) => {
     if (!user.id) return
     setError(null)
@@ -225,6 +262,7 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // ELIMINAR USUARIO
   const deleteUser = async (user: UserProfile) => {
     if (!user.id) return
     
@@ -235,7 +273,7 @@ export default function AdminUsuariosPage() {
       return
     }
 
-    if (!confirm(`¿Estás seguro de eliminar a ${user.nombre}?`)) return
+    if (!confirm(`¿Estás seguro de eliminar a ${user.full_name}?`)) return
     setError(null)
     setSuccess(null)
 
@@ -247,7 +285,7 @@ export default function AdminUsuariosPage() {
 
       if (error) throw error
 
-      setSuccess(`✅ Usuario ${user.nombre} eliminado`)
+      setSuccess(`✅ Usuario ${user.full_name} eliminado`)
       setTimeout(() => setSuccess(null), 2000)
       fetchUsers(false)
     } catch (err: any) {
@@ -257,6 +295,7 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // RESETEAR CONTRASEÑA
   const resetPassword = async (email: string) => {
     if (!confirm(`¿Enviar enlace de recuperación a ${email}?`)) return
     setError(null)
@@ -278,14 +317,40 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // SUMAR PUNTOS
+  const addLoyaltyPoints = async (user: UserProfile, points: number) => {
+    if (!user.id) return
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const newPoints = (user.loyalty_points || 0) + points
+      const { error } = await supabase
+        .from('profiles')
+        .update({ loyalty_points: newPoints })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      setSuccess(`⭐ ${points} puntos agregados a ${user.full_name}`)
+      setTimeout(() => setSuccess(null), 2000)
+      fetchUsers(false)
+    } catch (err: any) {
+      console.error('Error agregando puntos:', err)
+      setError(err.message || 'Error al agregar puntos')
+      setTimeout(() => setError(null), 3000)
+    }
+  }
+
   const openEditModal = (user: UserProfile) => {
     setEditingUser(user)
     setFormData({
       email: user.email,
       password: '',
-      nombre: user.nombre || '',
-      telefono: user.telefono || '',
-      role: user.role || 'client'
+      full_name: user.full_name || '',
+      phone: user.phone || '',
+      role: user.role || 'client',
+      level: user.level || 'bronze'
     })
     setShowModal(true)
   }
@@ -295,16 +360,17 @@ export default function AdminUsuariosPage() {
     setFormData({
       email: '',
       password: '',
-      nombre: '',
-      telefono: '',
-      role: 'staff'
+      full_name: '',
+      phone: '',
+      role: 'staff',
+      level: 'bronze'
     })
     setShowModal(true)
   }
 
   const filteredUsers = users.filter(user => {
     const matchSearch = 
-      user.nombre?.toLowerCase().includes(search.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       user.email?.toLowerCase().includes(search.toLowerCase())
     const matchRole = filterRole === 'todos' || user.role === filterRole
     const matchStatus = filterStatus === 'todos' || 
@@ -449,7 +515,7 @@ export default function AdminUsuariosPage() {
         )}
       </AnimatePresence>
 
-      {/* KPIS - 2 columnas en móvil, 4 en escritorio */}
+      {/* KPIS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
           <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
@@ -492,7 +558,7 @@ export default function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* FILTROS - EN UNA SOLA FILA */}
+      {/* FILTROS */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex items-center gap-3 p-3 rounded-2xl border flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
           <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
@@ -539,7 +605,7 @@ export default function AdminUsuariosPage() {
         </div>
       </div>
 
-      {/* GRID DE TARJETAS - SIN TABLA, SIN SCROLL */}
+      {/* GRID DE TARJETAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AnimatePresence>
           {filteredUsers.length === 0 ? (
@@ -556,6 +622,7 @@ export default function AdminUsuariosPage() {
               const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[3]
               const RoleIcon = roleConfig.icon
               const isActive = user.is_active
+              const levelConfig = LEVELS.find(l => l.value === user.level) || LEVELS[0]
 
               return (
                 <motion.div
@@ -567,7 +634,6 @@ export default function AdminUsuariosPage() {
                   transition={{ delay: 0.05 * index }}
                   className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-md transition-all"
                 >
-                  {/* HEADER DE TARJETA */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${
@@ -577,11 +643,11 @@ export default function AdminUsuariosPage() {
                             ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
                             : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                       }`}>
-                        {user.nombre?.charAt(0).toUpperCase() || 'U'}
+                        {user.full_name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">
-                          {user.nombre || 'Usuario'}
+                          {user.full_name || 'Usuario'}
                         </p>
                         <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
                           {user.email}
@@ -589,25 +655,30 @@ export default function AdminUsuariosPage() {
                       </div>
                     </div>
 
-                    {/* BADGE DE ESTADO */}
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
                         <RoleIcon className="w-3 h-3" />
                         {roleConfig.label}
                       </span>
+                      <span className={`text-[8px] font-mono px-2 py-0.5 rounded-full border ${
+                        user.level === 'bronze' ? 'border-amber-600/30 text-amber-600 dark:text-amber-400' :
+                        user.level === 'silver' ? 'border-gray-400/30 text-gray-600 dark:text-gray-400' :
+                        'border-yellow-500/30 text-yellow-600 dark:text-yellow-400'
+                      }`}>
+                        ⭐ {user.level}
+                      </span>
                     </div>
                   </div>
 
-                  {/* DETALLES */}
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{user.email}</span>
                     </div>
-                    {user.telefono && (
-                      <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
+                    {user.phone && (
+                      <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
                         <Phone className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{user.telefono}</span>
+                        <span className="truncate">{user.phone}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
@@ -623,11 +694,25 @@ export default function AdminUsuariosPage() {
                         <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                         {isActive ? 'Activo' : 'Inactivo'}
                       </span>
+                      {user.loyalty_points > 0 && (
+                        <span className="text-[10px] font-mono text-amber-500 flex items-center gap-1">
+                          <Gift className="w-3 h-3" />
+                          {user.loyalty_points} pts
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* ACCIONES */}
-                  <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1">
+                  <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1 flex-wrap">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => addLoyaltyPoints(user, 50)}
+                      className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
+                      title="Agregar 50 puntos"
+                    >
+                      <Gift className="w-4 h-4" />
+                    </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -717,8 +802,8 @@ export default function AdminUsuariosPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
                     style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
                     placeholder="Ej: María González"
@@ -774,29 +859,47 @@ export default function AdminUsuariosPage() {
                   </label>
                   <input
                     type="tel"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
                     style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
                     placeholder="11 2345 6789"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Rol *
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
-                    required
-                  >
-                    {ROLES.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      Rol *
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({...formData, role: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                      required
+                    >
+                      {ROLES.map(r => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                      Nivel
+                    </label>
+                    <select
+                      value={formData.level}
+                      onChange={(e) => setFormData({...formData, level: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    >
+                      {LEVELS.map(l => (
+                        <option key={l.value} value={l.value}>{l.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
