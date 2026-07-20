@@ -11,7 +11,7 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  MoreVertical, Filter, ChevronDown
+  MoreVertical, Filter, ChevronDown, User
 } from 'lucide-react'
 
 type UserProfile = {
