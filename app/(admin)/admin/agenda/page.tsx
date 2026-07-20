@@ -26,29 +26,15 @@ import {
 import { DraggableAppointment } from '@/components/agenda/DraggableAppointment'
 import { DroppableSlot } from '@/components/agenda/DroppableSlot'
 
-type ViewMode = 'day' | 'week' | 'month'
+export const runtime = 'nodejs'
 
-// ✅ INTERFAZ PARA CITAS
-interface Cita {
-  id: string
-  client_id: string
-  professional_id: string | null
-  service_id: string
-  date: string
-  time: string
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'blocked'
-  total_price: number
-  notes: string | null
-  clients?: { id: string; name: string } | null
-  services?: { id: string; name: string; price: number } | null
-  staff?: { id: string; name: string } | null
-}
+type ViewMode = 'day' | 'week' | 'month'
 
 export default function AdminAgendaPage() {
   const { settings } = useSettings()
 
-  // Estados de datos
-  const [citas, setCitas] = useState<Cita[]>([])
+  // Estados de datos - ✅ CAMBIADO a any
+  const [citas, setCitas] = useState<any>([])
   const [staff, setStaff] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
@@ -60,7 +46,7 @@ export default function AdminAgendaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('week') 
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedCita, setSelectedCita] = useState<Cita | null>(null)
+  const [selectedCita, setSelectedCita] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -160,7 +146,7 @@ export default function AdminAgendaPage() {
 
     const copiaCitasPrevias = [...citas]
 
-    setCitas(prev => prev.map(c => 
+    setCitas(prev => prev.map((c: any) => 
       c.id === appointmentId 
         ? { ...c, date: nuevaFecha, time: nuevaHora } 
         : c
@@ -237,14 +223,14 @@ export default function AdminAgendaPage() {
         supabase.from('clients').select('*')
       ])
 
-      const citasConRelaciones = citasData.map(cita => ({
+      const citasConRelaciones = citasData.map((cita: any) => ({
         ...cita,
-        clients: clientsRes.data?.find(c => c.id === cita.client_id) || null,
-        services: servicesRes.data?.find(s => s.id === cita.service_id) || null,
-        staff: staffRes.data?.find(s => s.id === cita.professional_id) || null
+        clients: clientsRes.data?.find((c: any) => c.id === cita.client_id) || null,
+        services: servicesRes.data?.find((s: any) => s.id === cita.service_id) || null,
+        staff: staffRes.data?.find((s: any) => s.id === cita.professional_id) || null
       }))
 
-      setCitas(citasConRelaciones as Cita[])
+      setCitas(citasConRelaciones as any)
       setStaff(staffRes.data || [])
       setServices(servicesRes.data || [])
       setClients(clientsRes.data || [])
@@ -329,18 +315,18 @@ export default function AdminAgendaPage() {
 
   const getCitasDelDia = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    return citas.filter(c => c.date === dateStr)
+    return citas.filter((c: any) => c.date === dateStr)
   }
 
   // Cálculos de KPIs Dinámicos basados en la vista actual
   const totalIngresos = citas
-    .filter(c => c.status === 'completed')
-    .reduce((sum, c) => sum + Number(c.services?.price || 0), 0)
+    .filter((c: any) => c.status === 'completed')
+    .reduce((sum: number, c: any) => sum + Number(c.services?.price || 0), 0)
 
-  const citasPendientes = citas.filter(c => c.status === 'pending').length
-  const totalCitasVista = citas.filter(c => c.status !== 'blocked' && c.status !== 'cancelled').length
+  const citasPendientes = citas.filter((c: any) => c.status === 'pending').length
+  const totalCitasVista = citas.filter((c: any) => c.status !== 'blocked' && c.status !== 'cancelled').length
 
-  const abrirDetalleCita = (cita: Cita) => {
+  const abrirDetalleCita = (cita: any) => {
     setSelectedCita(cita)
     setIsEditing(false)
     setShowDetailModal(true)
@@ -354,7 +340,7 @@ export default function AdminAgendaPage() {
         .eq('id', id)
 
       if (error) throw error
-      setCitas(prev => prev.map(c => c.id === id ? { ...c, status: nuevoEstado } : c))
+      setCitas((prev: any) => prev.map((c: any) => c.id === id ? { ...c, status: nuevoEstado } : c))
       if (selectedCita) setSelectedCita({ ...selectedCita, status: nuevoEstado })
       setSuccess('Estado actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
@@ -374,7 +360,7 @@ export default function AdminAgendaPage() {
         .eq('id', id)
 
       if (error) throw error
-      setCitas(prev => prev.filter(c => c.id !== id))
+      setCitas((prev: any) => prev.filter((c: any) => c.id !== id))
       setShowDetailModal(false)
       setSuccess('Cita eliminada correctamente')
       setTimeout(() => setSuccess(null), 3000)
@@ -404,7 +390,7 @@ export default function AdminAgendaPage() {
         .eq('id', selectedCita.id)
 
       if (error) throw error
-      setCitas(prev => prev.map(c => c.id === selectedCita.id ? selectedCita : c))
+      setCitas((prev: any) => prev.map((c: any) => c.id === selectedCita.id ? selectedCita : c))
       setIsEditing(false)
       setShowDetailModal(false)
       setSuccess('Cita actualizada correctamente')
@@ -432,7 +418,7 @@ export default function AdminAgendaPage() {
         date: newCita.date,
         time: newCita.time,
         status: 'pending' as const,
-        total_price: services.find(s => s.id === newCita.serviceId)?.price || 0,
+        total_price: services.find((s: any) => s.id === newCita.serviceId)?.price || 0,
         notes: newCita.notes
       }
 
@@ -443,7 +429,7 @@ export default function AdminAgendaPage() {
 
       if (error) {
         if (error.code === '23505' || error.code === '409') {
-          const profesional = staff.find(s => s.id === newCita.staffId)?.name || 'el profesional'
+          const profesional = staff.find((s: any) => s.id === newCita.staffId)?.name || 'el profesional'
           setFormError(`⚠️ Conflicto de horario para ${profesional} en este horario.`)
           return
         }
@@ -451,7 +437,7 @@ export default function AdminAgendaPage() {
       }
 
       if (data && data.length > 0) {
-        setCitas(prev => [...prev, data[0] as Cita])
+        setCitas((prev: any) => [...prev, data[0]])
       }
 
       setShowNewAppointment(false)
@@ -468,8 +454,8 @@ export default function AdminAgendaPage() {
 
   // COMPONENTE: Listado enfocado (Mobile / Detalle)
   const renderListadoEnfocado = (fechaFocus: Date) => {
-    const citasDelDia = citas.filter(c => c.date === format(fechaFocus, 'yyyy-MM-dd'))
-    const citasOrdenadas = [...citasDelDia].sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+    const citasDelDia = citas.filter((c: any) => c.date === format(fechaFocus, 'yyyy-MM-dd'))
+    const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
 
     if (citasOrdenadas.length === 0) {
       return (
@@ -489,7 +475,7 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-2.5 w-full">
-        {citasOrdenadas.map((cita) => {
+        {citasOrdenadas.map((cita: any) => {
           const statusInfo = getStatusBadge(cita.status)
           const horaMostrar = cita.time ? cita.time.substring(0, 5) : '--:--'
 
@@ -634,21 +620,24 @@ export default function AdminAgendaPage() {
                       })}
                     </div>
                     <div className="absolute inset-0 grid grid-cols-7 pointer-events-none" style={{ gridTemplateRows: `repeat(${totalHoras}, ${HORA_ALTURA}px)` }}>
-                      {weekDays.map((day, colIdx) => getCitasDelDia(day).map((cita) => {
-                        if (!cita.time) return null
-                        const horaCita = parseInt(cita.time.split(':')[0], 10)
-                        if (horaCita < horaInicioNum || horaCita > horaFinNum) return null
-                        return (
-                          <div key={cita.id} className="p-1 pointer-events-auto" style={{ gridColumn: colIdx + 1, gridRow: `${(horaCita - horaInicioNum) + 1} / span 1` }}>
-                            <div onClick={() => abrirDetalleCita(cita)} className="bg-white dark:bg-[#0f0c1b] border rounded-xl p-2 cursor-pointer h-full border-pink-100 dark:border-fuchsia-950 hover:shadow-md transition-all">
-                              <span className="text-[9px] font-mono px-1 rounded text-pink-600 dark:text-pink-400" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10` }}>
-                                {cita.time.substring(0,5)}
-                              </span>
-                              <p className="text-xs font-black truncate mt-1 text-stone-900 dark:text-pink-50">{cita.clients?.name}</p>
+                      {weekDays.map((day, colIdx) => {
+                        const dayStr = format(day, 'yyyy-MM-dd')
+                        return getCitasDelDia(day).map((cita: any) => {
+                          if (!cita.time) return null
+                          const horaCita = parseInt(cita.time.split(':')[0], 10)
+                          if (horaCita < horaInicioNum || horaCita > horaFinNum) return null
+                          return (
+                            <div key={cita.id} className="p-1 pointer-events-auto" style={{ gridColumn: colIdx + 1, gridRow: `${(horaCita - horaInicioNum) + 1} / span 1` }}>
+                              <div onClick={() => abrirDetalleCita(cita)} className="bg-white dark:bg-[#0f0c1b] border rounded-xl p-2 cursor-pointer h-full border-pink-100 dark:border-fuchsia-950 hover:shadow-md transition-all">
+                                <span className="text-[9px] font-mono px-1 rounded text-pink-600 dark:text-pink-400" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10` }}>
+                                  {cita.time.substring(0,5)}
+                                </span>
+                                <p className="text-xs font-black truncate mt-1 text-stone-900 dark:text-pink-50">{cita.clients?.name}</p>
+                              </div>
                             </div>
-                          </div>
-                        )
-                      }))}
+                          )
+                        })
+                      })}
                     </div>
                   </div>
                 </div>
@@ -710,7 +699,7 @@ export default function AdminAgendaPage() {
 
                   {citasDelDia.length > 0 && (
                     <div className="flex justify-center gap-0.5 mt-1">
-                      {citasDelDia.slice(0, 3).map((_, i) => (
+                      {citasDelDia.slice(0, 3).map((_: any, i: number) => (
                         <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
                       ))}
                       {citasDelDia.length > 3 && (
@@ -895,7 +884,7 @@ export default function AdminAgendaPage() {
             className="w-full bg-transparent outline-none text-sm font-medium text-stone-700 dark:text-pink-100 min-w-0"
           >
             <option value="todos">Todos los profesionales</option>
-            {staff.map(s => (
+            {staff.map((s: any) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
@@ -944,7 +933,7 @@ export default function AdminAgendaPage() {
                   required
                 >
                   <option value="">Selecciona Clienta</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
@@ -962,7 +951,7 @@ export default function AdminAgendaPage() {
                   required
                 >
                   <option value="">Selecciona Servicio</option>
-                  {services.map(s => <option key={s.id} value={s.id}>{s.name} (${s.price})</option>)}
+                  {services.map((s: any) => <option key={s.id} value={s.id}>{s.name} (${s.price})</option>)}
                 </select>
               </div>
 
@@ -980,7 +969,7 @@ export default function AdminAgendaPage() {
                     } as React.CSSProperties}
                   >
                     <option value="">Sin asignar</option>
-                    {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {staff.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
               )}
