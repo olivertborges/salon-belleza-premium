@@ -125,51 +125,52 @@ export default function AdminAgendaPage() {
     })
   )
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
+const handleDragStart = (event: DragStartEvent) => {
+  setActiveId(event.active.id as string)
+}
+
+const handleDragEnd = async (event: DragEndEvent) => {
+  const { active, over } = event
+  if (!over) return
+
+  const appointmentId = active.id as string
+  const slotId = over.id as string
+
+  if (!slotId.startsWith('slot-')) return
+
+  const partes = slotId.split('-')
+  if (partes.length < 5) return
+
+  const nuevaFecha = `${partes[1]}-${partes[2]}-${partes[3]}`
+  const nuevaHora = `${partes[4]}:00:00`
+
+  const copiaCitasPrevias = [...citas]
+
+  setCitas((prev: any[]) => prev.map((c: any) =>
+    c.id === appointmentId 
+      ? { ...c, date: nuevaFecha, time: nuevaHora } 
+      : c
+  ))
+
+  try {
+    
+  const { error } = await (supabase
+    .from('appointments') as any)
+    .update({ date: nuevaFecha, time: nuevaHora })
+    .eq('id', appointmentId)
+
+    if (error) throw error
+    setSuccess('Cita movida correctamente')
+    setTimeout(() => setSuccess(null), 3000)
+  } catch (err) {
+    console.error('Error al actualizar fecha por arrastre:', err)
+    setCitas(copiaCitasPrevias)
+    setError('Error al mover la cita')
+    setTimeout(() => setError(null), 3000)
+  } finally {
+    setActiveId(null)
   }
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over) return
-
-    const appointmentId = active.id as string
-    const slotId = over.id as string
-
-    if (!slotId.startsWith('slot-')) return
-
-    const partes = slotId.split('-')
-    if (partes.length < 5) return
-
-    const nuevaFecha = `${partes[1]}-${partes[2]}-${partes[3]}`
-    const nuevaHora = `${partes[4]}:00:00`
-
-    const copiaCitasPrevias = [...citas]
-
-    setCitas(prev => prev.map((c: any) => 
-      c.id === appointmentId 
-        ? { ...c, date: nuevaFecha, time: nuevaHora } 
-        : c
-    ))
-
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ date: nuevaFecha, time: nuevaHora } as any)
-        .eq('id', appointmentId)
-
-      if (error) throw error
-      setSuccess('Cita movida correctamente')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
-      console.error('Error al actualizar fecha por arrastre:', err)
-      setCitas(copiaCitasPrevias)
-      setError('Error al mover la cita')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setActiveId(null)
-    }
-  }
+}
 
   const handleSlotClick = (dateStr: string, horaStr: string) => {
     setNewCita({
@@ -334,13 +335,13 @@ export default function AdminAgendaPage() {
 
   const cambiarEstadoCita = async (id: string, nuevoEstado: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled') => {
     try {
-      const { error } = await supabase
-        .from('appointments')
+      const { error } = await (supabase
+        .from('appointments') as any)
         .update({ status: nuevoEstado } as any)
         .eq('id', id)
 
       if (error) throw error
-      setCitas((prev: any) => prev.map((c: any) => c.id === id ? { ...c, status: nuevoEstado } : c))
+      setCitas((prev: any[]) => prev.map((c: any) => c.id === id ? { ...c, status: nuevoEstado } : c))
       if (selectedCita) setSelectedCita({ ...selectedCita, status: nuevoEstado })
       setSuccess('Estado actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
@@ -360,7 +361,7 @@ export default function AdminAgendaPage() {
         .eq('id', id)
 
       if (error) throw error
-      setCitas((prev: any) => prev.filter((c: any) => c.id !== id))
+      setCitas((prev: any[]) => prev.filter((c: any) => c.id !== id))
       setShowDetailModal(false)
       setSuccess('Cita eliminada correctamente')
       setTimeout(() => setSuccess(null), 3000)
@@ -384,13 +385,13 @@ export default function AdminAgendaPage() {
         total_price: selectedCita.total_price
       }
 
-      const { error } = await supabase
-        .from('appointments')
+      const { error } = await (supabase
+        .from('appointments') as any)
         .update(updateData as any)
         .eq('id', selectedCita.id)
 
       if (error) throw error
-      setCitas((prev: any) => prev.map((c: any) => c.id === selectedCita.id ? selectedCita : c))
+      setCitas((prev: any[]) => prev.map((c: any) => c.id === selectedCita.id ? selectedCita : c))
       setIsEditing(false)
       setShowDetailModal(false)
       setSuccess('Cita actualizada correctamente')
@@ -437,7 +438,7 @@ export default function AdminAgendaPage() {
       }
 
       if (data && data.length > 0) {
-        setCitas((prev: any) => [...prev, data[0]])
+        setCitas((prev: any[]) => [...prev, data[0]])
       }
 
       setShowNewAppointment(false)
