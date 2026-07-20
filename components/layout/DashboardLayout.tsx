@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [user])
 
-  // Menú unificado y 100% visible para desarrollo continuo
+  // Menú unificado y limpio para Fresh Nails
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -124,12 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Heart, label: 'Estética', href: '/estetica' },
     { icon: Camera, label: 'Galería & Looks', href: '/galeria' },
     { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
-    { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
-    
-    // Módulos de Inteligencia Artificial (Visibles fijos en Dev)
-    { icon: Sparkles, label: 'Espejo Facial IA', href: '/espejo-facial' },
-    { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/disenador-unas' },
-    { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/estudio-ia' }
+    { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
   const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
@@ -261,12 +256,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {item.href === '/promociones' && (
                   <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
                     HOT
-                  </span>
-                )}
-
-                {isPremiumLink && !isActive && (
-                  <span className="ml-auto text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                    IA
                   </span>
                 )}
               </Link>
