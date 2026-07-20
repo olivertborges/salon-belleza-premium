@@ -735,20 +735,22 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO: SIN SCROLL HORIZONTAL */}
-      <div className="flex flex-wrap gap-1.5 mb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-              categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24]'
-            }`}
-            style={categoryFilter === cat ? primaryBgStyle : {}}
-          >
-            {cat}
-          </button>
-        ))}
+      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO DEFINITIVAMENTE */}
+      <div className="w-full overflow-visible">
+        <div className="flex flex-wrap gap-1.5 w-full">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                categoryFilter === cat ? 'text-white shadow-md font-extrabold' : 'text-stone-500 bg-white border dark:bg-[#130f24]'
+              }`}
+              style={categoryFilter === cat ? primaryBgStyle : {}}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* RENDERIZADO DE CONTENIDO: SOPORTE MASONRY O REGULAR GRID */}
