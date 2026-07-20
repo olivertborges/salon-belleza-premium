@@ -31,7 +31,7 @@ const ALL_MENU_ITEMS = [
   { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones', color: 'from-emerald-500 to-teal-500' }, // ✅ NUEVO
   { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'from-emerald-500 to-teal-500' },
   { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'from-red-500 to-rose-500' },
-  { id: 'staff', name: 'Staff', icon: UsersRound, path: '/admin/staff', color: 'from-cyan-500 to-blue-500' },
+  { id: 'usuarios', name: 'Usuarios', icon: UsersRound, path: '/admin/usuarios', color: 'from-cyan-500 to-blue-500' },
   { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'from-orange-500 to-amber-500' },
 ]
 
