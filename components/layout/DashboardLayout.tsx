@@ -127,9 +127,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' },
     
     // Módulos de Inteligencia Artificial (Visibles fijos en Dev)
-    { icon: Sparkles, label: 'Espejo Facial IA', href: '/client/espejo-facial' },
-    { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/client/disenador-unas' },
-    { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/client/estudio-ia' }
+    { icon: Sparkles, label: 'Espejo Facial IA', href: '/espejo-facial' },
+    { icon: Sparkles, label: 'Diseñador de Uñas IA', href: '/disenador-unas' },
+    { icon: Sparkles, label: 'Estudio de Estilo IA', href: '/estudio-ia' }
   ]
 
   const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
