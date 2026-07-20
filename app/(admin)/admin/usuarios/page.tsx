@@ -117,7 +117,6 @@ export default function AdminUsuariosPage() {
       const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) {
-        // Si falla por tenant_id, intentamos sin filtro
         if (error.message?.includes('tenant_id')) {
           console.log('⚠️ Falló con tenant_id, intentando sin filtro...')
           const { data: fallbackData, error: fallbackError } = await supabase
@@ -151,7 +150,7 @@ export default function AdminUsuariosPage() {
   }, [tenantId])
 
   // ============================================================
-  // 2. CREAR USUARIO
+  // 2. CREAR USUARIO - VÍA API (NO SOBRESCRIBE SESIÓN)
   // ============================================================
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,57 +158,35 @@ export default function AdminUsuariosPage() {
     setSuccess(null)
 
     try {
-      // 1. Crear usuario en Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.full_name,
-            phone: formData.phone,
-            role: formData.role,
-            level: formData.level,
-            tenant_id: tenantId
-          }
-        }
+      const response = await fetch('/api/auth/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          role: formData.role,
+          level: formData.level,
+          tenant_id: tenantId || null
+        })
       })
 
-      if (authError) throw authError
+      const data = await response.json()
 
-      if (authData.user) {
-        // 2. Crear perfil en profiles
-        const profileData = {
-          id: authData.user.id,
-          tenant_id: tenantId || null,
-          email: formData.email,
-          full_name: formData.full_name || null,
-          phone: formData.phone || null,
-          role: formData.role,
-          level: formData.level || 'bronze',
-          is_active: true,
-          loyalty_points: 0,
-          avatar_url: null,
-          referral_code: null,
-          referred_by: null,
-          preferences: {}
-        }
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([profileData])
-
-        if (profileError) {
-          console.error('❌ Error insertando perfil:', profileError)
-          throw profileError
-        }
-
-        setSuccess(`✅ Usuario ${formData.full_name} creado como ${formData.role}`)
-        setTimeout(() => setSuccess(null), 3000)
-        
-        setShowModal(false)
-        setFormData({ email: '', password: '', full_name: '', phone: '', role: 'staff', level: 'bronze' })
-        fetchUsers(false)
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear el usuario')
       }
+
+      setSuccess(`✅ Usuario ${formData.full_name} creado como ${formData.role}`)
+      setTimeout(() => setSuccess(null), 3000)
+      
+      setShowModal(false)
+      setFormData({ email: '', password: '', full_name: '', phone: '', role: 'staff', level: 'bronze' })
+      fetchUsers(false)
+
     } catch (err: any) {
       console.error('Error creando usuario:', err)
       setError(err.message || 'Error al crear el usuario')
