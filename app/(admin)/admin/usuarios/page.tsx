@@ -11,7 +11,8 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  Filter, User, MoreVertical, Gift, Bug
+  Filter, User, MoreVertical, Gift, Bug,
+  GraduationCap
 } from 'lucide-react'
 
 type UserProfile = {
@@ -21,7 +22,7 @@ type UserProfile = {
   full_name: string | null
   phone: string | null
   avatar_url: string | null
-  role: 'admin' | 'owner' | 'staff' | 'client'
+  role: 'admin' | 'owner' | 'staff' | 'client' | 'student'
   loyalty_points: number
   level: string
   referral_code: string | null
@@ -36,7 +37,8 @@ const ROLES = [
   { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown },
   { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award },
   { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog },
-  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User }
+  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User },
+  { value: 'student', label: 'Estudiante', color: 'from-blue-500 to-cyan-500', icon: GraduationCap }
 ]
 
 const LEVELS = [
@@ -113,7 +115,6 @@ export default function AdminUsuariosPage() {
   // 1. CARGAR USUARIOS
   // ============================================================
   const fetchUsers = async (showLoading = true) => {
-    // ⚠️ No ejecutar si no hay tenantId Y no hay usuario autenticado
     if (!tenantId && !user) {
       addDebugLog(`⏳ Esperando autenticación...`)
       return
@@ -171,14 +172,13 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 2. EFECTO PRINCIPAL - SOLO EJECUTAR CUANDO ESTÁ MONTADO Y AUTENTICADO
+  // 2. EFECTO PRINCIPAL
   // ============================================================
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    // Solo ejecutar cuando el componente está montado y la autenticación ha terminado
     if (!mounted) return
     if (authLoading) {
       addDebugLog(`⏳ Auth loading...`)
@@ -222,7 +222,6 @@ export default function AdminUsuariosPage() {
     }
 
     try {
-      // Obtener la sesión actual para obtener el token
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
@@ -496,15 +495,24 @@ export default function AdminUsuariosPage() {
   })
 
   // ============================================================
-  // 11. ESTADÍSTICAS
+  // 11. ESTADÍSTICAS - CORREGIDO CON STUDENT
   // ============================================================
   const totalUsuarios = users.length
   const totalAdmins = users.filter(u => u.role === 'admin' || u.role === 'owner').length
   const totalStaff = users.filter(u => u.role === 'staff').length
-  const totalClientes = users.filter(u => u.role === 'client').length
+  const totalClientes = users.filter(u => u.role === 'client' || u.role === 'cliente').length
+  const totalStudents = users.filter(u => u.role === 'student').length
+  const totalOtros = users.filter(u => 
+    u.role !== 'admin' && 
+    u.role !== 'owner' && 
+    u.role !== 'staff' && 
+    u.role !== 'client' && 
+    u.role !== 'cliente' &&
+    u.role !== 'student'
+  ).length
 
   // ============================================================
-  // 12. LOADING - ESPERAR A QUE LA AUTENTICACIÓN ESTÉ LISTA
+  // 12. VERIFICAR PERMISOS
   // ============================================================
   if (authLoading || !mounted) {
     return (
@@ -520,9 +528,6 @@ export default function AdminUsuariosPage() {
     )
   }
 
-  // ============================================================
-  // 13. VERIFICAR PERMISOS
-  // ============================================================
   if (role !== 'admin' && role !== 'owner') {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4 p-4 text-center">
@@ -551,7 +556,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 14. RENDER
+  // 13. RENDER
   // ============================================================
   return (
     <motion.div 
@@ -718,8 +723,8 @@ export default function AdminUsuariosPage() {
         )}
       </AnimatePresence>
 
-      {/* KPIS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* KPIS - CORREGIDO CON 5 COLUMNAS */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
           <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
             <Users className="w-4 h-4" />
@@ -757,6 +762,16 @@ export default function AdminUsuariosPage() {
           <div className="min-w-0">
             <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
             <h3 className="text-sm font-mono font-black text-emerald-500">{totalClientes}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+            <GraduationCap className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Students</p>
+            <h3 className="text-sm font-mono font-black text-blue-500">{totalStudents}</h3>
           </div>
         </div>
       </div>
@@ -844,7 +859,9 @@ export default function AdminUsuariosPage() {
                           ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
                           : user.role === 'staff'
                             ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                            : user.role === 'student'
+                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                              : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                       }`}>
                         {user.full_name?.charAt(0).toUpperCase() || 'U'}
                       </div>
