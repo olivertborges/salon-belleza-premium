@@ -99,23 +99,41 @@ export default function AdminUsuariosPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  // CARGAR USUARIOS
+  // ============================================================
+  // 1. CARGAR USUARIOS
+  // ============================================================
   const fetchUsers = async (showLoading = true) => {
-    if (!tenantId) return
-    
     if (showLoading) setLoading(true)
     else setRefreshing(true)
     setError(null)
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
+      let query = supabase.from('profiles').select('*')
+      
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
-      if (error) throw error
-      setUsers(data || [])
+      if (error) {
+        // Si falla por tenant_id, intentamos sin filtro
+        if (error.message?.includes('tenant_id')) {
+          console.log('⚠️ Falló con tenant_id, intentando sin filtro...')
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false })
+          
+          if (fallbackError) throw fallbackError
+          setUsers(fallbackData || [])
+        } else {
+          throw error
+        }
+      } else {
+        setUsers(data || [])
+      }
+      
       setSuccess('Usuarios cargados correctamente')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
@@ -129,13 +147,14 @@ export default function AdminUsuariosPage() {
   }
 
   useEffect(() => {
-    if (tenantId) fetchUsers()
+    fetchUsers()
   }, [tenantId])
 
-  // CREAR USUARIO
+  // ============================================================
+  // 2. CREAR USUARIO
+  // ============================================================
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!tenantId) return
     setError(null)
     setSuccess(null)
 
@@ -158,10 +177,10 @@ export default function AdminUsuariosPage() {
       if (authError) throw authError
 
       if (authData.user) {
-        // 2. Crear perfil en profiles con las columnas exactas
+        // 2. Crear perfil en profiles
         const profileData = {
           id: authData.user.id,
-          tenant_id: tenantId,
+          tenant_id: tenantId || null,
           email: formData.email,
           full_name: formData.full_name || null,
           phone: formData.phone || null,
@@ -174,8 +193,6 @@ export default function AdminUsuariosPage() {
           referred_by: null,
           preferences: {}
         }
-
-        console.log('📝 Datos a insertar en profiles:', profileData)
 
         const { error: profileError } = await supabase
           .from('profiles')
@@ -200,7 +217,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // EDITAR USUARIO
+  // ============================================================
+  // 3. EDITAR USUARIO
+  // ============================================================
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingUser) return
@@ -215,8 +234,6 @@ export default function AdminUsuariosPage() {
         level: formData.level || 'bronze',
         updated_at: new Date().toISOString()
       }
-
-      console.log('📝 Datos a actualizar:', updateData)
 
       const { error } = await supabase
         .from('profiles')
@@ -238,7 +255,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // ACTIVAR/DESACTIVAR
+  // ============================================================
+  // 4. ACTIVAR / DESACTIVAR
+  // ============================================================
   const toggleUserStatus = async (user: UserProfile) => {
     if (!user.id) return
     setError(null)
@@ -262,7 +281,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // ELIMINAR USUARIO
+  // ============================================================
+  // 5. ELIMINAR USUARIO
+  // ============================================================
   const deleteUser = async (user: UserProfile) => {
     if (!user.id) return
     
@@ -295,7 +316,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // RESETEAR CONTRASEÑA
+  // ============================================================
+  // 6. RESETEAR CONTRASEÑA
+  // ============================================================
   const resetPassword = async (email: string) => {
     if (!confirm(`¿Enviar enlace de recuperación a ${email}?`)) return
     setError(null)
@@ -317,7 +340,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  // SUMAR PUNTOS
+  // ============================================================
+  // 7. AGREGAR PUNTOS DE FIDELIDAD
+  // ============================================================
   const addLoyaltyPoints = async (user: UserProfile, points: number) => {
     if (!user.id) return
     setError(null)
@@ -342,6 +367,9 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  // ============================================================
+  // 8. ABRIR MODALES
+  // ============================================================
   const openEditModal = (user: UserProfile) => {
     setEditingUser(user)
     setFormData({
@@ -368,6 +396,9 @@ export default function AdminUsuariosPage() {
     setShowModal(true)
   }
 
+  // ============================================================
+  // 9. FILTROS
+  // ============================================================
   const filteredUsers = users.filter(user => {
     const matchSearch = 
       user.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -379,11 +410,17 @@ export default function AdminUsuariosPage() {
     return matchSearch && matchRole && matchStatus
   })
 
+  // ============================================================
+  // 10. ESTADÍSTICAS
+  // ============================================================
   const totalUsuarios = users.length
   const totalAdmins = users.filter(u => u.role === 'admin' || u.role === 'owner').length
   const totalStaff = users.filter(u => u.role === 'staff').length
   const totalClientes = users.filter(u => u.role === 'client').length
 
+  // ============================================================
+  // 11. LOADING
+  // ============================================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
@@ -398,6 +435,9 @@ export default function AdminUsuariosPage() {
     )
   }
 
+  // ============================================================
+  // 12. RENDER
+  // ============================================================
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -761,7 +801,7 @@ export default function AdminUsuariosPage() {
         </AnimatePresence>
       </div>
 
-      {/* MODAL DE CREACIÓN/EDICIÓN */}
+      {/* MODAL */}
       <AnimatePresence>
         {showModal && (
           <motion.div
