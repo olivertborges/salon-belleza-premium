@@ -47,24 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  const [authInitialized, setAuthInitialized] = useState(false)
 
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
-  const authCheckDone = useRef(false)
 
   // ============================================================
-  // 1. OBTENER PERFIL DEL USUARIO (CORREGIDO: NO RECARGA SI YA EXISTE)
+  // 1. OBTENER PERFIL DEL USUARIO
   // ============================================================
   const fetchUserDataAndRole = async (userId: string) => {
     if (!userId) return
-
-    // ✅ EVITAMOS RECARGAS INNECESARIAS SI YA TENEMOS LOS DATOS
-    if (lastFetchedUserId.current === userId && role !== null) {
-      console.log('ℹ️ [Perfil] Datos ya cargados, saltando recarga.')
-      setAuthInitialized(true)
-      return
-    }
 
     try {
       console.log(`📡 [Perfil] Consultando perfil para: ${userId.substring(0, 6)}...`)
@@ -79,14 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileErr) {
         console.error(`❌ [Perfil] Error: ${profileErr.message}`)
         setRole('client')
-        setAuthInitialized(true)
         return
       }
 
       if (!profile) {
         console.log('⚠️ [Perfil] Sin perfil, asignando "client"')
         setRole('client')
-        setAuthInitialized(true)
         return
       }
 
@@ -135,12 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setAuthInitialized(true)
-
     } catch (error: any) {
       console.error(`💥 [Perfil] Error: ${error.message || error}`)
       setRole('client')
-      setAuthInitialized(true)
     }
   }
 
@@ -154,48 +140,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setClientId(null)
     setTenantId(null)
     setPoints(null)
-    setAuthInitialized(false)
     lastFetchedUserId.current = null
-    authCheckDone.current = false
   }
 
   // ============================================================
-  // 3. INICIALIZAR AUTENTICACIÓN
+  // 3. INICIALIZAR AUTENTICACIÓN - SIMPLIFICADO
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
 
     const initializeAuth = async () => {
-      if (authCheckDone.current) {
-        console.log('⏭️ Auth ya verificado, saltando...')
-        return
-      }
-
       console.log('🚀 [Init] Inicializando autenticación...')
 
       try {
+        // 🔥 OBTENER SESIÓN
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
           console.error(`❌ [Init] Error: ${error.message}`)
-          setAuthInitialized(true)
+          setLoading(false)
+          return
         }
 
         if (session?.user) {
           console.log(`✅ [Init] Sesión activa: ${session.user.email}`)
           setUser(session.user)
+          // 🔥 CARGAR ROL INMEDIATAMENTE
           await fetchUserDataAndRole(session.user.id)
         } else {
           console.log('⚠️ [Init] Sin sesión activa')
-          setAuthInitialized(true)
         }
       } catch (err: any) {
         console.error(`❌ [Init] Error: ${err.message}`)
-        setAuthInitialized(true)
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
-          authCheckDone.current = true
           console.log('🔓 [Init] Inicialización completada')
         }
       }
@@ -203,16 +182,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
+    // 🔥 SUSCRIPCIÓN A CAMBIOS DE AUTENTICACIÓN
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔔 [Event] ${event}`)
 
-      if (!isMountedRef.current || authCheckDone.current) return
+      if (!isMountedRef.current) return
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
           console.log(`👤 [Event] Usuario: ${session.user.email}`)
           setUser(session.user)
-          lastFetchedUserId.current = null
           await fetchUserDataAndRole(session.user.id)
         }
         setLoading(false)
@@ -237,7 +216,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user?.id) {
       console.log('🔄 Refresh manual')
       lastFetchedUserId.current = null
-      setAuthInitialized(false)
       await fetchUserDataAndRole(user.id)
     }
   }
@@ -250,7 +228,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setLoading(true)
-      authCheckDone.current = false
 
       const cleanEmail = email.trim().toLowerCase()
       console.log(`📧 [signIn] Email: ${cleanEmail}`)
@@ -378,7 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clientId,
     tenantId,
     points,
-    loading: loading || !authInitialized,
+    loading,
     signIn,
     signUp,
     signOut,
