@@ -353,25 +353,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 8. OBTENER TENANT
+  // 8. OBTENER TENANT - CORREGIDO
   // ============================================================
   const getEmergencyTenantId = async (): Promise<string | null> => {
     if (tenantId) return tenantId
     if (!user?.id) return null
 
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (data?.tenant_id) {
-        setTenantId(data.tenant_id)
-        return data.tenant_id
+      // 🔥 CORREGIDO: Verificar que data existe y tiene tenant_id
+      if (data && !error) {
+        const profileData = data as { tenant_id: string | null }
+        if (profileData.tenant_id) {
+          setTenantId(profileData.tenant_id)
+          return profileData.tenant_id
+        }
       }
       return null
     } catch (error) {
+      console.error('Error obteniendo tenant:', error)
       return null
     }
   }
