@@ -21,7 +21,6 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        // ✅ TIPADO CORRECTO PARA COOKIES
         setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
@@ -32,59 +31,95 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Obtener usuario
+  // 3. Obtener usuario y perfil EN UNA SOLA CONSULTA
   const { data: { user } } = await supabase.auth.getUser()
-
-  // ============================================================
-  // ✅ CASO 1: Usuario NO autenticado
-  // ============================================================
+  
+  // Si no hay usuario, permitir acceso solo a login
   if (!user) {
-    if (pathname.startsWith('/admin') || pathname === '/dashboard') {
+    // Si está en ruta protegida, redirigir a login
+    if (pathname !== '/login' && pathname !== '/') {
+      console.log('🔒 Sin sesión, redirigiendo a login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  // ============================================================
-  // ✅ CASO 2: Usuario autenticado
-  // ============================================================
+  // Obtener el rol del usuario
+  let userRole = 'client'
+  let isAdmin = false
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const userRole = profile?.role || 'client'
-  const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
-
-  // ============================================================
-  // ✅ CASO 2a: Usuario en /login - REDIRIGIR SEGÚN ROL
-  // ============================================================
-  if (pathname === '/login') {
-    console.log('🔐 Usuario autenticado en login, redirigiendo a:', isAdmin ? '/dashboard' : '/portal')
-    return NextResponse.redirect(new URL(isAdmin ? '/dashboard' : '/portal', request.url))
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    
+    userRole = profile?.role || 'client'
+    isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+    
+    console.log(`👤 Usuario: ${user.email} | Rol: ${userRole} | Admin: ${isAdmin}`)
+  } catch (error) {
+    console.error('Error obteniendo rol:', error)
+    // Si hay error, asumir cliente
+    userRole = 'client'
+    isAdmin = false
   }
 
   // ============================================================
-  // ✅ CASO 2b: Usuario en /dashboard o /admin - VERIFICAR ROL
+  // 📍 REGLAS DE REDIRECCIÓN - SIN BUCLE
   // ============================================================
-  if (pathname.startsWith('/admin') || pathname === '/dashboard') {
+
+  // 🔥 CASO 1: Usuario en /login → Redirigir según rol
+  if (pathname === '/login') {
+    const target = isAdmin ? '/dashboard' : '/portal'
+    console.log(`🔄 Usuario autenticado en login, redirigiendo a: ${target}`)
+    return NextResponse.redirect(new URL(target, request.url))
+  }
+
+  // 🔥 CASO 2: Usuario en /dashboard o /admin → Verificar rol
+  if (pathname === '/dashboard' || pathname.startsWith('/admin')) {
     if (!isAdmin) {
-      console.log('⛔ Usuario no autorizado en admin, redirigiendo a /portal')
+      console.log(`⛔ Usuario ${userRole} intentando acceder a admin, redirigiendo a /portal`)
       return NextResponse.redirect(new URL('/portal', request.url))
     }
+    // Si es admin, permitir acceso
     return response
   }
 
+  // 🔥 CASO 3: Usuario en /portal → Verificar que tenga acceso
+  if (pathname === '/portal') {
+    // Todos los usuarios autenticados pueden acceder a portal
+    return response
+  }
+
+  // 🔥 CASO 4: Usuario en / → Determinar destino según rol
+  if (pathname === '/') {
+    const target = isAdmin ? '/dashboard' : '/portal'
+    console.log(`🔄 Usuario en raíz, redirigiendo a: ${target}`)
+    return NextResponse.redirect(new URL(target, request.url))
+  }
+
+  // ============================================================
+  // ✅ CUALQUIER OTRA RUTA: Permitir acceso
+  // ============================================================
   return response
 }
 
+// Configuración del middleware
 export const config = {
   matcher: [
+    /*
+     * Coincidir con las rutas principales:
+     * - Dashboard y admin
+     * - Login
+     * - Portal
+     * - Raíz
+     */
+    '/',
     '/dashboard',
     '/admin/:path*',
     '/login',
-    '/portal'
+    '/portal',
   ],
 }
