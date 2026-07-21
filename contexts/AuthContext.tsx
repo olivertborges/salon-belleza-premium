@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       lastFetchedUserId.current = userId
 
-      // ✅ Usar maybeSingle() en lugar de single()
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role, tenant_id')
@@ -63,13 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // ✅ @ts-ignore para evitar el error de tipo
-      // @ts-ignore
-      const userRole = profile?.role || 'client'
+      // ✅ Usamos as any para evitar errores de tipo
+      const profileAny = profile as any
+
+      const userRole = profileAny?.role || 'client'
       setRole(userRole)
 
-      if (profile?.tenant_id) {
-        setTenantId(profile.tenant_id)
+      if (profileAny?.tenant_id) {
+        setTenantId(profileAny.tenant_id)
       }
 
       if (userRole === 'client') {
@@ -84,19 +84,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (client) {
-          setClientId(client.id)
-          if (client.tenant_id) {
-            setTenantId(client.tenant_id)
+          const clientAny = client as any
+          setClientId(clientAny.id)
+          if (clientAny.tenant_id) {
+            setTenantId(clientAny.tenant_id)
           }
 
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
             .select('glow_points, hair_points')
-            .eq('client_id', client.id)
+            .eq('client_id', clientAny.id)
             .maybeSingle()
 
           if (wallet) {
-            setPoints((wallet.glow_points || 0) + (wallet.hair_points || 0))
+            const walletAny = wallet as any
+            setPoints((walletAny.glow_points || 0) + (walletAny.hair_points || 0))
           }
         }
       }
@@ -125,9 +127,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null
       }
 
-      if (data?.tenant_id) {
-        setTenantId(data.tenant_id)
-        return data.tenant_id
+      if (data) {
+        const dataAny = data as any
+        if (dataAny.tenant_id) {
+          setTenantId(dataAny.tenant_id)
+          return dataAny.tenant_id
+        }
       }
 
       return null
