@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (lastFetchedUserId.current === userId && role !== null) {
       console.log('ℹ️ [Perfil] Datos ya cargados, saltando.')
+      setAuthInitialized(true)
       return
     }
 
@@ -88,10 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // 🔥 TIPADO CORRECTO
       const profileData = profile as Profile
       const userRole = profileData.role || 'client'
-      
+
       console.log(`✅ [Perfil] Rol encontrado: "${userRole}"`)
       setRole(userRole)
 
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (userRole === 'client') {
         console.log('📡 [Perfil] Obteniendo datos de cliente...')
-        
+
         const { data: client, error: clientErr } = await supabase
           .from('clients')
           .select('id, tenant_id')
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (client) {
           const clientData = client as Client
           setClientId(clientData.id)
-          
+
           if (clientData.tenant_id) {
             setTenantId(clientData.tenant_id)
           }
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 3. INICIALIZAR AUTENTICACIÓN
+  // 3. INICIALIZAR AUTENTICACIÓN (CORREGIDO)
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
@@ -171,21 +171,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('🚀 [Init] Inicializando autenticación...')
-      
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
           console.error(`❌ [Init] Error: ${error.message}`)
-          setLoading(false)
           setAuthInitialized(true)
-          authCheckDone.current = true
-          return
         }
 
         if (session?.user) {
           console.log(`✅ [Init] Sesión activa: ${session.user.email}`)
           setUser(session.user)
+          // Solo marcamos inicializado DESPUÉS de cargar todo
           await fetchUserDataAndRole(session.user.id)
         } else {
           console.log('⚠️ [Init] Sin sesión activa')
@@ -193,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err: any) {
         console.error(`❌ [Init] Error: ${err.message}`)
+        setAuthInitialized(true)
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
@@ -207,29 +206,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔔 [Event] ${event}`)
 
-      if (!isMountedRef.current) return
+      if (!isMountedRef.current || authCheckDone.current) return
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         if (session?.user) {
           console.log(`👤 [Event] Usuario: ${session.user.email}`)
           setUser(session.user)
+          lastFetchedUserId.current = null
           await fetchUserDataAndRole(session.user.id)
         }
         setLoading(false)
-        setAuthInitialized(true)
       }
 
       if (event === 'SIGNED_OUT') {
         clearAuthState()
         setLoading(false)
-      }
-
-      if (event === 'INITIAL_SESSION' && session?.user) {
-        console.log('🔄 [Event] Sesión inicial')
-        setUser(session.user)
-        await fetchUserDataAndRole(session.user.id)
-        setLoading(false)
-        setAuthInitialized(true)
       }
     })
 
@@ -246,6 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user?.id) {
       console.log('🔄 Refresh manual')
       lastFetchedUserId.current = null
+      setAuthInitialized(false)
       await fetchUserDataAndRole(user.id)
     }
   }
@@ -255,7 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ============================================================
   const signIn = async (email: string, password: string) => {
     console.log('🏁 [signIn] Iniciando login...')
-    
+
     try {
       setLoading(true)
       authCheckDone.current = false
@@ -298,7 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
       console.log(`📝 [signUp] Registrando: ${email}`)
-      
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
@@ -335,16 +327,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
       console.log('🚪 [signOut] Cerrando sesión...')
-      
+
       await supabase.auth.signOut()
-      
+
       if (typeof window !== 'undefined') {
         localStorage.removeItem('freshnails-auth-token')
       }
-      
+
       clearAuthState()
       router.push('/login')
-      
+
     } catch (err) {
       console.error('❌ [signOut] Error:', err)
     } finally {
@@ -353,7 +345,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 8. OBTENER TENANT - CORREGIDO
+  // 8. OBTENER TENANT
   // ============================================================
   const getEmergencyTenantId = async (): Promise<string | null> => {
     if (tenantId) return tenantId
@@ -366,7 +358,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', user.id)
         .maybeSingle()
 
-      // 🔥 CORREGIDO: Verificar que data existe y tiene tenant_id
       if (data && !error) {
         const profileData = data as { tenant_id: string | null }
         if (profileData.tenant_id) {
