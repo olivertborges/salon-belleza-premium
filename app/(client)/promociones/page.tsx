@@ -1,4 +1,3 @@
-// app/(client)/promociones/page.tsx
 // @ts-nocheck
 'use client'
 
@@ -34,7 +33,16 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertCircle,
-  Users
+  Users,
+  Crown,
+  Gem,
+  ArrowRight,
+  Heart,
+  Compass,
+  Shield,
+  Award,
+  Sparkle,
+  PartyPopper
 } from 'lucide-react'
 
 interface Promocion {
@@ -109,7 +117,7 @@ export default function PromocionesCliente() {
   const [refreshing, setRefreshing] = useState(false)
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
 
   useEffect(() => {
@@ -138,7 +146,7 @@ export default function PromocionesCliente() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      
+
       setPromociones(data || [])
       setFilteredPromociones(data || [])
     } catch (error) {
@@ -231,7 +239,7 @@ export default function PromocionesCliente() {
       } catch (e) {}
 
       setAppliedPromo(promo.id)
-      setSuccess(`¡Promoción "${promo.title}" aplicada con éxito!`)
+      setSuccess(`🎉 ¡Promoción "${promo.title}" aplicada con éxito!`)
       loadPromociones()
 
       setTimeout(() => {
@@ -282,163 +290,387 @@ export default function PromocionesCliente() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: primaryColor }} />
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Cargando Experiencias Exclusivas...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Gift className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              EXPERIENCIAS EXCLUSIVAS
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-1 max-w-7xl mx-auto">
+    <div className={`space-y-8 p-1 max-w-7xl mx-auto pb-16 antialiased transition-colors duration-700 ${
+      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b]' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30'
+    }`}>
 
-      {/* HEADER */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: primaryColor }}>
-              <Gift className="w-5 h-5 md:w-6 md:h-6" />
+      {/* ============================================================ */}
+      {/* HEADER — PRESTIGE EDITION */}
+      {/* ============================================================ */}
+      <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
+          : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
+      }`}>
+        {/* Efectos de luz ambiental */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
+        <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        {/* Rejilla decorativa */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
+              isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/20 border-white/30'
+            }`}>
+              <Sparkle className="w-3.5 h-3.5 text-amber-400 animate-[spin_4s_linear_infinite]" />
+              <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+                isDark ? 'text-pink-300' : 'text-white'
+              }`}>
+                ✦ {settings?.business_name || 'Fresh Nails Studio'} ✦
+              </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: primaryColor }}>
-                ✨ {settings?.business_name || 'Fresh Nails Studio'}
-              </p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Ofertas Exclusivas
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                {filteredPromociones.length} promociones disponibles
-              </p>
-            </div>
+
+            <h2 className={`text-3xl md:text-5xl font-black tracking-tight leading-[1.1] ${
+              isDark ? 'text-white' : 'text-white'
+            }`}>
+              Ofertas{' '}
+              <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+                Exclusivas
+              </span>
+            </h2>
+            <p className={`text-xs font-medium tracking-wide ${
+              isDark ? 'text-stone-400' : 'text-pink-100/90'
+            }`}>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2" />
+              {filteredPromociones.length} promociones disponibles para ti
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+          <div className="flex items-center gap-3 self-start md:self-auto">
             <button 
               onClick={() => loadPromociones()} 
               disabled={refreshing} 
-              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: primaryColor }}
+              className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 border shadow-lg group hover:scale-105 active:scale-95 ${
+                isDark 
+                  ? 'bg-stone-900/80 border-stone-800/80 text-stone-400 hover:border-pink-500/30 hover:text-white' 
+                  : 'bg-white/90 border-pink-100/80 text-stone-600 hover:border-pink-300 hover:shadow-pink-200/20'
+              }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''} group-hover:rotate-180 transition-transform duration-500`} />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
+            
             <Link 
               href="/portal"
-              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ backgroundColor: primaryColor }}
+              className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center gap-2 shadow-xl group hover:scale-105 active:scale-95 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50' 
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50'
+              }`}
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Volver
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform duration-300" /> 
+              <span className="relative">Volver</span>
             </Link>
           </div>
         </div>
+
+        {/* Decoración esquina */}
+        <div className="absolute bottom-5 right-8 opacity-10 text-white text-[10px] font-black tracking-[0.3em] select-none pointer-events-none">
+          ✦ PROMOCIONES ✦
+        </div>
       </div>
 
-      {/* MENSAJES */}
+      {/* ============================================================ */}
+      {/* MENSAJES — REDISEÑADOS */}
+      {/* ============================================================ */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
-          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
+        <div className={`flex items-start gap-4 border p-5 rounded-2xl backdrop-blur-md transition-all duration-500 shadow-lg ${
+          isDark 
+            ? 'bg-gradient-to-r from-rose-500/10 to-rose-600/5 border-rose-500/20 text-rose-400 shadow-rose-500/5' 
+            : 'bg-gradient-to-r from-rose-50/80 to-rose-100/40 border-rose-200/60 text-rose-800 shadow-rose-200/20'
+        }`}>
+          <div className={`p-2 rounded-xl shrink-0 ${
+            isDark ? 'bg-rose-500/10' : 'bg-rose-100/50'
+          }`}>
+            <AlertCircle className="w-5 h-5 text-rose-500" />
+          </div>
+          <div className="space-y-0.5">
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono ${
+              isDark ? 'text-rose-400/80' : 'text-rose-700'
+            }`}>Error</p>
+            <p className={`text-sm font-medium ${
+              isDark ? 'text-rose-300/90' : 'text-rose-800'
+            }`}>{error}</p>
+          </div>
         </div>
       )}
+      
       {success && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
+        <div className={`flex items-start gap-4 border p-5 rounded-2xl backdrop-blur-md transition-all duration-500 shadow-lg animate-fadeIn ${
+          isDark 
+            ? 'bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 text-emerald-400 shadow-emerald-500/5' 
+            : 'bg-gradient-to-r from-emerald-50/80 to-emerald-100/40 border-emerald-200/60 text-emerald-800 shadow-emerald-200/20'
+        }`}>
+          <div className={`p-2 rounded-xl shrink-0 ${
+            isDark ? 'bg-emerald-500/10' : 'bg-emerald-100/50'
+          }`}>
+            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="space-y-0.5">
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono ${
+              isDark ? 'text-emerald-400/80' : 'text-emerald-700'
+            }`}>¡Éxito!</p>
+            <p className={`text-sm font-medium ${
+              isDark ? 'text-emerald-300/90' : 'text-emerald-800'
+            }`}>{success}</p>
+          </div>
         </div>
       )}
 
-      {/* KPIS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-2xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
-            <Gift className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black">Promociones</p>
-            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{promociones.length}</h3>
+      {/* ============================================================ */}
+      {/* KPIS — REDISEÑADOS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className={`group p-4 rounded-2xl border shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+          isDark 
+            ? 'bg-stone-900/40 border-stone-900/60 shadow-black/20 hover:border-pink-500/30' 
+            : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 hover:border-pink-300/50 backdrop-blur-sm'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+              isDark ? 'bg-pink-500/10 text-pink-400' : 'bg-pink-100/50 text-pink-600'
+            }`}>
+              <Gift className="w-4 h-4" />
+            </div>
+            <div>
+              <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}>Promociones</p>
+              <h3 className={`text-xl font-black ${
+                isDark ? 'text-white' : 'text-stone-800'
+              }`}>{promociones.length}</h3>
+            </div>
           </div>
         </div>
-        <div className="rounded-2xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-            <Star className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black">Destacadas</p>
-            <h3 className="text-sm font-mono font-black text-amber-500">{promociones.filter(p => p.featured).length}</h3>
+        
+        <div className={`group p-4 rounded-2xl border shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+          isDark 
+            ? 'bg-stone-900/40 border-stone-900/60 shadow-black/20 hover:border-amber-500/30' 
+            : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 hover:border-amber-300/50 backdrop-blur-sm'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+              isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100/50 text-amber-600'
+            }`}>
+              <Star className="w-4 h-4 fill-current" />
+            </div>
+            <div>
+              <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}>Destacadas</p>
+              <h3 className={`text-xl font-black ${
+                isDark ? 'text-amber-400' : 'text-amber-600'
+              }`}>{promociones.filter(p => p.featured).length}</h3>
+            </div>
           </div>
         </div>
-        <div className="rounded-2xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
-            <TrendingUp className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black">Activas</p>
-            <h3 className="text-sm font-mono font-black text-emerald-500">{promociones.length}</h3>
+        
+        <div className={`group p-4 rounded-2xl border shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl ${
+          isDark 
+            ? 'bg-stone-900/40 border-stone-900/60 shadow-black/20 hover:border-emerald-500/30' 
+            : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 hover:border-emerald-300/50 backdrop-blur-sm'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+              isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100/50 text-emerald-600'
+            }`}>
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}>Activas</p>
+              <h3 className={`text-xl font-black ${
+                isDark ? 'text-emerald-400' : 'text-emerald-600'
+              }`}>{promociones.length}</h3>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* FILTROS */}
-      <div className="flex flex-col md:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+      {/* ============================================================ */}
+      {/* FILTROS — REDISEÑADOS */}
+      {/* ============================================================ */}
+      <div className={`flex flex-col md:flex-row gap-3 p-4 rounded-2xl border shadow-lg ${
+        isDark 
+          ? 'bg-[#130f24]/80 border-stone-900/60 shadow-black/20' 
+          : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 backdrop-blur-sm'
+      }`}>
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
+          <Search className={`w-4 h-4 shrink-0 ${
+            isDark ? 'text-stone-500' : 'text-stone-400'
+          }`} />
           <input 
             type="text" 
             placeholder="Buscar promociones..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
+            className={`bg-transparent border-none outline-none text-xs w-full font-medium ${
+              isDark ? 'text-white placeholder:text-stone-600' : 'text-stone-800 placeholder:text-stone-400'
+            }`}
           />
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 border ${
-              showFilters ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950'
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 border transition-all duration-300 ${
+              showFilters 
+                ? 'text-white border-transparent shadow-md scale-105' 
+                : isDark ? 'bg-[#0f0c1b] border-stone-800/60 text-stone-400' : 'bg-white border-stone-200/60 text-stone-500'
             }`}
             style={showFilters ? { background: brandGradient.backgroundImage } : {}}
           >
             <Filter className="w-3.5 h-3.5" /> Categorías
           </button>
-          <div className="flex rounded-xl overflow-hidden border p-0.5 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950">
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}>
+          
+          <div className={`flex rounded-xl overflow-hidden border p-0.5 ${
+            isDark ? 'border-stone-800/60 bg-[#0f0c1b]' : 'border-stone-200/60 bg-white'
+          }`}>
+            <button 
+              onClick={() => setViewMode('grid')} 
+              className={`p-1.5 rounded-lg transition-all duration-300 ${
+                viewMode === 'grid' 
+                  ? 'text-white shadow-sm' 
+                  : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+              }`}
+              style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}
+            >
               <Grid3x3 className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}>
+            <button 
+              onClick={() => setViewMode('list')} 
+              className={`p-1.5 rounded-lg transition-all duration-300 ${
+                viewMode === 'list' 
+                  ? 'text-white shadow-sm' 
+                  : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+              }`}
+              style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}
+            >
               <LayoutList className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {showFilters && (
-        <div className="flex flex-wrap gap-2 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-          <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${selectedCategory === 'all' ? 'text-white shadow-sm' : 'bg-stone-50 border-pink-100/60 text-stone-600'}`} style={selectedCategory === 'all' ? { background: brandGradient.backgroundImage } : {}}>
-            Todas
-          </button>
-          {['flash', 'premium', 'seasonal', 'welcome'].map((cat) => (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-1.5 rounded-full text-[10px] font-medium transition-all flex items-center gap-1 ${selectedCategory === cat ? 'text-white shadow-sm' : 'bg-stone-50 border-pink-100/60 text-stone-600'}`} style={selectedCategory === cat ? { background: brandGradient.backgroundImage } : {}}>
-              {getCategoryIcon(cat)} {getCategoryLabel(cat)}
+      {/* Filtros desplegables */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className={`flex flex-wrap gap-2 p-3 rounded-2xl border overflow-hidden ${
+              isDark 
+                ? 'bg-[#130f24]/80 border-stone-900/60' 
+                : 'bg-white/80 border-stone-200/60 backdrop-blur-sm'
+            }`}
+          >
+            <button 
+              onClick={() => setSelectedCategory('all')} 
+              className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${
+                selectedCategory === 'all' 
+                  ? 'text-white shadow-sm scale-105' 
+                  : isDark ? 'bg-stone-900/40 text-stone-400 hover:text-stone-200' : 'bg-stone-50 border-pink-100/60 text-stone-600 hover:text-stone-800'
+              }`}
+              style={selectedCategory === 'all' ? { background: brandGradient.backgroundImage } : {}}
+            >
+              Todas
             </button>
-          ))}
-        </div>
-      )}
+            {['flash', 'premium', 'seasonal', 'welcome'].map((cat) => (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedCategory(cat)} 
+                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300 flex items-center gap-1 ${
+                  selectedCategory === cat 
+                    ? 'text-white shadow-sm scale-105' 
+                    : isDark ? 'bg-stone-900/40 text-stone-400 hover:text-stone-200' : 'bg-stone-50 border-pink-100/60 text-stone-600 hover:text-stone-800'
+                }`}
+                style={selectedCategory === cat ? { background: brandGradient.backgroundImage } : {}}
+              >
+                {getCategoryIcon(cat)} {getCategoryLabel(cat)}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* GRID DE TARJETAS */}
+      {/* ============================================================ */}
+      {/* GRID DE TARJETAS — REDISEÑADO */}
+      {/* ============================================================ */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'space-y-4'}`}
       >
         {filteredPromociones.length === 0 ? (
-          <div className="col-span-full text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
-            <Gift className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-            <p className="text-sm text-stone-500">No hay promociones disponibles</p>
+          <div className={`col-span-full text-center py-20 border border-dashed rounded-3xl transition-all duration-500 ${
+            isDark 
+              ? 'border-stone-800/60 bg-stone-900/20' 
+              : 'border-stone-200/60 bg-white/40'
+          }`}>
+            <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
+              isDark ? 'bg-stone-800/50' : 'bg-stone-100'
+            }`}>
+              <Gift className={`w-9 h-9 ${
+                isDark ? 'text-stone-600' : 'text-stone-400'
+              }`} />
+            </div>
+            <p className={`text-sm font-medium ${
+              isDark ? 'text-stone-300' : 'text-stone-700'
+            }`}>
+              No hay promociones disponibles
+            </p>
+            <p className={`text-xs mt-1 ${
+              isDark ? 'text-stone-500' : 'text-stone-400'
+            }`}>
+              Vuelve pronto para descubrir nuevas ofertas exclusivas
+            </p>
+            <div className="flex items-center justify-center gap-1.5 mt-4">
+              {['✨', '💎', '🌟'].map((emoji, i) => (
+                <span key={i} className="text-lg animate-[bounce_2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.2}s` }}>
+                  {emoji}
+                </span>
+              ))}
+            </div>
           </div>
         ) : (
           filteredPromociones.map((promo) => (
@@ -453,13 +685,16 @@ export default function PromocionesCliente() {
                 primaryColor={primaryColor}
                 brandGradient={brandGradient}
                 appliedPromo={appliedPromo}
+                viewMode={viewMode}
               />
             </motion.div>
           ))
         )}
       </motion.div>
 
-      {/* MODAL */}
+      {/* ============================================================ */}
+      {/* MODAL — REDISEÑADO */}
+      {/* ============================================================ */}
       {isModalOpen && selectedPromo && (
         <PromocionModal
           promo={selectedPromo}
@@ -476,7 +711,7 @@ export default function PromocionesCliente() {
 }
 
 // ============================================================
-// COMPONENTE: Tarjeta de Promoción
+// COMPONENTE: Tarjeta de Promoción — REDISEÑADA
 // ============================================================
 function PromocionCard({ 
   promo, 
@@ -487,7 +722,8 @@ function PromocionCard({
   onOpenModal,
   primaryColor,
   brandGradient,
-  appliedPromo
+  appliedPromo,
+  viewMode
 }: { 
   promo: Promocion
   isDark: boolean
@@ -498,99 +734,108 @@ function PromocionCard({
   primaryColor: string
   brandGradient: { backgroundImage: string }
   appliedPromo: string | null
+  viewMode: 'grid' | 'list'
 }) {
   const isFlash = promo.category === 'flash'
   const isPremium = promo.category === 'premium'
   const isApplied = appliedPromo === promo.id
 
-  return (
-    <div 
-      className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer ${
-        isApplied 
-          ? 'border-emerald-500 shadow-emerald-500/20' 
-          : isDark 
-            ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-            : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-lg'
-      }`}
-      onClick={() => onOpenModal(promo)}
-    >
-      {promo.image_url ? (
-        <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
-          <img 
-            src={promo.image_url} 
-            alt={promo.title} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          {promo.discount_percent > 0 && (
-            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
-              -{promo.discount_percent}%
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
-          <Percent className="w-12 h-12 text-stone-300 dark:text-stone-600" />
-          {promo.discount_percent > 0 && (
-            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
-              -{promo.discount_percent}%
-            </div>
-          )}
-        </div>
-      )}
+  const cardContent = (
+    <>
+      {/* Imagen o placeholder */}
+      <div className="relative overflow-hidden bg-stone-100 dark:bg-stone-800 aspect-video">
+        {promo.image_url ? (
+          <>
+            <img 
+              src={promo.image_url} 
+              alt={promo.title} 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </>
+        ) : (
+          <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
+            <Percent className={`w-12 h-12 ${
+              isDark ? 'text-stone-600' : 'text-stone-300'
+            }`} />
+          </div>
+        )}
 
-      <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
-        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm ${
-          isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
-          isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
-          'bg-gradient-to-r from-purple-500 to-purple-600'
-        }`}>
-          {getCategoryIcon(promo.category)}
-          {getCategoryLabel(promo.category)}
-        </span>
-        {promo.featured && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-amber-400 text-stone-900 shadow-sm">
-            <Star className="w-2.5 h-2.5 fill-current" /> Destacado
-          </span>
+        {/* Badge de descuento */}
+        {promo.discount_percent > 0 && (
+          <div className="absolute top-3 right-3 px-3.5 py-2 rounded-xl bg-black/70 backdrop-blur-sm text-white shadow-xl border border-amber-400/30">
+            <span className="text-xl font-black">-{promo.discount_percent}%</span>
+          </div>
         )}
-        {isApplied && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-emerald-500 text-white shadow-sm">
-            <CheckCircle2 className="w-2.5 h-2.5" /> Aplicada
+
+        {/* Badges de categoría */}
+        <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] text-white shadow-lg backdrop-blur-sm ${
+            isFlash ? 'bg-gradient-to-r from-red-500 to-red-600' :
+            isPremium ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+            'bg-gradient-to-r from-purple-500 to-purple-600'
+          }`}>
+            {getCategoryIcon(promo.category)}
+            {getCategoryLabel(promo.category)}
           </span>
-        )}
+          {promo.featured && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] bg-amber-400 text-stone-900 shadow-lg">
+              <Star className="w-2.5 h-2.5 fill-current" /> Destacado
+            </span>
+          )}
+          {isApplied && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] bg-emerald-500 text-white shadow-lg">
+              <CheckCircle2 className="w-2.5 h-2.5" /> Aplicada
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="p-4 space-y-2">
-        <h3 className="font-bold text-sm text-stone-800 dark:text-white line-clamp-1">
+      {/* Contenido */}
+      <div className="p-5 space-y-3">
+        <h3 className={`font-black text-sm tracking-tight line-clamp-1 transition-colors ${
+          isDark ? 'text-stone-100 group-hover:text-pink-400' : 'text-stone-800 group-hover:text-pink-600'
+        }`}>
           {promo.title}
         </h3>
-        <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2">
+        
+        <p className={`text-xs line-clamp-2 ${
+          isDark ? 'text-stone-400' : 'text-stone-500'
+        }`}>
           {promo.description}
         </p>
 
-        <div className="flex items-center justify-between pt-2 border-t border-pink-100/60 dark:border-fuchsia-950">
-          <div className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500">
-            <Clock className="w-3 h-3" />
+        {/* Footer */}
+        <div className={`flex items-center justify-between pt-3 border-t ${
+          isDark ? 'border-stone-800/60' : 'border-stone-200/60'
+        }`}>
+          <div className={`flex items-center gap-2 text-[9px] font-medium ${
+            isDark ? 'text-stone-400' : 'text-stone-500'
+          }`}>
+            <Clock className="w-3 h-3 text-pink-400" />
             {promo.valid_until ? new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : 'Sin fecha'}
           </div>
           {promo.uses_limit && (
-            <div className="flex items-center gap-1 text-[10px] text-stone-400">
-              <Users className="w-3 h-3" />
+            <div className={`flex items-center gap-1 text-[9px] font-medium ${
+              isDark ? 'text-stone-400' : 'text-stone-500'
+            }`}>
+              <Users className="w-3 h-3 text-pink-400" />
               {promo.uses_count || 0}/{promo.uses_limit}
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+        {/* Botones de acción */}
+        <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
           {promo.code && (
             <button
               onClick={() => onCopy(promo.code!)}
-              className={`flex-1 px-2 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-1.5 border ${
                 copiedCode === promo.code
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg'
                   : isDark
-                    ? 'bg-[#0f0c1b] text-stone-300 hover:bg-stone-800'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    ? 'bg-stone-900/60 border-stone-800/60 text-stone-300 hover:border-pink-500/30 hover:text-white'
+                    : 'bg-stone-50 border-stone-200/60 text-stone-600 hover:border-pink-300 hover:text-pink-600'
               }`}
             >
               {copiedCode === promo.code ? (
@@ -600,25 +845,54 @@ function PromocionCard({
               )}
             </button>
           )}
-          
+
           <button
             onClick={() => onApply(promo)}
             disabled={!!appliedPromo}
-            className={`flex-1 px-2 py-1.5 rounded-lg text-white text-[8px] font-bold uppercase tracking-widest transition hover:scale-105 active:scale-95 ${
-              appliedPromo ? 'opacity-50 cursor-not-allowed' : ''
+            className={`flex-1 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] text-white transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 ${
+              appliedPromo ? 'opacity-40 cursor-not-allowed' : ''
             }`}
             style={{ background: brandGradient.backgroundImage }}
           >
-            {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar'}
+            {appliedPromo === promo.id ? (
+              <><Check className="w-3 h-3" /> Aplicada</>
+            ) : (
+              <><PartyPopper className="w-3 h-3" /> Aplicar</>
+            )}
           </button>
         </div>
       </div>
+    </>
+  )
+
+  return (
+    <div 
+      className={`group relative rounded-2xl overflow-hidden border transition-all duration-500 cursor-pointer ${
+        isApplied 
+          ? 'border-emerald-500 shadow-2xl shadow-emerald-500/20 scale-[1.02]' 
+          : isDark 
+            ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl shadow-lg' 
+            : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl shadow-md'
+      }`}
+      onClick={() => onOpenModal(promo)}
+    >
+      {/* Gradiente de fondo sutil */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-pink-500/[0.03] to-rose-500/[0.01]" />
+      
+      {viewMode === 'list' ? (
+        <div className="flex flex-col sm:flex-row">
+          <div className="sm:w-1/3 shrink-0">{cardContent.props.children[0]}</div>
+          <div className="sm:w-2/3">{cardContent.props.children[1]}</div>
+        </div>
+      ) : (
+        cardContent
+      )}
     </div>
   )
 }
 
 // ============================================================
-// COMPONENTE: Modal de Detalle
+// COMPONENTE: Modal de Detalle — REDISEÑADO
 // ============================================================
 function PromocionModal({ 
   promo, 
@@ -638,79 +912,149 @@ function PromocionModal({
   appliedPromo: string | null
 }) {
   const isApplied = appliedPromo === promo.id
+  const isFlash = promo.category === 'flash'
+  const isPremium = promo.category === 'premium'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={onClose}>
-      <div 
-        className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
-          isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
-        }`}
-        onClick={(e) => e.stopPropagation()}
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+        onClick={onClose}
       >
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <X className="w-5 h-5 text-stone-400" />
-        </button>
+        <motion.div 
+          initial={{ scale: 0.92, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.92, y: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className={`relative w-full max-w-md rounded-3xl border p-7 shadow-2xl max-h-[90vh] overflow-y-auto ${
+            isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Botón cerrar */}
+          <button 
+            onClick={onClose} 
+            className={`absolute top-4 right-4 p-2.5 rounded-full transition-all duration-300 hover:scale-110 ${
+              isDark ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
+            }`}
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        {promo.image_url && (
-          <div className="rounded-2xl overflow-hidden mb-4 aspect-video">
-            <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
-          </div>
-        )}
+          {/* Imagen */}
+          {promo.image_url && (
+            <div className="rounded-2xl overflow-hidden mb-5 aspect-video">
+              <img src={promo.image_url} alt={promo.title} className="w-full h-full object-cover" />
+            </div>
+          )}
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-2xl font-bold text-stone-900 dark:text-white">{promo.title}</h3>
-            {promo.featured && <Star className="w-5 h-5 text-amber-400 fill-amber-400" />}
-            {isApplied && (
-              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500 text-white">
-                ✓ Aplicada
-              </span>
+          {/* Contenido */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={`text-2xl font-bold ${
+                isDark ? 'text-white' : 'text-stone-900'
+              }`}>{promo.title}</h3>
+              {promo.featured && (
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
+              )}
+              {isApplied && (
+                <span className="text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full bg-emerald-500 text-white shadow-lg">
+                  ✓ Aplicada
+                </span>
+              )}
+            </div>
+
+            <p className={`text-sm leading-relaxed ${
+              isDark ? 'text-stone-400' : 'text-stone-600'
+            }`}>
+              {promo.description}
+            </p>
+
+            {/* Descuento */}
+            {promo.discount_percent > 0 && (
+              <div className={`flex items-center gap-3 p-3.5 rounded-xl border ${
+                isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50/80 border-emerald-200/60'
+              }`}>
+                <div className={`p-2 rounded-xl ${
+                  isDark ? 'bg-emerald-500/10' : 'bg-emerald-100/50'
+                }`}>
+                  <Percent className={`w-5 h-5 ${
+                    isDark ? 'text-emerald-400' : 'text-emerald-500'
+                  }`} />
+                </div>
+                <span className={`text-xl font-black ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`}>
+                  {promo.discount_percent}% de descuento
+                </span>
+              </div>
             )}
-          </div>
 
-          <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{promo.description}</p>
+            {/* Términos */}
+            {promo.terms && (
+              <div className={`p-3.5 rounded-xl border ${
+                isDark ? 'bg-stone-900/40 border-stone-800/60' : 'bg-stone-50/80 border-stone-200/60'
+              }`}>
+                <p className={`text-[9px] leading-relaxed ${
+                  isDark ? 'text-stone-400' : 'text-stone-500'
+                }`}>
+                  <span className="font-black uppercase tracking-[0.15em]">Términos:</span> {promo.terms}
+                </p>
+              </div>
+            )}
 
-          {promo.discount_percent > 0 && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <Percent className="w-5 h-5 text-emerald-500" />
-              <span className="text-lg font-bold text-emerald-500">{promo.discount_percent}% de descuento</span>
-            </div>
-          )}
-
-          {promo.terms && (
-            <div className="p-3 rounded-xl bg-stone-100 dark:bg-[#130f24] border border-stone-200 dark:border-fuchsia-950">
-              <p className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-                <span className="font-bold uppercase tracking-widest">Términos:</span> {promo.terms}
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            {promo.code && (
-              <button onClick={() => navigator.clipboard.writeText(promo.code!)} className="flex-1 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95" style={{ background: brandGradient.backgroundImage }}>
-                <Copy className="w-4 h-4 inline mr-2" /> Usar código {promo.code}
+            {/* Botones */}
+            <div className="flex gap-3">
+              {promo.code && (
+                <button 
+                  onClick={() => navigator.clipboard.writeText(promo.code!)} 
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
+                    isDark 
+                      ? 'bg-stone-900/60 border border-stone-800/60 text-stone-300 hover:border-pink-500/30 hover:text-white' 
+                      : 'bg-stone-50 border border-stone-200/60 text-stone-600 hover:border-pink-300 hover:text-pink-600'
+                  }`}
+                >
+                  <Copy className="w-4 h-4" /> Usar {promo.code}
+                </button>
+              )}
+              <button 
+                onClick={() => onApply(promo)} 
+                disabled={!!appliedPromo} 
+                className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] text-white transition-all duration-300 flex items-center justify-center gap-2 shadow-xl hover:scale-105 active:scale-95 ${
+                  appliedPromo ? 'opacity-40 cursor-not-allowed' : ''
+                }`}
+                style={{ background: brandGradient.backgroundImage }}
+              >
+                {appliedPromo === promo.id ? (
+                  <><Check className="w-4 h-4" /> Aplicada</>
+                ) : (
+                  <><PartyPopper className="w-4 h-4" /> Aplicar ahora</>
+                )}
               </button>
-            )}
-            <button onClick={() => onApply(promo)} disabled={!!appliedPromo} className={`flex-1 py-3 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition hover:scale-[1.02] active:scale-95 ${appliedPromo ? 'opacity-50 cursor-not-allowed' : ''}`} style={{ background: brandGradient.backgroundImage }}>
-              {appliedPromo === promo.id ? '✓ Aplicada' : 'Aplicar ahora'}
-            </button>
-          </div>
+            </div>
 
-          <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-500">
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              Válido hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
-            </span>
-            {promo.uses_limit && (
-              <span className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
-                {promo.uses_count || 0}/{promo.uses_limit} usos
+            {/* Footer info */}
+            <div className={`flex items-center justify-between text-xs pt-3 border-t ${
+              isDark ? 'border-stone-800/60 text-stone-500' : 'border-stone-200/60 text-stone-400'
+            }`}>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-pink-400" />
+                Válido hasta {new Date(promo.valid_until).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
               </span>
-            )}
+              {promo.uses_limit && (
+                <span className="flex items-center gap-1.5">
+                  <Eye className="w-4 h-4 text-pink-400" />
+                  {promo.uses_count || 0}/{promo.uses_limit} usos
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
