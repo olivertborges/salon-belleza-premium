@@ -40,64 +40,67 @@ export default function CancelacionesPage() {
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }
 
-  const fetchCancelaciones = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    } else {
-      setRefreshing(true)
-    }
-    setError(null)
+const fetchCancelaciones = async (showLoading = true) => {
+  if (showLoading) {
+    setLoading(true)
+  } else {
+    setRefreshing(true)
+  }
+  setError(null)
 
-    try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          clients:client_id (id, name, email, phone),
-          services:service_id (id, name, price, duration)
-        `)
-        .eq('status', 'cancelled')
-        .order('date', { ascending: false })
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        clients:client_id (id, name, email, phone),
+        services:service_id (id, name, price, duration)
+      `)
+      .eq('status', 'cancelled')
+      .order('date', { ascending: false })
 
-      if (error) throw error
+    if (error) throw error
 
-      let citasConStaff = data || []
+    // ✅ DECLARAR CITASCONSTAFF COMO ANY[]
+    let citasConStaff: any[] = []
 
-      if (data && data.length > 0) {
-        const staffIds = data
-          .map(c => c.professional_id)
-          .filter(id => id)
+    if (data && data.length > 0) {
+      // @ts-ignore
+      const staffIds = data
+        .map((c: any) => c.professional_id)
+        .filter((id: any) => id)
 
-        let staffMap: Record<string, { name: string }> = {}
-        if (staffIds.length > 0) {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('id, name')
-            .in('id', staffIds)
+      let staffMap: Record<string, { name: string }> = {}
+      if (staffIds.length > 0) {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id, name')
+          .in('id', staffIds)
 
-          if (staffData) {
-            staffMap = staffData.reduce((acc, s) => ({ ...acc, [s.id]: { name: s.name } }), {})
-          }
-        }
-
-        citasConStaff = data.map(cita => ({
-          ...cita,
-          staff: cita.professional_id ? staffMap[cita.professional_id] || null : null
-        }))
+      if (staffData) {
+        staffMap = (staffData as any[]).reduce((acc: any, s: any) => ({ ...acc, [s.id]: { name: s.name } }), {})
+      }
       }
 
-      setCitas(citasConStaff)
-      setSuccess('Cancelaciones actualizadas correctamente')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err: any) {
-      console.error('Error cargando cancelaciones:', err)
-      setError(err.message || 'Error al cargar las cancelaciones')
-      setTimeout(() => setError(null), 3000)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
+      // @ts-ignore
+      citasConStaff = data.map((cita: any) => ({
+        ...cita,
+        staff: cita.professional_id ? staffMap[cita.professional_id] || null : null
+      }))
     }
+
+    setCitas(citasConStaff)
+    setSuccess('Cancelaciones actualizadas correctamente')
+    setTimeout(() => setSuccess(null), 3000)
+  } catch (err: any) {
+    console.error('Error cargando cancelaciones:', err)
+    setError(err.message || 'Error al cargar las cancelaciones')
+    setTimeout(() => setError(null), 3000)
+  } finally {
+    setLoading(false)
+    setRefreshing(false)
   }
+}
 
   useEffect(() => {
     fetchCancelaciones()
