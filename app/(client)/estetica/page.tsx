@@ -104,6 +104,7 @@ export default function EsteticaPage() {
   const [filteredServicios, setFilteredServicios] = useState<Servicio[]>([])
   const [reviews, setReviews] = useState<Record<string, Review[]>>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('todos')
   const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -125,31 +126,59 @@ export default function EsteticaPage() {
   }
 
   useEffect(() => {
-    cargarServicios()
-    cargarReviews()
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          cargarServicios(),
+          cargarReviews()
+        ])
+      } catch (err) {
+        console.error('Error loading data:', err)
+        setError('Error al cargar los datos')
+      }
+    }
+    loadData()
   }, [tenantId])
 
   useEffect(() => {
-    let filtrados = servicios
+    try {
+      let filtrados = servicios
 
-    if (selectedCategory !== 'todos') {
-      filtrados = filtrados.filter(s => s.category === selectedCategory)
+      if (selectedCategory !== 'todos') {
+        filtrados = filtrados.filter(s => s.category === selectedCategory)
+      }
+
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase()
+        filtrados = filtrados.filter(s =>
+          s.name.toLowerCase().includes(term) ||
+          s.description?.toLowerCase().includes(term)
+        )
+      }
+
+      setFilteredServicios(filtrados)
+    } catch (err) {
+      console.error('Error filtering:', err)
     }
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtrados = filtrados.filter(s =>
-        s.name.toLowerCase().includes(term) ||
-        s.description?.toLowerCase().includes(term)
-      )
-    }
-
-    setFilteredServicios(filtrados)
   }, [selectedCategory, searchTerm, servicios])
 
   const cargarServicios = async () => {
     try {
       setLoading(true)
+      setError(null)
+
+      // ✅ Verificar que tenantId existe
+      if (!tenantId) {
+        console.warn('⏳ Esperando tenantId...')
+        // Esperar un poco a que tenantId esté disponible
+        await new Promise(resolve => setTimeout(resolve, 500))
+        if (!tenantId) {
+          setError('No se pudo cargar el tenant. Por favor, recarga la página.')
+          setLoading(false)
+          return
+        }
+      }
+
       const { data, error } = await supabase
         .from('services')
         .select('*')
@@ -170,6 +199,7 @@ export default function EsteticaPage() {
 
     } catch (error) {
       console.error('Error cargando servicios de estética:', error)
+      setError('Error al cargar los servicios')
     } finally {
       setLoading(false)
     }
@@ -287,14 +317,22 @@ export default function EsteticaPage() {
   }
 
   const getAverageRating = (serviceId: string) => {
-    const serviceReviews = reviews[serviceId] || []
-    if (serviceReviews.length === 0) return 0
-    const sum = serviceReviews.reduce((acc, r) => acc + r.rating, 0)
-    return sum / serviceReviews.length
+    try {
+      const serviceReviews = reviews[serviceId] || []
+      if (serviceReviews.length === 0) return 0
+      const sum = serviceReviews.reduce((acc, r) => acc + r.rating, 0)
+      return sum / serviceReviews.length
+    } catch {
+      return 0
+    }
   }
 
   const getRatingCount = (serviceId: string) => {
-    return reviews[serviceId]?.length || 0
+    try {
+      return reviews[serviceId]?.length || 0
+    } catch {
+      return 0
+    }
   }
 
   const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'sm') => {
@@ -392,6 +430,24 @@ export default function EsteticaPage() {
               />
             ))}
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-8 max-w-md text-center">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <p className="text-lg font-bold text-rose-500 dark:text-rose-400">Ups, algo salió mal</p>
+          <p className="text-sm text-rose-600/80 dark:text-rose-400/80 mt-2">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-2 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     )
