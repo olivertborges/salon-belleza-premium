@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// 🔥 VARIABLE GLOBAL PARA LOGS (se reinicia en cada request)
+// 🔥 VARIABLE GLOBAL PARA LOGS
 let logs: string[] = []
 
 function addLog(message: string) {
@@ -11,7 +11,6 @@ function addLog(message: string) {
   console.log(log)
 }
 
-// 🔥 FUNCIÓN PARA GENERAR HTML DE LOGS
 function getLogsHTML() {
   return `
     <!DOCTYPE html>
@@ -49,7 +48,6 @@ function getLogsHTML() {
           .info { color: #44aaff; }
           .warning { color: #ffaa44; }
           .highlight { color: #ff6b9d; font-weight: bold; }
-          .timestamp { color: #666; }
         </style>
       </head>
       <body>
@@ -63,9 +61,6 @@ function getLogsHTML() {
             else if (log.includes('👉') || log.includes('📍')) className = 'highlight'
             return `<div class="log-line ${className}">${log}</div>`
           }).join('')}
-          <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #333; font-size: 12px; color: #666;">
-            Total de pasos: ${logs.length}
-          </div>
         </div>
       </body>
     </html>
@@ -73,15 +68,12 @@ function getLogsHTML() {
 }
 
 export async function middleware(request: NextRequest) {
-  // 🔥 REINICIAR LOGS
   logs = []
   
   const { pathname } = request.nextUrl
-  addLog(`📍 INICIO - Ruta solicitada: ${pathname}`)
-  addLog(`📍 URL completa: ${request.url}`)
+  addLog(`📍 INICIO - Ruta: ${pathname}`)
   
-  // 🔥 1. CREAR RESPUESTA BASE
-  addLog(`👉 Paso 1: Creando respuesta base...`)
+  // 🔥 1. CREAR RESPUESTA
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -89,7 +81,6 @@ export async function middleware(request: NextRequest) {
   })
 
   // 🔥 2. CREAR CLIENTE DE SUPABASE
-  addLog(`👉 Paso 2: Creando cliente de Supabase...`)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -97,11 +88,10 @@ export async function middleware(request: NextRequest) {
       cookies: {
         getAll() {
           const cookies = request.cookies.getAll()
-          addLog(`📦 Cookies encontradas: ${cookies.length}`)
+          addLog(`📦 Cookies: ${cookies.length} encontradas`)
           return cookies
         },
         setAll(cookiesToSet: any[]) {
-          addLog(`📦 Estableciendo ${cookiesToSet.length} cookies`)
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -111,143 +101,102 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 🔥 3. OBTENER USUARIO
-  addLog(`👉 Paso 3: Obteniendo usuario...`)
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  // 🔥 3. USAR getSession() EN VEZ DE getUser()
+  addLog(`👉 Obteniendo sesión...`)
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   
-  if (userError) {
-    addLog(`❌ Error obteniendo usuario: ${userError.message}`)
+  if (sessionError) {
+    addLog(`❌ Error en sesión: ${sessionError.message}`)
   }
 
+  const user = session?.user || null
+  
   if (user) {
-    addLog(`✅ Usuario encontrado: ${user.email}`)
+    addLog(`✅ Usuario: ${user.email}`)
     addLog(`👤 ID: ${user.id}`)
-    addLog(`👤 Metadata: ${JSON.stringify(user.user_metadata)}`)
   } else {
-    addLog(`⚠️ No hay usuario autenticado`)
+    addLog(`⚠️ Sin sesión activa`)
   }
 
-  // 🔥 4. VERIFICAR RUTAS PÚBLICAS
-  addLog(`👉 Paso 4: Verificando si es ruta pública...`)
+  // 🔥 4. RUTAS PÚBLICAS
   const publicPaths = ['/login', '/auth', '/reset-password']
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
-  addLog(`📍 ¿Es ruta pública? ${isPublicPath ? '✅ SI' : '❌ NO'}`)
+  addLog(`📍 Ruta pública: ${isPublicPath ? '✅' : '❌'}`)
 
-  // 🔥 5. SI NO HAY USUARIO
-  addLog(`👉 Paso 5: Verificando si hay usuario...`)
+  // 🔥 5. SIN USUARIO
   if (!user) {
-    addLog(`⚠️ Sin usuario autenticado`)
-    
     if (isPublicPath || pathname === '/') {
-      addLog(`✅ Ruta pública permitida: ${pathname}`)
-      return showLogsPage(response)
+      addLog(`✅ Permitido: ${pathname}`)
+      return response
     }
-    
-    addLog(`🔒 Ruta protegida sin usuario, redirigiendo a /login`)
-    addLog(`👉 REDIRIGIENDO A: /login`)
+    addLog(`🔒 Redirigiendo a /login`)
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // 🔥 6. OBTENER ROL
-  addLog(`👉 Paso 6: Obteniendo rol del usuario...`)
   let userRole = 'client'
   let isAdmin = false
 
   try {
-    addLog(`📡 Consultando tabla profiles para: ${user.id}`)
-    const { data: profile, error: profileError } = await supabase
+    addLog(`👉 Obteniendo rol...`)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (profileError) {
-      addLog(`❌ Error en profiles: ${profileError.message}`)
-    }
-
-    if (profile) {
-      userRole = profile.role || 'client'
-      addLog(`✅ Rol encontrado en DB: ${userRole}`)
-    } else {
-      addLog(`⚠️ No hay perfil, asignando rol por defecto: client`)
-      userRole = 'client'
-    }
-
+    userRole = profile?.role || 'client'
     isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
-    addLog(`👤 Usuario: ${user.email} | Rol: ${userRole} | Admin: ${isAdmin}`)
+    addLog(`✅ Rol: ${userRole} | Admin: ${isAdmin}`)
     
   } catch (error: any) {
-    addLog(`❌ Error obteniendo rol: ${error.message}`)
+    addLog(`❌ Error: ${error.message}`)
   }
 
-  // 🔥 7. SI ESTÁ EN LOGIN
-  addLog(`👉 Paso 7: Verificando si está en /login...`)
+  // 🔥 7. EN LOGIN
   if (pathname === '/login' || pathname === '/auth') {
     const destino = isAdmin ? '/dashboard' : '/portal'
-    addLog(`🔄 Usuario en login, redirigiendo a: ${destino}`)
-    addLog(`👉 REDIRIGIENDO A: ${destino}`)
+    addLog(`🔄 Login → ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  // 🔥 8. SI ESTÁ EN RAÍZ
-  addLog(`👉 Paso 8: Verificando si está en raíz...`)
+  // 🔥 8. EN RAÍZ
   if (pathname === '/') {
     const destino = isAdmin ? '/dashboard' : '/portal'
-    addLog(`🔄 Usuario en raíz, redirigiendo a: ${destino}`)
-    addLog(`👉 REDIRIGIENDO A: ${destino}`)
+    addLog(`🔄 Raíz → ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  // 🔥 9. SI ESTÁ EN DASHBOARD
-  addLog(`👉 Paso 9: Verificando si está en /dashboard...`)
+  // 🔥 9. DASHBOARD
   if (pathname === '/dashboard') {
-    addLog(`📍 Ruta: /dashboard | IsAdmin: ${isAdmin}`)
     if (!isAdmin) {
-      addLog(`⛔ Usuario no admin en dashboard, redirigiendo a /portal`)
-      addLog(`👉 REDIRIGIENDO A: /portal`)
+      addLog(`⛔ No admin → /portal`)
       return NextResponse.redirect(new URL('/portal', request.url))
     }
-    addLog(`✅ Admin autorizado en dashboard`)
-    return showLogsPage(response)
+    addLog(`✅ Admin en dashboard`)
+    return response
   }
 
-  // 🔥 10. SI ESTÁ EN ADMIN
-  addLog(`👉 Paso 10: Verificando si está en /admin...`)
+  // 🔥 10. ADMIN
   if (pathname.startsWith('/admin')) {
-    addLog(`📍 Ruta: /admin | IsAdmin: ${isAdmin}`)
     if (!isAdmin) {
-      addLog(`⛔ Usuario no admin en admin, redirigiendo a /portal`)
-      addLog(`👉 REDIRIGIENDO A: /portal`)
+      addLog(`⛔ No admin → /portal`)
       return NextResponse.redirect(new URL('/portal', request.url))
     }
-    addLog(`✅ Admin autorizado en /admin`)
-    return showLogsPage(response)
+    addLog(`✅ Admin en /admin`)
+    return response
   }
 
-  // 🔥 11. SI ESTÁ EN PORTAL
-  addLog(`👉 Paso 11: Verificando si está en /portal...`)
+  // 🔥 11. PORTAL
   if (pathname === '/portal') {
-    addLog(`✅ Usuario en portal, acceso permitido`)
-    return showLogsPage(response)
+    addLog(`✅ Portal permitido`)
+    return response
   }
 
-  // 🔥 12. CUALQUIER OTRA RUTA
-  addLog(`👉 Paso 12: Cualquier otra ruta: ${pathname}`)
   addLog(`✅ Ruta permitida: ${pathname}`)
-  return showLogsPage(response)
+  return response
 }
 
-// 🔥 FUNCIÓN PARA MOSTRAR PÁGINA DE LOGS
-function showLogsPage(response: NextResponse) {
-  const html = getLogsHTML()
-  return new NextResponse(html, {
-    headers: {
-      'Content-Type': 'text/html',
-    },
-  })
-}
-
-// 🔥 CONFIGURACIÓN
 export const config = {
   matcher: [
     '/',
