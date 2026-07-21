@@ -4,7 +4,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
 
 export default function LoginPage() {
-  const { signIn, role, user, loading: authLoading } = useAuth
+  // ✅ SOLO AGREGUÉ LOS PARÉNTESIS AQUÍ
+  const { signIn, role, user, loading: authLoading } = useAuth()
+
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState('login')
   const [loading, setLoading] = useState(false)
