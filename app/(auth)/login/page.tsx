@@ -99,21 +99,28 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN DIRECTA Y FORZADA CON WINDOW.LOCATION (MATA EL CACHÉ DE VERCEL)
+  // ✅ REDIRECCIÓN DIRECTA CON FILTRO ANTI-BUCLE ESTRICTO
   useEffect(() => {
     if (hasRedirected.current) return
     if (!mounted || authLoading) return
-    if (!user || !role) return
+    if (!user || !role) {
+      hasRedirected.current = false
+      return
+    }
 
     let targetPath = '/portal'
     if (role === 'admin' || role === 'staff' || role === 'owner') {
       targetPath = '/dashboard'
     }
 
-    console.log('🚀 [Vista] Forzando redirección nativa dura a:', targetPath)
+    // SI YA ESTAMOS EN LA RUTA DESTINO, SE INTERRUMPE LA REDIRECCIÓN
+    if (typeof window !== 'undefined' && window.location.pathname === targetPath) {
+      return
+    }
+
+    console.log('🚀 [Anti-Bucle] Forzando redirección limpia y controlada a:', targetPath)
     hasRedirected.current = true
 
-    // Obliga al navegador del teléfono a cargar la ruta limpia enviando las cookies actualizadas
     window.location.href = targetPath
   }, [user, role, authLoading, mounted])
 
@@ -130,16 +137,16 @@ export default function AuthMobilDefinitivo() {
 
       setSuccess('¡Ingreso correcto! Cargando salón...')
       
-      // Damos un pequeño margen para que se asienten las cookies antes de activar el useEffect
+      // Delay controlado para que se asienten las cookies en el storage antes de evaluar el useEffect
       setTimeout(() => {
         hasRedirected.current = false 
-      }, 400)
+        setLoading(false)
+      }, 450)
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
-      setLoading(false) // Solo quitamos el estado cargando si el login falla
+      setLoading(false)
     }
-    // Quitamos el finally para que el botón mantenga el spinner de carga mientras cambia la página
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -170,6 +177,10 @@ export default function AuthMobilDefinitivo() {
       setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
       hasRedirected.current = false
       await signIn(email, password)
+      
+      setTimeout(() => {
+        setLoading(false)
+      }, 450)
 
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
