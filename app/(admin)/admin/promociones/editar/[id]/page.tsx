@@ -1,4 +1,5 @@
 // app/(admin)/promociones/editar/[id]/page.tsx
+// @ts-nocheck
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'

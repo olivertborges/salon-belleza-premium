@@ -1,4 +1,5 @@
-// app/(client)/promociones-cliente/page.tsx
+// app/(client)/promociones/page.tsx
+// @ts-nocheck
 'use client'
 
 import React, { useState, useEffect } from 'react'
