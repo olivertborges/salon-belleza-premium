@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-// IMPORTANTE: Usamos la versión de cliente compatible con Server-Side Rendering
-import { createBrowserClient } from '@supabase/ssr'; 
+import { createBrowserClient } from '@supabase/ssr';
 
-// Inicializamos el cliente del navegador. 
-// Esto automáticamente sincroniza el almacenamiento con las cookies de forma transparente.
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -22,30 +19,52 @@ export default function LoginPage() {
     setScreenLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  useEffect(() => {
-    addLog("🔍 Página cargada en el teléfono. Verificando entorno...");
-    
+  // FUNCIÓN CENTRAL DE REDIRECCIÓN
+  const verificarYRedirigir = async (userId: string) => {
+    addLog("🛰️ Verificando rol del usuario directamente...");
     try {
-      addLog(`🍪 Cookies iniciales: ${document.cookie ? "Detectadas" : "Ninguna"}`);
-    } catch (e: any) {
-      addLog(`🚨 Error cookies: ${e.message}`);
-    }
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
 
-    supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        addLog(`🚨 Error getSession: ${error.message}`);
-      } else if (data.session) {
-        addLog(`👤 Sesión en caché para ID: ${data.session.user.id}`);
+        addLog(`🚨 Error al traer perfil: ${error.message}`);
+      }
+
+      const userRole = profile?.role || 'client';
+      addLog(`🎭 Rol detectado: "${userRole}"`);
+
+      const destino = ['admin', 'staff', 'owner'].includes(userRole) ? '/dashboard' : '/portal';
+      addLog(`🔄 Forzando redirección inmediata a: ${destino}`);
+      
+      // Usamos window.location.replace para evitar que el botón "Atrás" del móvil te regrese al login
+      window.location.replace(destino);
+    } catch (err: any) {
+      addLog(`💥 Error en redirección: ${err.message}`);
+    }
+  };
+
+  // 1. AUTO-LOGIN: Si el móvil ya tiene sesión (tu caso actual), redirigir de inmediato
+  useEffect(() => {
+    addLog("🔍 Comprobando sesión activa al cargar...");
+    
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (data?.session?.user) {
+        addLog(`👤 Sesión detectada para: ${data.session.user.id}`);
+        verificarYRedirigir(data.session.user.id);
       } else {
-        addLog("⚪ Sin sesión activa inicial.");
+        addLog("⚪ Sin sesión activa. Esperando credenciales...");
       }
     });
   }, []);
 
+  // 2. Control del Formulario
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    addLog("🚀 Iniciando signInWithPassword...");
+    addLog("🚀 Procesando intento de login...");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -54,39 +73,17 @@ export default function LoginPage() {
       });
 
       if (error) {
-        addLog(`❌ ERROR SUPABASE: ${error.message}`);
+        addLog(`❌ ERROR: ${error.message}`);
         setLoading(false);
         return;
       }
 
-      addLog("✅ ¡LOGIN EXITOSO!");
-      
-      // ESPERA CRÍTICA: Forzamos a que Supabase asiente las cookies en el navegador móvil.
-      // Damos un pequeño respiro de 300ms antes de leer el document.cookie.
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      addLog(`🍪 Cookies creadas: ${document.cookie ? "¡LOGRADO!" : "⚠️ CONTINÚAN VACÍAS"}`);
-
-      // Consultar el Rol
-      addLog("🛰️ Buscando rol...");
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .maybeSingle();
-
-      const userRole = profile?.role || 'client';
-      addLog(`🎭 Rol: "${userRole}"`);
-
-      const destino = ['admin', 'staff', 'owner'].includes(userRole) ? '/dashboard' : '/portal';
-      addLog(`🔄 Redirigiendo a: ${destino}`);
-      
-      // Retraso final para asegurar la escritura y que logres leer la confirmación en la pantalla del celular
-      setTimeout(() => {
-        window.location.href = destino;
-      }, 1000);
-
+      addLog("✅ ¡Credenciales correctas!");
+      if (data?.user) {
+        await verificarYRedirigir(data.user.id);
+      }
     } catch (err: any) {
-      addLog(`💥 ERROR CRÍTICO: ${err.message}`);
+      addLog(`💥 CRITICAL: ${err.message}`);
       setLoading(false);
     }
   };
@@ -121,13 +118,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <button 
-        onClick={() => setScreenLogs([])} 
-        style={{ marginTop: '15px', padding: '5px', fontSize: '12px', background: '#ccc', border: 'none', color: '#000' }}
-      >
-        Limpiar Monitor
-      </button>
-
       <div style={{
         marginTop: '30px',
         padding: '12px',
@@ -136,23 +126,19 @@ export default function LoginPage() {
         borderRadius: '8px',
         fontFamily: 'monospace',
         fontSize: '12px',
-        minHeight: '220px',
-        maxHeight: '350px',
+        minHeight: '200px',
+        maxHeight: '300px',
         overflowY: 'scroll',
         border: '2px solid #333'
       }}>
         <div style={{ borderBottom: '1px solid #333', paddingBottom: '5px', marginBottom: '8px', color: '#aaa', fontWeight: 'bold' }}>
-          Console Monitor (Pantalla Móvil)
+          Console Monitor (Frontend Control)
         </div>
-        {screenLogs.length === 0 ? (
-          <span style={{ color: '#888' }}>Esperando acciones...</span>
-        ) : (
-          screenLogs.map((log, index) => (
-            <div key={index} style={{ marginBottom: '6px', wordBreak: 'break-word' }}>
-              {log}
-            </div>
-          ))
-        )}
+        {screenLogs.map((log, index) => (
+          <div key={index} style={{ marginBottom: '6px', wordBreak: 'break-word' }}>
+            {log}
+          </div>
+        ))}
       </div>
     </div>
   );
