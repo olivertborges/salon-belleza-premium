@@ -33,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 📝 ESTADO DE LOGS VISUALES PARA EL TELÉFONO
   const [screenLogs, setScreenLogs] = useState<string[]>([])
 
-  const hasRedirected = useRef(false)
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
 
@@ -41,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logTrace = (message: string) => {
     console.log(message)
     const timestamp = new Date().toLocaleTimeString()
-    setScreenLogs((prev) => [...prev, `[${timestamp}] ${message}`].slice(-15)) // Guarda los últimos 15 logs
+    setScreenLogs((prev) => [...prev, `[${timestamp}] ${message}`].slice(-15))
   }
 
   // ============================================================
@@ -163,7 +162,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTenantId(null)
     setPoints(null)
     lastFetchedUserId.current = null
-    hasRedirected.current = false
   }
 
   // ============================================================
@@ -191,7 +189,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           logTrace('⚠️ [Init] Ninguna sesión guardada en el dispositivo.')
-          hasRedirected.current = false
         }
       } catch (err: any) {
         logTrace(`❌ [Init] Excepción crítica: ${err.message}`)
@@ -239,55 +236,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // ============================================================
-  // 5. REDIRECCIÓN CONTROLADA REACTIVA
-  // ============================================================
-  useEffect(() => {
-    logTrace(`🔍 [Redirect Eval] loading: ${loading} | user: ${!!user} | role: ${role} | yaRedirigio: ${hasRedirected.current}`)
-
-    if (loading) return
-    if (!user) return
-    if (role === null) {
-      logTrace('⏳ [Redirect Eval] Esperando que termine de cargar el Rol...')
-      return
-    }
-
-    if (hasRedirected.current) {
-      logTrace('⏭️ [Redirect Eval] Omitido: Ya se procesó una redirección.')
-      return
-    }
-
-    logTrace(`🚀 [Redirect Act] ¡Llamando a router.replace! Rol: ${role}`)
-    hasRedirected.current = true
-
-    const destino = (role === 'admin' || role === 'owner' || role === 'staff') 
-      ? '/dashboard' 
-      : '/portal'
-
-    logTrace(`➡️ [Redirect Act] Destino seleccionado: ${destino}`)
-    router.replace(destino)
-  }, [user, role, loading, router])
-
-  // ============================================================
-  // 6. REFRESCAR DATOS DEL USUARIO
+  // 5. REFRESCAR DATOS DEL USUARIO
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
       logTrace('🔄 Manual refresh requested.')
       lastFetchedUserId.current = null
-      hasRedirected.current = false 
       await fetchUserDataAndRole(user.id)
     }
   }
 
   // ============================================================
-  // 7. INICIAR SESIÓN (CON TRAZABILIDAD COMPLETA)
+  // 6. INICIAR SESIÓN (CON TRAZABILIDAD COMPLETA)
   // ============================================================
   const signIn = async (email: string, password: string) => {
     logTrace('🏁 [signIn] Click en el botón recibido!')
     try {
       setLoading(true)
-      hasRedirected.current = false 
-      
+
       const cleanEmail = email.trim().toLowerCase()
       logTrace(`📧 [signIn] Procesando login para: ${cleanEmail}`)
       logTrace('🛰️ [signIn] Despachando credenciales a Supabase (auth.signInWithPassword)...')
@@ -308,13 +274,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data?.user) {
         logTrace(`✅ [signIn] Login correcto en Auth. ID: ${data.user.id.substring(0, 6)}`)
         setUser(data.user)
-        
+
         logTrace('🔄 [signIn] Extrayendo base de perfiles...')
         await fetchUserDataAndRole(data.user.id)
         logTrace('🎉 [signIn] Flujo de datos completado en el Contexto.')
       }
 
-      setLoading(false)
       logTrace('🏁 [signIn] Promesa terminada exitosamente.')
       return { data, error: null }
 
@@ -326,7 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 8. REGISTRAR USUARIO
+  // 7. REGISTRAR USUARIO
   // ============================================================
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
@@ -353,7 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 9. CERRAR SESIÓN
+  // 8. CERRAR SESIÓN
   // ============================================================
   const signOut = async () => {
     try {
@@ -389,7 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      
+
       {/* 🛠️ PANEL DE LOGS FLOTANTE PARA PANTALLA MÓVIL 🛠️ */}
       <div style={{
         position: 'fixed',
