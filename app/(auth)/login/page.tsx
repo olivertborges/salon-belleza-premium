@@ -99,25 +99,22 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN REPARADA SIN RECARGAS AGRESIVAS
+  // ✅ REDIRECCIÓN DIRECTA Y FORZADA CON NEXT.JS ROUTER Y REFRESH
   useEffect(() => {
     if (hasRedirected.current) return
     if (!mounted || authLoading) return
     if (!user || !role) return
 
-    // Evitar redirección si ya estamos en la ruta correcta
-    const currentPath = window.location.pathname
     let targetPath = '/portal'
-
     if (role === 'admin' || role === 'staff' || role === 'owner') {
       targetPath = '/dashboard'
     }
 
-    if (currentPath !== targetPath) {
-      console.log('🚀 Redirigiendo limpiamente vía Next.js Router a:', targetPath)
-      hasRedirected.current = true
-      router.push(targetPath)
-    }
+    console.log('🚀 Redirigiendo a:', targetPath)
+    hasRedirected.current = true
+    
+    router.push(targetPath)
+    router.refresh()
   }, [user, role, authLoading, mounted, router])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -132,11 +129,10 @@ export default function AuthMobilDefinitivo() {
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto!')
-      hasRedirected.current = false
+      hasRedirected.current = false // Permitir que el useEffect dispare la redirección
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
-      setLoading(false)
     } finally {
       setLoading(false)
     }
