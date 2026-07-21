@@ -80,14 +80,14 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
+  visible: {
+    opacity: 1,
+    y: 0,
     scale: 1,
-    transition: { 
-      type: "spring", 
-      stiffness: 300, 
-      damping: 24 
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24
     }
   }
 }
@@ -138,8 +138,8 @@ export default function EsteticaPage() {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtrados = filtrados.filter(s => 
-        s.name.toLowerCase().includes(term) || 
+      filtrados = filtrados.filter(s =>
+        s.name.toLowerCase().includes(term) ||
         s.description?.toLowerCase().includes(term)
       )
     }
@@ -337,7 +337,7 @@ export default function EsteticaPage() {
   }
 
   const getBadgeColor = (badge?: string) => {
-    switch(badge) {
+    switch (badge) {
       case 'Más Solicitado': return 'bg-rose-500/10 border-rose-500/20 text-rose-500'
       case 'Tendencia': return 'bg-violet-500/10 border-violet-500/20 text-violet-500'
       case 'Premium': return 'bg-amber-500/10 border-amber-500/20 text-amber-500'
@@ -385,7 +385,7 @@ export default function EsteticaPage() {
           </div>
           <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
-              <span 
+              <span
                 key={i}
                 className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
                 style={{ animationDelay: `${i * 0.15}s` }}
@@ -402,7 +402,6 @@ export default function EsteticaPage() {
       isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-stone-200' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-800'
     }`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative">
-
         {/* Efectos de fondo */}
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-pink-500/[0.03] pointer-events-none" />
         <div className="absolute bottom-20 right-1/4 w-[300px] h-[300px] rounded-full blur-[140px] bg-amber-500/[0.02] pointer-events-none" />
@@ -426,8 +425,8 @@ export default function EsteticaPage() {
         {/* HERO BANNER — PRESTIGE EDITION */}
         {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl transition-all duration-500 mt-4 ${
-          isDark 
-            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
+          isDark
+            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]'
             : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
         }`}>
           {/* Efectos de luz ambiental */}
@@ -505,7 +504,7 @@ export default function EsteticaPage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`relative px-6 py-3.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-2 whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'text-pink-500' 
+                  ? 'text-pink-500'
                   : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
               }`}
               style={activeTab === tab.id ? { color: primaryColor } : {}}
@@ -513,7 +512,7 @@ export default function EsteticaPage() {
               {tab.icon}
               <span className="relative z-10">{tab.label}</span>
               {activeTab === tab.id && (
-                <motion.span 
+                <motion.span
                   layoutId="tabIndicator"
                   className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
                   style={{ backgroundColor: primaryColor }}
@@ -562,33 +561,32 @@ export default function EsteticaPage() {
                           ? 'bg-stone-900/40 border-stone-900/60 text-stone-400 hover:border-pink-500/30 hover:text-stone-200'
                           : 'bg-white/80 border-stone-200/60 text-stone-500 hover:border-pink-300 hover:shadow-md'
                     }`}
-                    >
-                      {isActive && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/60 animate-ping" />
-                      )}
-                      <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
-                        isActive ? 'text-white' : isDark ? 'text-stone-500 group-hover:text-pink-400' : 'text-stone-400 group-hover:text-pink-500'
-                      }`} />
-                      <span className="font-bold uppercase tracking-wide truncate">{cat.label}</span>
-                    </button>
-                  )
-                }
+                  >
+                    {isActive && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/60 animate-ping" />
+                    )}
+                    <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                      isActive ? 'text-white' : isDark ? 'text-stone-500 group-hover:text-pink-400' : 'text-stone-400 group-hover:text-pink-500'
+                    }`} />
+                    <span className="font-bold uppercase tracking-wide truncate">{cat.label}</span>
+                  </button>
+                )
               })}
             </div>
 
             {/* Buscador y Selectores */}
             <div className={`flex flex-col sm:flex-row gap-3 p-4 rounded-2xl border shadow-lg ${
-              isDark 
-                ? 'bg-[#130f24]/80 border-stone-900/60 shadow-black/20' 
+              isDark
+                ? 'bg-[#130f24]/80 border-stone-900/60 shadow-black/20'
                 : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 backdrop-blur-sm'
             }`}>
               <div className="flex-1 flex items-center gap-3 min-w-0">
                 <Search className={`w-4 h-4 shrink-0 ${
                   isDark ? 'text-stone-500' : 'text-stone-400'
                 }`} />
-                <input 
-                  type="text" 
-                  placeholder="Buscar tratamientos por nombre o descripción..." 
+                <input
+                  type="text"
+                  placeholder="Buscar tratamientos por nombre o descripción..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`bg-transparent border-none outline-none text-xs w-full font-medium min-w-0 ${
@@ -601,8 +599,8 @@ export default function EsteticaPage() {
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`px-3 py-1.5 rounded-xl text-[10px] font-medium flex items-center gap-1.5 border transition-all duration-300 ${
-                    showFilters 
-                      ? 'text-white border-transparent shadow-md scale-105' 
+                    showFilters
+                      ? 'text-white border-transparent shadow-md scale-105'
                       : isDark ? 'bg-[#0f0c1b] border-stone-800/60 text-stone-400' : 'bg-white border-stone-200/60 text-stone-500'
                   }`}
                   style={showFilters ? { background: brandGradient.backgroundImage } : {}}
@@ -613,22 +611,22 @@ export default function EsteticaPage() {
                 <div className={`flex rounded-xl overflow-hidden border p-0.5 ${
                   isDark ? 'border-stone-800/60 bg-[#0f0c1b]' : 'border-stone-200/60 bg-white'
                 }`}>
-                  <button 
-                    onClick={() => setViewMode('grid')} 
+                  <button
+                    onClick={() => setViewMode('grid')}
                     className={`p-1.5 rounded-lg transition-all duration-300 ${
-                      viewMode === 'grid' 
-                        ? 'text-white shadow-sm' 
+                      viewMode === 'grid'
+                        ? 'text-white shadow-sm'
                         : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
                     }`}
                     style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}
                   >
                     <Grid3x3 className="w-3.5 h-3.5" />
                   </button>
-                  <button 
-                    onClick={() => setViewMode('list')} 
+                  <button
+                    onClick={() => setViewMode('list')}
                     className={`p-1.5 rounded-lg transition-all duration-300 ${
-                      viewMode === 'list' 
-                        ? 'text-white shadow-sm' 
+                      viewMode === 'list'
+                        ? 'text-white shadow-sm'
                         : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
                     }`}
                     style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}
@@ -648,8 +646,8 @@ export default function EsteticaPage() {
             >
               {filteredServicios.length === 0 ? (
                 <div className={`col-span-full border border-dashed rounded-3xl p-16 text-center transition-all duration-500 ${
-                  isDark 
-                    ? 'border-stone-800/60 bg-stone-900/20' 
+                  isDark
+                    ? 'border-stone-800/60 bg-stone-900/20'
                     : 'border-stone-200/60 bg-white/40 shadow-inner'
                 }`}>
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
@@ -819,8 +817,8 @@ export default function EsteticaPage() {
                 { src: 'https://images.unsplash.com/photo-1540555700478-4be6f5f1ccd7?w=400&h=400&fit=crop', title: 'Tratamiento corporal' },
                 { src: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop', title: 'Bienestar' },
               ].map((img, idx) => (
-                <motion.div 
-                  key={idx} 
+                <motion.div
+                  key={idx}
                   whileHover={{ scale: 1.03 }}
                   className={`relative aspect-square rounded-2xl overflow-hidden group cursor-pointer transition-all duration-500 ${
                     isDark ? 'shadow-black/20' : 'shadow-stone-200/20'
@@ -858,8 +856,8 @@ export default function EsteticaPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05, duration: 0.4 }}
                     className={`group p-5 rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
-                      isDark 
-                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
+                      isDark
+                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl'
                         : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
                     }`}
                   >
@@ -904,8 +902,8 @@ export default function EsteticaPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05, duration: 0.4 }}
                     className={`group p-5 rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
-                      isDark 
-                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
+                      isDark
+                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl'
                         : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
                     }`}
                   >
@@ -1012,18 +1010,18 @@ export default function EsteticaPage() {
 
                 <div className="flex items-center gap-1 my-6 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <motion.button 
-                      key={star} 
+                    <motion.button
+                      key={star}
                       whileHover={{ scale: 1.15 }}
                       whileTap={{ scale: 0.9 }}
-                      onMouseEnter={() => setHoverRating(star)} 
-                      onMouseLeave={() => setHoverRating(0)} 
-                      onClick={() => setRating(star)} 
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setRating(star)}
                       className="p-1 transition-transform"
                     >
                       <Star className={`w-10 h-10 transition-all duration-300 ${
-                        (hoverRating || rating) >= star 
-                          ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]' 
+                        (hoverRating || rating) >= star
+                          ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]'
                           : isDark ? 'text-stone-700' : 'text-stone-300'
                       }`} />
                     </motion.button>
@@ -1033,7 +1031,7 @@ export default function EsteticaPage() {
                 <p className={`text-center text-sm font-medium mb-4 ${
                   isDark ? 'text-stone-400' : 'text-stone-600'
                 }`}>
-                  {rating === 0 ? 'Selecciona una calificación' : 
+                  {rating === 0 ? 'Selecciona una calificación' :
                    rating === 1 ? '⭐ Muy malo' :
                    rating === 2 ? '⭐⭐ Regular' :
                    rating === 3 ? '⭐⭐⭐ Bueno' :
@@ -1046,8 +1044,8 @@ export default function EsteticaPage() {
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Escribe tu experiencia con este servicio..."
                   className={`w-full px-4 py-3 rounded-xl border text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20 resize-none ${
-                    isDark 
-                      ? 'bg-stone-900/60 border-stone-800/60 text-white placeholder:text-stone-500' 
+                    isDark
+                      ? 'bg-stone-900/60 border-stone-800/60 text-white placeholder:text-stone-500'
                       : 'bg-stone-50/80 border-stone-200/60 text-stone-900 placeholder:text-stone-400'
                   }`}
                   rows={4}
@@ -1055,11 +1053,11 @@ export default function EsteticaPage() {
                 />
 
                 <div className="flex gap-3 mt-4">
-                  <button 
-                    onClick={() => setShowReviewModal(false)} 
+                  <button
+                    onClick={() => setShowReviewModal(false)}
                     className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 border ${
-                      isDark 
-                        ? 'border-stone-800/60 text-stone-400 hover:bg-stone-800/50' 
+                      isDark
+                        ? 'border-stone-800/60 text-stone-400 hover:bg-stone-800/50'
                         : 'border-stone-200/60 text-stone-500 hover:bg-stone-50'
                     }`}
                   >
@@ -1073,12 +1071,12 @@ export default function EsteticaPage() {
                   >
                     {submitting ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> 
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         Enviando
                       </>
                     ) : (
                       <>
-                        <Send className="w-3.5 h-3.5" /> 
+                        <Send className="w-3.5 h-3.5" />
                         Enviar
                       </>
                     )}
@@ -1114,6 +1112,6 @@ export default function EsteticaPage() {
           }
         `}</style>
       </div>
-    </div>  // ← Este es el ÚNICO cierre del div principal
-  )      // ← Cierre de la función
-}        // ← Cierre de la exportación
+    </div>
+  )
+}
