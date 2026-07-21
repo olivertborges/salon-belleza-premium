@@ -402,7 +402,7 @@ export default function EsteticaPage() {
       isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-stone-200' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-800'
     }`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative">
-        
+
         {/* Efectos de fondo */}
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-pink-500/[0.03] pointer-events-none" />
         <div className="absolute bottom-20 right-1/4 w-[300px] h-[300px] rounded-full blur-[140px] bg-amber-500/[0.02] pointer-events-none" />
@@ -434,7 +434,7 @@ export default function EsteticaPage() {
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
           <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
-          
+
           {/* Rejilla decorativa */}
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
@@ -991,7 +991,7 @@ export default function EsteticaPage() {
                 <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                   <X className="w-5 h-5 text-stone-400" />
                 </button>
-                
+
                 <div className="text-center mb-4">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
                     isDark ? 'bg-amber-500/10' : 'bg-amber-50'
@@ -1088,32 +1088,32 @@ export default function EsteticaPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
-      {/* ============================================================ */}
-      {/* STYLES GLOBALES */}
-      {/* ============================================================ */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shine {
-          from { transform: translateX(-100%); }
-          to { transform: translateX(100%); }
-        }
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out forwards;
-        }
-        .animate-shine {
-          animation: shine 1.5s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
-  )
-}
+        {/* ============================================================ */}
+        {/* STYLES GLOBALES */}
+        {/* ============================================================ */}
+        <style jsx global>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes shine {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+          }
+          @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out forwards;
+          }
+          .animate-shine {
+            animation: shine 1.5s ease-in-out infinite;
+          }
+        `}</style>
+      </div>
+    </div>  // ← Este es el ÚNICO cierre del div principal
+  )      // ← Cierre de la función
+}        // ← Cierre de la exportación
