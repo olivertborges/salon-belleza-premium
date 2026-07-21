@@ -1,6 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Definimos la estructura exacta que espera Supabase para las opciones de cookies
+interface CookieOption {
+  name: string
+  value: string
+  options: any // Usamos any aquí para evitar traer el módulo conflictivo de Next
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -9,7 +16,7 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   })
 
-  // 2. Cliente de Supabase SSR limpio de tipos internos
+  // 2. Cliente de Supabase SSR con tipado explícito nativo
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,8 +25,8 @@ export async function middleware(request: NextRequest) {
         getAll() { 
           return request.cookies.getAll() 
         },
-        // Usamos tipos nativos estándar en lugar de imports de 'dist/compiled'
-        setAll(cookiesToSet) {
+        // Declaramos explícitamente el tipo de cookiesToSet para complacer a TypeScript
+        setAll(cookiesToSet: CookieOption[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -63,6 +70,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Monitoreamos las rutas raíz y las zonas del dashboard/portal
   matcher: ['/', '/login', '/auth', '/dashboard/:path*', '/admin/:path*', '/portal/:path*', '/reset-password'],
 }
