@@ -96,15 +96,31 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
+  // ✅ REDIRECCIÓN CORREGIDA - Solo redirige si el rol está definido y NO está cargando
   useEffect(() => {
-    if (mounted && user && !authLoading && role !== null) {
+    console.log('🔍 Login - Estado:', { 
+      mounted, 
+      user: !!user, 
+      role, 
+      authLoading 
+    })
+
+    // ✅ Solo redirigir si:
+    // 1. Está montado
+    // 2. No está cargando la autenticación
+    // 3. Hay usuario
+    // 4. El rol NO es null
+    if (mounted && !authLoading && user && role !== null) {
+      console.log('👤 Redirigiendo a:', role === 'admin' || role === 'staff' || role === 'owner' ? '/dashboard' : '/portal')
+      
       if (role === 'admin' || role === 'staff' || role === 'owner') {
-        window.location.href = '/dashboard'
+        // ✅ Usar router.push en lugar de window.location.href
+        router.push('/dashboard')
       } else {
-        window.location.href = '/portal'
+        router.push('/portal')
       }
     }
-  }, [user, role, authLoading, mounted])
+  }, [user, role, authLoading, mounted, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,29 +134,14 @@ export default function AuthMobilDefinitivo() {
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto!')
-      router.refresh()
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-
-        const userRole = profile?.role || 'client'
-
-        setTimeout(() => {
-          if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
-            window.location.href = '/dashboard'
-          } else {
-            window.location.href = '/portal'
-          }
-        }, 400)
-      }
+      
+      // ✅ Esperar a que se actualice el estado de autenticación
+      // La redirección se hará en el useEffect
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
+      setLoading(false)
+    } finally {
       setLoading(false)
     }
   }
@@ -171,16 +172,14 @@ export default function AuthMobilDefinitivo() {
       }
 
       setSuccess('✅ ¡Registro exitoso! Redirigiendo...')
-      router.refresh()
-
+      
       await signIn(email, password)
-
-      setTimeout(() => {
-        window.location.href = '/portal'
-      }, 600)
+      // La redirección se hará en el useEffect
 
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
+      setLoading(false)
+    } finally {
       setLoading(false)
     }
   }
@@ -195,7 +194,35 @@ export default function AuthMobilDefinitivo() {
     setLoading(false)
   }
 
-  if (!mounted) return null
+  // ✅ Si está cargando la autenticación, mostrar spinner
+  if (authLoading || !mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
+          Cargando...
+        </p>
+      </div>
+    )
+  }
+
+  // ✅ Si ya hay usuario y rol, mostrar spinner de redirección
+  if (user && role !== null) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
+          Redirigiendo...
+        </p>
+      </div>
+    )
+  }
 
   // ===== DECORACIONES DE FONDO =====
   const BackgroundDecorations = () => (
@@ -215,7 +242,7 @@ export default function AuthMobilDefinitivo() {
         }}
         initial={glowPulse.initial}
       />
-      
+
       <motion.div className="absolute top-10 left-6 text-pink-300/20 dark:text-pink-400/10" animate={floatingIcons.animate}>
         <Sparkles className="w-6 h-6" />
       </motion.div>
@@ -273,7 +300,7 @@ export default function AuthMobilDefinitivo() {
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20 dark:from-[#0a0908] dark:via-[#0f0c1b] dark:to-[#0a0908] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      
+
       <BackgroundDecorations />
 
       <motion.div 
@@ -306,7 +333,7 @@ export default function AuthMobilDefinitivo() {
           >
             <Sparkles className="w-8 h-8" />
           </motion.div>
-          
+
           <motion.h2 
             className="text-3xl font-serif font-extrabold text-stone-900 dark:text-white tracking-tight"
             style={{ 
