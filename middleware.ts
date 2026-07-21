@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  
+  // 🔥 SOLUCIÓN: Si estamos en /login, NO hacer nada
+  if (pathname === '/login') {
+    console.log('📍 [Middleware] En /login, permitiendo acceso sin redirección')
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
@@ -23,40 +30,46 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 🔥 CASO 1: SIN USUARIO - Redirigir a login si está en ruta protegida
+  // 🔥 CASO 1: SIN USUARIO
   if (!user) {
-    const publicPaths = ['/login', '/']
-    if (!publicPaths.includes(pathname)) {
+    // Si está en ruta protegida, redirigir a login
+    if (pathname !== '/' && pathname !== '/login' && !pathname.startsWith('/api')) {
       console.log('🔒 [Middleware] Sin sesión, redirigiendo a login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  // 🔥 OBTENER ROL UNA SOLA VEZ
+  // 🔥 OBTENER ROL (solo si es necesario)
   let userRole = 'client'
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-    userRole = profile?.role || 'client'
-    console.log(`👤 [Middleware] Usuario: ${user.email} | Rol: ${userRole}`)
-  } catch (error) {
-    console.error('❌ [Middleware] Error obteniendo rol:', error)
+  let isAdmin = false
+  
+  // Solo obtener el rol si estamos en rutas que lo necesitan
+  const needsRole = pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/admin') || pathname === '/portal'
+  
+  if (needsRole) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+      userRole = profile?.role || 'client'
+      isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+      console.log(`👤 [Middleware] Usuario: ${user.email} | Rol: ${userRole}`)
+    } catch (error) {
+      console.error('❌ [Middleware] Error obteniendo rol:', error)
+    }
   }
 
-  const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
-  const destino = isAdmin ? '/dashboard' : '/portal'
-
-  // 🔥 CASO 2: EN LOGIN - Redirigir según rol
-  if (pathname === '/login') {
-    console.log(`🔄 [Middleware] En login, redirigiendo a: ${destino}`)
+  // 🔥 CASO 2: EN RAÍZ - Redirigir según rol
+  if (pathname === '/') {
+    const destino = isAdmin ? '/dashboard' : '/portal'
+    console.log(`🔄 [Middleware] En raíz, redirigiendo a: ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  // 🔥 CASO 3: EN RUTA ADMIN - Verificar permisos
+  // 🔥 CASO 3: EN DASHBOARD O ADMIN - Verificar permisos
   if (pathname === '/dashboard' || pathname.startsWith('/admin')) {
     if (!isAdmin) {
       console.log(`⛔ [Middleware] Usuario ${userRole} en admin, redirigiendo a /portal`)
@@ -72,15 +85,19 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // 🔥 CASO 5: EN RAÍZ - Redirigir según rol
-  if (pathname === '/') {
-    console.log(`🔄 [Middleware] En raíz, redirigiendo a: ${destino}`)
-    return NextResponse.redirect(new URL(destino, request.url))
-  }
-
   return response
 }
 
 export const config = {
-  matcher: ['/', '/dashboard', '/admin/:path*', '/login', '/portal']
+  matcher: [
+    /*
+     * 🔥 IMPORTANTE: EXCLUIR /login del middleware
+     * El middleware NO debe procesar la ruta de login
+     */
+    '/',
+    '/dashboard',
+    '/admin/:path*',
+    '/portal',
+    // '/login'  ← ELIMINADO: No procesar login
+  ],
 }
