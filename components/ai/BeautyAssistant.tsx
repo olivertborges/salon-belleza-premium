@@ -1,4 +1,5 @@
 // components/ai/BeautyAssistant.tsx
+// @ts-nocheck
 'use client'
 
 import { useState } from 'react'

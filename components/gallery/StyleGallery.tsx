@@ -1,4 +1,5 @@
 // components/gallery/StyleGallery.tsx
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'

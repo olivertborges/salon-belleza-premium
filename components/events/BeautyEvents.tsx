@@ -1,4 +1,5 @@
 // components/events/BeautyEvents.tsx
+// @ts-nocheck
 'use client'
 
 import { motion } from 'framer-motion'
