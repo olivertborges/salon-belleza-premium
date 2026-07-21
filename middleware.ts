@@ -5,60 +5,58 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isDev = process.env.NODE_ENV === 'development'
 
-  // Evitar interceptar archivos estáticos y APIs
-  if (pathname.startsWith('/api/') || pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)$/)) {
-    return NextResponse.next()
-  }
-
-  if (pathname === '/login' || pathname === '/register') {
-    return NextResponse.next()
-  }
-
+  // 1. Crear una respuesta base limpia
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: request.headers,
+    },
   })
 
+  // 2. Crear el cliente de Supabase mutando de forma segura los headers
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
         set(name: string, value: string, options: CookieOptions) {
           request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
+          response = NextResponse.next({
+            request: { headers: request.headers },
+          })
           response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
           request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
+          response = NextResponse.next({
+            request: { headers: request.headers },
+          })
           response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
-  // Intentar obtener el usuario de la cookie
+  // 3. Obtener el usuario autenticado (Lee y refresca las cookies automáticamente)
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 🛠️ BYPASS INTELIGENTE PARA DESARROLLO EN MÓVIL (TERMUX) 🛠️
-  // Si estamos en desarrollo local y el navegador del celular se niega a enviar la cookie,
-  // el servidor DEJA PASAR la petición. El archivo 'layout.tsx' o tu 'AuthContext' 
-  // en el cliente (que sí tiene acceso al LocalStorage del teléfono) se encargará de validar
-  // si realmente hay sesión y expulsarlo si es un intruso.
+  // 🛠️ BYPASS PARA DESARROLLO MÓVIL (TERMUX)
+  // Si estás probando localmente en el móvil y las cookies de servidor fallan, 
+  // dejamos pasar la petición para que el AuthContext del cliente tome el control.
   if (!user && isDev) {
     console.log(`📱 [Termux Bypass] Sin cookie en el servidor para: ${pathname}. Delegando protección al cliente.`);
     return response
   }
 
-  // FLUJO DE PRODUCCIÓN / CON COOKIES FUNCIONALES
+  // 4. PROTECCIÓN: Si no hay usuario y no está el bypass activo, directo al login
   if (!user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const loginUrl = new URL('/login', request.url)
+    return NextResponse.redirect(loginUrl)
   }
 
-  // Si hay cookie y usuario, validamos roles en el servidor normalmente
+  // 5. CONTROL DE ROLES EN SERVIDOR
   try {
     const { data: profile } = await supabase
       .from('profiles')
@@ -69,19 +67,35 @@ export async function middleware(request: NextRequest) {
     const userRole = profile?.role || 'client'
     const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
 
+    // Redirecciones cruzadas basadas en roles
     if (pathname.startsWith('/dashboard') && !isAdmin) {
+      console.log(`🚫 No autorizado para dashboard (${userRole}). Redirigiendo a /portal`)
       return NextResponse.redirect(new URL('/portal', request.url))
     }
+    
     if (pathname.startsWith('/portal') && isAdmin) {
+      console.log(`👨‍💼 Admin detectado en ruta de cliente. Redirigiendo a /dashboard`)
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   } catch (e) {
-    // Si falla la base de datos, dejamos pasar y que el cliente resuelva
+    console.error('⚠️ Error validando rol en Middleware, delegando al cliente:', e)
   }
 
   return response
 }
 
+// Configuración del Matcher: Evitamos interceptar archivos estáticos desde la raíz
 export const config = {
-  matcher: ['/dashboard/:path*', '/portal/:path*'],
+  matcher: [
+    /*
+     * Match todas las rutas excepto:
+     * - api (rutas de la API)
+     * - login, register (vistas públicas de auth)
+     * - _next/static (archivos estáticos)
+     * - _next/image (optimización de imágenes)
+     * - favicon.ico, sitemap.xml, robots.txt (archivos SEO/Metas)
+     * - extensiones comunes de imágenes/recursos
+     */
+    '/((?!api|login|register|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+  ],
 }
