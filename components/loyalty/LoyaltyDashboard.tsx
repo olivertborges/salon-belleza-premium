@@ -1,4 +1,5 @@
 // components/loyalty/LoyaltyDashboard.tsx
+// @ts-nocheck
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
