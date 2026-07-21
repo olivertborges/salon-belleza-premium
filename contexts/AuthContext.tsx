@@ -5,6 +5,24 @@ import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+// ============================================================
+// 📦 TIPOS
+// ============================================================
+interface Profile {
+  role: string
+  tenant_id: string | null
+}
+
+interface Client {
+  id: string
+  tenant_id: string | null
+}
+
+interface Wallet {
+  glow_points: number
+  hair_points: number
+}
+
 interface AuthContextType {
   user: User | null
   role: string | null
@@ -36,12 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authCheckDone = useRef(false)
 
   // ============================================================
-  // 1. OBTENER PERFIL DEL USUARIO (MEJORADO)
+  // 1. OBTENER PERFIL DEL USUARIO
   // ============================================================
   const fetchUserDataAndRole = async (userId: string) => {
     if (!userId) return
 
-    // Si ya tenemos el rol y es el mismo usuario, no hacer nada
     if (lastFetchedUserId.current === userId && role !== null) {
       console.log('ℹ️ [Perfil] Datos ya cargados, saltando.')
       return
@@ -51,7 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(`📡 [Perfil] Consultando perfil para: ${userId.substring(0, 6)}...`)
       lastFetchedUserId.current = userId
 
-      // 🔥 OBTENER ROL DIRECTO DE LA DB
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role, tenant_id')
@@ -60,26 +76,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (profileErr) {
         console.error(`❌ [Perfil] Error: ${profileErr.message}`)
-        // Si hay error, asignar rol por defecto
         setRole('client')
+        setAuthInitialized(true)
         return
       }
 
       if (!profile) {
         console.log('⚠️ [Perfil] Sin perfil, asignando "client"')
         setRole('client')
+        setAuthInitialized(true)
         return
       }
 
-      const userRole = profile?.role || 'client'
+      // 🔥 TIPADO CORRECTO
+      const profileData = profile as Profile
+      const userRole = profileData.role || 'client'
+      
       console.log(`✅ [Perfil] Rol encontrado: "${userRole}"`)
       setRole(userRole)
 
-      if (profile?.tenant_id) {
-        setTenantId(profile.tenant_id)
+      if (profileData.tenant_id) {
+        setTenantId(profileData.tenant_id)
       }
 
-      // Si es cliente, obtener datos adicionales
       if (userRole === 'client') {
         console.log('📡 [Perfil] Obteniendo datos de cliente...')
         
@@ -94,31 +113,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (client) {
-          setClientId(client.id)
-          if (client.tenant_id) {
-            setTenantId(client.tenant_id)
+          const clientData = client as Client
+          setClientId(clientData.id)
+          
+          if (clientData.tenant_id) {
+            setTenantId(clientData.tenant_id)
           }
 
-          // Obtener puntos
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
             .select('glow_points, hair_points')
-            .eq('client_id', client.id)
+            .eq('client_id', clientData.id)
             .maybeSingle()
 
           if (wallet) {
-            setPoints((wallet.glow_points || 0) + (wallet.hair_points || 0))
+            const walletData = wallet as Wallet
+            setPoints((walletData.glow_points || 0) + (walletData.hair_points || 0))
             console.log('✅ [Perfil] Puntos cargados')
           }
         }
       }
 
-      // Marcar que la autenticación está inicializada
       setAuthInitialized(true)
 
     } catch (error: any) {
       console.error(`💥 [Perfil] Error: ${error.message || error}`)
-      // En caso de error, asignar rol por defecto
       setRole('client')
       setAuthInitialized(true)
     }
@@ -140,13 +159,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 3. INICIALIZAR AUTENTICACIÓN (MEJORADO)
+  // 3. INICIALIZAR AUTENTICACIÓN
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
 
     const initializeAuth = async () => {
-      // Si ya se hizo la verificación, no repetir
       if (authCheckDone.current) {
         console.log('⏭️ Auth ya verificado, saltando...')
         return
@@ -155,7 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🚀 [Init] Inicializando autenticación...')
       
       try {
-        // Obtener sesión
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
@@ -169,18 +186,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log(`✅ [Init] Sesión activa: ${session.user.email}`)
           setUser(session.user)
-          
-          // 🔥 IMPORTANTE: Cargar el rol INMEDIATAMENTE
           await fetchUserDataAndRole(session.user.id)
         } else {
           console.log('⚠️ [Init] Sin sesión activa')
+          setAuthInitialized(true)
         }
       } catch (err: any) {
         console.error(`❌ [Init] Error: ${err.message}`)
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
-          setAuthInitialized(true)
           authCheckDone.current = true
           console.log('🔓 [Init] Inicialización completada')
         }
@@ -189,7 +204,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // Suscripción a cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔔 [Event] ${event}`)
 
@@ -368,7 +382,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clientId,
     tenantId,
     points,
-    loading: loading || !authInitialized, // 🔥 IMPORTANTE: No terminar loading hasta que auth esté inicializado
+    loading: loading || !authInitialized,
     signIn,
     signUp,
     signOut,
