@@ -11,8 +11,7 @@ import {
   User, LogIn, Shield, Crown, Gem, 
   ArrowRight, CheckCircle2, XCircle,
   Heart, Star, Zap, Fingerprint, 
-  Flower2, Waves, Palette, Gift,
-  Bug
+  Flower2, Waves, Palette, Gift
 } from 'lucide-react'
 
 // ===== ANIMACIONES =====
@@ -83,8 +82,9 @@ export default function AuthMobilDefinitivo() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const [showDebug, setShowDebug] = useState(true)
+  
+  // ✅ Estado para mostrar info de debug
+  const [authDebug, setAuthDebug] = useState({ user: false, role: 'null', loading: true })
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -92,91 +92,59 @@ export default function AuthMobilDefinitivo() {
   const [phone, setPhone] = useState('')
   const [referralCode, setReferralCode] = useState('')
 
-  // ✅ Función para agregar logs de debug
-  const addDebugLog = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
-    const timestamp = new Date().toLocaleTimeString()
-    const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔍'
-    setDebugLogs(prev => [`${emoji} [${timestamp}] ${message}`, ...prev].slice(0, 20))
-  }
-
   useEffect(() => {
     setMounted(true)
-    addDebugLog('🚀 Componente montado')
-    
     const searchParams = new URLSearchParams(window.location.search);
     const ref = searchParams.get('ref');
-    if (ref) {
-      setReferralCode(ref)
-      addDebugLog(`📎 Código de referido: ${ref}`)
-    }
+    if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ Logs de autenticación
+  // ✅ Actualizar debug
   useEffect(() => {
-    addDebugLog(`📊 Estado: mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
-    
-    if (user) {
-      addDebugLog(`👤 Usuario detectado: ${user.email}`)
-    }
-    if (role) {
-      addDebugLog(`🎯 Rol detectado: ${role}`)
-    }
-  }, [user, role, authLoading, mounted])
+    setAuthDebug({
+      user: !!user,
+      role: role || 'null',
+      loading: authLoading
+    })
+  }, [user, role, authLoading])
 
-  // ✅ REDIRECCIÓN CON LOGS
+  // ✅ REDIRECCIÓN DESACTIVADA TEMPORALMENTE - SOLO MOSTRAR INFO
   useEffect(() => {
-    const estado = `mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`
-    addDebugLog(`🔄 Verificando redirección: ${estado}`)
-
-    // Si no está montado o está cargando, esperar
-    if (!mounted || authLoading) {
-      addDebugLog(`⏳ Esperando: mounted=${mounted}, authLoading=${authLoading}`)
-      return
-    }
-
-    // Si no hay usuario, no redirigir
-    if (!user) {
-      addDebugLog(`👤 No hay usuario, mostrando login`)
-      return
-    }
-
-    // Si hay usuario pero no rol, esperar
-    if (role === null) {
-      addDebugLog(`⏳ Usuario existe pero rol es null, esperando...`)
-      return
-    }
-
-    // ✅ Tenemos usuario y rol - REDIRIGIR
-    addDebugLog(`🚀 REDIRIGIENDO a ${role === 'admin' || role === 'staff' || role === 'owner' ? '/dashboard' : '/portal'}`)
+    // No redirigir automáticamente - solo mostrar estado
+    console.log('🔍 Estado de autenticación:', { 
+      user: !!user, 
+      role, 
+      authLoading,
+      mounted 
+    })
     
-    if (role === 'admin' || role === 'staff' || role === 'owner') {
-      window.location.href = '/dashboard'
-    } else {
-      window.location.href = '/portal'
+    // ✅ Si hay usuario y rol, mostrar un botón para redirigir manualmente
+    if (user && role) {
+      console.log('👤 Usuario autenticado:', user.email, 'Rol:', role)
     }
-
   }, [user, role, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
-    
-    addDebugLog(`🔐 Intentando login para: ${email}`)
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
       const { error: signInError } = await signIn(email, password)
-      if (signInError) {
-        addDebugLog(`❌ Error en login: ${signInError.message}`, 'error')
-        throw signInError
-      }
+      if (signInError) throw signInError
 
-      addDebugLog(`✅ Login exitoso para: ${email}`, 'success')
       setSuccess('¡Ingreso correcto!')
       
-      // La redirección se hará en el useEffect
+      // ✅ Después del login exitoso, esperar y redirigir manualmente
+      setTimeout(() => {
+        if (role === 'admin' || role === 'staff' || role === 'owner') {
+          window.location.href = '/dashboard'
+        } else {
+          window.location.href = '/portal'
+        }
+      }, 1000)
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
@@ -189,8 +157,6 @@ export default function AuthMobilDefinitivo() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
-    
-    addDebugLog(`📝 Intentando registro para: ${email}`)
     setLoading(true)
     setError('')
     setSuccess('')
@@ -210,13 +176,10 @@ export default function AuthMobilDefinitivo() {
 
       const data = await res.json()
       if (!res.ok || !data.success) {
-        addDebugLog(`❌ Error en registro: ${data.error}`, 'error')
         throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
-      addDebugLog(`✅ Registro exitoso para: ${email}`, 'success')
       setSuccess('✅ ¡Registro exitoso!')
-      
       await signIn(email, password)
 
     } catch (err: any) {
@@ -233,9 +196,23 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
-    addDebugLog(`📧 Enviando recuperación para: ${email}`)
     setSuccess('📧 Enlace de recuperación enviado a tu correo.')
     setLoading(false)
+  }
+
+  // ✅ Función para ir al dashboard manualmente
+  const goToDashboard = () => {
+    if (role === 'admin' || role === 'staff' || role === 'owner') {
+      window.location.href = '/dashboard'
+    } else {
+      window.location.href = '/portal'
+    }
+  }
+
+  // ✅ Función para limpiar sesión
+  const clearSession = async () => {
+    await supabase.auth.signOut()
+    window.location.reload()
   }
 
   if (!mounted) {
@@ -246,7 +223,7 @@ export default function AuthMobilDefinitivo() {
           <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
-          Montando...
+          Cargando...
         </p>
       </div>
     )
@@ -308,7 +285,6 @@ export default function AuthMobilDefinitivo() {
               setActiveTab(tab.id as any)
               setError('')
               setSuccess('')
-              addDebugLog(`📑 Cambiando a tab: ${tab.label}`)
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 ${
               isActive
@@ -349,50 +325,39 @@ export default function AuthMobilDefinitivo() {
         className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
       >
 
-        {/* BOTÓN DEBUG */}
-        <div className="absolute top-4 right-4 z-50">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="p-2 rounded-xl bg-stone-900/50 backdrop-blur-sm border border-stone-800 hover:border-pink-500/30 transition-all"
-          >
-            <Bug className={`w-4 h-4 ${showDebug ? 'text-pink-500' : 'text-stone-500'}`} />
-          </button>
-        </div>
-
-        {/* PANEL DE DEBUG */}
-        {showDebug && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-xl bg-stone-950/90 backdrop-blur-sm border border-stone-800 max-h-32 overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[8px] font-mono font-bold uppercase tracking-wider text-pink-400">🔍 DEBUG</p>
+        {/* ✅ PANEL DE DEBUG DE AUTENTICACIÓN */}
+        <div className="mb-4 p-3 rounded-xl bg-stone-950/90 backdrop-blur-sm border border-stone-800">
+          <p className="text-[8px] font-mono font-bold uppercase tracking-wider text-pink-400 mb-1">🔐 ESTADO DE AUTENTICACIÓN</p>
+          <div className="space-y-0.5 font-mono text-[8px]">
+            <p className={authDebug.user ? 'text-emerald-400' : 'text-stone-500'}>
+              Usuario: {authDebug.user ? '✅ Autenticado' : '❌ No autenticado'}
+            </p>
+            <p className={authDebug.role !== 'null' ? 'text-emerald-400' : 'text-stone-500'}>
+              Rol: {authDebug.role !== 'null' ? `✅ ${authDebug.role}` : '⏳ Cargando...'}
+            </p>
+            <p className={!authDebug.loading ? 'text-emerald-400' : 'text-stone-500'}>
+              Loading: {authDebug.loading ? '⏳ Cargando...' : '✅ Listo'}
+            </p>
+          </div>
+          
+          {/* ✅ Botones de acción para debug */}
+          <div className="flex gap-2 mt-3">
+            {authDebug.user && authDebug.role !== 'null' && (
               <button
-                onClick={() => setDebugLogs([])}
-                className="text-[8px] font-mono text-stone-500 hover:text-stone-300 transition-colors"
+                onClick={goToDashboard}
+                className="flex-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-amber-500 text-white text-[8px] font-bold uppercase tracking-wider hover:opacity-90 transition-all"
               >
-                Limpiar
+                Ir al Dashboard
               </button>
-            </div>
-            <div className="space-y-0.5 font-mono text-[8px] text-stone-400 leading-relaxed">
-              {debugLogs.length === 0 ? (
-                <p className="text-stone-600 italic">Esperando eventos...</p>
-              ) : (
-                debugLogs.map((log, i) => (
-                  <div key={i} className={`${
-                    log.includes('❌') ? 'text-rose-400' :
-                    log.includes('✅') ? 'text-emerald-400' :
-                    log.includes('🚀') ? 'text-pink-400' :
-                    'text-stone-400'
-                  }`}>
-                    {log}
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
-        )}
+            )}
+            <button
+              onClick={clearSession}
+              className="px-3 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/20 text-rose-400 text-[8px] font-bold uppercase tracking-wider hover:bg-rose-500/30 transition-all"
+            >
+              Limpiar Sesión
+            </button>
+          </div>
+        </div>
 
         {/* HEADER */}
         <motion.div variants={itemVariants} className="text-center mb-6 relative">
@@ -456,7 +421,7 @@ export default function AuthMobilDefinitivo() {
           )}
         </AnimatePresence>
 
-        {/* CONTENIDO */}
+        {/* CONTENIDO CON ANIMACIÓN Y CLAVE ÚNICA PARA CADA TAB */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeTab}-content`}
