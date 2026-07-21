@@ -99,39 +99,26 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN CON WINDOW.LOCATION.HREF
+  // ✅ REDIRECCIÓN REPARADA SIN RECARGAS AGRESIVAS
   useEffect(() => {
-    // Si ya redirigió, no hacer nada
-    if (hasRedirected.current) {
-      console.log('⏭️ Ya redirigió, saltando...')
-      return
-    }
+    if (hasRedirected.current) return
+    if (!mounted || authLoading) return
+    if (!user || !role) return
 
-    // Si no está montado o está cargando, esperar
-    if (!mounted || authLoading) {
-      console.log('⏳ Esperando: mounted=', mounted, 'authLoading=', authLoading)
-      return
-    }
+    // Evitar redirección si ya estamos en la ruta correcta
+    const currentPath = window.location.pathname
+    let targetPath = '/portal'
 
-    // Si no hay usuario o no hay rol, esperar
-    if (!user || !role) {
-      console.log('👤 Esperando usuario o rol...')
-      return
-    }
-
-    // ✅ Si llegamos aquí, tenemos todo - REDIRIGIR UNA SOLA VEZ
-    console.log('🚀 REDIRIGIENDO a:', role === 'admin' || role === 'staff' || role === 'owner' ? '/dashboard' : '/portal')
-    
-    // Marcar que ya redirigió
-    hasRedirected.current = true
-    
-    // ✅ Usar window.location.href para forzar la redirección
     if (role === 'admin' || role === 'staff' || role === 'owner') {
-      window.location.href = '/dashboard'
-    } else {
-      window.location.href = '/portal'
+      targetPath = '/dashboard'
     }
-  }, [user, role, authLoading, mounted])
+
+    if (currentPath !== targetPath) {
+      console.log('🚀 Redirigiendo limpiamente vía Next.js Router a:', targetPath)
+      hasRedirected.current = true
+      router.push(targetPath)
+    }
+  }, [user, role, authLoading, mounted, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,8 +132,6 @@ export default function AuthMobilDefinitivo() {
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto!')
-      
-      // Resetear el flag de redirección para permitir la redirección después del login
       hasRedirected.current = false
 
     } catch (err: any) {
@@ -183,7 +168,6 @@ export default function AuthMobilDefinitivo() {
       }
 
       setSuccess('✅ ¡Registro exitoso!')
-      
       hasRedirected.current = false
       await signIn(email, password)
 
@@ -201,8 +185,18 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
-    setSuccess('📧 Enlace de recuperación enviado a tu correo.')
-    setLoading(false)
+    
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (resetError) throw resetError
+      setSuccess('📧 Enlace de recuperación enviado a tu correo.')
+    } catch (err: any) {
+      setError(err.message || 'Error al enviar el correo de recuperación.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!mounted) {
@@ -267,16 +261,15 @@ export default function AuthMobilDefinitivo() {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
         return (
-          <motion.button
+          <button
             key={tab.id}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.96 }}
+            type="button"
             onClick={() => { 
               setActiveTab(tab.id as any)
               setError('')
               setSuccess('')
             }}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.96] ${
               isActive
                 ? 'text-white shadow-lg shadow-pink-500/25'
                 : 'text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-pink-300'
@@ -287,7 +280,7 @@ export default function AuthMobilDefinitivo() {
           >
             <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white/80' : ''}`} />
             {tab.label}
-          </motion.button>
+          </button>
         )
       })}
     </div>
@@ -449,8 +442,6 @@ export default function AuthMobilDefinitivo() {
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
@@ -573,8 +564,6 @@ export default function AuthMobilDefinitivo() {
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)' }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
@@ -596,7 +585,7 @@ export default function AuthMobilDefinitivo() {
                 </button>
 
                 <div className="text-center pt-4">
-                  <p className="text-xs text-stone-400 dark:text-stone-500">
+                  <p className="text-xs text-stone-400 dark:text-stone-400">
                     ¿Ya tienes cuenta? 
                     <button
                       type="button"
@@ -618,7 +607,7 @@ export default function AuthMobilDefinitivo() {
                     <Shield className="w-7 h-7" />
                   </div>
                   <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                    Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso.
+                    Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso a través de Supabase.
                   </p>
                 </div>
 
@@ -645,8 +634,6 @@ export default function AuthMobilDefinitivo() {
                   disabled={loading}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #f472b6)' }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
