@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
-import { useRouter } from 'next/navigation' // ✅ Importamos el router oficial
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const { signIn, role, user, loading: authLoading } = useAuth()
-  const router = useRouter() // ✅ Herramienta para moverse entre páginas
+  const router = useRouter()
 
   const [mounted, setMounted] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<string>('login')
@@ -21,20 +21,27 @@ export default function LoginPage() {
   const agregarEstado = function(texto: string, color: string = 'blanco') {
     const hora = new Date().toLocaleTimeString()
     const nuevo = [{hora: hora, texto: texto, color: color}]
-    setPanelEstado(nuevo.concat(panelEstado).slice(0,8))
+    setPanelEstado(nuevo.concat(panelEstado).slice(0,12))
   }
 
-  // ✅ Si el usuario ya está logueado al entrar, lo mandamos directo
+  // ✅ SOLO nos movemos cuando TODO esté confirmado
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || authLoading) return
+
     if (user && role) {
-      agregarEstado(`USUARIO: ${user.email}`, 'verde')
-      agregarEstado(`ROL: ${role}`, 'verde')
+      agregarEstado(`✅ USUARIO: ${user.email}`, 'verde')
+      agregarEstado(`✅ ROL DEFINIDO: ${role}`, 'verde')
+      
       const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
-      agregarEstado(`YA ESTÁS DENTRO → ${destino}`, 'verde')
-      setTimeout(() => router.push(destino), 800)
+      agregarEstado(`🚀 REDIRIGIENDO A: ${destino}`, 'verde')
+      
+      // Usamos replace para no poder volver atrás con el botón
+      setTimeout(() => router.replace(destino), 500)
+    } else {
+      if (!user) agregarEstado(`⚠️ ESPERANDO USUARIO...`, 'amarillo')
+      if (!role) agregarEstado(`⚠️ ESPERANDO ROL...`, 'amarillo')
     }
-  }, [user, role, mounted, router])
+  }, [user, role, authLoading, mounted, router])
 
   useEffect(function() {
     setMounted(true)
@@ -55,9 +62,8 @@ export default function LoginPage() {
     try {
       const res = await signIn(email, password)
       if (res.error) throw res.error
-      agregarEstado('✓ INGRESO CORRECTO', 'verde')
-      setSuccess('Entrando...')
-      // ✅ YA NO RECARGAMOS: el efecto de arriba se encarga de mandarte
+      agregarEstado('✓ INGRESO PROCESADO', 'verde')
+      setSuccess('Confirmando datos...')
     } catch (err: any) {
       setError(err.message)
       agregarEstado(`ERROR: ${err.message}`, 'rojo')
@@ -67,13 +73,12 @@ export default function LoginPage() {
   }
 
   const irManual = function() {
-    if (!user || !role) {
-      agregarEstado('No hay sesión activa', 'rojo')
-      return
-    }
+    if (!user) return agregarEstado('❌ NO HAY USUARIO', 'rojo')
+    if (!role) return agregarEstado('❌ NO HAY ROL', 'rojo')
+    
     const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
-    agregarEstado(`YENDO A: ${destino}`, 'verde')
-    router.push(destino)
+    agregarEstado(`👉 YENDO MANUALMENTE A: ${destino}`, 'verde')
+    router.replace(destino)
   }
 
   if (!mounted) {
@@ -102,10 +107,11 @@ export default function LoginPage() {
             return React.createElement('p', {key: idx, className: colorClase(item.color)}, '[' + item.hora + '] ' + item.texto)
           })
         ),
-        (user && role) ? React.createElement('button', {
+        React.createElement('button', {
           onClick: irManual,
-          className: 'mt-3 w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg'
-        }, '✅ IR AL PANEL AHORA') : null
+          disabled: !user || !role,
+          className: 'mt-3 w-full py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white text-xs font-bold rounded-lg'
+        }, user && role ? '✅ IR AL PANEL AHORA' : '⏳ ESPERANDO SESIÓN...')
       ),
       React.createElement('div', {className: 'text-center mb-4'},
         React.createElement('div', {
