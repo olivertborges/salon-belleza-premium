@@ -73,7 +73,7 @@ export default function GaleriaAdminPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  
+
   // Estados de filtros avanzados, orden y búsquedas
   const [categoryFilter, setCategoryFilter] = useState('Todas')
   const [sensoryFilter, setSensoryFilter] = useState('Todos')
@@ -98,7 +98,7 @@ export default function GaleriaAdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // Estados para archivos multimedia y previsualizaciones (Soporta Normal o Antes/Después)
+  // Estados para archivos multimedia y previsualizaciones
   const [isBeforeAfter, setIsBeforeAfter] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -145,7 +145,7 @@ export default function GaleriaAdminPage() {
     if (!session?.user) return null
     if (session.user.user_metadata?.tenant_id) return session.user.user_metadata.tenant_id
     if (session.user.app_metadata?.tenant_id) return session.user.app_metadata.tenant_id
-    
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('tenant_id')
@@ -173,7 +173,9 @@ export default function GaleriaAdminPage() {
     }
   }, [])
 
-  // CARGAR FOTOS DE MÚLTIPLES ORÍGENES (ADMIN Y CLIENTES) CON TODA LA DATA ASOCIADA
+  // ==========================================
+  // FUNCIÓN CORREGIDA: CARGAR FOTOS
+  // ==========================================
   const fetchPhotos = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true)
@@ -188,12 +190,11 @@ export default function GaleriaAdminPage() {
         return
       }
 
-      // Disparar la carga de profesionales en paralelo
       fetchProfessionals(activeTenantId)
 
       let allPhotos: Photo[] = []
 
-      // 1. Extracción de datos desde la galería del Administrador
+      // 1. FOTOS DE ADMIN - SOLO columnas que existen en gallery
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
@@ -203,17 +204,23 @@ export default function GaleriaAdminPage() {
         console.error('Error cargando fotos de admin:', adminError)
       } else if (adminPhotos) {
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
-          ...p,
+          id: p.id,
+          image_url: p.image_url || '',  // ✅ SOLO image_url
+          title: p.title || null,
+          category: p.category || 'Nail Art',
+          sensory_category: p.sensory_category || 'Clásico',
+          description: p.description || null,
+          is_active: p.is_active !== undefined ? p.is_active : true,
+          created_at: p.created_at,
           source: 'admin' as const,
-          image_url: p.image_url || p.after_image_url || p.before_image_url || null,
-          before_image_url: p.before_image_url || null,
-          after_image_url: p.after_image_url || null,
           professional_id: p.professional_id || null,
-          client_name: p.client_name || null,
-          client_id: p.client_id || null,
+          professional_name: null,
+          client_name: null,
+          client_id: null,
+          before_image_url: null,     // ✅ Forzamos null
+          after_image_url: null,      // ✅ Forzamos null
           price: p.price || null,
           polish_used: p.polish_used || null,
-          sensory_category: p.sensory_category || 'Clásico',
           views: p.views || 0,
           likes: p.likes || 0,
           sort_order: p.sort_order || 0,
@@ -222,7 +229,7 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. Extracción de datos desde la galería de aportes de Clientes
+      // 2. FOTOS DE CLIENTES - from client_gallery (SÍ tiene before/after)
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -242,10 +249,11 @@ export default function GaleriaAdminPage() {
           created_at: p.created_at,
           source: 'client' as const,
           professional_id: p.professional_id || null,
+          professional_name: null,
           client_name: p.client_name || 'Cliente Anónimo',
           client_id: p.client_id || null,
-          before_image_url: p.before_image_url || null,
-          after_image_url: p.after_image_url || null,
+          before_image_url: p.before_image_url || null,  // ✅ SÍ existe
+          after_image_url: p.after_image_url || null,    // ✅ SÍ existe
           price: p.price || null,
           polish_used: p.polish_used || null,
           views: p.views || 0,
@@ -260,6 +268,7 @@ export default function GaleriaAdminPage() {
 
     } catch (err: any) {
       setError('No se pudo sincronizar la galería multimedia.')
+      console.error(err)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -279,7 +288,7 @@ export default function GaleriaAdminPage() {
     return map
   }, [professionals])
 
-  // CÁLCULO DE MÉTRICAS Y ESTADÍSTICAS DEL PANEL INTACTO
+  // CÁLCULO DE MÉTRICAS Y ESTADÍSTICAS DEL PANEL
   const stats = useMemo<GalleryStats>(() => {
     return photos.reduce((acc, current) => {
       acc.totalPhotos++
@@ -292,32 +301,27 @@ export default function GaleriaAdminPage() {
     }, { totalPhotos: 0, adminPhotos: 0, clientPhotos: 0, totalViews: 0, totalLikes: 0, beforeAfterCount: 0 })
   }, [photos])
 
-  // MOTOR FILTRADO Y ORDENAMIENTO COMPLETO Y AVANZADO
+  // MOTOR FILTRADO Y ORDENAMIENTO COMPLETO
   const filteredAndSortedPhotos = useMemo(() => {
     let result = [...photos]
 
-    // Filtro por Categorías principales
     if (categoryFilter !== 'Todas') {
       result = result.filter(p => p.category === categoryFilter)
     }
 
-    // Filtro por Categoría Sensorial / Estilo
     if (sensoryFilter !== 'Todos') {
       result = result.filter(p => p.sensory_category === sensoryFilter)
     }
 
-    // Filtro de Origen
     if (sourceFilter !== 'all') {
       result = result.filter(p => p.source === sourceFilter)
     }
 
-    // Filtro por Estado de Visibilidad pública
     if (statusFilter !== 'all') {
       const targetStatus = statusFilter === 'active'
       result = result.filter(p => p.is_active === targetStatus)
     }
 
-    // Buscador global por texto (títulos, descripciones, etiquetas, esmaltes)
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase().trim()
       result = result.filter(p => 
@@ -329,7 +333,6 @@ export default function GaleriaAdminPage() {
       )
     }
 
-    // Clasificación y ordenamiento avanzado de datos
     result.sort((a, b) => {
       if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -341,6 +344,19 @@ export default function GaleriaAdminPage() {
 
     return result
   }, [photos, categoryFilter, sensoryFilter, sourceFilter, statusFilter, searchQuery, sortBy])
+
+  // ==========================================
+  // FUNCIÓN PARA OBTENER URL DE IMAGEN
+  // ==========================================
+  const getImageUrl = (photo: Photo) => {
+    // Para fotos de admin, usar image_url (SÍ existe en gallery)
+    if (photo.source === 'admin') {
+      return photo.image_url || ''
+    }
+    
+    // Para fotos de clientes, priorizar after_image_url
+    return photo.after_image_url || photo.image_url || photo.before_image_url || ''
+  }
 
   // MANEJO DE SUBIDAS A STORAGE
   const uploadFile = async (file: File, tenantId: string): Promise<string> => {
@@ -377,7 +393,9 @@ export default function GaleriaAdminPage() {
     reader.readAsDataURL(file)
   }
 
-  // SUBMIT COMPLETO SIN SIMPLIFICACIONES (MANEJA LA METADATA AVANZADA Y ANTES/DESPUÉS)
+  // ==========================================
+  // SUBMIT CORREGIDO - SOLO USA image_url PARA ADMIN
+  // ==========================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -393,35 +411,29 @@ export default function GaleriaAdminPage() {
       let beforeUrl = formData.before_image_url
       let afterUrl = formData.after_image_url
 
-      // Procesar carga si es un elemento nuevo
+      // Procesar carga
       if (!editingPhoto) {
+        // PARA ADMIN: SOLO imagen estándar, NO before/after
         if (isBeforeAfter) {
-          if (!selectedBeforeFile || !selectedAfterFile) {
-            throw new Error('⚠️ Es obligatorio cargar ambas capturas para el formato interactivo.')
-          }
-          beforeUrl = await uploadFile(selectedBeforeFile, activeTenantId)
-          afterUrl = await uploadFile(selectedAfterFile, activeTenantId)
-          imageUrl = afterUrl
-        } else {
-          if (!selectedFile) throw new Error('⚠️ Debes seleccionar una imagen para la publicación.')
-          imageUrl = await uploadFile(selectedFile, activeTenantId)
-          beforeUrl = ''
-          afterUrl = ''
+          throw new Error('⚠️ El formato Antes/Después solo está disponible para clientes. Para el portafolio del salón usa una imagen estándar.')
         }
+        
+        if (!selectedFile) throw new Error('⚠️ Debes seleccionar una imagen para la publicación.')
+        imageUrl = await uploadFile(selectedFile, activeTenantId)
+        beforeUrl = ''
+        afterUrl = ''
       } else {
-        // En caso de edición, si se seleccionaron archivos nuevos, se reemplazan
-        if (isBeforeAfter) {
-          if (selectedBeforeFile) beforeUrl = await uploadFile(selectedBeforeFile, activeTenantId)
-          if (selectedAfterFile) {
-            afterUrl = await uploadFile(selectedAfterFile, activeTenantId)
-            imageUrl = afterUrl
-          }
-        } else {
-          if (selectedFile) imageUrl = await uploadFile(selectedFile, activeTenantId)
+        // Edición: si es admin y se seleccionó nueva imagen, reemplazar
+        if (selectedFile) {
+          imageUrl = await uploadFile(selectedFile, activeTenantId)
+        }
+        // No permitir before/after en edición de admin
+        if (isBeforeAfter && editingPhoto.source === 'admin') {
+          throw new Error('⚠️ Las fotos de admin no pueden usar formato Antes/Después.')
         }
       }
 
-      // Procesamiento de etiquetas (Tags) split por comas
+      // Procesamiento de etiquetas (Tags)
       const tagsArray = formData.tagsInput
         ? formData.tagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t !== '')
         : []
@@ -430,8 +442,6 @@ export default function GaleriaAdminPage() {
         tenant_id: activeTenantId,
         professional_id: formData.professional_id || null,
         image_url: imageUrl || null,
-        before_image_url: beforeUrl || null,
-        after_image_url: afterUrl || null,
         title: formData.title || null,
         category: formData.category,
         sensory_category: formData.sensory_category,
@@ -441,6 +451,7 @@ export default function GaleriaAdminPage() {
         price: formData.price ? parseFloat(formData.price) : null,
         polish_used: formData.polish_used || null,
         tags: tagsArray
+        // NOTA: NO incluimos before_image_url ni after_image_url porque NO existen en gallery
       }
 
       if (editingPhoto) {
@@ -554,7 +565,7 @@ export default function GaleriaAdminPage() {
   const navigateLightbox = (direction: 'next' | 'prev') => {
     if (filteredAndSortedPhotos.length === 0) return
     let newIndex = direction === 'next' ? lightboxIndex + 1 : lightboxIndex - 1
-    
+
     if (newIndex >= filteredAndSortedPhotos.length) newIndex = 0
     if (newIndex < 0) newIndex = filteredAndSortedPhotos.length - 1
 
@@ -565,8 +576,8 @@ export default function GaleriaAdminPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-4 max-w-7xl mx-auto dark:text-stone-100">
-      
-      {/* HEADER COMPLETO ORIGINAL */}
+
+      {/* HEADER COMPLETO */}
       <div className="relative overflow-hidden rounded-3xl p-[2px] shadow-2xl" style={brandGradient}>
         <div className="relative z-10 rounded-[23px] p-6 md:p-8 bg-white/95 dark:bg-[#0f0c1b]/95 backdrop-blur-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -580,7 +591,7 @@ export default function GaleriaAdminPage() {
                 <p className="text-xs text-stone-500 dark:text-stone-400">Administra el portafolio comercial, visualiza métricas de impacto y aprueba multimedia de clientes.</p>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-3">
               <button 
                 onClick={() => setShowStatsPanel(!showStatsPanel)}
@@ -611,7 +622,7 @@ export default function GaleriaAdminPage() {
         </div>
       </div>
 
-      {/* PANEL DE MÉTRICAS E HISTOGRAMA DE VISTAS COMPLETO */}
+      {/* PANEL DE MÉTRICAS */}
       <AnimatePresence>
         {showStatsPanel && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -649,7 +660,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* COMPONENTE DE SEGUIMIENTO DE NOTIFICACIONES */}
+      {/* NOTIFICACIONES */}
       <AnimatePresence>
         {error && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-500 flex items-center gap-2">
@@ -663,7 +674,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* BLOQUE DE CONTROLES: BARRA DE BÚSQUEDA Y FILTROS INTEGRADOS */}
+      {/* CONTROLES: BÚSQUEDA Y FILTROS */}
       <div className="bg-white dark:bg-[#130f24] rounded-2xl border p-4 space-y-4 shadow-xs">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
@@ -684,7 +695,7 @@ export default function GaleriaAdminPage() {
               <SlidersHorizontal className="w-4 h-4" />
               <span>Filtros</span>
             </button>
-            
+
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value as any)}
@@ -704,7 +715,7 @@ export default function GaleriaAdminPage() {
           </div>
         </div>
 
-        {/* FILTROS AVANZADOS EXPANDIBLES ORIGINALES */}
+        {/* FILTROS AVANZADOS */}
         <AnimatePresence>
           {showAdvancedFilters && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 border-t dark:border-stone-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -736,7 +747,7 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS - CORREGIDO PARA MÓVIL */}
+      {/* SELECTOR RAPIDO DE CATEGORIAS */}
       <div className="w-full">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-1.5">
           {categories.map((cat) => (
@@ -754,7 +765,7 @@ export default function GaleriaAdminPage() {
         </div>
       </div>
 
-      {/* RENDERIZADO DE CONTENIDO: SOPORTE MASONRY O REGULAR GRID */}
+      {/* RENDERIZADO DE CONTENIDO */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3 text-stone-400">
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: settings?.primary_color || '#DB5B9A' }} />
@@ -769,7 +780,7 @@ export default function GaleriaAdminPage() {
         <div className={viewMode === 'masonry' ? 'columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4' : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'}>
           {filteredAndSortedPhotos.map((photo) => {
             const isSlider = photo.before_image_url && photo.after_image_url
-            const currentThumbnail = photo.after_image_url || photo.image_url || ''
+            const currentThumbnail = getImageUrl(photo)
 
             return (
               <div
@@ -781,13 +792,19 @@ export default function GaleriaAdminPage() {
                   viewMode === 'masonry' ? 'break-inside-avoid mb-4' : 'aspect-square'
                 } ${!photo.is_active ? 'opacity-60 grayscale-[30%]' : ''}`}
               >
-                <img 
-                  src={currentThumbnail} 
-                  alt={photo.title || ''} 
-                  className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ${viewMode === 'masonry' ? 'h-auto max-h-[450px]' : ''}`}
-                />
-                
-                {/* Badges superiores de metadata */}
+                {currentThumbnail ? (
+                  <img 
+                    src={currentThumbnail} 
+                    alt={photo.title || ''} 
+                    className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ${viewMode === 'masonry' ? 'h-auto max-h-[450px]' : ''}`}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-stone-400" />
+                  </div>
+                )}
+
+                {/* Badges superiores */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
                   <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${photo.source === 'client' ? 'bg-amber-500/95' : 'bg-pink-500/95'}`}>
                     {photo.source === 'client' ? `👤 ${photo.client_name || 'Cliente'}` : '👑 Studio'}
@@ -804,7 +821,7 @@ export default function GaleriaAdminPage() {
                   )}
                 </div>
 
-                {/* Overlays de control avanzados en Hover */}
+                {/* Overlays de control en Hover */}
                 <AnimatePresence>
                   {hoveredId === photo.id && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-stone-950/70 p-3 flex flex-col justify-between text-white">
@@ -815,15 +832,15 @@ export default function GaleriaAdminPage() {
                             <button onClick={(e) => {
                               e.stopPropagation()
                               setEditingPhoto(photo)
-                              setIsBeforeAfter(!!(photo.before_image_url && photo.after_image_url))
+                              setIsBeforeAfter(false) // Admin NO usa before/after
                               setFormData({
                                 title: photo.title || '',
                                 category: photo.category || 'Nail Art',
                                 sensory_category: photo.sensory_category || 'Clásico',
                                 description: photo.description || '',
                                 image_url: photo.image_url || '',
-                                before_image_url: photo.before_image_url || '',
-                                after_image_url: photo.after_image_url || '',
+                                before_image_url: '',
+                                after_image_url: '',
                                 is_active: photo.is_active,
                                 sort_order: photo.sort_order || 0,
                                 professional_id: photo.professional_id || '',
@@ -838,7 +855,7 @@ export default function GaleriaAdminPage() {
                           </>
                         )}
                       </div>
-                      
+
                       <div>
                         <h4 className="text-xs font-bold truncate line-clamp-1">{photo.title || 'Trabajo del Salón'}</h4>
                         <p className="text-[10px] text-stone-300 truncate line-clamp-1 mt-0.5">{photo.category} • {photo.sensory_category}</p>
@@ -857,24 +874,22 @@ export default function GaleriaAdminPage() {
         </div>
       )}
 
-      {/* LIGHTBOX AVANZADO CON INTERACCIÓN ANTES/DESPUÉS Y NAVEGACIÓN COMPLETA */}
+      {/* LIGHTBOX AVANZADO */}
       <AnimatePresence>
         {showLightbox && selectedPhoto && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
-            
-            {/* Contenedor Visual Principal */}
+
             <div className="relative flex-1 flex items-center justify-center p-4 h-[65vh] md:h-full" onClick={(e) => e.stopPropagation()}>
               <button onClick={closeLightbox} className="absolute top-6 right-6 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white z-50 md:hidden"><X className="w-5 h-5" /></button>
-              
-              {/* Controles Laterales de Navegación del Carrusel */}
+
               <button onClick={() => navigateLightbox('prev')} className="absolute left-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40"><ChevronLeft className="w-6 h-6" /></button>
               <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40"><ChevronRight className="w-6 h-6" /></button>
 
-              {selectedPhoto.before_image_url && selectedPhoto.after_image_url ? (
-                /* COMPONENTE INTERACTIVO DE DESLIZAMIENTO (SLIDER) REAL */
+              {selectedPhoto.before_image_url && selectedPhoto.after_image_url && selectedPhoto.source === 'client' ? (
+                /* SLIDER ANTES/DESPUÉS - Solo para clientes */
                 <div className="relative w-full max-w-2xl aspect-square md:max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl bg-stone-900 border border-white/5 select-none">
                   <img src={selectedPhoto.after_image_url} alt="Después" className="w-full h-full object-cover pointer-events-none" />
-                  
+
                   <div 
                     className="absolute inset-0 top-0 left-0 overflow-hidden" 
                     style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
@@ -882,7 +897,6 @@ export default function GaleriaAdminPage() {
                     <img src={selectedPhoto.before_image_url} alt="Antes" className="w-full h-full object-cover pointer-events-none" />
                   </div>
 
-                  {/* Input Invisible del Slider */}
                   <div className="absolute inset-0 w-full h-full flex items-center">
                     <input 
                       type="range" 
@@ -892,7 +906,6 @@ export default function GaleriaAdminPage() {
                       onChange={(e) => setSliderPosition(Number(e.target.value))}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
                     />
-                    {/* Línea Divisoria */}
                     <div className="absolute top-0 bottom-0 w-[2px] bg-white shadow-xl pointer-events-none z-20" style={{ left: `${sliderPosition}%` }}>
                       <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white text-stone-900 font-bold text-xs flex items-center justify-center shadow-2xl border border-stone-300 pointer-events-none">
                         ↔
@@ -904,12 +917,12 @@ export default function GaleriaAdminPage() {
                   <span className="absolute bottom-4 right-4 bg-stone-950/80 text-white text-[9px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-md z-10 border border-white/10">DESPUÉS →</span>
                 </div>
               ) : (
-                /* Imagen Fija Tradicional */
-                <img src={selectedPhoto.image_url || ''} alt={selectedPhoto.title || ''} className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl" />
+                /* Imagen Fija */
+                <img src={getImageUrl(selectedPhoto)} alt={selectedPhoto.title || ''} className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl" />
               )}
             </div>
 
-            {/* Barra de Información Lateral (Metadata Detallada) Intacta */}
+            {/* Barra de Información Lateral */}
             <div className="w-full md:w-96 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-6">
                 <div className="hidden md:flex justify-between items-center">
@@ -928,7 +941,7 @@ export default function GaleriaAdminPage() {
                     <span className="text-stone-400 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Estilo:</span>
                     <span className="font-medium text-white">{selectedPhoto.sensory_category || 'Clásico'}</span>
                   </div>
-                  
+
                   {selectedPhoto.professional_id && (
                     <div className="flex items-center justify-between">
                       <span className="text-stone-400 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Profesional:</span>
@@ -966,22 +979,22 @@ export default function GaleriaAdminPage() {
                 )}
               </div>
 
-              {/* Acciones del Administrador sobre la foto en Lightbox */}
+              {/* Acciones del Administrador */}
               {selectedPhoto.source === 'admin' && (
                 <div className="pt-6 border-t border-white/10 flex gap-2">
                   <button 
                     onClick={(e) => {
                       closeLightbox()
                       setEditingPhoto(selectedPhoto)
-                      setIsBeforeAfter(!!(selectedPhoto.before_image_url && selectedPhoto.after_image_url))
+                      setIsBeforeAfter(false)
                       setFormData({
                         title: selectedPhoto.title || '',
                         category: selectedPhoto.category || 'Nail Art',
                         sensory_category: selectedPhoto.sensory_category || 'Clásico',
                         description: selectedPhoto.description || '',
                         image_url: selectedPhoto.image_url || '',
-                        before_image_url: selectedPhoto.before_image_url || '',
-                        after_image_url: selectedPhoto.after_image_url || '',
+                        before_image_url: '',
+                        after_image_url: '',
                         is_active: selectedPhoto.is_active,
                         sort_order: selectedPhoto.sort_order || 0,
                         professional_id: selectedPhoto.professional_id || '',
@@ -1009,7 +1022,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL COMPLETO DE SUBIDA / EDICIÓN CON TODA LA METADATA ORIGINAL */}
+      {/* MODAL DE SUBIDA / EDICIÓN CORREGIDO */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -1031,80 +1044,37 @@ export default function GaleriaAdminPage() {
                 </h3>
               </div>
 
-              {/* Selector de formato dinámico */}
+              {/* NOTA: Admin SOLO usa imagen estándar, no before/after */}
               {!editingPhoto && (
-                <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 dark:bg-stone-900/60 rounded-xl mb-4 border">
-                  <button type="button" onClick={() => setIsBeforeAfter(false)} className={`py-2 text-xs font-bold rounded-lg transition-all ${!isBeforeAfter ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs' : 'text-stone-400 dark:text-stone-500'}`}>
-                    Imagen Estándar / Galería Simple
-                  </button>
-                  <button type="button" onClick={() => setIsBeforeAfter(true)} className={`py-2 text-xs font-bold rounded-lg transition-all ${isBeforeAfter ? 'bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs' : 'text-stone-400 dark:text-stone-500'}`}>
-                    Formato Interactivo Antes/Después
-                  </button>
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium flex items-center gap-2">
+                    <Info className="w-3.5 h-3.5" />
+                    Las fotos del portafolio del salón usan formato estándar. El formato "Antes/Después" está reservado para clientes.
+                  </p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                
-                {/* INTERFAZ DINÁMICA DE MULTIMEDIA */}
-                {isBeforeAfter ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-stone-500 dark:text-stone-400 mb-1 font-mono">Foto del Antes (Estado inicial) *</label>
-                      <div onClick={() => beforeFileInputRef.current?.click()} className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[130px] flex flex-col justify-center items-center bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                        <input ref={beforeFileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedBeforeFile, setPreviewBeforeUrl)} className="hidden" />
-                        {previewBeforeUrl ? (
-                          <div className="relative group">
-                            <img src={previewBeforeUrl} alt="Antes" className="max-h-24 rounded object-contain mx-auto" />
-                            <p className="text-[8px] text-stone-400 mt-1 font-mono">Haga clic para cambiar</p>
-                          </div>
-                        ) : formData.before_image_url ? (
-                          <img src={formData.before_image_url} alt="Antes actual" className="max-h-24 rounded object-contain mx-auto" />
-                        ) : (
-                          <>
-                            <FileImage className="w-5 h-5 text-stone-400 mb-1" />
-                            <span className="text-[10px] text-stone-500 font-medium">Examinar Antes</span>
-                          </>
-                        )}
+
+                {/* IMAGEN ESTÁNDAR (Único formato para admin) */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">
+                    Imagen de Trabajo Principal *
+                  </label>
+                  <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
+                    ) : formData.image_url ? (
+                      <img src={formData.image_url} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
+                    ) : (
+                      <div className="py-2">
+                        <ImageIcon className="w-7 h-7 mx-auto text-stone-400 mb-1" />
+                        <p className="text-xs text-stone-600 dark:text-stone-300">Presiona para cargar el archivo multimedia</p>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] uppercase font-bold tracking-wider text-stone-500 dark:text-stone-400 mb-1 font-mono">Foto del Después (Resultado) *</label>
-                      <div onClick={() => afterFileInputRef.current?.click()} className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer min-h-[130px] flex flex-col justify-center items-center bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                        <input ref={afterFileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedAfterFile, setPreviewAfterUrl)} className="hidden" />
-                        {previewAfterUrl ? (
-                          <div className="relative group">
-                            <img src={previewAfterUrl} alt="Después" className="max-h-24 rounded object-contain mx-auto" />
-                            <p className="text-[8px] text-stone-400 mt-1 font-mono">Haga clic para cambiar</p>
-                          </div>
-                        ) : formData.after_image_url ? (
-                          <img src={formData.after_image_url} alt="Después actual" className="max-h-24 rounded object-contain mx-auto" />
-                        ) : (
-                          <>
-                            <FileImage className="w-5 h-5 text-stone-400 mb-1" />
-                            <span className="text-[10px] text-stone-500 font-medium">Examinar Después</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                ) : (
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">Imagen de Trabajo Principal *</label>
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
-                      {previewUrl ? (
-                        <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
-                      ) : formData.image_url ? (
-                        <img src={formData.image_url} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
-                      ) : (
-                        <div className="py-2">
-                          <ImageIcon className="w-7 h-7 mx-auto text-stone-400 mb-1" />
-                          <p className="text-xs text-stone-600 dark:text-stone-300">Presiona para cargar el archivo multimedia</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {/* FILA DE TEXTOS BÁSICOS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1121,7 +1091,7 @@ export default function GaleriaAdminPage() {
                   </div>
                 </div>
 
-                {/* FILA DE METADATA AVANZADA COMPLETA ORIGINAL */}
+                {/* FILA DE METADATA AVANZADA */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="col-span-1">
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Categoría Principal</label>
@@ -1145,7 +1115,7 @@ export default function GaleriaAdminPage() {
                   </div>
                 </div>
 
-                {/* INPUT DE ETIQUETAS / TAGS COMAS COMPLETO */}
+                {/* INPUT DE ETIQUETAS */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Etiquetas Clave (Separadas por comas)</label>
                   <input type="text" value={formData.tagsInput} onChange={(e) => setFormData({...formData, tagsInput: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs" placeholder="Ej: matte, stiletto, neón, halloween" />
@@ -1157,7 +1127,7 @@ export default function GaleriaAdminPage() {
                   <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs resize-none" placeholder="Escribe detalles técnicos, duración del proceso o cuidados requeridos..." />
                 </div>
 
-                {/* VISIBILIDAD Y PRIORIDAD DE ORDENAMIENTO */}
+                {/* VISIBILIDAD Y ORDEN */}
                 <div className="flex items-center justify-between pt-1">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} className="w-4 h-4 rounded border-stone-300 text-pink-500 focus:ring-0" />
@@ -1169,7 +1139,7 @@ export default function GaleriaAdminPage() {
                   </div>
                 </div>
 
-                {/* BOTONES ACCIONADORES DEL FORMULARIO */}
+                {/* BOTONES */}
                 <div className="flex gap-3 pt-3 border-t dark:border-stone-800">
                   <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300">Cancelar</button>
                   <button type="submit" disabled={uploading} className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md" style={primaryBgStyle}>
