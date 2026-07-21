@@ -32,7 +32,15 @@ import {
   ZoomIn,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Gem,
+  Crown,
+  ArrowRight,
+  Heart,
+  Flower2,
+  Compass,
+  Zap,
+  Shield
 } from 'lucide-react'
 
 interface Servicio {
@@ -77,6 +85,9 @@ interface Review {
 const HAIR_IMAGES = {
   hero: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=1200&h=600&fit=crop',
   corte1: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
+  corte2: 'https://images.unsplash.com/photo-1560869713-7d0a2943087e?w=600&h=400&fit=crop',
+  color: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=600&h=400&fit=crop',
+  tratamiento: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
 }
 
 const containerVariants = {
@@ -123,15 +134,15 @@ export default function PeluqueriaPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
 
   const categories = [
-    { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { id: 'Corte', label: 'Cortes', icon: <Scissors className="w-3.5 h-3.5" /> },
-    { id: 'Color', label: 'Coloración', icon: <Palette className="w-3.5 h-3.5" /> },
-    { id: 'Tratamientos', label: 'Tratamientos', icon: <Droplets className="w-3.5 h-3.5" /> },
-    { id: 'Peinados', label: 'Peinados', icon: <Wind className="w-3.5 h-3.5" /> },
+    { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" />, color: 'from-pink-500 to-rose-500' },
+    { id: 'Corte', label: 'Cortes', icon: <Scissors className="w-3.5 h-3.5" />, color: 'from-violet-500 to-purple-500' },
+    { id: 'Color', label: 'Coloración', icon: <Palette className="w-3.5 h-3.5" />, color: 'from-amber-500 to-orange-500' },
+    { id: 'Tratamientos', label: 'Tratamientos', icon: <Droplets className="w-3.5 h-3.5" />, color: 'from-emerald-500 to-teal-500' },
+    { id: 'Peinados', label: 'Peinados', icon: <Wind className="w-3.5 h-3.5" />, color: 'from-rose-500 to-pink-500' },
   ]
 
   // ============================================================
@@ -176,7 +187,7 @@ export default function PeluqueriaPage() {
   const loadServicios = async () => {
     const activeTenantId = await getTenantId()
     if (!activeTenantId) { setLoading(false); return }
-    
+
     try {
       const { data, error } = await supabase
         .from('services')
@@ -212,7 +223,7 @@ export default function PeluqueriaPage() {
         .select('*')
         .eq('tenant_id', activeTenantId)
         .eq('is_active', true)
-        .ilike('category', 'Peluquería') // 🔥 Filtro por categoría
+        .ilike('category', 'Peluquería')
         .order('created_at', { ascending: false })
 
       if (adminError) {
@@ -274,7 +285,7 @@ export default function PeluqueriaPage() {
   const loadReviews = async () => {
     const activeTenantId = await getTenantId()
     if (!activeTenantId) return
-    
+
     try {
       const reviewsMap: Record<string, Review[]> = {}
       const { data, error } = await supabase
@@ -460,119 +471,321 @@ export default function PeluqueriaPage() {
   // ============================================================
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-4 animate-spin" style={{ borderColor: `${primaryColor}40`, borderTopColor: primaryColor }} />
-          <Scissors className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ color: primaryColor }} />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Scissors className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              ARTE CAPILAR
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 pb-12 max-w-7xl mx-auto px-4">
-      {errorMessage && <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium">{errorMessage}</div>}
-      {successMessage && <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-medium">{successMessage}</div>}
+    <div className={`space-y-8 pb-16 max-w-7xl mx-auto px-4 antialiased transition-colors duration-700 ${
+      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b]' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30'
+    }`}>
+      
+      {errorMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[999] px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium backdrop-blur-xl shadow-2xl animate-fadeIn">
+          {errorMessage}
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[999] px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-medium backdrop-blur-xl shadow-2xl animate-fadeIn">
+          {successMessage}
+        </div>
+      )}
 
-      {/* HERO SECTION */}
-      <div className="relative overflow-hidden rounded-3xl min-h-[380px] flex items-center">
+      {/* ============================================================ */}
+      {/* HERO SECTION — PRESTIGE EDITION */}
+      {/* ============================================================ */}
+      <div className="relative overflow-hidden rounded-[2.5rem] min-h-[440px] flex items-center shadow-2xl mt-4">
         <div className="absolute inset-0">
           <img src={HAIR_IMAGES.hero} alt="Peluquería" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
         </div>
 
-        <div className="relative z-10 p-6 md:p-12 max-w-2xl text-white">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/10 mb-4 backdrop-blur-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] uppercase tracking-widest font-bold">{settings?.business_name || 'Fresh Nails Studio'} • Peluquería</span>
+        {/* Efecto de luz ambiental */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 p-8 md:p-14 max-w-3xl text-white">
+          <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border mb-6 ${
+            isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/10 border-white/20'
+          }`}>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-[spin_4s_linear_infinite]" />
+            <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+              isDark ? 'text-pink-300' : 'text-white/90'
+            }`}>
+              {settings?.business_name || 'Fresh Nails Studio'} • <span className="font-bold">Peluquería</span>
+            </span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-light tracking-tight leading-tight">
-            <span className="font-serif italic" style={{ color: secondaryColor }}>Arte</span> Capilar
+
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
+            <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+              Arte
+            </span>{' '}
+            Capilar
           </h1>
-          <p className="text-sm md:text-base text-white/80 mt-4 max-w-md">
-            Transformamos tu estilo con cortes y tratamientos de vanguardia.
+          <p className="text-sm md:text-base text-white/80 mt-4 max-w-lg font-medium tracking-wide">
+            Transformamos tu estilo con cortes y tratamientos de vanguardia, diseñados para realzar tu esencia.
           </p>
 
-          <div className="flex flex-wrap gap-3 mt-6">
-            <Link href="/agenda" className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg flex items-center gap-2 transition hover:scale-105" style={{ background: brandGradient.backgroundImage }}>
-              <Calendar className="w-4 h-4" /> Reservar
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Link 
+              href="/agenda" 
+              className="group relative overflow-hidden px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3 transition-all duration-500 hover:-translate-y-0.5 active:scale-[0.97]"
+              style={brandGradient}
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+              <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
+              <span className="relative">Reservar</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
             </Link>
-            <button onClick={() => setActiveTab('galeria')} className="px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition hover:bg-white/20">
-              <Camera className="w-4 h-4" /> Galería
+            
+            <button 
+              onClick={() => setActiveTab('galeria')} 
+              className="px-6 py-3.5 rounded-xl bg-white/10 border border-white/20 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2.5 transition-all duration-300 hover:bg-white/20 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm"
+            >
+              <Camera className="w-4 h-4" /> 
+              <span>Galería</span>
             </button>
+          </div>
+
+          {/* Micro estadísticas */}
+          <div className="flex gap-6 mt-8 pt-6 border-t border-white/10">
+            <div>
+              <p className="text-2xl font-black text-white">{servicios.length}</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Servicios</p>
+            </div>
+            <div className="w-px bg-white/10" />
+            <div>
+              <p className="text-2xl font-black text-white">{galleryImages.length}</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Trabajos</p>
+            </div>
+            <div className="w-px bg-white/10" />
+            <div>
+              <p className="text-2xl font-black text-white">{Object.values(reviews).flat().length}</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Reseñas</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* TABS DE SECCIÓN */}
-      <div className="flex justify-center border-b border-stone-200 dark:border-stone-800">
+      {/* ============================================================ */}
+      {/* TABS DE SECCIÓN — REDISEÑADOS */}
+      {/* ============================================================ */}
+      <div className={`flex justify-center border-b pb-0 ${
+        isDark ? 'border-stone-900/60' : 'border-stone-200/60'
+      }`}>
         {(['servicios', 'galeria', 'testimonios'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 text-xs uppercase tracking-wider font-bold border-b-2 transition-all ${
+            className={`relative px-8 py-4 text-xs uppercase tracking-[0.2em] font-black transition-all duration-500 ${
               activeTab === tab 
-                ? 'border-pink-500 text-pink-500' 
-                : 'border-transparent text-stone-400 hover:text-stone-600'
+                ? 'text-pink-500' 
+                : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
             }`}
-            style={activeTab === tab ? { borderColor: primaryColor, color: primaryColor } : {}}
+            style={activeTab === tab ? { color: primaryColor } : {}}
           >
-            {tab}
+            <span className="relative z-10">{tab === 'servicios' ? 'Rituales' : tab === 'galeria' ? 'Inspiración' : 'Testimonios'}</span>
+            {activeTab === tab && (
+              <motion.span 
+                layoutId="tabIndicator"
+                className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                style={{ backgroundColor: primaryColor }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
           </button>
         ))}
       </div>
 
-      {/* CONTENIDO DINÁMICO POR TAB */}
+      {/* ============================================================ */}
+      {/* CONTENIDO DINÁMICO POR TAB — SERVICIOS */}
+      {/* ============================================================ */}
       {activeTab === 'servicios' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fadeIn">
           {/* Categorías y Filtros */}
           <div className="flex flex-wrap gap-2 justify-center">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
-                  selectedCategory === cat.id ? 'text-white shadow-md' : isDark ? 'bg-[#130f24] text-stone-400' : 'bg-white text-stone-600 border'
+                className={`relative px-4 py-2.5 rounded-full text-xs font-bold transition-all duration-500 flex items-center gap-1.5 border ${
+                  selectedCategory === cat.id 
+                    ? `text-white shadow-xl scale-105 bg-gradient-to-r ${cat.color}` 
+                    : isDark 
+                      ? 'bg-[#130f24] border-[#1a1430] text-stone-400 hover:border-stone-700 hover:text-stone-200' 
+                      : 'bg-white border-stone-200/60 text-stone-600 hover:border-pink-300 hover:shadow-md'
                 }`}
-                style={selectedCategory === cat.id ? { background: brandGradient.backgroundImage } : {}}
+                style={selectedCategory === cat.id ? { 
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  borderColor: 'transparent'
+                } : {}}
               >
                 {cat.icon} {cat.label}
+                {selectedCategory === cat.id && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/60 animate-ping" />
+                )}
               </button>
             ))}
           </div>
 
-          <div className="flex gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] dark:border-stone-800">
+          {/* Búsqueda y vista */}
+          <div className={`flex gap-3 p-4 rounded-2xl border shadow-lg ${
+            isDark 
+              ? 'bg-[#130f24]/80 border-stone-900/60 shadow-black/20' 
+              : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 backdrop-blur-sm'
+          }`}>
             <div className="flex-1 flex items-center gap-3">
-              <Search className="w-4 h-4 text-stone-400" />
+              <Search className={`w-4 h-4 ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`} />
               <input 
                 type="text" 
                 placeholder="Buscar servicios..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent outline-none text-xs w-full dark:text-white"
+                className={`bg-transparent outline-none text-xs w-full font-medium ${
+                  isDark ? 'text-white placeholder:text-stone-600' : 'text-stone-800 placeholder:text-stone-400'
+                }`}
               />
             </div>
-            <div className="flex rounded-xl overflow-hidden border p-0.5 dark:border-stone-800">
-              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg ${viewMode === 'grid' ? 'bg-stone-100 dark:bg-stone-800' : 'text-stone-400'}`}><Grid3x3 className="w-3.5 h-3.5" /></button>
-              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg ${viewMode === 'list' ? 'bg-stone-100 dark:bg-stone-800' : 'text-stone-400'}`}><LayoutList className="w-3.5 h-3.5" /></button>
+            <div className={`flex rounded-xl overflow-hidden border p-0.5 ${
+              isDark ? 'border-stone-800/60' : 'border-stone-200/60'
+            }`}>
+              <button 
+                onClick={() => setViewMode('grid')} 
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
+                  viewMode === 'grid' 
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-stone-200 text-stone-800' 
+                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                <Grid3x3 className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`p-1.5 rounded-lg transition-all duration-300 ${
+                  viewMode === 'list' 
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-stone-200 text-stone-800' 
+                    : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
           {/* Grid de renderizado */}
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3"}>
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" : "space-y-3"}>
             {filteredServicios.map((servicio) => {
               const avgRating = getAverageRating(servicio.id)
               return (
-                <motion.div key={servicio.id} variants={itemVariants} className="p-4 border rounded-2xl bg-white dark:bg-[#130f24] dark:border-stone-800 flex flex-col justify-between">
-                  <div onClick={() => { setSelectedService(servicio); setIsModalOpen(true) }} className="cursor-pointer space-y-2">
-                    <img src={servicio.image_url || HAIR_IMAGES.corte1} alt={servicio.name} className="w-full aspect-video object-cover rounded-xl mb-2" />
-                    <div className="flex justify-between items-center"><h3 className="font-bold text-sm dark:text-white">{servicio.name}</h3><span className="text-xs font-bold text-emerald-500">${servicio.price}</span></div>
-                    <p className="text-xs text-stone-500 line-clamp-2">{servicio.description}</p>
+                <motion.div 
+                  key={servicio.id} 
+                  variants={itemVariants} 
+                  className={`group relative rounded-2xl border p-5 transition-all duration-500 flex flex-col justify-between overflow-hidden ${
+                    isDark 
+                      ? 'bg-gradient-to-br from-[#130f24]/80 via-[#130f24]/40 to-[#130f24]/80 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl shadow-lg' 
+                      : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl shadow-md'
+                  }`}
+                >
+                  {/* Gradiente de fondo sutil */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-pink-500/[0.03] to-rose-500/[0.01]" />
+
+                  <div className="cursor-pointer space-y-3 relative z-10" onClick={() => openModal(servicio)}>
+                    <div className="relative overflow-hidden rounded-xl aspect-video">
+                      <img 
+                        src={servicio.image_url || HAIR_IMAGES.corte1} 
+                        alt={servicio.name} 
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      {/* Badge de duración */}
+                      <div className={`absolute bottom-2 right-2 px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.1em] backdrop-blur-md ${
+                        isDark ? 'bg-black/60 text-white/80' : 'bg-white/80 text-stone-700'
+                      }`}>
+                        <Clock className="w-2.5 h-2.5 inline mr-1" /> {servicio.duration} min
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className={`font-black text-sm tracking-tight transition-colors ${
+                        isDark ? 'text-stone-100 group-hover:text-pink-400' : 'text-stone-800 group-hover:text-pink-600'
+                      }`}>
+                        {servicio.name}
+                      </h3>
+                      <span className={`text-sm font-black font-mono ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      }`}>
+                        ${servicio.price}
+                      </span>
+                    </div>
+                    
+                    <p className={`text-xs line-clamp-2 ${
+                      isDark ? 'text-stone-400' : 'text-stone-500'
+                    }`}>
+                      {servicio.description}
+                    </p>
+
+                    {/* Rating */}
+                    {avgRating > 0 && (
+                      <div className="flex items-center gap-2">
+                        {renderStars(avgRating, 'sm')}
+                        <span className={`text-[10px] font-medium ${
+                          isDark ? 'text-stone-400' : 'text-stone-500'
+                        }`}>
+                          ({reviews[servicio.id]?.length || 0})
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-2 border-t dark:border-stone-800">
-                    <div className="flex items-center gap-1 text-[11px] text-stone-400"><Clock className="w-3 h-3" /> {servicio.duration} min</div>
-                    <button onClick={() => { setSelectedService(servicio); setShowReviewModal(true) }} className="text-[10px] text-amber-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-amber-500" /> Reseñar
+
+                  {/* Footer con acción */}
+                  <div className={`flex items-center justify-between mt-4 pt-4 border-t relative z-10 ${
+                    isDark ? 'border-stone-800/60' : 'border-stone-200/60'
+                  }`}>
+                    <div className={`flex items-center gap-1 text-[10px] font-medium ${
+                      isDark ? 'text-stone-400' : 'text-stone-500'
+                    }`}>
+                      <Scissors className="w-3 h-3 text-pink-400" />
+                      {servicio.category || 'Peluquería'}
+                    </div>
+                    <button 
+                      onClick={() => { setSelectedService(servicio); setShowReviewModal(true) }} 
+                      className={`text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 transition-all duration-300 hover:scale-105 ${
+                        isDark ? 'text-amber-400 hover:text-amber-300' : 'text-amber-500 hover:text-amber-600'
+                      }`}
+                    >
+                      <Star className="w-3 h-3 fill-amber-400" /> Reseñar
                     </button>
                   </div>
                 </motion.div>
@@ -582,126 +795,257 @@ export default function PeluqueriaPage() {
         </div>
       )}
 
-      {/* ============================================================
-          TAB: GALERÍA - CON FOTOS DE LA BASE DE DATOS
-      ============================================================ */}
+      {/* ============================================================ */}
+      {/* TAB: GALERÍA — REDISEÑADA */}
+      {/* ============================================================ */}
       {activeTab === 'galeria' && (
-        <div>
+        <div className="animate-fadeIn">
           {galleryImages.length === 0 ? (
-            <div className="text-center py-16 bg-stone-50 dark:bg-stone-900/30 rounded-3xl border border-dashed border-stone-200 dark:border-stone-800">
-              <div className="w-16 h-16 mx-auto rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
-                <ImageIcon className="w-8 h-8 text-stone-400" />
+            <div className={`text-center py-20 rounded-3xl border border-dashed transition-all duration-500 ${
+              isDark 
+                ? 'bg-stone-900/20 border-stone-800/60' 
+                : 'bg-stone-50/60 border-stone-200/60'
+            }`}>
+              <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
+                isDark ? 'bg-stone-800/50' : 'bg-stone-100'
+              }`}>
+                <ImageIcon className={`w-9 h-9 ${
+                  isDark ? 'text-stone-600' : 'text-stone-400'
+                }`} />
               </div>
-              <p className="text-sm text-stone-500 dark:text-stone-400 font-light">No hay fotos de peluquería aún</p>
-              <p className="text-xs text-stone-400 mt-1">Las fotos subidas desde el panel de administración aparecerán aquí</p>
+              <p className={`text-sm font-medium ${
+                isDark ? 'text-stone-300' : 'text-stone-700'
+              }`}>
+                No hay fotos de peluquería aún
+              </p>
+              <p className={`text-xs mt-1 ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}>
+                Las fotos subidas desde el panel de administración aparecerán aquí
+              </p>
+              <div className="flex items-center justify-center gap-1.5 mt-4">
+                {['✨', '💎', '🌟'].map((emoji, i) => (
+                  <span key={i} className="text-lg animate-[bounce_2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.2}s` }}>
+                    {emoji}
+                  </span>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {galleryImages.map((img) => (
-                <div
+              {galleryImages.map((img, index) => (
+                <motion.div
                   key={`${img.source}-${img.id}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
                   onClick={() => openLightbox(img)}
-                  className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square bg-stone-100 dark:bg-stone-800 hover:shadow-2xl transition-all duration-300"
+                  className={`relative rounded-2xl overflow-hidden cursor-pointer group aspect-square transition-all duration-500 ${
+                    isDark 
+                      ? 'bg-stone-900/40 hover:shadow-2xl hover:shadow-pink-500/5' 
+                      : 'bg-stone-100 hover:shadow-2xl hover:shadow-pink-200/20'
+                  }`}
                 >
                   <img 
                     src={img.image_url} 
                     alt={img.title || 'Trabajo de peluquería'}
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     loading="lazy"
                   />
-                  
+
                   {/* Overlay en hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                       <h3 className="text-sm font-light truncate">{img.title || 'Trabajo de peluquería'}</h3>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[9px] text-white/60">
-                          {img.source === 'admin' ? '👑 Fresh Nails' : '👤 Cliente'}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className={`text-[8px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full ${
+                          img.source === 'admin' ? 'bg-pink-500/80' : 'bg-amber-500/80'
+                        }`}>
+                          {img.source === 'admin' ? 'Fresh Nails' : 'Cliente'}
                         </span>
-                        <ZoomIn className="w-4 h-4 text-white/60" />
+                        <ZoomIn className="w-4 h-4 text-white/60 group-hover:scale-110 transition-transform duration-300" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Badge de origen */}
-                  <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[7px] text-white/90 tracking-[0.15em] uppercase font-medium ${
-                    img.source === 'admin' ? 'bg-pink-500/80' : 'bg-amber-500/80'
+                  {/* Badge de origen flotante */}
+                  <div className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-[6px] text-white/90 tracking-[0.15em] uppercase font-black backdrop-blur-md ${
+                    img.source === 'admin' ? 'bg-pink-500/60' : 'bg-amber-500/60'
                   }`}>
-                    {img.source === 'admin' ? 'Fresh Nails' : 'Cliente'}
+                    {img.source === 'admin' ? '👑 Studio' : '📸 Cliente'}
                   </div>
-                </div>
+
+                  {/* Contador de índice */}
+                  <div className="absolute top-3 right-3 text-[8px] font-mono font-black text-white/40">
+                    #{String(index + 1).padStart(2, '0')}
+                  </div>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
       )}
 
+      {/* ============================================================ */}
+      {/* TAB: TESTIMONIOS — REDISEÑADO */}
+      {/* ============================================================ */}
       {activeTab === 'testimonios' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="animate-fadeIn">
           {Object.values(reviews).flat().length === 0 ? (
-            <div className="col-span-full text-center py-16 text-stone-400 text-xs uppercase tracking-widest">
-              <Quote className="w-8 h-8 mx-auto mb-4 opacity-20" />
-              Aún no hay testimonios registrados
+            <div className={`text-center py-20 rounded-3xl border border-dashed transition-all duration-500 ${
+              isDark 
+                ? 'bg-stone-900/20 border-stone-800/60' 
+                : 'bg-stone-50/60 border-stone-200/60'
+            }`}>
+              <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
+                isDark ? 'bg-stone-800/50' : 'bg-stone-100'
+              }`}>
+                <Quote className={`w-9 h-9 ${
+                  isDark ? 'text-stone-600' : 'text-stone-400'
+                }`} />
+              </div>
+              <p className={`text-sm font-medium ${
+                isDark ? 'text-stone-300' : 'text-stone-700'
+              }`}>
+                Aún no hay testimonios registrados
+              </p>
+              <p className={`text-xs mt-1 ${
+                isDark ? 'text-stone-500' : 'text-stone-400'
+              }`}>
+                Sé el primero en compartir tu experiencia
+              </p>
             </div>
           ) : (
-            Object.values(reviews).flat().map((rev) => (
-              <div key={rev.id} className="p-5 border rounded-2xl bg-white dark:bg-[#130f24] dark:border-stone-800 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-xs dark:text-white">{rev.client_name}</h4>
-                    <span className="text-[10px] text-stone-400">{new Date(rev.created_at).toLocaleDateString()}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {Object.values(reviews).flat().map((rev, index) => (
+                <motion.div
+                  key={rev.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
+                  className={`group p-6 rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
+                    isDark 
+                      ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
+                      : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className={`font-black text-sm tracking-tight ${
+                        isDark ? 'text-stone-100' : 'text-stone-800'
+                      }`}>
+                        {rev.client_name}
+                      </h4>
+                      <span className={`text-[10px] font-medium ${
+                        isDark ? 'text-stone-500' : 'text-stone-400'
+                      }`}>
+                        {new Date(rev.created_at).toLocaleDateString('es-ES', { 
+                          day: 'numeric', 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                    {renderStars(rev.rating, 'md')}
                   </div>
-                  {renderStars(rev.rating)}
-                </div>
-                <p className="text-xs italic text-stone-600 dark:text-stone-300 flex gap-2">
-                  <Quote className="w-4 h-4 shrink-0 opacity-20" />
-                  {rev.comment}
-                </p>
-              </div>
-            ))
+                  
+                  <div className={`relative pl-4 border-l-2 ${
+                    isDark ? 'border-pink-500/30' : 'border-pink-200'
+                  }`}>
+                    <Quote className={`absolute -left-2 -top-1 w-4 h-4 ${
+                      isDark ? 'text-pink-500/30' : 'text-pink-300'
+                    }`} />
+                    <p className={`text-sm leading-relaxed pl-4 ${
+                      isDark ? 'text-stone-300' : 'text-stone-600'
+                    }`}>
+                      {rev.comment}
+                    </p>
+                  </div>
+
+                  {/* Badge de servicio */}
+                  <div className={`mt-3 pt-3 border-t text-[9px] font-medium ${
+                    isDark ? 'border-stone-800/60 text-stone-500' : 'border-stone-200/60 text-stone-400'
+                  }`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Scissors className="w-3 h-3 text-pink-400" />
+                      Servicio: <span className={`font-bold ${
+                        isDark ? 'text-stone-300' : 'text-stone-600'
+                      }`}>
+                        {servicios.find(s => s.id === rev.service_id)?.name || 'No especificado'}
+                      </span>
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {/* ============================================================
-          LIGHTBOX PARA GALERÍA
-      ============================================================ */}
+      {/* ============================================================ */}
+      {/* LIGHTBOX PARA GALERÍA — CON DISEÑO PREMIUM */}
+      {/* ============================================================ */}
       <AnimatePresence>
         {isLightboxOpen && selectedImage && (
-          <div 
-            className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-fadeIn"
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 md:p-6"
             onClick={closeLightbox}
           >
-            <button 
+            {/* Botón cerrar */}
+            <motion.button 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
               onClick={closeLightbox}
-              className="absolute top-4 right-4 md:top-6 md:right-6 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
+              className="absolute top-4 right-4 md:top-6 md:right-6 p-3 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/40 backdrop-blur-sm"
             >
               <X className="w-6 h-6" />
-            </button>
+            </motion.button>
 
+            {/* Navegación */}
             {galleryImages.length > 1 && (
               <>
-                <button 
+                <motion.button 
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
-                  className="absolute left-2 md:left-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                  className="absolute left-2 md:left-6 p-2.5 md:p-3.5 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/30 backdrop-blur-sm"
                 >
                   <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button 
+                </motion.button>
+                <motion.button 
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
                   onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
-                  className="absolute right-2 md:right-6 p-2 md:p-3 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/20 backdrop-blur-xs"
+                  className="absolute right-2 md:right-6 p-2.5 md:p-3.5 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-all z-50 bg-black/30 backdrop-blur-sm"
                 >
                   <ChevronRight className="w-6 h-6" />
-                </button>
+                </motion.button>
               </>
             )}
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50">
+            {/* Contador */}
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.3em] font-mono z-50 bg-black/40 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10"
+            >
               {galleryImages.findIndex(i => i.id === selectedImage.id) + 1} / {galleryImages.length}
-            </div>
+            </motion.div>
 
-            <div 
-              className="relative z-10 max-w-5xl max-h-[90vh] animate-scaleIn"
+            {/* Imagen */}
+            <motion.div 
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="relative z-10 max-w-5xl max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               <img 
@@ -709,49 +1053,246 @@ export default function PeluqueriaPage() {
                 alt={selectedImage.title || 'Galería de peluquería'}
                 className="max-h-[85vh] w-auto object-contain rounded-2xl shadow-2xl"
               />
-              
-              {selectedImage.title && (
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
-                  <p className="text-white text-sm font-light">{selectedImage.title}</p>
-                  <p className="text-[10px] text-white/50 mt-1">
-                    {selectedImage.source === 'admin' ? '👑 Fresh Nails' : '👤 Cliente'}
-                  </p>
+
+              {/* Info inferior */}
+              {(selectedImage.title || selectedImage.source) && (
+                <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-2xl ${
+                  !selectedImage.title ? 'pb-12' : ''
+                }`}>
+                  {selectedImage.title && (
+                    <p className="text-white text-lg font-light">{selectedImage.title}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-3 py-0.5 rounded-full ${
+                      selectedImage.source === 'admin' ? 'bg-pink-500/80' : 'bg-amber-500/80'
+                    }`}>
+                      {selectedImage.source === 'admin' ? '👑 Fresh Nails' : '📸 Cliente'}
+                    </span>
+                    {selectedImage.category && (
+                      <>
+                        <span className="w-0.5 h-3 bg-white/20" />
+                        <span className="text-[10px] text-white/50">{selectedImage.category}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* MODALS DE DETALLE Y RESEÑA */}
+      {/* ============================================================ */}
+      {/* MODAL DE DETALLE DE SERVICIO — REDISEÑADO */}
+      {/* ============================================================ */}
       <AnimatePresence>
         {isModalOpen && selectedService && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
-            <motion.div className="bg-white dark:bg-[#0f0c1b] p-6 rounded-3xl max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
-              <button onClick={closeModal} className="absolute top-4 right-4 text-stone-400"><X className="w-4 h-4" /></button>
-              <h3 className="text-lg font-bold dark:text-white">{selectedService.name}</h3>
-              <p className="text-xs text-stone-500 leading-relaxed">{selectedService.description}</p>
-              <div className="flex justify-between items-center pt-2"><span className="font-bold text-emerald-500">${selectedService.price}</span><Link href="/agenda" className="px-4 py-2 text-white text-xs font-bold rounded-xl" style={{ background: brandGradient.backgroundImage }}>Agendar Cupo</Link></div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={closeModal}
+          >
+            <motion.div 
+              initial={{ scale: 0.92, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`relative p-8 rounded-3xl max-w-md w-full space-y-5 shadow-2xl border ${
+                isDark 
+                  ? 'bg-gradient-to-br from-[#130f24] to-[#0f0c1b] border-stone-900/60' 
+                  : 'bg-white border-stone-200/60'
+              }`}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                onClick={closeModal}
+                className={`absolute top-4 right-4 p-2 rounded-xl transition-all duration-300 hover:scale-110 ${
+                  isDark ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="aspect-video rounded-xl overflow-hidden">
+                <img 
+                  src={selectedService.image_url || HAIR_IMAGES.corte1} 
+                  alt={selectedService.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
+                    isDark ? 'text-pink-400' : 'text-pink-500'
+                  }`}>
+                    {selectedService.category || 'Servicio'}
+                  </span>
+                  <span className={`w-1 h-1 rounded-full ${
+                    isDark ? 'bg-stone-700' : 'bg-stone-300'
+                  }`} />
+                  <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
+                    isDark ? 'text-stone-500' : 'text-stone-400'
+                  }`}>
+                    <Clock className="w-2.5 h-2.5 inline" /> {selectedService.duration} min
+                  </span>
+                </div>
+                <h3 className={`text-xl font-black tracking-tight mt-1 ${
+                  isDark ? 'text-white' : 'text-stone-900'
+                }`}>
+                  {selectedService.name}
+                </h3>
+                <p className={`text-xs leading-relaxed mt-2 ${
+                  isDark ? 'text-stone-400' : 'text-stone-500'
+                }`}>
+                  {selectedService.description || 'Experiencia capilar premium diseñada para realzar tu estilo.'}
+                </p>
+              </div>
+
+              <div className={`flex items-center justify-between pt-4 border-t ${
+                isDark ? 'border-stone-800/60' : 'border-stone-200/60'
+              }`}>
+                <div>
+                  <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
+                    isDark ? 'text-stone-500' : 'text-stone-400'
+                  }`}>Inversión</span>
+                  <p className={`text-2xl font-black font-mono ${
+                    isDark ? 'text-emerald-400' : 'text-emerald-600'
+                  }`}>
+                    ${selectedService.price}
+                  </p>
+                </div>
+                <Link 
+                  href="/agenda" 
+                  className="group relative overflow-hidden px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] text-white shadow-xl flex items-center gap-2.5 transition-all duration-300 hover:scale-105 active:scale-95"
+                  style={brandGradient}
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span className="relative">Agendar Cupo</span>
+                </Link>
+              </div>
             </motion.div>
           </motion.div>
         )}
 
+        {/* ============================================================ */}
+        {/* MODAL DE RESEÑA — REDISEÑADO */}
+        {/* ============================================================ */}
         {showReviewModal && selectedService && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowReviewModal(false)}>
-            <motion.div className="bg-white dark:bg-[#0f0c1b] p-6 rounded-3xl max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
-              <h3 className="text-base font-bold dark:text-white">Calificar {selectedService.name}</h3>
-              <div className="flex justify-center gap-1">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={() => setShowReviewModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.92, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`relative p-8 rounded-3xl max-w-sm w-full space-y-5 shadow-2xl border ${
+                isDark 
+                  ? 'bg-gradient-to-br from-[#130f24] to-[#0f0c1b] border-stone-900/60' 
+                  : 'bg-white border-stone-200/60'
+              }`}
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setShowReviewModal(false)}
+                className={`absolute top-4 right-4 p-2 rounded-xl transition-all duration-300 hover:scale-110 ${
+                  isDark ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="text-center">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                  isDark ? 'bg-amber-500/10' : 'bg-amber-50'
+                }`}>
+                  <Star className="w-8 h-8 text-amber-400" />
+                </div>
+                <h3 className={`text-xl font-black tracking-tight ${
+                  isDark ? 'text-white' : 'text-stone-900'
+                }`}>
+                  Calificar servicio
+                </h3>
+                <p className={`text-xs mt-1 ${
+                  isDark ? 'text-stone-400' : 'text-stone-500'
+                }`}>
+                  {selectedService.name}
+                </p>
+              </div>
+
+              {/* Estrellas */}
+              <div className="flex justify-center gap-1.5 py-2">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <button key={s} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(s)}>
-                    <Star className={`w-8 h-8 ${(hoverRating || rating) >= s ? 'fill-amber-400 text-amber-400' : 'text-stone-300'}`} />
-                  </button>
+                  <motion.button
+                    key={s}
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.9 }}
+                    onMouseEnter={() => setHoverRating(s)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(s)}
+                    className="focus:outline-none"
+                  >
+                    <Star className={`w-10 h-10 transition-all duration-300 ${
+                      (hoverRating || rating) >= s 
+                        ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]' 
+                        : isDark ? 'text-stone-700' : 'text-stone-300'
+                    }`} />
+                  </motion.button>
                 ))}
               </div>
-              <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Tu opinión sobre el servicio..." className="w-full p-3 border rounded-xl text-xs dark:bg-stone-900" rows={3} />
-              <div className="flex gap-2">
-                <button onClick={() => setShowReviewModal(false)} className="flex-1 py-2 border rounded-xl text-xs">Cancelar</button>
-                <button onClick={handleSubmitReview} disabled={submitting || !rating} className="flex-1 py-2 text-white text-xs rounded-xl font-bold flex justify-center items-center" style={{ backgroundColor: primaryColor }}>
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
+
+              <textarea 
+                value={comment} 
+                onChange={e => setComment(e.target.value)} 
+                placeholder="Cuéntanos tu experiencia con este servicio..." 
+                className={`w-full p-4 rounded-xl text-sm font-medium transition-all duration-300 resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 ${
+                  isDark 
+                    ? 'bg-stone-900/60 border-stone-800/60 text-white placeholder:text-stone-500' 
+                    : 'bg-stone-50/80 border-stone-200/60 text-stone-800 placeholder:text-stone-400'
+                }`}
+                rows={4}
+                style={comment ? { borderColor: primaryColor, borderWidth: '1px' } : {}}
+              />
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowReviewModal(false)} 
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 border ${
+                    isDark 
+                      ? 'border-stone-800/60 text-stone-400 hover:bg-stone-800/50' 
+                      : 'border-stone-200/60 text-stone-500 hover:bg-stone-50'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSubmitReview} 
+                  disabled={submitting || !rating || !comment.trim()} 
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-xl disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isDark 
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30' 
+                      : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30'
+                  }`}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      Enviar Reseña
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -759,29 +1300,35 @@ export default function PeluqueriaPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================================================
-          STYLES GLOBALES
-      ============================================================ */}
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
       <style jsx global>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes scaleIn {
-          from { 
-            transform: scale(0.92);
-            opacity: 0;
-          }
-          to { 
-            transform: scale(1);
-            opacity: 1;
-          }
+          from { transform: scale(0.92); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shine {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(100%); }
+        }
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
         .animate-fadeIn {
-          animation: fadeIn 0.25s ease-out forwards;
+          animation: fadeIn 0.4s ease-out forwards;
         }
         .animate-scaleIn {
           animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-shine {
+          animation: shine 1.5s ease-in-out infinite;
         }
       `}</style>
     </div>
