@@ -30,10 +30,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Control de redirección e hilos para evitar bloqueos
+  // 📝 ESTADO DE LOGS VISUALES PARA EL TELÉFONO
+  const [screenLogs, setScreenLogs] = useState<string[]>([])
+
   const hasRedirected = useRef(false)
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
+
+  // Función auxiliar para mandar logs a la consola Y a la pantalla
+  const logTrace = (message: string) => {
+    console.log(message)
+    const timestamp = new Date().toLocaleTimeString()
+    setScreenLogs((prev) => [...prev, `[${timestamp}] ${message}`].slice(-15)) // Guarda los últimos 15 logs
+  }
 
   // ============================================================
   // 1. OBTENER PERFIL DEL USUARIO
@@ -42,12 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return
 
     if (lastFetchedUserId.current === userId && role !== null) {
-      console.log('ℹ️ [fetchUserDataAndRole] Datos ya cargados previamente para este ID. Saltando.')
+      logTrace('ℹ️ [Perfil] Datos ya cargados en este ciclo. Saltando.')
       return
     }
 
     try {
-      console.log('📡 [fetchUserDataAndRole] Buscando perfil en la tabla "profiles" para ID:', userId)
+      logTrace(`📡 [Perfil] Consultando tabla "profiles" para ID: ${userId.substring(0, 6)}...`)
       lastFetchedUserId.current = userId
 
       const { data: profile, error: profileErr } = await supabase
@@ -57,28 +66,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (profileErr) {
-        console.error('❌ [fetchUserDataAndRole] Error al consultar la tabla profiles:', profileErr)
+        logTrace(`❌ [Perfil] Error en Supabase profiles: ${profileErr.message}`)
         return
       }
 
       if (!profile) {
-        console.log('⚠️ [fetchUserDataAndRole] No se encontró fila en profiles. Asignando rol "client" por defecto.')
+        logTrace('⚠️ [Perfil] Fila vacía. Asignando rol por defecto "client".')
         setRole('client')
         return
       }
 
       const profileAny = profile as any
       const userRole = profileAny?.role || 'client'
-      console.log('✅ [fetchUserDataAndRole] Rol detectado en base de datos:', userRole)
+      logTrace(`✅ [Perfil] Rol encontrado: "${userRole}"`)
       setRole(userRole)
 
       if (profileAny?.tenant_id) {
         setTenantId(profileAny.tenant_id)
       }
 
-      // Si es cliente, buscamos su billetera de puntos y su ID de cliente
       if (userRole === 'client') {
-        console.log('📡 [fetchUserDataAndRole] Buscando datos en la tabla "clients"...')
+        logTrace('📡 [Perfil] Es cliente. Buscando en tabla "clients"...')
         const { data: client, error: clientErr } = await supabase
           .from('clients')
           .select('id, tenant_id')
@@ -86,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
 
         if (clientErr) {
-          console.error('❌ [fetchUserDataAndRole] Error consultando clients:', clientErr)
+          logTrace(`❌ [Perfil] Error en tabla clients: ${clientErr.message}`)
         }
 
         if (client) {
@@ -96,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setTenantId(clientAny.tenant_id)
           }
 
-          console.log('📡 [fetchUserDataAndRole] Buscando billetera de lealtad...')
+          logTrace('📡 [Perfil] Consultando billetera "loyalty_wallets"...')
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
             .select('glow_points, hair_points')
@@ -106,12 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (wallet) {
             const walletAny = wallet as any
             setPoints((walletAny.glow_points || 0) + (walletAny.hair_points || 0))
+            logTrace('✅ [Perfil] Puntos cargados exitosamente.')
           }
         }
       }
 
-    } catch (error) {
-      console.error('💥 [fetchUserDataAndRole] Excepción crítica obteniendo datos:', error)
+    } catch (error: any) {
+      logTrace(`💥 [Perfil] Crash en fetchUserDataAndRole: ${error.message || error}`)
     }
   }
 
@@ -129,11 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', user.id)
         .maybeSingle()
 
-      if (error) {
-        console.error('❌ Error obteniendo tenant de emergencia:', error)
-        return null
-      }
-
+      if (error) return null
       if (data) {
         const dataAny = data as any
         if (dataAny.tenant_id) {
@@ -141,10 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return dataAny.tenant_id
         }
       }
-
       return null
     } catch (error) {
-      console.error('❌ Error en getEmergencyTenantId:', error)
       return null
     }
   }
@@ -153,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 3. LIMPIAR ESTADO
   // ============================================================
   const clearAuthState = () => {
-    console.log('🧹 [clearAuthState] Limpiando todos los estados locales de autenticación')
+    logTrace('🧹 [Auth] Limpiando estados locales por cierre de sesión.')
     setUser(null)
     setRole(null)
     setClientId(null)
@@ -170,32 +173,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isMountedRef.current = true
 
     const initializeAuth = async () => {
-      console.log('🚀 [initializeAuth] Iniciando comprobación de sesión base...')
+      logTrace('🚀 [Init] Comprobando si hay sesión activa en cookies/storage...')
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
-          console.error('❌ [initializeAuth] Error de sesión inicial:', error)
+          logTrace(`❌ [Init] Error obteniendo sesión inicial: ${error.message}`)
           setLoading(false)
           return
         }
 
         if (session?.user) {
-          console.log('✅ [initializeAuth] Sesión activa recuperada de cookies/storage:', session.user.email)
+          logTrace(`✅ [Init] Sesión activa detectada para: ${session.user.email}`)
           if (isMountedRef.current) {
             setUser(session.user)
             await fetchUserDataAndRole(session.user.id)
           }
         } else {
-          console.log('⚠️ [initializeAuth] Sin sesión activa al montar el proveedor.')
+          logTrace('⚠️ [Init] Ninguna sesión guardada en el dispositivo.')
           hasRedirected.current = false
         }
-      } catch (err) {
-        console.error('❌ [initializeAuth] Error fatal:', err)
+      } catch (err: any) {
+        logTrace(`❌ [Init] Excepción crítica: ${err.message}`)
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
-          console.log('🔓 [initializeAuth] Estado de carga desactivado (loading = false)')
+          logTrace('🔓 [Init] Fin de carga inicial (loading = false)')
         }
       }
     }
@@ -203,13 +206,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 [onAuthStateChange] Evento gatillado:', event)
+      logTrace(`🔔 [Event] onAuthStateChange gatillado: ${event}`)
 
       if (!isMountedRef.current) return
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
-          console.log('👤 [onAuthStateChange] Usuario detectado:', session.user.email)
+          logTrace(`👤 [Event] Usuario conectado: ${session.user.email}`)
           setUser(session.user)
           await fetchUserDataAndRole(session.user.id)
         }
@@ -222,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (event === 'INITIAL_SESSION' && session?.user) {
-        console.log('🔄 [onAuthStateChange] Sesión inicial asentada.')
+        logTrace('🔄 [Event] Sesión inicial asentada.')
         setUser(session.user)
         await fetchUserDataAndRole(session.user.id)
         setLoading(false)
@@ -239,33 +242,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 5. REDIRECCIÓN CONTROLADA REACTIVA
   // ============================================================
   useEffect(() => {
-    console.log('🔍 [useEffect Redirección] Evaluando cambio de ruta...', { 
-      loading, 
-      tieneUser: !!user, 
-      role, 
-      yaRedirigio: hasRedirected.current 
-    })
+    logTrace(`🔍 [Redirect Eval] loading: ${loading} | user: ${!!user} | role: ${role} | yaRedirigio: ${hasRedirected.current}`)
 
     if (loading) return
     if (!user) return
     if (role === null) {
-      console.log('⏳ [useEffect Redirección] El usuario existe pero el rol aún no se procesa. Esperando...')
+      logTrace('⏳ [Redirect Eval] Esperando que termine de cargar el Rol...')
       return
     }
 
     if (hasRedirected.current) {
-      console.log('⏭️ [useEffect Redirección] Bloqueo preventivo: ya se ejecutó redirección en esta sesión.')
+      logTrace('⏭️ [Redirect Eval] Omitido: Ya se procesó una redirección.')
       return
     }
 
-    console.log('🚀 [useEffect Redirección] ¡Ejecutando router.replace! Rol final:', role)
+    logTrace(`🚀 [Redirect Act] ¡Llamando a router.replace! Rol: ${role}`)
     hasRedirected.current = true
 
     const destino = (role === 'admin' || role === 'owner' || role === 'staff') 
       ? '/dashboard' 
       : '/portal'
 
-    console.log(`➡️ [useEffect Redirección] Desviando tráfico hacia: ${destino}`)
+    logTrace(`➡️ [Redirect Act] Destino seleccionado: ${destino}`)
     router.replace(destino)
   }, [user, role, loading, router])
 
@@ -274,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
-      console.log('🔄 [refreshUserData] Forzando recarga manual de datos.')
+      logTrace('🔄 Manual refresh requested.')
       lastFetchedUserId.current = null
       hasRedirected.current = false 
       await fetchUserDataAndRole(user.id)
@@ -285,47 +283,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 7. INICIAR SESIÓN (CON TRAZABILIDAD COMPLETA)
   // ============================================================
   const signIn = async (email: string, password: string) => {
-    console.log('🏁 [signIn] Iniciando función manual...')
+    logTrace('🏁 [signIn] Click en el botón recibido!')
     try {
       setLoading(true)
-      hasRedirected.current = false // Rompemos el candado para permitir que el useEffect actúe al loguearse de nuevo
+      hasRedirected.current = false 
       
       const cleanEmail = email.trim().toLowerCase()
-      console.log('📧 [signIn] Correo sanitizado:', cleanEmail)
-      console.log('🛰️ [signIn] Enviando petición HTTP a Supabase auth.signInWithPassword...')
+      logTrace(`📧 [signIn] Procesando login para: ${cleanEmail}`)
+      logTrace('🛰️ [signIn] Despachando credenciales a Supabase (auth.signInWithPassword)...')
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: password.trim()
       })
 
-      console.log('📥 [signIn] Respuesta cruda de Supabase recibida:', { 
-        dataExistente: !!data, 
-        usuarioExistente: !!data?.user, 
-        errorExistente: !!error 
-      })
+      logTrace(`📥 [signIn] Supabase respondió. ¿Data? ${!!data} | ¿User? ${!!data?.user} | ¿Error? ${!!error}`)
 
       if (error) {
-        console.error('❌ [signIn] Error devuelto por Supabase:', error.message)
+        logTrace(`❌ [signIn] Supabase rechazó accesos: ${error.message}`)
         setLoading(false)
         return { data: null, error }
       }
 
       if (data?.user) {
-        console.log('✅ [signIn] Autenticación básica exitosa. Guardando usuario:', data.user.email)
+        logTrace(`✅ [signIn] Login correcto en Auth. ID: ${data.user.id.substring(0, 6)}`)
         setUser(data.user)
         
-        console.log('🔄 [signIn] Extrayendo roles y perfil desde las tablas...')
+        logTrace('🔄 [signIn] Extrayendo base de perfiles...')
         await fetchUserDataAndRole(data.user.id)
-        console.log('🏁 [signIn] Perfil sincronizado correctamente en el contexto.')
+        logTrace('🎉 [signIn] Flujo de datos completado en el Contexto.')
       }
 
       setLoading(false)
-      console.log('🎉 [signIn] Finalización completa de la promesa de inicio de sesión.')
+      logTrace('🏁 [signIn] Promesa terminada exitosamente.')
       return { data, error: null }
 
     } catch (err: any) {
-      console.error('💥 [signIn] CRASH TOTAL durante la ejecución de signIn:', err)
+      logTrace(`💥 [signIn] EXCEPCIÓN CRÍTICA: ${err.message || err}`)
       setLoading(false)
       return { data: null, error: err }
     }
@@ -337,30 +331,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
       setLoading(true)
-      console.log('📝 [signUp] Registrando nuevo usuario:', email)
+      logTrace(`📝 [signUp] Registrando: ${email}`)
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
-        options: {
-          data: {
-            full_name: fullName,
-            phone,
-            referral_code: referralCode
-          }
-        }
+        options: { data: { full_name: fullName, phone, referral_code: referralCode } }
       })
 
       if (error) {
-        console.error('❌ [signUp] Error:', error.message)
+        logTrace(`❌ [signUp] Error: ${error.message}`)
         setLoading(false)
         return { data: null, error }
       }
 
       setLoading(false)
       return { data, error: null }
-
     } catch (err: any) {
-      console.error('💥 [signUp] Excepción:', err)
       setLoading(false)
       return { data: null, error: err }
     }
@@ -372,16 +358,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true)
-      console.log('🚪 [signOut] Cerrando sesión de la app...')
+      logTrace('🚪 [signOut] Solicitando cierre de sesión...')
       await supabase.auth.signOut()
       if (typeof window !== 'undefined') {
         localStorage.removeItem('freshnails-auth-token')
       }
       clearAuthState()
-      console.log('✅ [signOut] Sesión eliminada con éxito. Redirigiendo a /login')
       router.push('/login')
     } catch (err) {
-      console.error('❌ [signOut] Error fatal:', err)
+      logTrace('❌ [signOut] Error al salir.')
     } finally {
       setLoading(false)
     }
@@ -404,6 +389,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      
+      {/* 🛠️ PANEL DE LOGS FLOTANTE PARA PANTALLA MÓVIL 🛠️ */}
+      <div style={{
+        position: 'fixed',
+        bottom: '0',
+        left: '0',
+        right: '0',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        color: '#00ff00',
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        padding: '10px',
+        maxHeight: '180px',
+        overflowY: 'auto',
+        zIndex: 99999,
+        borderTop: '2px solid #00ff00',
+        pointerEvents: 'none'
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#fff', borderBottom: '1px solid #444' }}>
+          📱 TERMINAL DE LOGS DE AUTENTICACIÓN (EN VIVO)
+        </div>
+        {screenLogs.map((log, i) => (
+          <div key={i} style={{ marginBottom: '2px', wordBreak: 'break-all' }}>{log}</div>
+        ))}
+        {screenLogs.length === 0 && <div style={{ color: '#aaa' }}>Esperando interacciones o eventos...</div>}
+      </div>
     </AuthContext.Provider>
   )
 }
