@@ -54,13 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authCheckDone = useRef(false)
 
   // ============================================================
-  // 1. OBTENER PERFIL DEL USUARIO
+  // 1. OBTENER PERFIL DEL USUARIO (CORREGIDO: NO RECARGA SI YA EXISTE)
   // ============================================================
   const fetchUserDataAndRole = async (userId: string) => {
     if (!userId) return
 
+    // ✅ EVITAMOS RECARGAS INNECESARIAS SI YA TENEMOS LOS DATOS
     if (lastFetchedUserId.current === userId && role !== null) {
-      console.log('ℹ️ [Perfil] Datos ya cargados, saltando.')
+      console.log('ℹ️ [Perfil] Datos ya cargados, saltando recarga.')
       setAuthInitialized(true)
       return
     }
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 3. INICIALIZAR AUTENTICACIÓN (CORREGIDO)
+  // 3. INICIALIZAR AUTENTICACIÓN
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
@@ -183,7 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log(`✅ [Init] Sesión activa: ${session.user.email}`)
           setUser(session.user)
-          // Solo marcamos inicializado DESPUÉS de cargar todo
           await fetchUserDataAndRole(session.user.id)
         } else {
           console.log('⚠️ [Init] Sin sesión activa')
