@@ -4,7 +4,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext'
 import './globals.css'
 
 export const metadata = {
-  title: 'Mi App Premium',
+  title: 'Salon Fresh Nails',
   description: 'Creado con Next.js, Supabase y Modo Claro/Oscuro',
 }
 
