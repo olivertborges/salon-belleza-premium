@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -14,11 +15,14 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+        // CORRECCIÓN: Le asignamos el tipo explícito a cookiesToSet para que TypeScript compile en Vercel
+        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          
           supabaseResponse = NextResponse.next({
             request,
           })
+          
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -27,14 +31,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: Usamos getUser() para validar la sesión de forma segura
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  // Obtener la sesión de forma segura
+  const { data: { user } } = await supabase.auth.getUser()
   const url = request.nextUrl
 
-  // 1. Si no hay usuario y entra a rutas protegidas -> mandar a /login
+  // 1. Si no hay usuario y entra a rutas protegidas -> ir a /login
   if (!user && (url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/portal'))) {
     return NextResponse.redirect(new URL('/login', url))
   }
@@ -52,7 +53,6 @@ export async function middleware(request: NextRequest) {
       const destination = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
       return NextResponse.redirect(new URL(destination, url))
     } catch (e) {
-      // Si falla la tabla profiles, mandamos al portal por defecto
       return NextResponse.redirect(new URL('/portal', url))
     }
   }
