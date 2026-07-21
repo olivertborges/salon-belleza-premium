@@ -10,8 +10,7 @@ import {
   User, LogIn, Shield, Crown, Gem, 
   ArrowRight, CheckCircle2, XCircle,
   Heart, Star, Zap, Fingerprint, 
-  Flower2, Waves, Palette, Gift,
-  Bug
+  Flower2, Waves, Palette, Gift
 } from 'lucide-react'
 
 // ===== ANIMACIONES =====
@@ -82,8 +81,6 @@ export default function AuthMobilDefinitivo() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [logs, setLogs] = useState<string[]>([])
-  const [showLogs, setShowLogs] = useState(true)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -91,91 +88,44 @@ export default function AuthMobilDefinitivo() {
   const [phone, setPhone] = useState('')
   const [referralCode, setReferralCode] = useState('')
 
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString()
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 20))
-    console.log(message)
-  }
-
   useEffect(() => {
     setMounted(true)
-    addLog('🚀 Componente montado')
 
     const searchParams = new URLSearchParams(window.location.search);
     const ref = searchParams.get('ref');
     if (ref) {
       setReferralCode(ref)
-      addLog(`📎 Código de referido: ${ref}`)
     }
   }, [])
 
-  // ✅ LOGS DE AUTENTICACIÓN EN PANTALLA
-  useEffect(() => {
-    addLog(`📊 Estado: user=${!!user}, role=${role || 'null'}, loading=${authLoading}`)
-
-    if (user) {
-      addLog(`👤 Usuario: ${user.email}`)
-    }
-    if (role) {
-      addLog(`🎯 Rol: ${role}`)
-    }
-  }, [user, role, authLoading])
-
   // ✅ REDIRECCIÓN MEJORADA CON WINDOW.LOCATION PARA ROMPER BUCLES
   useEffect(() => {
-    addLog(`📌 Estado: mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
-
-    if (!mounted || authLoading) {
-      addLog(`⏳ Esperando: mounted=${mounted}, authLoading=${authLoading}`)
-      return
-    }
-
-    if (!user || !role) {
-      addLog(`👤 Esperando usuario o rol...`)
-      return
-    }
+    if (!mounted || authLoading) return
+    if (!user || !role) return
 
     let targetPath = '/portal'
     if (role === 'admin' || role === 'staff' || role === 'owner') {
       targetPath = '/dashboard'
     }
 
-    addLog(`🎯 Path actual: ${window.location.pathname}`)
-    addLog(`🎯 Path destino: ${targetPath}`)
+    if (window.location.pathname === targetPath) return
 
-    if (window.location.pathname === targetPath) {
-      addLog(`✅ Ya estamos en la ruta correcta`)
-      return
-    }
-
-    addLog(`🚀 FORZANDO REDIRECCIÓN DIRECTA A: ${targetPath}`)
-    
-    // Eliminamos el retardo innecesario y usamos window.location.replace para limpiar historial de bucles
     window.location.replace(targetPath)
-
   }, [user, role, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
 
-    addLog(`🔐 Intentando login para: ${email}`)
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
       const { error: signInError } = await signIn(email, password)
-      if (signInError) {
-        addLog(`❌ Error en login: ${signInError.message}`)
-        throw signInError
-      }
-
-      addLog(`✅ Login exitoso para: ${email}. Esperando asignación de rol...`)
+      if (signInError) throw signInError
       setSuccess('¡Ingreso correcto!')
-
     } catch (err: any) {
-      addLog(`❌ Error: ${err.message}`)
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
     }
@@ -185,7 +135,6 @@ export default function AuthMobilDefinitivo() {
     e.preventDefault()
     if (loading) return
 
-    addLog(`📝 Intentando registro para: ${email}`)
     setLoading(true)
     setError('')
     setSuccess('')
@@ -205,17 +154,12 @@ export default function AuthMobilDefinitivo() {
 
       const data = await res.json()
       if (!res.ok || !data.success) {
-        addLog(`❌ Error en registro: ${data.error}`)
         throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
-      addLog(`✅ Registro exitoso para: ${email}`)
       setSuccess('✅ ¡Registro exitoso!')
-
       await signIn(email, password)
-
     } catch (err: any) {
-      addLog(`❌ Error: ${err.message}`)
       setError(err.message || 'Error inesperado')
       setLoading(false)
     }
@@ -229,15 +173,10 @@ export default function AuthMobilDefinitivo() {
     setSuccess('')
 
     try {
-      addLog(`📧 Enviando recuperación para: ${email}`)
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       })
-      if (resetError) {
-        addLog(`❌ Error en recuperación: ${resetError.message}`)
-        throw resetError
-      }
-      addLog(`✅ Enlace enviado a: ${email}`)
+      if (resetError) throw resetError
       setSuccess('📧 Enlace de recuperación enviado a tu correo.')
     } catch (err: any) {
       setError(err.message || 'Error al enviar el correo de recuperación.')
@@ -315,7 +254,6 @@ export default function AuthMobilDefinitivo() {
               setActiveTab(tab.id as any)
               setError('')
               setSuccess('')
-              addLog(`📑 Cambiando a tab: ${tab.label}`)
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.96] ${
               isActive
@@ -355,47 +293,6 @@ export default function AuthMobilDefinitivo() {
         exit="exit"
         className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
       >
-
-        {/* ===== PANEL DE LOGS EN PANTALLA ===== */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <button
-              onClick={() => setShowLogs(!showLogs)}
-              className="flex items-center gap-1.5 text-[8px] font-mono font-bold uppercase tracking-wider text-pink-400 hover:text-pink-300 transition-colors"
-            >
-              <Bug className="w-3 h-3" />
-              {showLogs ? 'Ocultar Logs' : 'Mostrar Logs'}
-            </button>
-            <button
-              onClick={() => setLogs([])}
-              className="text-[8px] font-mono text-stone-500 hover:text-stone-300 transition-colors"
-            >
-              Limpiar
-            </button>
-          </div>
-
-          {showLogs && (
-            <div className="p-2 rounded-xl bg-stone-950/90 backdrop-blur-sm border border-stone-800 max-h-40 overflow-y-auto">
-              <div className="space-y-0.5 font-mono text-[8px] leading-relaxed">
-                {logs.length === 0 ? (
-                  <p className="text-stone-600 italic">Esperando eventos...</p>
-                ) : (
-                  logs.map((log, i) => (
-                    <div key={i} className={`${
-                      log.includes('❌') ? 'text-rose-400' :
-                      log.includes('✅') ? 'text-emerald-400' :
-                      log.includes('🚀') || log.includes('➡️') ? 'text-pink-400' :
-                      log.includes('🎯') ? 'text-amber-400' :
-                      'text-stone-400'
-                    }`}>
-                      {log}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* HEADER */}
         <motion.div variants={itemVariants} className="text-center mb-6 relative">
