@@ -85,6 +85,7 @@ export default function AuthMobilDefinitivo() {
   const [logs, setLogs] = useState<string[]>([])
   const [showLogs, setShowLogs] = useState(true)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [redirectAttempted, setRedirectAttempted] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -122,29 +123,43 @@ export default function AuthMobilDefinitivo() {
     }
   }, [user, role, authLoading])
 
-  // ✅ REDIRECCIÓN MEJORADA CON PREVENCIÓN DE LOGIN DUPLICADO
+  // ✅ REDIRECCIÓN MEJORADA - FORZADA
   useEffect(() => {
-    const redirectKey = 'freshnails_redirected'
-    const alreadyRedirected = sessionStorage.getItem(redirectKey)
-
-    addLog(`🔄 Verificando redirección - redirectFlag: ${alreadyRedirected || 'no'}`)
-    addLog(`📌 Estado: mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
-
-    // Si ya redirigió, NO hacer nada
-    if (alreadyRedirected === 'true') {
-      addLog(`⏭️ Ya redirigió, saltando...`)
+    // Si ya estamos redirigiendo o ya intentamos, no hacer nada
+    if (isRedirecting || redirectAttempted) {
       return
     }
 
-    // Si no está montado o está cargando, esperar
-    if (!mounted || authLoading) {
-      addLog(`⏳ Esperando: mounted=${mounted}, authLoading=${authLoading}`)
+    addLog(`🔄 Verificando redirección - mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
+
+    // Si no está montado, esperar
+    if (!mounted) {
+      addLog(`⏳ Componente no montado, esperando...`)
       return
     }
 
-    // Si no hay usuario o rol, esperar
-    if (!user || !role) {
-      addLog(`👤 Esperando usuario o rol...`)
+    // Si está cargando, esperar
+    if (authLoading) {
+      addLog(`⏳ Auth cargando, esperando...`)
+      return
+    }
+
+    // Si no hay usuario, no redirigir
+    if (!user) {
+      addLog(`👤 Sin usuario, permaneciendo en login`)
+      return
+    }
+
+    // Si hay usuario pero aún no hay rol, esperar un poco más
+    if (!role) {
+      addLog(`⏳ Usuario sin rol, esperando...`)
+      // Dar tiempo a que se cargue el rol
+      setTimeout(() => {
+        if (user && !role) {
+          addLog(`⚠️ Timeout: Usuario sin rol, forzando recarga...`)
+          window.location.reload()
+        }
+      }, 3000)
       return
     }
 
@@ -157,29 +172,37 @@ export default function AuthMobilDefinitivo() {
     addLog(`🎯 Path actual: ${window.location.pathname}`)
     addLog(`🎯 Path destino: ${targetPath}`)
 
-    // Si ya estamos en la ruta correcta, marcar y salir
+    // Si ya estamos en la ruta correcta, no hacer nada
     if (window.location.pathname === targetPath) {
       addLog(`✅ Ya estamos en la ruta correcta`)
-      sessionStorage.setItem(redirectKey, 'true')
       return
     }
 
-    // Si estamos en login o auth, redirigir
-    if (window.location.pathname === '/login' || window.location.pathname === '/auth' || window.location.pathname === '/') {
-      addLog(`🚀 REDIRIGIENDO a: ${targetPath}`)
-      setIsRedirecting(true)
-      sessionStorage.setItem(redirectKey, 'true')
-      
-      // Limpiar cualquier intento de login pendiente
-      setError('')
-      setSuccess('')
-      
-      setTimeout(() => {
-        window.location.href = targetPath
-      }, 800)
-    }
+    // 🔥 FORZAR REDIRECCIÓN - Ignorar cualquier flag anterior
+    addLog(`🚀 FORZANDO REDIRECCIÓN a: ${targetPath}`)
+    setIsRedirecting(true)
+    setRedirectAttempted(true)
+    
+    // Limpiar flags antiguos
+    sessionStorage.removeItem('freshnails_redirected')
+    
+    // Mostrar mensaje de éxito
+    setSuccess(`✅ Redirigiendo al panel de ${role}...`)
+    
+    // Redirigir con router de Next.js
+    setTimeout(() => {
+      router.push(targetPath)
+    }, 500)
 
-  }, [user, role, authLoading, mounted])
+    // Fallback: si router.push no funciona, usar window.location
+    setTimeout(() => {
+      if (window.location.pathname !== targetPath) {
+        addLog(`🔄 Fallback: usando window.location.href`)
+        window.location.href = targetPath
+      }
+    }, 1500)
+
+  }, [user, role, authLoading, mounted, router, isRedirecting, redirectAttempted])
 
   // ============================================================
   // HANDLE LOGIN - CON PREVENCIÓN DE DUPLICADOS
@@ -187,37 +210,33 @@ export default function AuthMobilDefinitivo() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // 🛡️ PREVENIR LOGIN DUPLICADO - SOLUCIÓN PRINCIPAL
+    // 🛡️ PREVENIR LOGIN DUPLICADO
     if (user && role) {
-      addLog(`⛔ Usuario ya autenticado como ${role}, previniendo login duplicado`)
+      addLog(`⛔ Usuario ya autenticado como ${role}, redirigiendo...`)
       
-      // Determinar ruta de destino
       const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
         ? '/dashboard' 
         : '/portal'
       
-      // Mostrar mensaje amigable
-      setError('')
       setSuccess(`✅ Ya tienes sesión activa como ${role}. Redirigiendo...`)
       
-      // Marcar como redirigido para evitar bucles
-      sessionStorage.setItem('freshnails_redirected', 'true')
+      // Forzar redirección inmediata
+      setIsRedirecting(true)
+      setRedirectAttempted(true)
+      sessionStorage.removeItem('freshnails_redirected')
       
-      // Redirigir después de un breve delay
       setTimeout(() => {
-        window.location.href = targetPath
-      }, 1000)
+        router.push(targetPath)
+      }, 500)
       
       return
     }
 
-    // Si ya está cargando o redirigiendo, no hacer nada
     if (loading || isRedirecting) {
       addLog(`⏳ Operación en curso, ignorando...`)
       return
     }
 
-    // Validar campos
     if (!email || !password) {
       setError('⚠️ Por favor, completa todos los campos')
       return
@@ -234,7 +253,6 @@ export default function AuthMobilDefinitivo() {
       if (signInError) {
         addLog(`❌ Error en login: ${signInError.message}`)
         
-        // Manejar errores específicos
         if (signInError.message.includes('Invalid login credentials')) {
           setError('❌ Credenciales incorrectas. Verifica tu email y contraseña.')
         } else if (signInError.message.includes('Email not confirmed')) {
@@ -250,13 +268,10 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Login exitoso para: ${email}`)
       setSuccess('🎉 ¡Ingreso exitoso! Redirigiendo...')
 
-      // Limpiar flags de redirección anteriores
       sessionStorage.removeItem('freshnails_redirected')
       
-      // Esperar a que el contexto actualice el estado
       setTimeout(() => {
         setLoading(false)
-        // La redirección la manejará el useEffect
       }, 500)
 
     } catch (err: any) {
@@ -274,7 +289,6 @@ export default function AuthMobilDefinitivo() {
     
     if (loading || isRedirecting) return
     
-    // Validar campos
     if (!email || !password || !fullName) {
       setError('⚠️ Por favor, completa todos los campos obligatorios')
       return
@@ -308,10 +322,8 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Registro exitoso para: ${email}`)
       setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
 
-      // Limpiar flags
       sessionStorage.removeItem('freshnails_redirected')
       
-      // Intentar login automático después del registro
       setTimeout(async () => {
         try {
           await signIn(email, password)
@@ -362,7 +374,6 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Enlace enviado a: ${email}`)
       setSuccess('📧 ¡Enlace de recuperación enviado! Revisa tu correo.')
       
-      // Limpiar campos después de éxito
       setEmail('')
       
     } catch (err: any) {
@@ -370,6 +381,31 @@ export default function AuthMobilDefinitivo() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // ============================================================
+  // REDIRECCIÓN MANUAL - Botón "Ir al panel ahora"
+  // ============================================================
+  const handleManualRedirect = () => {
+    if (!user || !role) return
+    
+    const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
+      ? '/dashboard' 
+      : '/portal'
+    
+    addLog(`🔄 Redirección manual a: ${targetPath}`)
+    setIsRedirecting(true)
+    setRedirectAttempted(true)
+    sessionStorage.removeItem('freshnails_redirected')
+    
+    router.push(targetPath)
+    
+    // Fallback
+    setTimeout(() => {
+      if (window.location.pathname !== targetPath) {
+        window.location.href = targetPath
+      }
+    }, 1000)
   }
 
   // ============================================================
@@ -493,10 +529,7 @@ export default function AuthMobilDefinitivo() {
               {user?.email} • Serás redirigido automáticamente
             </p>
             <button
-              onClick={() => {
-                sessionStorage.setItem('freshnails_redirected', 'true')
-                window.location.href = targetPath
-              }}
+              onClick={handleManualRedirect}
               className="mt-2 text-[10px] font-mono text-emerald-500 hover:text-emerald-600 underline transition-colors"
             >
               Ir al panel ahora →
