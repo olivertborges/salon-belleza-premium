@@ -29,6 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // ✅ Control de redirección para evitar bucles
+  const hasRedirected = useRef(false)
 
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
@@ -62,7 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // ✅ Usamos as any para evitar errores de tipo
       const profileAny = profile as any
 
       const userRole = profileAny?.role || 'client'
@@ -153,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTenantId(null)
     setPoints(null)
     lastFetchedUserId.current = null
+    hasRedirected.current = false
   }
 
   // ============================================================
@@ -160,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
+    hasRedirected.current = false
 
     const initializeAuth = async () => {
       console.log('🚀 Inicializando autenticación...')
@@ -233,22 +237,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // ============================================================
-  // 5. REFRESCAR DATOS DEL USUARIO
+  // 5. REDIRECCIÓN CONTROLADA - CON useRef PARA EVITAR BUCLE
+  // ============================================================
+  useEffect(() => {
+    console.log('🔍 Verificando redirección:', { 
+      loading, 
+      user: !!user, 
+      role, 
+      hasRedirected: hasRedirected.current 
+    })
+
+    // ✅ Si ya redirigió, no hacer nada
+    if (hasRedirected.current) {
+      console.log('⏭️ Ya redirigió, saltando...')
+      return
+    }
+
+    // ✅ Si está cargando, esperar
+    if (loading) {
+      console.log('⏳ Cargando, esperando...')
+      return
+    }
+
+    // ✅ Si no hay usuario, no redirigir (esperar a que se autentique)
+    if (!user) {
+      console.log('👤 No hay usuario')
+      return
+    }
+
+    // ✅ Si el rol es null, esperar a que se cargue
+    if (role === null) {
+      console.log('⏳ Rol no cargado aún, esperando...')
+      return
+    }
+
+    // ✅ Si llegamos aquí, tenemos usuario y rol - REDIRIGIR
+    console.log('🚀 Redirigiendo con rol:', role)
+    hasRedirected.current = true
+
+    if (role === 'admin' || role === 'owner' || role === 'staff') {
+      console.log('➡️ Redirigiendo a /dashboard')
+      router.replace('/dashboard')
+    } else {
+      console.log('➡️ Redirigiendo a /portal')
+      router.replace('/portal')
+    }
+
+  }, [user, role, loading, router])
+
+  // ============================================================
+  // 6. REFRESCAR DATOS DEL USUARIO
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
       console.log('🔄 Refrescando datos del usuario...')
       lastFetchedUserId.current = null
+      hasRedirected.current = false // Permite nueva redirección si es necesario
       await fetchUserDataAndRole(user.id)
     }
   }
 
   // ============================================================
-  // 6. INICIAR SESIÓN
+  // 7. INICIAR SESIÓN
   // ============================================================
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
+      hasRedirected.current = false // Resetear para permitir redirección
       console.log('🔐 Iniciando sesión:', email)
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -279,7 +334,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 7. REGISTRAR USUARIO
+  // 8. REGISTRAR USUARIO
   // ============================================================
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
@@ -316,7 +371,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 8. CERRAR SESIÓN
+  // 9. CERRAR SESIÓN
   // ============================================================
   const signOut = async () => {
     try {
@@ -341,7 +396,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 9. PROVIDER
+  // 10. PROVIDER
   // ============================================================
   const value = {
     user,
