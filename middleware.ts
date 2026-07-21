@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
+import type { CookieSerializeOptions } from 'cookie'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,7 +15,8 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
+        // ✅ Tipo agregado: arreglo de objetos con nombre, valor y opciones
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieSerializeOptions }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -36,12 +37,12 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // ✅ CLAVE: No redirigir desde servidor en login/raíz → lo decide el cliente
+  // No redirigir desde servidor en login/raíz → lo decide el cliente
   if (pathname === '/login' || pathname === '/') {
     return response
   }
 
-  // Para rutas protegidas, verificamos el rol
+  // Verificar rol para rutas protegidas
   let userRole = 'client'
   try {
     const { data: profile } = await supabase
