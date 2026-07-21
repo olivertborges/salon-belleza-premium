@@ -22,10 +22,10 @@ import {
   FaPause,
   FaGem,
   FaUser,
-  FaBars, 
-  FaTimes,
-  FaCalendarCheck,
-  FaGraduationCap
+  FaBars,        // ✅ NUEVO
+  FaTimes,       // ✅ NUEVO
+  FaCalendarCheck, // ✅ NUEVO
+  FaGraduationCap // ✅ NUEVO
 } from 'react-icons/fa'
 
 // ============================================================
@@ -122,7 +122,7 @@ const TESTIMONIALS = [
 // ============================================================
 
 // ============================================================
-// HEADER REDISEÑADO - NAVBAR ESPECTACULAR
+// HEADER REDISEÑADO - CON ICONOS CORRECTOS
 // ============================================================
 const Header = () => {
   const { user } = useAuth()
@@ -138,10 +138,10 @@ const Header = () => {
   }, [])
 
   const navLinks = [
-    { name: 'Servicios', href: '#servicios', icon: 'FaScissors' },
-    { name: 'Galería', href: '#galeria', icon: 'FaGem' },
-    { name: 'Reservar', href: '/reservas', icon: 'FaCalendarCheck' },
-    { name: 'Academia', href: '/academy', icon: 'FaGraduationCap' },
+    { name: 'Servicios', href: '#servicios', icon: FaStar },
+    { name: 'Galería', href: '#galeria', icon: FaGem },
+    { name: 'Reservar', href: '/reservas', icon: FaCalendarCheck },
+    { name: 'Academia', href: '/academy', icon: FaGraduationCap },
   ]
 
   return (
@@ -167,14 +167,15 @@ const Header = () => {
               <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-[#DB5B9A]/20 to-[#C9A96E]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <span className="text-white font-serif text-xl tracking-tight group-hover:text-[#C9A96E] transition-colors duration-300">
-              Fresh<span className="text-[#DB5B9A]">. NAILS</span>
+              Fresh<span className="text-[#DB5B9A]">.</span>
             </span>
           </Link>
 
           {/* ===== DESKTOP NAV ===== */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => {
-              const isActive = false // Podrías agregar lógica de active
+              const Icon = link.icon
+              const isActive = false
               return (
                 <Link
                   key={link.name}
@@ -185,6 +186,9 @@ const Header = () => {
                       : 'text-stone-400 hover:text-white'
                   }`}
                 >
+                  <Icon className={`w-3.5 h-3.5 transition-all duration-300 ${
+                    isActive ? 'text-[#C9A96E]' : 'text-stone-500 group-hover:text-[#C9A96E]'
+                  }`} />
                   <span>{link.name}</span>
                   
                   {isActive && (
@@ -266,6 +270,7 @@ const Header = () => {
               {/* Nav Links Mobile */}
               <nav className="space-y-2">
                 {navLinks.map((link, index) => {
+                  const Icon = link.icon
                   return (
                     <motion.div
                       key={link.name}
@@ -279,10 +284,7 @@ const Header = () => {
                         className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 text-stone-400 hover:text-white hover:bg-stone-900/50`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-stone-900 text-stone-500`}>
-                          {link.name === 'Servicios' && <FaScissors className="w-4 h-4" />}
-                          {link.name === 'Galería' && <FaGem className="w-4 h-4" />}
-                          {link.name === 'Reservar' && <FaCalendarCheck className="w-4 h-4" />}
-                          {link.name === 'Academia' && <FaGraduationCap className="w-4 h-4" />}
+                          <Icon className="w-4 h-4" />
                         </div>
                         <span className="text-sm font-medium">{link.name}</span>
                       </Link>
