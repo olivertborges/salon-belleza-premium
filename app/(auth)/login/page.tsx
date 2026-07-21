@@ -99,7 +99,7 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN SEGURA - CON PREVENCIÓN DE BUCLE
+  // ✅ REDIRECCIÓN CON WINDOW.LOCATION.HREF
   useEffect(() => {
     // Si ya redirigió, no hacer nada
     if (hasRedirected.current) {
@@ -125,13 +125,13 @@ export default function AuthMobilDefinitivo() {
     // Marcar que ya redirigió
     hasRedirected.current = true
     
-    // Usar router.replace para evitar que el usuario vuelva atrás
+    // ✅ Usar window.location.href para forzar la redirección
     if (role === 'admin' || role === 'staff' || role === 'owner') {
-      router.replace('/dashboard')
+      window.location.href = '/dashboard'
     } else {
-      router.replace('/portal')
+      window.location.href = '/portal'
     }
-  }, [user, role, authLoading, mounted, router])
+  }, [user, role, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -214,21 +214,6 @@ export default function AuthMobilDefinitivo() {
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
           Cargando...
-        </p>
-      </div>
-    )
-  }
-
-  // Si ya hay usuario y rol, mostrar spinner de redirección
-  if (user && role) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
-        <div className="relative">
-          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#DB5B9A' }} />
-          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
-        </div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
-          Redirigiendo...
         </p>
       </div>
     )
