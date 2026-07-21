@@ -241,7 +241,7 @@ export default function AuthMobilDefinitivo() {
       setSuccess('📧 Enlace de recuperación enviado a tu correo.')
     } catch (err: any) {
       setError(err.message || 'Error al enviar el correo de recuperación.')
-    } goldly {
+    } finally {
       setLoading(false)
     }
   }
