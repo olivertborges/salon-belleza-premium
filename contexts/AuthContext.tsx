@@ -29,35 +29,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // 📝 ESTADO DE LOGS VISUALES PARA EL TELÉFONO
-  const [screenLogs, setScreenLogs] = useState<string[]>([])
+  const [authInitialized, setAuthInitialized] = useState(false)
 
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
-
-  // Función auxiliar para mandar logs a la consola Y a la pantalla
-  const logTrace = (message: string) => {
-    console.log(message)
-    const timestamp = new Date().toLocaleTimeString()
-    setScreenLogs((prev) => [...prev, `[${timestamp}] ${message}`].slice(-15))
-  }
+  const authCheckDone = useRef(false)
 
   // ============================================================
-  // 1. OBTENER PERFIL DEL USUARIO
+  // 1. OBTENER PERFIL DEL USUARIO (MEJORADO)
   // ============================================================
   const fetchUserDataAndRole = async (userId: string) => {
     if (!userId) return
 
+    // Si ya tenemos el rol y es el mismo usuario, no hacer nada
     if (lastFetchedUserId.current === userId && role !== null) {
-      logTrace('ℹ️ [Perfil] Datos ya cargados en este ciclo. Saltando.')
+      console.log('ℹ️ [Perfil] Datos ya cargados, saltando.')
       return
     }
 
     try {
-      logTrace(`📡 [Perfil] Consultando tabla "profiles" para ID: ${userId.substring(0, 6)}...`)
+      console.log(`📡 [Perfil] Consultando perfil para: ${userId.substring(0, 6)}...`)
       lastFetchedUserId.current = userId
 
+      // 🔥 OBTENER ROL DIRECTO DE LA DB
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role, tenant_id')
@@ -65,27 +59,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (profileErr) {
-        logTrace(`❌ [Perfil] Error en Supabase profiles: ${profileErr.message}`)
-        return
-      }
-
-      if (!profile) {
-        logTrace('⚠️ [Perfil] Fila vacía. Asignando rol por defecto "client".')
+        console.error(`❌ [Perfil] Error: ${profileErr.message}`)
+        // Si hay error, asignar rol por defecto
         setRole('client')
         return
       }
 
-      const profileAny = profile as any
-      const userRole = profileAny?.role || 'client'
-      logTrace(`✅ [Perfil] Rol encontrado: "${userRole}"`)
-      setRole(userRole)
-
-      if (profileAny?.tenant_id) {
-        setTenantId(profileAny.tenant_id)
+      if (!profile) {
+        console.log('⚠️ [Perfil] Sin perfil, asignando "client"')
+        setRole('client')
+        return
       }
 
+      const userRole = profile?.role || 'client'
+      console.log(`✅ [Perfil] Rol encontrado: "${userRole}"`)
+      setRole(userRole)
+
+      if (profile?.tenant_id) {
+        setTenantId(profile.tenant_id)
+      }
+
+      // Si es cliente, obtener datos adicionales
       if (userRole === 'client') {
-        logTrace('📡 [Perfil] Es cliente. Buscando en tabla "clients"...')
+        console.log('📡 [Perfil] Obteniendo datos de cliente...')
+        
         const { data: client, error: clientErr } = await supabase
           .from('clients')
           .select('id, tenant_id')
@@ -93,127 +90,119 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
 
         if (clientErr) {
-          logTrace(`❌ [Perfil] Error en tabla clients: ${clientErr.message}`)
+          console.error(`❌ [Perfil] Error en clients: ${clientErr.message}`)
         }
 
         if (client) {
-          const clientAny = client as any
-          setClientId(clientAny.id)
-          if (clientAny.tenant_id) {
-            setTenantId(clientAny.tenant_id)
+          setClientId(client.id)
+          if (client.tenant_id) {
+            setTenantId(client.tenant_id)
           }
 
-          logTrace('📡 [Perfil] Consultando billetera "loyalty_wallets"...')
+          // Obtener puntos
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
             .select('glow_points, hair_points')
-            .eq('client_id', clientAny.id)
+            .eq('client_id', client.id)
             .maybeSingle()
 
           if (wallet) {
-            const walletAny = wallet as any
-            setPoints((walletAny.glow_points || 0) + (walletAny.hair_points || 0))
-            logTrace('✅ [Perfil] Puntos cargados exitosamente.')
+            setPoints((wallet.glow_points || 0) + (wallet.hair_points || 0))
+            console.log('✅ [Perfil] Puntos cargados')
           }
         }
       }
 
+      // Marcar que la autenticación está inicializada
+      setAuthInitialized(true)
+
     } catch (error: any) {
-      logTrace(`💥 [Perfil] Crash en fetchUserDataAndRole: ${error.message || error}`)
+      console.error(`💥 [Perfil] Error: ${error.message || error}`)
+      // En caso de error, asignar rol por defecto
+      setRole('client')
+      setAuthInitialized(true)
     }
   }
 
   // ============================================================
-  // 2. OBTENER TENANT DE EMERGENCIA
-  // ============================================================
-  const getEmergencyTenantId = async (): Promise<string | null> => {
-    if (tenantId) return tenantId
-    if (!user?.id) return null
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      if (error) return null
-      if (data) {
-        const dataAny = data as any
-        if (dataAny.tenant_id) {
-          setTenantId(dataAny.tenant_id)
-          return dataAny.tenant_id
-        }
-      }
-      return null
-    } catch (error) {
-      return null
-    }
-  }
-
-  // ============================================================
-  // 3. LIMPIAR ESTADO
+  // 2. LIMPIAR ESTADO
   // ============================================================
   const clearAuthState = () => {
-    logTrace('🧹 [Auth] Limpiando estados locales por cierre de sesión.')
+    console.log('🧹 [Auth] Limpiando estado')
     setUser(null)
     setRole(null)
     setClientId(null)
     setTenantId(null)
     setPoints(null)
+    setAuthInitialized(false)
     lastFetchedUserId.current = null
+    authCheckDone.current = false
   }
 
   // ============================================================
-  // 4. INICIALIZAR AUTENTICACIÓN
+  // 3. INICIALIZAR AUTENTICACIÓN (MEJORADO)
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
 
     const initializeAuth = async () => {
-      logTrace('🚀 [Init] Comprobando si hay sesión activa en cookies/storage...')
+      // Si ya se hizo la verificación, no repetir
+      if (authCheckDone.current) {
+        console.log('⏭️ Auth ya verificado, saltando...')
+        return
+      }
+
+      console.log('🚀 [Init] Inicializando autenticación...')
+      
       try {
+        // Obtener sesión
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
-          logTrace(`❌ [Init] Error obteniendo sesión inicial: ${error.message}`)
+          console.error(`❌ [Init] Error: ${error.message}`)
           setLoading(false)
+          setAuthInitialized(true)
+          authCheckDone.current = true
           return
         }
 
         if (session?.user) {
-          logTrace(`✅ [Init] Sesión activa detectada para: ${session.user.email}`)
-          if (isMountedRef.current) {
-            setUser(session.user)
-            await fetchUserDataAndRole(session.user.id)
-          }
+          console.log(`✅ [Init] Sesión activa: ${session.user.email}`)
+          setUser(session.user)
+          
+          // 🔥 IMPORTANTE: Cargar el rol INMEDIATAMENTE
+          await fetchUserDataAndRole(session.user.id)
         } else {
-          logTrace('⚠️ [Init] Ninguna sesión guardada en el dispositivo.')
+          console.log('⚠️ [Init] Sin sesión activa')
         }
       } catch (err: any) {
-        logTrace(`❌ [Init] Excepción crítica: ${err.message}`)
+        console.error(`❌ [Init] Error: ${err.message}`)
       } finally {
         if (isMountedRef.current) {
           setLoading(false)
-          logTrace('🔓 [Init] Fin de carga inicial (loading = false)')
+          setAuthInitialized(true)
+          authCheckDone.current = true
+          console.log('🔓 [Init] Inicialización completada')
         }
       }
     }
 
     initializeAuth()
 
+    // Suscripción a cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      logTrace(`🔔 [Event] onAuthStateChange gatillado: ${event}`)
+      console.log(`🔔 [Event] ${event}`)
 
       if (!isMountedRef.current) return
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
-          logTrace(`👤 [Event] Usuario conectado: ${session.user.email}`)
+          console.log(`👤 [Event] Usuario: ${session.user.email}`)
           setUser(session.user)
           await fetchUserDataAndRole(session.user.id)
         }
         setLoading(false)
+        setAuthInitialized(true)
       }
 
       if (event === 'SIGNED_OUT') {
@@ -222,10 +211,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (event === 'INITIAL_SESSION' && session?.user) {
-        logTrace('🔄 [Event] Sesión inicial asentada.')
+        console.log('🔄 [Event] Sesión inicial')
         setUser(session.user)
         await fetchUserDataAndRole(session.user.id)
         setLoading(false)
+        setAuthInitialized(true)
       }
     })
 
@@ -236,104 +226,139 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // ============================================================
-  // 5. REFRESCAR DATOS DEL USUARIO
+  // 4. REFRESCAR DATOS
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
-      logTrace('🔄 Manual refresh requested.')
+      console.log('🔄 Refresh manual')
       lastFetchedUserId.current = null
       await fetchUserDataAndRole(user.id)
     }
   }
 
   // ============================================================
-  // 6. INICIAR SESIÓN (CON TRAZABILIDAD COMPLETA)
+  // 5. INICIAR SESIÓN
   // ============================================================
   const signIn = async (email: string, password: string) => {
-    logTrace('🏁 [signIn] Click en el botón recibido!')
+    console.log('🏁 [signIn] Iniciando login...')
+    
     try {
       setLoading(true)
+      authCheckDone.current = false
 
       const cleanEmail = email.trim().toLowerCase()
-      logTrace(`📧 [signIn] Procesando login para: ${cleanEmail}`)
-      logTrace('🛰️ [signIn] Despachando credenciales a Supabase (auth.signInWithPassword)...')
+      console.log(`📧 [signIn] Email: ${cleanEmail}`)
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: password.trim()
       })
 
-      logTrace(`📥 [signIn] Supabase respondió. ¿Data? ${!!data} | ¿User? ${!!data?.user} | ¿Error? ${!!error}`)
-
       if (error) {
-        logTrace(`❌ [signIn] Supabase rechazó accesos: ${error.message}`)
+        console.error(`❌ [signIn] Error: ${error.message}`)
         setLoading(false)
         return { data: null, error }
       }
 
       if (data?.user) {
-        logTrace(`✅ [signIn] Login correcto en Auth. ID: ${data.user.id.substring(0, 6)}`)
+        console.log(`✅ [signIn] Login exitoso: ${data.user.email}`)
         setUser(data.user)
-
-        logTrace('🔄 [signIn] Extrayendo base de perfiles...')
         await fetchUserDataAndRole(data.user.id)
-        logTrace('🎉 [signIn] Flujo de datos completado en el Contexto.')
+        console.log('🎉 [signIn] Datos cargados correctamente')
       }
 
-      logTrace('🏁 [signIn] Promesa terminada exitosamente.')
+      setLoading(false)
       return { data, error: null }
 
     } catch (err: any) {
-      logTrace(`💥 [signIn] EXCEPCIÓN CRÍTICA: ${err.message || err}`)
+      console.error(`💥 [signIn] Error: ${err.message}`)
       setLoading(false)
       return { data: null, error: err }
     }
   }
 
   // ============================================================
-  // 7. REGISTRAR USUARIO
+  // 6. REGISTRAR USUARIO
   // ============================================================
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
       setLoading(true)
-      logTrace(`📝 [signUp] Registrando: ${email}`)
+      console.log(`📝 [signUp] Registrando: ${email}`)
+      
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
-        options: { data: { full_name: fullName, phone, referral_code: referralCode } }
+        options: { 
+          data: { 
+            full_name: fullName, 
+            phone, 
+            referral_code: referralCode 
+          } 
+        }
       })
 
       if (error) {
-        logTrace(`❌ [signUp] Error: ${error.message}`)
+        console.error(`❌ [signUp] Error: ${error.message}`)
         setLoading(false)
         return { data: null, error }
       }
 
+      console.log(`✅ [signUp] Registro exitoso`)
       setLoading(false)
       return { data, error: null }
+
     } catch (err: any) {
+      console.error(`💥 [signUp] Error: ${err.message}`)
       setLoading(false)
       return { data: null, error: err }
     }
   }
 
   // ============================================================
-  // 8. CERRAR SESIÓN
+  // 7. CERRAR SESIÓN
   // ============================================================
   const signOut = async () => {
     try {
       setLoading(true)
-      logTrace('🚪 [signOut] Solicitando cierre de sesión...')
+      console.log('🚪 [signOut] Cerrando sesión...')
+      
       await supabase.auth.signOut()
+      
       if (typeof window !== 'undefined') {
         localStorage.removeItem('freshnails-auth-token')
       }
+      
       clearAuthState()
       router.push('/login')
+      
     } catch (err) {
-      logTrace('❌ [signOut] Error al salir.')
+      console.error('❌ [signOut] Error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ============================================================
+  // 8. OBTENER TENANT
+  // ============================================================
+  const getEmergencyTenantId = async (): Promise<string | null> => {
+    if (tenantId) return tenantId
+    if (!user?.id) return null
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (data?.tenant_id) {
+        setTenantId(data.tenant_id)
+        return data.tenant_id
+      }
+      return null
+    } catch (error) {
+      return null
     }
   }
 
@@ -343,7 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clientId,
     tenantId,
     points,
-    loading,
+    loading: loading || !authInitialized, // 🔥 IMPORTANTE: No terminar loading hasta que auth esté inicializado
     signIn,
     signUp,
     signOut,
@@ -354,32 +379,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-
-      {/* 🛠️ PANEL DE LOGS FLOTANTE PARA PANTALLA MÓVIL 🛠️ */}
-      <div style={{
-        position: 'fixed',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        color: '#00ff00',
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        padding: '10px',
-        maxHeight: '180px',
-        overflowY: 'auto',
-        zIndex: 99999,
-        borderTop: '2px solid #00ff00',
-        pointerEvents: 'none'
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#fff', borderBottom: '1px solid #444' }}>
-          📱 TERMINAL DE LOGS DE AUTENTICACIÓN (EN VIVO)
-        </div>
-        {screenLogs.map((log, i) => (
-          <div key={i} style={{ marginBottom: '2px', wordBreak: 'break-all' }}>{log}</div>
-        ))}
-        {screenLogs.length === 0 && <div style={{ color: '#aaa' }}>Esperando interacciones o eventos...</div>}
-      </div>
     </AuthContext.Provider>
   )
 }
