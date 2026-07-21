@@ -1,7 +1,9 @@
+"use client"; // 🔥 ESTO LE DICE A NEXT.JS QUE ES UN COMPONENTE DE CLIENTE
+
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js'; // O tu importación habitual de Supabase
 
-// Asegúrate de inicializar Supabase o importar tu cliente aquí
+// Inicializar cliente Supabase para pruebas
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -102,7 +104,7 @@ export default function LoginPage() {
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '400px', margin: '0 auto' }}>
-      <h2>Iniciar Sesión</h2>
+      <h2>Iniciar Sesión (Modo Monitor)</h2>
       
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <input 
@@ -110,7 +112,7 @@ export default function LoginPage() {
           placeholder="Email" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)} 
-          style={{ padding: '10px', fontSize: '16px' }}
+          style={{ padding: '10px', fontSize: '16px', color: '#000' }}
           required 
         />
         <input 
@@ -118,7 +120,7 @@ export default function LoginPage() {
           placeholder="Contraseña" 
           value={password} 
           onChange={(e) => setPassword(e.target.value)} 
-          style={{ padding: '10px', fontSize: '16px' }}
+          style={{ padding: '10px', fontSize: '16px', color: '#000' }}
           required 
         />
         <button 
@@ -130,20 +132,19 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Botón manual para limpiar la pantalla si se llena mucho */}
       <button 
         onClick={() => setScreenLogs([])} 
-        style={{ marginTop: '15px', padding: '5px', fontSize: '12px', background: '#ccc', border: 'none' }}
+        style={{ marginTop: '15px', padding: '5px', fontSize: '12px', background: '#ccc', border: 'none', color: '#000' }}
       >
         Limpiar Consola Visual
       </button>
 
-      {/* 🔥 TERMINAL DE LOGS IMPRESA EN PANTALLA PARA EL TELÉFONO */}
+      {/* 🔥 MONITOR DE PANTALLA */}
       <div style={{
         marginTop: '30px',
         padding: '12px',
         backgroundColor: '#1e1e1e',
-        color: '#39ff14', // Verde fosforescente tipo Matrix para lectura fácil
+        color: '#39ff14', 
         borderRadius: '8px',
         fontFamily: 'monospace',
         fontSize: '12px',
