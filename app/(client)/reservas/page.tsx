@@ -15,7 +15,17 @@ import {
   CheckCircle2,
   HelpCircle,
   XCircle,
-  Sparkle
+  Sparkle,
+  Gem,
+  Crown,
+  ArrowRight,
+  Heart,
+  Star,
+  Zap,
+  Shield,
+  Award,
+  Compass,
+  Flower2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -204,29 +214,29 @@ export default function MisReservasPage() {
   }, [user])
 
   const renderBadge = (status: string) => {
-    const base = "inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full border shadow-sm transition-all duration-300"
+    const base = "inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300"
     switch (status) {
       case 'confirmed':
         return (
-          <span className={`${base} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20`}>
-            <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Confirmado
+          <span className={`${base} bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-emerald-500/5`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Confirmado
           </span>
         )
       case 'pending':
         return (
-          <span className={`${base} bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse`}>
+          <span className={`${base} bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-amber-500/5 animate-pulse`}>
             <Clock className="w-2.5 h-2.5 text-amber-500" /> Pendiente
           </span>
         )
       case 'cancelled':
         return (
-          <span className={`${base} bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20`}>
+          <span className={`${base} bg-gradient-to-r from-rose-500/10 to-rose-600/5 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-rose-500/5`}>
             <XCircle className="w-2.5 h-2.5 text-rose-500" /> Cancelado
           </span>
         )
       default:
         return (
-          <span className={`${base} bg-stone-100 text-stone-600 border-stone-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800`}>
+          <span className={`${base} bg-gradient-to-r from-stone-100 to-stone-200/50 text-stone-600 border-stone-200/60 dark:from-zinc-900 dark:to-zinc-900/50 dark:text-zinc-400 dark:border-zinc-800/60`}>
             <HelpCircle className="w-2.5 h-2.5" /> Finalizado
           </span>
         )
@@ -236,120 +246,263 @@ export default function MisReservasPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute w-36 h-36 bg-pink-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="relative flex flex-col items-center justify-center gap-4">
-          <div className="w-12 h-12 border-2 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
-          <Sparkles className="w-4 h-4 text-pink-400 absolute animate-pulse" />
+        {/* Fondo animado */}
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-gradient-to-r from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        
+        {/* Loader premium */}
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Sparkles className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              TUS RITUALES
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen antialiased selection:bg-pink-500/10 pb-24 transition-colors duration-500 ${
-      isDark ? 'bg-[#09090b] text-zinc-100' : 'bg-transparent text-stone-900'
+    <div className={`min-h-screen antialiased selection:bg-pink-500/10 pb-24 transition-colors duration-700 ${
+      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-zinc-100' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-900'
     }`}>
-      <div className="max-w-4xl mx-auto px-4 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 space-y-8">
 
         {/* ============================================================ */}
-        {/* HERO BANNER ATELIER PRESTIGE */}
+        {/* HERO BANNER ATELIER PRESTIGE — EDICIÓN LUXURY */}
         {/* ============================================================ */}
-        <div className={`relative overflow-hidden rounded-[2.5rem] border p-6 md:p-10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] mt-4 transition-all duration-500 ${
+        <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl mt-6 transition-all duration-500 ${
           isDark 
-            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/50 to-black border-zinc-900/80' 
-            : 'bg-gradient-to-br from-stone-900 via-stone-950 to-pink-950 border-stone-800'
+            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
+            : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
         }`}>
-          {/* Orbes fluorescentes satinados */}
-          <div className="absolute top-0 right-0 w-72 h-72 bg-pink-500/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_5s_infinite]" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
+          {/* Efectos de luz ambiental */}
+          <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
+          <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          {/* Rejilla decorativa */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 border px-3.5 py-1.5 rounded-full backdrop-blur-md bg-white/5 border-white/10 shadow-sm">
-                <Sparkle className="w-3 h-3 text-pink-400 animate-[spin_4s_linear_infinite]" />
-                <span className="text-[9px] uppercase tracking-[0.25em] font-black text-pink-300">Atelier Digital Experience</span>
+              {/* Badge premium */}
+              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
+                isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/20 border-white/30'
+              }`}>
+                <Sparkle className="w-3.5 h-3.5 text-pink-400 animate-[spin_4s_linear_infinite]" />
+                <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+                  isDark ? 'text-pink-300' : 'text-white'
+                }`}>
+                  ✦ Atelier Digital Experience ✦
+                </span>
               </div>
-              
-              <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white leading-none">
-                {nombreCliente ? `Rituales de ${nombreCliente.split(' ')[0]}` : 'Mis Reservas'}{' '}
-                <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">VIP</span>
+
+              <h2 className={`text-3xl md:text-5xl font-black tracking-tight leading-[1.1] ${
+                isDark ? 'text-white' : 'text-white'
+              }`}>
+                {nombreCliente ? (
+                  <>
+                    Rituales de{' '}
+                    <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200 bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+                      {nombreCliente.split(' ')[0]}
+                    </span>
+                  </>
+                ) : (
+                  'Mis Reservas'
+                )}{' '}
+                <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">
+                  VIP
+                </span>
               </h2>
-              
-              <p className="text-xs text-zinc-400 max-w-xl font-medium tracking-wide">
-                {user?.email ? `Historial y estatus activo de tu cuenta: ${user.email}` : 'Conectado de forma temporal'}
+
+              <p className={`text-xs font-medium tracking-wide max-w-xl ${
+                isDark ? 'text-zinc-400' : 'text-pink-100/90'
+              }`}>
+                {user?.email ? (
+                  <>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2" />
+                    Historial y estatus activo de tu cuenta: <span className="font-bold text-white/90">{user.email}</span>
+                  </>
+                ) : (
+                  'Conectado de forma temporal'
+                )}
               </p>
             </div>
 
             <Link
               href="/client/booking"
-              className="px-5 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-md shadow-pink-500/10 hover:shadow-pink-500/20 active:scale-95 shrink-0"
+              className={`w-full sm:w-auto px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-3 shadow-2xl group relative overflow-hidden transform active:scale-[0.97] hover:-translate-y-0.5 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50' 
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50'
+              }`}
             >
-              <Calendar className="w-3.5 h-3.5" />
-              Agendar Ritual
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+              <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
+              <span className="relative">Agendar Ritual</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
             </Link>
+          </div>
+
+          {/* Decoración esquina */}
+          <div className="absolute bottom-5 right-8 opacity-10 text-white text-[10px] font-black tracking-[0.3em] select-none pointer-events-none">
+            ✦ RESERVAS ✦
           </div>
         </div>
 
-        {/* BOX NOTIFICACIÓN FALLBACK */}
+        {/* ============================================================ */}
+        {/* BOX NOTIFICACIÓN FALLBACK — REDISEÑADO */}
+        {/* ============================================================ */}
         {error && !citas.length && (
-          <div className={`flex items-start gap-3.5 border p-4 rounded-2xl backdrop-blur-md transition-all ${
-            isDark ? 'bg-amber-500/5 border-amber-500/20 text-amber-400' : 'bg-amber-50/40 border-amber-200 text-amber-800 shadow-sm'
+          <div className={`flex items-start gap-4 border p-5 rounded-2xl backdrop-blur-md transition-all duration-500 shadow-lg ${
+            isDark 
+              ? 'bg-gradient-to-r from-amber-500/10 to-amber-600/5 border-amber-500/20 text-amber-400 shadow-amber-500/5' 
+              : 'bg-gradient-to-r from-amber-50/80 to-amber-100/40 border-amber-200/60 text-amber-800 shadow-amber-200/20'
           }`}>
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+            <div className={`p-2 rounded-xl shrink-0 ${
+              isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'
+            }`}>
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+            </div>
             <div className="space-y-0.5">
-              <p className="text-[10px] font-black uppercase tracking-widest font-mono">Verificación de Cuenta</p>
-              <p className="text-xs font-medium opacity-90">{error}</p>
+              <p className={`text-[9px] font-black uppercase tracking-[0.2em] font-mono ${
+                isDark ? 'text-amber-400/80' : 'text-amber-700'
+              }`}>Verificación de Cuenta</p>
+              <p className={`text-sm font-medium ${
+                isDark ? 'text-amber-300/90' : 'text-amber-800'
+              }`}>{error}</p>
             </div>
           </div>
         )}
 
         {/* ============================================================ */}
-        {/* LISTADO DE CITAS BOUTIQUE */}
+        {/* LISTADO DE CITAS BOUTIQUE — REDISEÑADO */}
         {/* ============================================================ */}
         <div className="mt-4">
           {citas.length === 0 ? (
-            <div className={`border border-dashed rounded-[2rem] p-16 text-center backdrop-blur-sm transition-all ${
-              isDark ? 'border-zinc-800 bg-zinc-900/10' : 'border-pink-100 bg-white/50 shadow-inner'
+            <div className={`border border-dashed rounded-[2.5rem] p-16 text-center backdrop-blur-sm transition-all duration-500 ${
+              isDark 
+                ? 'border-zinc-800/60 bg-zinc-900/10 shadow-black/10' 
+                : 'border-pink-200/60 bg-white/50 shadow-pink-100/10 shadow-inner'
             }`}>
-              <Calendar className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-zinc-800' : 'text-pink-200 animate-pulse'}`} />
-              <p className="text-sm font-black tracking-tight">No registras tratamientos próximos</p>
-              <p className="text-xs mt-1.5 max-w-sm mx-auto text-zinc-500 dark:text-zinc-400 font-medium tracking-wide">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 ${
+                isDark ? 'bg-zinc-800/50' : 'bg-pink-100/50'
+              }`}>
+                <Calendar className={`w-9 h-9 ${
+                  isDark ? 'text-zinc-700' : 'text-pink-300'
+                }`} />
+              </div>
+              <h3 className={`text-xl font-black tracking-tight ${
+                isDark ? 'text-zinc-300' : 'text-stone-700'
+              }`}>
+                No registras tratamientos próximos
+              </h3>
+              <p className={`text-sm mt-2 max-w-sm mx-auto font-medium tracking-wide ${
+                isDark ? 'text-zinc-400' : 'text-stone-400'
+              }`}>
                 Diseña tu próxima experiencia haciendo clic en el botón superior de reservas VIP.
               </p>
+              <div className="flex items-center justify-center gap-1.5 mt-4">
+                {['✨', '💎', '🌟', '🎯'].map((emoji, i) => (
+                  <span key={i} className="text-lg animate-[bounce_2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.2}s` }}>
+                    {emoji}
+                  </span>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {citas.map((cita) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {citas.map((cita, index) => {
                 const fechaObjeto = new Date(cita.date.replace(/-/g, '\/'))
                 const fechaLinda = format(fechaObjeto, "EEEE d 'de' MMMM", { locale: es })
 
                 return (
                   <div 
                     key={cita.id} 
-                    className={`group relative rounded-2xl border p-5 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[170px] overflow-hidden ${
+                    className={`group relative rounded-2xl border p-5 transition-all duration-500 transform hover:-translate-y-1.5 flex flex-col justify-between min-h-[180px] overflow-hidden ${
                       isDark 
-                        ? 'bg-zinc-900/20 border-zinc-900/80 hover:border-pink-500/20 shadow-lg hover:shadow-black/40' 
-                        : 'bg-white border-stone-200/50 hover:border-pink-200 hover:shadow-xl hover:shadow-pink-100/30'
+                        ? 'bg-gradient-to-br from-zinc-900/40 via-zinc-900/20 to-zinc-900/40 border-zinc-900/60 hover:border-pink-500/30 hover:shadow-2xl shadow-lg hover:shadow-pink-500/5' 
+                        : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl shadow-md hover:shadow-pink-100/30'
                     }`}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Efecto Glow Sutil superior */}
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-pink-500/[0.02] to-transparent rounded-bl-full pointer-events-none transition-all duration-500 group-hover:from-pink-500/[0.08]" />
+                    {/* Gradiente de fondo sutil */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br ${
+                      cita.status === 'confirmed' 
+                        ? 'from-emerald-500/[0.02] to-emerald-600/[0.01]' 
+                        : cita.status === 'pending'
+                        ? 'from-amber-500/[0.02] to-amber-600/[0.01]'
+                        : 'from-rose-500/[0.02] to-rose-600/[0.01]'
+                    }`} />
 
-                    <div className="flex justify-between items-start gap-4 z-10">
-                      <div className="space-y-1">
-                        <span className="text-[8px] font-black font-mono uppercase tracking-[0.2em] text-pink-500 dark:text-pink-400 block">
-                          Tratamiento Adquirido
-                        </span>
-                        <h4 className="font-black text-sm tracking-tight text-zinc-800 dark:text-zinc-200 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors duration-300">
+                    {/* Línea lateral decorativa */}
+                    <div className={`absolute left-0 inset-y-0 w-1 rounded-r-full transition-all duration-500 ${
+                      cita.status === 'confirmed' 
+                        ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                        : cita.status === 'pending'
+                        ? 'bg-gradient-to-b from-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse'
+                        : cita.status === 'cancelled'
+                        ? 'bg-gradient-to-b from-rose-500 to-rose-600'
+                        : 'bg-gradient-to-b from-stone-400 to-stone-500'
+                    }`} />
+
+                    <div className="flex justify-between items-start gap-4 z-10 pl-3">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        {/* Categoría */}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[7px] font-black font-mono uppercase tracking-[0.2em] ${
+                            isDark ? 'text-pink-400' : 'text-pink-500'
+                          }`}>
+                            Tratamiento Adquirido
+                          </span>
+                          <div className={`w-1 h-1 rounded-full ${
+                            isDark ? 'bg-pink-400/30' : 'bg-pink-300'
+                          }`} />
+                          <span className={`text-[7px] font-black font-mono uppercase tracking-[0.2em] ${
+                            isDark ? 'text-zinc-500' : 'text-stone-400'
+                          }`}>
+                            #{cita.id.slice(0, 6)}
+                          </span>
+                        </div>
+
+                        <h4 className={`font-black text-base tracking-tight transition-colors duration-300 ${
+                          isDark 
+                            ? 'text-zinc-200 group-hover:text-pink-400' 
+                            : 'text-stone-800 group-hover:text-pink-600'
+                        }`}>
                           {cita.services?.name || 'Servicio Especial Boutique'}
                         </h4>
 
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold mt-3 border transition-colors ${
-                          isDark ? 'bg-zinc-950/40 border-zinc-800 text-zinc-400' : 'bg-stone-50 border-stone-100 text-stone-500'
+                        {/* Staff info */}
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 border ${
+                          isDark 
+                            ? 'bg-zinc-950/60 border-zinc-800/80 text-zinc-400 group-hover:border-pink-500/20' 
+                            : 'bg-stone-50 border-stone-200/60 text-stone-500 group-hover:border-pink-200'
                         }`}>
                           <User className="w-3 h-3 text-pink-400" />
                           <span>Estilista:</span>
-                          <span className="font-black text-zinc-700 dark:text-zinc-300">{cita.staff?.name || 'Por asignar'}</span>
+                          <span className={`font-black ${
+                            isDark ? 'text-zinc-300' : 'text-stone-700'
+                          }`}>{cita.staff?.name || 'Por asignar'}</span>
                         </div>
                       </div>
 
@@ -359,30 +512,90 @@ export default function MisReservasPage() {
                     </div>
 
                     {/* Footer de la tarjeta */}
-                    <div className={`flex items-center justify-between border-t border-dashed mt-6 pt-4 ${
-                      isDark ? 'border-zinc-800/80' : 'border-stone-100'
+                    <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-4 pl-3 z-10 ${
+                      isDark ? 'border-zinc-800/60' : 'border-stone-200/60'
                     }`}>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-pink-400" />
-                        <span className="capitalize font-bold text-zinc-700 dark:text-zinc-300">{fechaLinda}</span>
+                      <div className="flex items-center gap-2 text-xs font-medium">
+                        <div className={`p-1.5 rounded-lg ${
+                          isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'
+                        }`}>
+                          <Calendar className="w-3 h-3 text-pink-400" />
+                        </div>
+                        <span className={`capitalize font-bold ${
+                          isDark ? 'text-zinc-300' : 'text-stone-700'
+                        }`}>{fechaLinda}</span>
                       </div>
 
                       {/* Ticket de Hora Luxe */}
-                      <div className={`flex items-center gap-1.5 font-mono text-[10px] font-black px-3 py-1 rounded-xl shadow-sm tracking-widest ${
+                      <div className={`flex items-center gap-2 font-mono text-[10px] font-black px-3.5 py-1.5 rounded-xl shadow-sm tracking-widest transition-all duration-300 group-hover:scale-105 ${
                         isDark 
-                          ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' 
-                          : 'bg-zinc-950 text-white border border-zinc-950'
+                          ? 'bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 text-pink-400 shadow-pink-500/5' 
+                          : 'bg-gradient-to-r from-stone-950 to-stone-800 text-white border border-stone-800 shadow-stone-900/20'
                       }`}>
-                        <span className="w-1 h-1 rounded-full bg-pink-400 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
                         {cita.time.slice(0, 5)} HS
                       </div>
                     </div>
+
+                    {/* Efecto de brillo en hover */}
+                    <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-pink-500/[0.02] to-transparent rounded-full blur-2xl pointer-events-none transition-all duration-700 group-hover:scale-150" />
                   </div>
                 )
               })}
             </div>
           )}
         </div>
+
+        {/* ============================================================ */}
+        {/* FOOTER DECORATIVO — ESTADÍSTICAS RÁPIDAS */}
+        {/* ============================================================ */}
+        {citas.length > 0 && (
+          <div className={`pt-6 border-t transition-all duration-500 ${
+            isDark ? 'border-zinc-900/60' : 'border-stone-200/40'
+          }`}>
+            <div className={`rounded-2xl p-6 border shadow-lg flex flex-wrap items-center justify-around gap-4 ${
+              isDark 
+                ? 'bg-zinc-900/30 border-zinc-900/60 shadow-black/20' 
+                : 'bg-white/60 border-stone-200/40 shadow-stone-200/20 backdrop-blur-sm'
+            }`}>
+              <div className="text-center">
+                <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                  isDark ? 'text-zinc-500' : 'text-stone-400'
+                }`}>Total Reservas</p>
+                <p className={`text-2xl font-black ${
+                  isDark ? 'text-white' : 'text-stone-800'
+                }`}>{citas.length}</p>
+              </div>
+              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className="text-center">
+                <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                  isDark ? 'text-zinc-500' : 'text-stone-400'
+                }`}>Confirmadas</p>
+                <p className={`text-2xl font-black ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`}>{citas.filter(c => c.status === 'confirmed').length}</p>
+              </div>
+              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className="text-center">
+                <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                  isDark ? 'text-zinc-500' : 'text-stone-400'
+                }`}>Pendientes</p>
+                <p className={`text-2xl font-black ${
+                  isDark ? 'text-amber-400' : 'text-amber-600'
+                }`}>{citas.filter(c => c.status === 'pending').length}</p>
+              </div>
+              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className="text-center">
+                <p className={`text-[8px] font-black font-mono uppercase tracking-[0.2em] ${
+                  isDark ? 'text-zinc-500' : 'text-stone-400'
+                }`}>Canceladas</p>
+                <p className={`text-2xl font-black ${
+                  isDark ? 'text-rose-400' : 'text-rose-600'
+                }`}>{citas.filter(c => c.status === 'cancelled').length}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
