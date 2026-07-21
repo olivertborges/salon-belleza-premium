@@ -23,7 +23,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // ❌ SIN SESIÓN: solo protege rutas, NO redirige si ya estás en login
   if (!user) {
     if (pathname !== '/login' && pathname !== '/') {
       return NextResponse.redirect(new URL('/login', request.url))
@@ -31,7 +30,6 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // ✅ SI ESTÁS EN LOGIN Y YA TENÉS SESIÓN: redirige UNA SOLA VEZ y listo
   if (pathname === '/login') {
     let userRole = 'client'
     try {
@@ -41,15 +39,12 @@ export async function middleware(request: NextRequest) {
     } catch {}
 
     const destino = ['admin','staff','owner'].includes(userRole) ? '/dashboard' : '/portal'
-    console.log(`✅ Middleware: ya logueado → ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  // Protección de rutas de admin
   let userRole = 'client'
   try {
-    const { data: profile } = await supabase
-      .from('profiles').select('role').eq('id', user.id).maybeSingle()
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
     userRole = profile?.role || 'client'
   } catch {}
 
