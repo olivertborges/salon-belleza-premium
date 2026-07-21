@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
@@ -31,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [points, setPoints] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ✅ Control de redirección
+  // Control de redirección e hilos para evitar bloqueos
   const hasRedirected = useRef(false)
   const lastFetchedUserId = useRef<string | null>(null)
   const isMountedRef = useRef(true)
@@ -43,10 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return
 
     if (lastFetchedUserId.current === userId && role !== null) {
+      console.log('ℹ️ [fetchUserDataAndRole] Datos ya cargados previamente para este ID. Saltando.')
       return
     }
 
     try {
+      console.log('📡 [fetchUserDataAndRole] Buscando perfil en la tabla "profiles" para ID:', userId)
       lastFetchedUserId.current = userId
 
       const { data: profile, error: profileErr } = await supabase
@@ -56,26 +57,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (profileErr) {
-        console.error('❌ Error obteniendo perfil:', profileErr)
+        console.error('❌ [fetchUserDataAndRole] Error al consultar la tabla profiles:', profileErr)
         return
       }
 
       if (!profile) {
-        console.log('⚠️ No se encontró perfil para:', userId)
-        // Si no hay perfil, asignamos rol por defecto para no romper el flujo
+        console.log('⚠️ [fetchUserDataAndRole] No se encontró fila en profiles. Asignando rol "client" por defecto.')
         setRole('client')
         return
       }
 
       const profileAny = profile as any
       const userRole = profileAny?.role || 'client'
+      console.log('✅ [fetchUserDataAndRole] Rol detectado en base de datos:', userRole)
       setRole(userRole)
 
       if (profileAny?.tenant_id) {
         setTenantId(profileAny.tenant_id)
       }
 
+      // Si es cliente, buscamos su billetera de puntos y su ID de cliente
       if (userRole === 'client') {
+        console.log('📡 [fetchUserDataAndRole] Buscando datos en la tabla "clients"...')
         const { data: client, error: clientErr } = await supabase
           .from('clients')
           .select('id, tenant_id')
@@ -83,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
 
         if (clientErr) {
-          console.error('❌ Error obteniendo cliente:', clientErr)
+          console.error('❌ [fetchUserDataAndRole] Error consultando clients:', clientErr)
         }
 
         if (client) {
@@ -93,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setTenantId(clientAny.tenant_id)
           }
 
+          console.log('📡 [fetchUserDataAndRole] Buscando billetera de lealtad...')
           const { data: wallet } = await supabase
             .from('loyalty_wallets')
             .select('glow_points, hair_points')
@@ -107,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
     } catch (error) {
-      console.error('❌ Error en fetchUserDataAndRole:', error)
+      console.error('💥 [fetchUserDataAndRole] Excepción crítica obteniendo datos:', error)
     }
   }
 
@@ -149,14 +153,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 3. LIMPIAR ESTADO
   // ============================================================
   const clearAuthState = () => {
-    console.log('🧹 Limpiando estado de autenticación')
+    console.log('🧹 [clearAuthState] Limpiando todos los estados locales de autenticación')
     setUser(null)
     setRole(null)
     setClientId(null)
     setTenantId(null)
     setPoints(null)
     lastFetchedUserId.current = null
-    hasRedirected.current = false // Liberamos el candado de redirección
+    hasRedirected.current = false
   }
 
   // ============================================================
@@ -166,33 +170,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isMountedRef.current = true
 
     const initializeAuth = async () => {
-      console.log('🚀 Inicializando autenticación...')
-
+      console.log('🚀 [initializeAuth] Iniciando comprobación de sesión base...')
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
-          console.error('❌ Error obteniendo sesión:', error)
+          console.error('❌ [initializeAuth] Error de sesión inicial:', error)
           setLoading(false)
           return
         }
 
         if (session?.user) {
-          console.log('✅ Sesión restaurada para:', session.user.email)
+          console.log('✅ [initializeAuth] Sesión activa recuperada de cookies/storage:', session.user.email)
           if (isMountedRef.current) {
             setUser(session.user)
             await fetchUserDataAndRole(session.user.id)
           }
         } else {
-          console.log('⚠️ No hay sesión activa al iniciar')
+          console.log('⚠️ [initializeAuth] Sin sesión activa al montar el proveedor.')
           hasRedirected.current = false
         }
-
       } catch (err) {
-        console.error('❌ Error en initializeAuth:', err)
-      } center: {
+        console.error('❌ [initializeAuth] Error fatal:', err)
+      } finally {
         if (isMountedRef.current) {
           setLoading(false)
+          console.log('🔓 [initializeAuth] Estado de carga desactivado (loading = false)')
         }
       }
     }
@@ -200,12 +203,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Evento de autenticación:', event)
+      console.log('🔔 [onAuthStateChange] Evento gatillado:', event)
 
       if (!isMountedRef.current) return
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
+          console.log('👤 [onAuthStateChange] Usuario detectado:', session.user.email)
           setUser(session.user)
           await fetchUserDataAndRole(session.user.id)
         }
@@ -218,6 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (event === 'INITIAL_SESSION' && session?.user) {
+        console.log('🔄 [onAuthStateChange] Sesión inicial asentada.')
         setUser(session.user)
         await fetchUserDataAndRole(session.user.id)
         setLoading(false)
@@ -231,24 +236,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // ============================================================
-  // 5. REDIRECCIÓN CONTROLADA
+  // 5. REDIRECCIÓN CONTROLADA REACTIVA
   // ============================================================
   useEffect(() => {
-    if (loading || !user || role === null) return
+    console.log('🔍 [useEffect Redirección] Evaluando cambio de ruta...', { 
+      loading, 
+      tieneUser: !!user, 
+      role, 
+      yaRedirigio: hasRedirected.current 
+    })
 
-    if (hasRedirected.current) {
-      console.log('⏭️ Redirección omitida (ya se ejecutó una en este ciclo)')
+    if (loading) return
+    if (!user) return
+    if (role === null) {
+      console.log('⏳ [useEffect Redirección] El usuario existe pero el rol aún no se procesa. Esperando...')
       return
     }
 
-    console.log('🚀 Redirigiendo de forma reactiva con rol:', role)
+    if (hasRedirected.current) {
+      console.log('⏭️ [useEffect Redirección] Bloqueo preventivo: ya se ejecutó redirección en esta sesión.')
+      return
+    }
+
+    console.log('🚀 [useEffect Redirección] ¡Ejecutando router.replace! Rol final:', role)
     hasRedirected.current = true
 
-    const targetPath = (role === 'admin' || role === 'owner' || role === 'staff') 
+    const destino = (role === 'admin' || role === 'owner' || role === 'staff') 
       ? '/dashboard' 
       : '/portal'
 
-    router.replace(targetPath)
+    console.log(`➡️ [useEffect Redirección] Desviando tráfico hacia: ${destino}`)
+    router.replace(destino)
   }, [user, role, loading, router])
 
   // ============================================================
@@ -256,6 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
+      console.log('🔄 [refreshUserData] Forzando recarga manual de datos.')
       lastFetchedUserId.current = null
       hasRedirected.current = false 
       await fetchUserDataAndRole(user.id)
@@ -263,32 +282,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 7. INICIAR SESIÓN (Retorna datos completos para la vista)
+  // 7. INICIAR SESIÓN (CON TRAZABILIDAD COMPLETA)
   // ============================================================
   const signIn = async (email: string, password: string) => {
+    console.log('🏁 [signIn] Iniciando función manual...')
     try {
       setLoading(true)
-      hasRedirected.current = false // Resetear candado ante un nuevo intento manual
+      hasRedirected.current = false // Rompemos el candado para permitir que el useEffect actúe al loguearse de nuevo
       
+      const cleanEmail = email.trim().toLowerCase()
+      console.log('📧 [signIn] Correo sanitizado:', cleanEmail)
+      console.log('🛰️ [signIn] Enviando petición HTTP a Supabase auth.signInWithPassword...')
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password: password.trim()
       })
 
+      console.log('📥 [signIn] Respuesta cruda de Supabase recibida:', { 
+        dataExistente: !!data, 
+        usuarioExistente: !!data?.user, 
+        errorExistente: !!error 
+      })
+
       if (error) {
+        console.error('❌ [signIn] Error devuelto por Supabase:', error.message)
         setLoading(false)
         return { data: null, error }
       }
 
-      if (data.user) {
+      if (data?.user) {
+        console.log('✅ [signIn] Autenticación básica exitosa. Guardando usuario:', data.user.email)
         setUser(data.user)
+        
+        console.log('🔄 [signIn] Extrayendo roles y perfil desde las tablas...')
         await fetchUserDataAndRole(data.user.id)
+        console.log('🏁 [signIn] Perfil sincronizado correctamente en el contexto.')
       }
 
       setLoading(false)
+      console.log('🎉 [signIn] Finalización completa de la promesa de inicio de sesión.')
       return { data, error: null }
 
     } catch (err: any) {
+      console.error('💥 [signIn] CRASH TOTAL durante la ejecución de signIn:', err)
       setLoading(false)
       return { data: null, error: err }
     }
@@ -300,6 +337,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
       setLoading(true)
+      console.log('📝 [signUp] Registrando nuevo usuario:', email)
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
@@ -313,6 +351,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (error) {
+        console.error('❌ [signUp] Error:', error.message)
         setLoading(false)
         return { data: null, error }
       }
@@ -321,6 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { data, error: null }
 
     } catch (err: any) {
+      console.error('💥 [signUp] Excepción:', err)
       setLoading(false)
       return { data: null, error: err }
     }
@@ -332,14 +372,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true)
+      console.log('🚪 [signOut] Cerrando sesión de la app...')
       await supabase.auth.signOut()
       if (typeof window !== 'undefined') {
         localStorage.removeItem('freshnails-auth-token')
       }
       clearAuthState()
+      console.log('✅ [signOut] Sesión eliminada con éxito. Redirigiendo a /login')
       router.push('/login')
     } catch (err) {
-      console.error('❌ Error en signOut:', err)
+      console.error('❌ [signOut] Error fatal:', err)
     } finally {
       setLoading(false)
     }
