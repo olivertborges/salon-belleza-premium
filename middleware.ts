@@ -23,34 +23,59 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // 🔥 CASO 1: SIN USUARIO - Redirigir a login si está en ruta protegida
   if (!user) {
-    if (pathname !== '/login' && pathname !== '/') {
+    const publicPaths = ['/login', '/']
+    if (!publicPaths.includes(pathname)) {
+      console.log('🔒 [Middleware] Sin sesión, redirigiendo a login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  if (pathname === '/login') {
-    let userRole = 'client'
-    try {
-      const { data: profile } = await supabase
-        .from('profiles').select('role').eq('id', user.id).maybeSingle()
-      userRole = profile?.role || 'client'
-    } catch {}
+  // 🔥 OBTENER ROL UNA SOLA VEZ
+  let userRole = 'client'
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    userRole = profile?.role || 'client'
+    console.log(`👤 [Middleware] Usuario: ${user.email} | Rol: ${userRole}`)
+  } catch (error) {
+    console.error('❌ [Middleware] Error obteniendo rol:', error)
+  }
 
-    const destino = ['admin','staff','owner'].includes(userRole) ? '/dashboard' : '/portal'
+  const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
+  const destino = isAdmin ? '/dashboard' : '/portal'
+
+  // 🔥 CASO 2: EN LOGIN - Redirigir según rol
+  if (pathname === '/login') {
+    console.log(`🔄 [Middleware] En login, redirigiendo a: ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  let userRole = 'client'
-  try {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
-    userRole = profile?.role || 'client'
-  } catch {}
+  // 🔥 CASO 3: EN RUTA ADMIN - Verificar permisos
+  if (pathname === '/dashboard' || pathname.startsWith('/admin')) {
+    if (!isAdmin) {
+      console.log(`⛔ [Middleware] Usuario ${userRole} en admin, redirigiendo a /portal`)
+      return NextResponse.redirect(new URL('/portal', request.url))
+    }
+    console.log(`✅ [Middleware] Admin autorizado en ${pathname}`)
+    return response
+  }
 
-  const isAdmin = ['admin','staff','owner'].includes(userRole)
-  if ((pathname === '/dashboard' || pathname.startsWith('/admin')) && !isAdmin) {
-    return NextResponse.redirect(new URL('/portal', request.url))
+  // 🔥 CASO 4: EN PORTAL - Permitir acceso
+  if (pathname === '/portal') {
+    console.log(`✅ [Middleware] Usuario en portal`)
+    return response
+  }
+
+  // 🔥 CASO 5: EN RAÍZ - Redirigir según rol
+  if (pathname === '/') {
+    console.log(`🔄 [Middleware] En raíz, redirigiendo a: ${destino}`)
+    return NextResponse.redirect(new URL(destino, request.url))
   }
 
   return response
