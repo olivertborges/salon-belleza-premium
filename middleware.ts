@@ -3,10 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-
-  let response = NextResponse.next({
-    request: { headers: request.headers }
-  })
+  let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,51 +23,38 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // ✅ PERMITIMOS SIEMPRE ACCESO A LOGIN PARA QUE EL FRONTEND TRABAJE
+  // ❌ SIN SESIÓN: solo protege rutas, NO redirige si ya estás en login
   if (!user) {
     if (pathname !== '/login' && pathname !== '/') {
-      console.log('🔒 Sin sesión → redirigiendo a login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  // ✅ SI YA ESTÁ LOGUEADO Y VA A LOGIN → LO LLEVAMOS DIRECTO AL PANEL
+  // ✅ SI ESTÁS EN LOGIN Y YA TENÉS SESIÓN: redirige UNA SOLA VEZ y listo
   if (pathname === '/login') {
     let userRole = 'client'
     try {
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
+        .from('profiles').select('role').eq('id', user.id).maybeSingle()
       userRole = profile?.role || 'client'
-    } catch (err) {
-      console.error('Error obteniendo rol:', err)
-    }
+    } catch {}
 
-    const destino = ['admin', 'staff', 'owner'].includes(userRole) ? '/dashboard' : '/portal'
-    console.log(`✅ Ya logueado → yendo a ${destino}`)
+    const destino = ['admin','staff','owner'].includes(userRole) ? '/dashboard' : '/portal'
+    console.log(`✅ Middleware: ya logueado → ${destino}`)
     return NextResponse.redirect(new URL(destino, request.url))
   }
 
-  // Resto de protecciones igual
+  // Protección de rutas de admin
   let userRole = 'client'
   try {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
+      .from('profiles').select('role').eq('id', user.id).maybeSingle()
     userRole = profile?.role || 'client'
-  } catch (err) {
-    console.error('Error obteniendo rol:', err)
-  }
+  } catch {}
 
-  const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
-
+  const isAdmin = ['admin','staff','owner'].includes(userRole)
   if ((pathname === '/dashboard' || pathname.startsWith('/admin')) && !isAdmin) {
-    console.log(`⛔ Acceso denegado → yendo a /portal`)
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
