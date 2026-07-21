@@ -82,7 +82,7 @@ export default function AuthMobilDefinitivo() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  
+
   // ✅ Ref para evitar redirección múltiple
   const hasRedirected = useRef(false)
 
@@ -99,7 +99,7 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN DIRECTA Y FORZADA CON NEXT.JS ROUTER Y REFRESH
+  // ✅ REDIRECCIÓN DIRECTA Y FORZADA CON WINDOW.LOCATION (MATA EL CACHÉ DE VERCEL)
   useEffect(() => {
     if (hasRedirected.current) return
     if (!mounted || authLoading) return
@@ -110,12 +110,12 @@ export default function AuthMobilDefinitivo() {
       targetPath = '/dashboard'
     }
 
-    console.log('🚀 Redirigiendo a:', targetPath)
+    console.log('🚀 [Vista] Forzando redirección nativa dura a:', targetPath)
     hasRedirected.current = true
-    
-    router.push(targetPath)
-    router.refresh()
-  }, [user, role, authLoading, mounted, router])
+
+    // Obliga al navegador del teléfono a cargar la ruta limpia enviando las cookies actualizadas
+    window.location.href = targetPath
+  }, [user, role, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,14 +128,18 @@ export default function AuthMobilDefinitivo() {
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
 
-      setSuccess('¡Ingreso correcto!')
-      hasRedirected.current = false // Permitir que el useEffect dispare la redirección
+      setSuccess('¡Ingreso correcto! Cargando salón...')
+      
+      // Damos un pequeño margen para que se asienten las cookies antes de activar el useEffect
+      setTimeout(() => {
+        hasRedirected.current = false 
+      }, 400)
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
-    } finally {
-      setLoading(false)
+      setLoading(false) // Solo quitamos el estado cargando si el login falla
     }
+    // Quitamos el finally para que el botón mantenga el spinner de carga mientras cambia la página
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -163,14 +167,12 @@ export default function AuthMobilDefinitivo() {
         throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
-      setSuccess('✅ ¡Registro exitoso!')
+      setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
       hasRedirected.current = false
       await signIn(email, password)
 
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
-      setLoading(false)
-    } finally {
       setLoading(false)
     }
   }
@@ -181,7 +183,7 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
