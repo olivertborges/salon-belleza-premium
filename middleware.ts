@@ -14,7 +14,6 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        // ✅ Tipado nativo de Next.js, sin importar paquetes externos
         setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
@@ -27,18 +26,35 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // ✅ PERMITIMOS SIEMPRE ACCESO A LOGIN PARA QUE EL FRONTEND TRABAJE
   if (!user) {
     if (pathname !== '/login' && pathname !== '/') {
-      console.log('🔒 Sin sesión, redirigiendo a login')
+      console.log('🔒 Sin sesión → redirigiendo a login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
 
-  if (pathname === '/login' || pathname === '/') {
-    return response
+  // ✅ SI YA ESTÁ LOGUEADO Y VA A LOGIN → LO LLEVAMOS DIRECTO AL PANEL
+  if (pathname === '/login') {
+    let userRole = 'client'
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+      userRole = profile?.role || 'client'
+    } catch (err) {
+      console.error('Error obteniendo rol:', err)
+    }
+
+    const destino = ['admin', 'staff', 'owner'].includes(userRole) ? '/dashboard' : '/portal'
+    console.log(`✅ Ya logueado → yendo a ${destino}`)
+    return NextResponse.redirect(new URL(destino, request.url))
   }
 
+  // Resto de protecciones igual
   let userRole = 'client'
   try {
     const { data: profile } = await supabase
@@ -54,7 +70,7 @@ export async function middleware(request: NextRequest) {
   const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
 
   if ((pathname === '/dashboard' || pathname.startsWith('/admin')) && !isAdmin) {
-    console.log(`⛔ Acceso denegado a ${userRole}, redirigiendo a /portal`)
+    console.log(`⛔ Acceso denegado → yendo a /portal`)
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
