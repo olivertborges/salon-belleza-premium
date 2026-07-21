@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -11,7 +12,7 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // 🔥 2. CREAR CLIENTE DE SUPABASE
+  // 🔥 2. CREAR CLIENTE DE SUPABASE CON TIPOS CORRECTOS
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,8 +21,9 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
           })
         },
