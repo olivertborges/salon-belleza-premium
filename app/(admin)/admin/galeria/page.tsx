@@ -8,18 +8,17 @@ import { useAuth } from '@/hooks/useAuth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Camera, Image as ImageIcon, UploadCloud, 
-  Trash2, Loader2, Sparkles, X, ZoomIn,
+  Trash2, Loader2, X, ZoomIn,
   ChevronLeft, ChevronRight, LayoutGrid,
-  Clock, Calendar, Tag, Users, Edit3,
-  Check, Eye, EyeOff, User, DollarSign,
-  Palette, Scissors, TrendingUp, Heart,
-  FileImage, Layers, Search, SlidersHorizontal,
-  Grid, BarChart3, RefreshCw, ArrowUpDown,
-  Download, Share2, Info, CheckCircle2, AlertCircle
+  Calendar, Tag, Users, Edit3,
+  Check, Eye, EyeOff, User,
+  Layers, Search, SlidersHorizontal,
+  Grid, BarChart3, RefreshCw,
+  Info, CheckCircle2, AlertCircle
 } from 'lucide-react'
 
 // ==========================================
-// DEFINICIÓN DE TIPOS E INTERFACES COMPLETAS
+// TIPOS - Basados en las columnas reales
 // ==========================================
 type Photo = {
   id: string
@@ -29,20 +28,17 @@ type Photo = {
   description: string | null
   is_active: boolean
   created_at: string
+  sort_order: number | null
+  professional_id: string | null
   source: 'admin' | 'client'
-  professional_id?: string | null
-  professional_name?: string | null
+  // Datos adicionales de clientes (vienen de client_gallery)
   client_name?: string | null
   client_id?: string | null
   before_image_url?: string | null
   after_image_url?: string | null
-  price?: number | null
-  polish_used?: string | null
-  sensory_category?: string | null
+  // Estos no existen en gallery, se agregan para consistencia
   views?: number
   likes?: number
-  sort_order?: number
-  tags?: string[] | null
 }
 
 type Professional = {
@@ -61,31 +57,29 @@ type GalleryStats = {
 }
 
 const categories = ['Todas', 'Nail Art', 'Acrílicas', 'Semipermanente', 'Esmaltado', 'Pedicuría', 'Micropigmentacion', 'Peluquería']
-const sensoryCategories = ['Clásico', 'Audaz', 'Minimalista', 'Elegante', 'Glitter/Brillante', 'Nude/Natural', 'Temático']
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
-  const { tenantId, user, loading: authLoading } = useAuth()
+  const { tenantId } = useAuth()
 
-  // Estados de carga y datos principales
+  // Estados de carga
   const [photos, setPhotos] = useState<Photo[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Estados de filtros avanzados, orden y búsquedas
+  // Estados de filtros
   const [categoryFilter, setCategoryFilter] = useState('Todas')
-  const [sensoryFilter, setSensoryFilter] = useState('Todos')
   const [sourceFilter, setSourceFilter] = useState<'all' | 'admin' | 'client'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'views' | 'likes' | 'order'>('date_desc')
-  const [viewMode, setViewMode] = useState<'grid' | 'masonry' | 'compact'>('grid')
+  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'order'>('date_desc')
+  const [viewMode, setViewMode] = useState<'grid' | 'masonry'>('grid')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [showStatsPanel, setShowStatsPanel] = useState(false)
 
-  // Estados de modales y visualización (Lightbox)
+  // Estados de modales
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [showLightbox, setShowLightbox] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -94,42 +88,31 @@ export default function GaleriaAdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
 
-  // Mensajes de feedback del sistema
+  // Mensajes
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // Estados para archivos multimedia y previsualizaciones
-  const [isBeforeAfter, setIsBeforeAfter] = useState(false)
+  // Estados para archivos
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [selectedBeforeFile, setSelectedBeforeFile] = useState<File | null>(null)
-  const [previewBeforeUrl, setPreviewBeforeUrl] = useState<string | null>(null)
-  const [selectedAfterFile, setSelectedAfterFile] = useState<File | null>(null)
-  const [previewAfterUrl, setPreviewAfterUrl] = useState<string | null>(null)
 
-  // Referencias HTML
+  // Referencias
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const beforeFileInputRef = useRef<HTMLInputElement>(null)
-  const afterFileInputRef = useRef<HTMLInputElement>(null)
 
-  // Datos estructurados del formulario
+  // ==========================================
+  // FORMULARIO - SOLO columnas que existen en gallery
+  // ==========================================
   const [formData, setFormData] = useState({
     title: '',
     category: 'Nail Art',
-    sensory_category: 'Clásico',
     description: '',
     image_url: '',
-    before_image_url: '',
-    after_image_url: '',
     is_active: true,
     sort_order: 0,
-    professional_id: '',
-    price: '',
-    polish_used: '',
-    tagsInput: ''
+    professional_id: ''
   })
 
-  // Estilos de marca dinámicos basados en la configuración del Tenant
+  // Estilos
   const brandGradient = useMemo(() => ({
     backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
   }), [settings])
@@ -138,7 +121,7 @@ export default function GaleriaAdminPage() {
     backgroundColor: settings?.primary_color || '#DB5B9A'
   }), [settings])
 
-  // Resolución segura del Tenant ID mediante fallback encadenado
+  // Obtener Tenant ID
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
     const { data: { session } } = await supabase.auth.getSession()
@@ -152,11 +135,10 @@ export default function GaleriaAdminPage() {
       .eq('id', session.user.id)
       .maybeSingle()
 
-    if (profile?.tenant_id) return profile.tenant_id
-    return null
+    return profile?.tenant_id || null
   }, [tenantId])
 
-  // Cargar lista de profesionales para asignaciones en la galería
+  // Cargar profesionales
   const fetchProfessionals = useCallback(async (activeTenantId: string) => {
     try {
       const { data, error } = await supabase
@@ -174,7 +156,7 @@ export default function GaleriaAdminPage() {
   }, [])
 
   // ==========================================
-  // FUNCIÓN CORREGIDA: CARGAR FOTOS
+  // FETCH PHOTOS - SOLO columnas que existen
   // ==========================================
   const fetchPhotos = useCallback(async (showLoading = true) => {
     try {
@@ -182,7 +164,7 @@ export default function GaleriaAdminPage() {
       else setRefreshing(true)
       setError(null)
 
-      let activeTenantId = await getTenantId()
+      const activeTenantId = await getTenantId()
       if (!activeTenantId) {
         setPhotos([])
         setLoading(false)
@@ -199,37 +181,33 @@ export default function GaleriaAdminPage() {
         .from('gallery')
         .select('*')
         .eq('tenant_id', activeTenantId)
+        .order('sort_order', { ascending: true })
 
       if (adminError) {
         console.error('Error cargando fotos de admin:', adminError)
       } else if (adminPhotos) {
         const mappedAdminPhotos = adminPhotos.map((p: any) => ({
           id: p.id,
-          image_url: p.image_url || '',  // ✅ SOLO image_url
+          image_url: p.image_url || '',
           title: p.title || null,
           category: p.category || 'Nail Art',
-          sensory_category: p.sensory_category || 'Clásico',
           description: p.description || null,
           is_active: p.is_active !== undefined ? p.is_active : true,
           created_at: p.created_at,
-          source: 'admin' as const,
+          sort_order: p.sort_order || 0,
           professional_id: p.professional_id || null,
-          professional_name: null,
+          source: 'admin' as const,
           client_name: null,
           client_id: null,
-          before_image_url: null,     // ✅ Forzamos null
-          after_image_url: null,      // ✅ Forzamos null
-          price: p.price || null,
-          polish_used: p.polish_used || null,
-          views: p.views || 0,
-          likes: p.likes || 0,
-          sort_order: p.sort_order || 0,
-          tags: p.tags || []
+          before_image_url: null,
+          after_image_url: null,
+          views: 0,
+          likes: 0
         }))
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. FOTOS DE CLIENTES - from client_gallery (SÍ tiene before/after)
+      // 2. FOTOS DE CLIENTES - from client_gallery
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -243,23 +221,18 @@ export default function GaleriaAdminPage() {
           image_url: p.after_image_url || p.image_url || p.before_image_url || '',
           title: p.title || 'Aporte de Cliente',
           category: p.category || 'Nail Art',
-          sensory_category: p.sensory_category || 'Clásico',
           description: p.description || '',
           is_active: p.is_active !== undefined ? p.is_active : true,
           created_at: p.created_at,
-          source: 'client' as const,
+          sort_order: p.sort_order || 0,
           professional_id: p.professional_id || null,
-          professional_name: null,
+          source: 'client' as const,
           client_name: p.client_name || 'Cliente Anónimo',
           client_id: p.client_id || null,
-          before_image_url: p.before_image_url || null,  // ✅ SÍ existe
-          after_image_url: p.after_image_url || null,    // ✅ SÍ existe
-          price: p.price || null,
-          polish_used: p.polish_used || null,
+          before_image_url: p.before_image_url || null,
+          after_image_url: p.after_image_url || null,
           views: p.views || 0,
-          likes: p.likes || 0,
-          sort_order: p.sort_order || 0,
-          tags: p.tags || []
+          likes: p.likes || 0
         }))
         allPhotos = [...allPhotos, ...mappedClientPhotos]
       }
@@ -267,7 +240,7 @@ export default function GaleriaAdminPage() {
       setPhotos(allPhotos)
 
     } catch (err: any) {
-      setError('No se pudo sincronizar la galería multimedia.')
+      setError('No se pudo sincronizar la galería.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -279,7 +252,7 @@ export default function GaleriaAdminPage() {
     fetchPhotos(true)
   }, [fetchPhotos])
 
-  // Mapear nombres de profesionales de forma optimizada
+  // Mapa de profesionales
   const professionalMap = useMemo(() => {
     const map: Record<string, string> = {}
     professionals.forEach(p => {
@@ -288,7 +261,7 @@ export default function GaleriaAdminPage() {
     return map
   }, [professionals])
 
-  // CÁLCULO DE MÉTRICAS Y ESTADÍSTICAS DEL PANEL
+  // Estadísticas
   const stats = useMemo<GalleryStats>(() => {
     return photos.reduce((acc, current) => {
       acc.totalPhotos++
@@ -301,16 +274,12 @@ export default function GaleriaAdminPage() {
     }, { totalPhotos: 0, adminPhotos: 0, clientPhotos: 0, totalViews: 0, totalLikes: 0, beforeAfterCount: 0 })
   }, [photos])
 
-  // MOTOR FILTRADO Y ORDENAMIENTO COMPLETO
+  // Filtrado y ordenamiento
   const filteredAndSortedPhotos = useMemo(() => {
     let result = [...photos]
 
     if (categoryFilter !== 'Todas') {
       result = result.filter(p => p.category === categoryFilter)
-    }
-
-    if (sensoryFilter !== 'Todos') {
-      result = result.filter(p => p.sensory_category === sensoryFilter)
     }
 
     if (sourceFilter !== 'all') {
@@ -327,38 +296,29 @@ export default function GaleriaAdminPage() {
       result = result.filter(p => 
         (p.title && p.title.toLowerCase().includes(q)) ||
         (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.polish_used && p.polish_used.toLowerCase().includes(q)) ||
-        (p.client_name && p.client_name.toLowerCase().includes(q)) ||
-        (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
+        (p.client_name && p.client_name.toLowerCase().includes(q))
       )
     }
 
     result.sort((a, b) => {
       if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      if (sortBy === 'views') return (b.views || 0) - (a.views || 0)
-      if (sortBy === 'likes') return (b.likes || 0) - (a.likes || 0)
       if (sortBy === 'order') return (a.sort_order || 0) - (b.sort_order || 0)
       return 0
     })
 
     return result
-  }, [photos, categoryFilter, sensoryFilter, sourceFilter, statusFilter, searchQuery, sortBy])
+  }, [photos, categoryFilter, sourceFilter, statusFilter, searchQuery, sortBy])
 
-  // ==========================================
-  // FUNCIÓN PARA OBTENER URL DE IMAGEN
-  // ==========================================
+  // Obtener URL de imagen
   const getImageUrl = (photo: Photo) => {
-    // Para fotos de admin, usar image_url (SÍ existe en gallery)
     if (photo.source === 'admin') {
       return photo.image_url || ''
     }
-    
-    // Para fotos de clientes, priorizar after_image_url
     return photo.after_image_url || photo.image_url || photo.before_image_url || ''
   }
 
-  // MANEJO DE SUBIDAS A STORAGE
+  // Subir archivo
   const uploadFile = async (file: File, tenantId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
@@ -374,27 +334,23 @@ export default function GaleriaAdminPage() {
     return urlData.publicUrl
   }
 
-  const handleFileSelectGeneric = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFile: React.Dispatch<React.SetStateAction<File | null>>,
-    setPreview: React.Dispatch<React.SetStateAction<string | null>>
-  ) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setError('⚠️ Por favor selecciona un formato de imagen válido (PNG, JPEG, WEBP).')
+      setError('⚠️ Selecciona un formato de imagen válido.')
       return
     }
 
-    setFile(file)
+    setSelectedFile(file)
     const reader = new FileReader()
-    reader.onloadend = () => setPreview(reader.result as string)
+    reader.onloadend = () => setPreviewUrl(reader.result as string)
     reader.readAsDataURL(file)
   }
 
   // ==========================================
-  // SUBMIT CORREGIDO - SOLO USA image_url PARA ADMIN
+  // SUBMIT - SOLO columnas que existen en gallery
   // ==========================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -408,50 +364,26 @@ export default function GaleriaAdminPage() {
       setUploading(true)
 
       let imageUrl = formData.image_url
-      let beforeUrl = formData.before_image_url
-      let afterUrl = formData.after_image_url
 
-      // Procesar carga
       if (!editingPhoto) {
-        // PARA ADMIN: SOLO imagen estándar, NO before/after
-        if (isBeforeAfter) {
-          throw new Error('⚠️ El formato Antes/Después solo está disponible para clientes. Para el portafolio del salón usa una imagen estándar.')
-        }
-        
-        if (!selectedFile) throw new Error('⚠️ Debes seleccionar una imagen para la publicación.')
+        if (!selectedFile) throw new Error('⚠️ Debes seleccionar una imagen.')
         imageUrl = await uploadFile(selectedFile, activeTenantId)
-        beforeUrl = ''
-        afterUrl = ''
       } else {
-        // Edición: si es admin y se seleccionó nueva imagen, reemplazar
         if (selectedFile) {
           imageUrl = await uploadFile(selectedFile, activeTenantId)
         }
-        // No permitir before/after en edición de admin
-        if (isBeforeAfter && editingPhoto.source === 'admin') {
-          throw new Error('⚠️ Las fotos de admin no pueden usar formato Antes/Después.')
-        }
       }
 
-      // Procesamiento de etiquetas (Tags)
-      const tagsArray = formData.tagsInput
-        ? formData.tagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t !== '')
-        : []
-
+      // ✅ SOLO columnas que existen en gallery
       const payload = {
         tenant_id: activeTenantId,
         professional_id: formData.professional_id || null,
         image_url: imageUrl || null,
         title: formData.title || null,
         category: formData.category,
-        sensory_category: formData.sensory_category,
         description: formData.description || null,
         is_active: formData.is_active,
-        sort_order: formData.sort_order || 0,
-        price: formData.price ? parseFloat(formData.price) : null,
-        polish_used: formData.polish_used || null,
-        tags: tagsArray
-        // NOTA: NO incluimos before_image_url ni after_image_url porque NO existen en gallery
+        sort_order: formData.sort_order || 0
       }
 
       if (editingPhoto) {
@@ -462,14 +394,14 @@ export default function GaleriaAdminPage() {
           .eq('tenant_id', activeTenantId)
 
         if (updateError) throw updateError
-        setSuccess('✨ Publicación de portafolio actualizada correctamente.')
+        setSuccess('✨ Publicación actualizada correctamente.')
       } else {
         const { error: insertError } = await supabase
           .from('gallery')
           .insert(payload)
 
         if (insertError) throw insertError
-        setSuccess('✨ Nueva obra guardada y añadida al catálogo.')
+        setSuccess('✨ Nueva obra guardada en el catálogo.')
       }
 
       await fetchPhotos(false)
@@ -477,7 +409,7 @@ export default function GaleriaAdminPage() {
       setShowModal(false)
 
     } catch (err: any) {
-      setError(err.message || 'Error al guardar la información en la galería.')
+      setError(err.message || 'Error al guardar la información.')
     } finally {
       setUploading(false)
     }
@@ -487,44 +419,33 @@ export default function GaleriaAdminPage() {
     setFormData({
       title: '',
       category: 'Nail Art',
-      sensory_category: 'Clásico',
       description: '',
       image_url: '',
-      before_image_url: '',
-      after_image_url: '',
       is_active: true,
       sort_order: 0,
-      professional_id: '',
-      price: '',
-      polish_used: '',
-      tagsInput: ''
+      professional_id: ''
     })
     setSelectedFile(null)
     setPreviewUrl(null)
-    setSelectedBeforeFile(null)
-    setPreviewBeforeUrl(null)
-    setSelectedAfterFile(null)
-    setPreviewAfterUrl(null)
-    setIsBeforeAfter(false)
     setEditingPhoto(null)
   }
 
   const deletePhoto = async (id: string, e?: React.MouseEvent, source?: string) => {
     if (e) e.stopPropagation()
     if (source === 'client') {
-      setError('⚠️ Las fotos de reseñas de clientes deben ser moderadas desde el módulo de valoraciones.')
+      setError('⚠️ Las fotos de clientes deben moderarse desde el módulo de valoraciones.')
       return
     }
-    if (!confirm('¿Estás seguro de que deseas eliminar permanentemente este registro de la galería?')) return
+    if (!confirm('¿Eliminar permanentemente este registro?')) return
 
     try {
       const { error } = await supabase.from('gallery').delete().eq('id', id)
       if (error) throw error
       setPhotos(photos.filter(p => p.id !== id))
       if (selectedPhoto?.id === id) closeLightbox()
-      setSuccess('🗑️ Registro purgado de las bases de datos.')
+      setSuccess('🗑️ Registro eliminado.')
     } catch (err) {
-      setError('No se pudo ejecutar la eliminación del archivo.')
+      setError('No se pudo eliminar el archivo.')
     }
   }
 
@@ -540,13 +461,13 @@ export default function GaleriaAdminPage() {
 
       if (error) throw error
       setPhotos(photos.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p))
-      setSuccess(!currentStatus ? '👁️ El elemento ahora es visible de cara al público.' : '👁️ Publicación oculta del portafolio público.')
+      setSuccess(!currentStatus ? '👁️ Visible al público.' : '👁️ Oculto del portafolio.')
     } catch (err) {
-      setError('No se pudo alterar el estado de visibilidad.')
+      setError('No se pudo cambiar el estado.')
     }
   }
 
-  // ACCIONES DE NAVEGACIÓN COMPLETA DE LIGHTBOX
+  // Lightbox
   const openLightbox = (photo: Photo) => {
     const index = filteredAndSortedPhotos.findIndex(p => p.id === photo.id)
     setSelectedPhoto(photo)
@@ -577,7 +498,7 @@ export default function GaleriaAdminPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 p-4 max-w-7xl mx-auto dark:text-stone-100">
 
-      {/* HEADER COMPLETO */}
+      {/* HEADER */}
       <div className="relative overflow-hidden rounded-3xl p-[2px] shadow-2xl" style={brandGradient}>
         <div className="relative z-10 rounded-[23px] p-6 md:p-8 bg-white/95 dark:bg-[#0f0c1b]/95 backdrop-blur-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -586,9 +507,9 @@ export default function GaleriaAdminPage() {
                 <Camera className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" style={{ color: settings?.primary_color || '#DB5B9A' }}>✨ Catálogo Técnico y Curaduría</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" style={{ color: settings?.primary_color || '#DB5B9A' }}>✨ Catálogo Técnico</p>
                 <h2 className="text-2xl md:text-4xl font-serif font-extrabold text-stone-900 dark:text-white mt-1">Control de Galería</h2>
-                <p className="text-xs text-stone-500 dark:text-stone-400">Administra el portafolio comercial, visualiza métricas de impacto y aprueba multimedia de clientes.</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">Administra el portafolio comercial del salón.</p>
               </div>
             </div>
 
@@ -598,7 +519,7 @@ export default function GaleriaAdminPage() {
                 className="p-2.5 rounded-xl border bg-white dark:bg-[#130f24] hover:bg-stone-50 text-stone-600 dark:text-stone-300 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span>{showStatsPanel ? 'Ocultar Métricas' : 'Métricas'}</span>
+                <span>{showStatsPanel ? 'Ocultar' : 'Métricas'}</span>
               </button>
 
               <button 
@@ -615,45 +536,41 @@ export default function GaleriaAdminPage() {
                 style={primaryBgStyle}
               >
                 <UploadCloud className="w-4 h-4" />
-                <span>Subir Contenido</span>
+                <span>Subir</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PANEL DE MÉTRICAS */}
+      {/* MÉTRICAS */}
       <AnimatePresence>
         {showStatsPanel && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-5 bg-stone-50 dark:bg-[#130f24] rounded-2xl border border-stone-200/60 dark:border-stone-800">
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Total Portafolio</p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Total</p>
                 <p className="text-xl font-bold mt-1 text-stone-800 dark:text-white">{stats.totalPhotos}</p>
               </div>
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Por el Salón</p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Salón</p>
                 <p className="text-xl font-bold mt-1 text-pink-500">{stats.adminPhotos}</p>
               </div>
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Por Clientes</p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Clientes</p>
                 <p className="text-xl font-bold mt-1 text-amber-500">{stats.clientPhotos}</p>
               </div>
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Antes y Después</p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Antes/Después</p>
                 <p className="text-xl font-bold mt-1 text-purple-500">{stats.beforeAfterCount}</p>
               </div>
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Impresiones / Vistas</p>
-                <p className="text-xl font-bold mt-1 text-blue-500 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-emerald-500" /> {stats.totalViews}
-                </p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Vistas</p>
+                <p className="text-xl font-bold mt-1 text-blue-500">{stats.totalViews}</p>
               </div>
               <div className="p-4 bg-white dark:bg-[#0f0c1b] rounded-xl border shadow-xs">
-                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Interacciones (Likes)</p>
-                <p className="text-xl font-bold mt-1 text-red-500 flex items-center gap-1">
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500" /> {stats.totalLikes}
-                </p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-bold">Likes</p>
+                <p className="text-xl font-bold mt-1 text-red-500">{stats.totalLikes}</p>
               </div>
             </div>
           </motion.div>
@@ -674,14 +591,14 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* CONTROLES: BÚSQUEDA Y FILTROS */}
+      {/* CONTROLES */}
       <div className="bg-white dark:bg-[#130f24] rounded-2xl border p-4 space-y-4 shadow-xs">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-3 w-4 h-4 text-stone-400" />
             <input 
               type="text" 
-              placeholder="Buscar por título, etiquetas, técnica, esmalte utilizado o cliente..."
+              placeholder="Buscar por título, categoría o cliente..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-stone-50/50 dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-stone-400"
@@ -701,11 +618,9 @@ export default function GaleriaAdminPage() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="px-3 py-2.5 rounded-xl border bg-white dark:bg-[#130f24] text-xs font-medium"
             >
-              <option value="date_desc">Más recientes primero</option>
-              <option value="date_asc">Más antiguos primero</option>
-              <option value="views">Mayor popularidad (Vistas)</option>
-              <option value="likes">Más valorados (Likes)</option>
-              <option value="order">Orden manual estricto</option>
+              <option value="date_desc">Más recientes</option>
+              <option value="date_asc">Más antiguos</option>
+              <option value="order">Orden manual</option>
             </select>
 
             <div className="border rounded-xl p-1 flex items-center gap-1 bg-stone-50 dark:bg-stone-900">
@@ -718,28 +633,21 @@ export default function GaleriaAdminPage() {
         {/* FILTROS AVANZADOS */}
         <AnimatePresence>
           {showAdvancedFilters && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 border-t dark:border-stone-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 border-t dark:border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Origen del Archivo</label>
+                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Origen</label>
                 <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as any)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="all">Todos los orígenes (Admin + Clientes)</option>
-                  <option value="admin">Creados únicamente por el Administrador</option>
-                  <option value="client">Subidos por Clientes / Reseñas</option>
+                  <option value="all">Todos</option>
+                  <option value="admin">Administrador</option>
+                  <option value="client">Clientes</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Filtro Sensorial o Estilo</label>
-                <select value={sensoryFilter} onChange={(e) => setSensoryFilter(e.target.value)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="Todos">Todos los estilos estéticos</option>
-                  {sensoryCategories.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Visibilidad Comercial</label>
+                <label className="block text-[10px] uppercase font-bold text-stone-400 mb-1">Visibilidad</label>
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="w-full p-2 rounded-xl border bg-stone-50 text-xs">
-                  <option value="all">Ver todo el catálogo</option>
-                  <option value="active">Solo elementos visibles en web</option>
-                  <option value="inactive">Solo elementos archivados/ocultos</option>
+                  <option value="all">Todos</option>
+                  <option value="active">Visibles</option>
+                  <option value="inactive">Ocultos</option>
                 </select>
               </div>
             </motion.div>
@@ -747,7 +655,7 @@ export default function GaleriaAdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* SELECTOR RAPIDO DE CATEGORIAS */}
+      {/* CATEGORÍAS */}
       <div className="w-full">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-1.5">
           {categories.map((cat) => (
@@ -765,22 +673,22 @@ export default function GaleriaAdminPage() {
         </div>
       </div>
 
-      {/* RENDERIZADO DE CONTENIDO */}
+      {/* GRID DE FOTOS */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3 text-stone-400">
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-          <p className="text-xs font-medium">Procesando portafolio comercial...</p>
+          <p className="text-xs font-medium">Cargando galería...</p>
         </div>
       ) : filteredAndSortedPhotos.length === 0 ? (
         <div className="py-20 text-center border-2 border-dashed rounded-2xl bg-stone-50/50 dark:bg-[#130f24]/30">
           <ImageIcon className="w-10 h-10 mx-auto text-stone-300 mb-2" />
-          <p className="text-sm font-medium text-stone-500">No se encontraron registros que coincidan con la búsqueda.</p>
+          <p className="text-sm font-medium text-stone-500">No se encontraron registros.</p>
         </div>
       ) : (
         <div className={viewMode === 'masonry' ? 'columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4' : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'}>
           {filteredAndSortedPhotos.map((photo) => {
             const isSlider = photo.before_image_url && photo.after_image_url
-            const currentThumbnail = getImageUrl(photo)
+            const imageUrl = getImageUrl(photo)
 
             return (
               <div
@@ -792,9 +700,9 @@ export default function GaleriaAdminPage() {
                   viewMode === 'masonry' ? 'break-inside-avoid mb-4' : 'aspect-square'
                 } ${!photo.is_active ? 'opacity-60 grayscale-[30%]' : ''}`}
               >
-                {currentThumbnail ? (
+                {imageUrl ? (
                   <img 
-                    src={currentThumbnail} 
+                    src={imageUrl} 
                     alt={photo.title || ''} 
                     className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ${viewMode === 'masonry' ? 'h-auto max-h-[450px]' : ''}`}
                   />
@@ -804,14 +712,14 @@ export default function GaleriaAdminPage() {
                   </div>
                 )}
 
-                {/* Badges superiores */}
+                {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
                   <span className={`text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${photo.source === 'client' ? 'bg-amber-500/95' : 'bg-pink-500/95'}`}>
                     {photo.source === 'client' ? `👤 ${photo.client_name || 'Cliente'}` : '👑 Studio'}
                   </span>
                   {isSlider && (
                     <span className="text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-purple-600 text-white flex items-center gap-1 shadow-xs">
-                      <Scissors className="w-2.5 h-2.5" /> Slider
+                      <span>↔</span> Slider
                     </span>
                   )}
                   {!photo.is_active && (
@@ -819,9 +727,14 @@ export default function GaleriaAdminPage() {
                       Oculto
                     </span>
                   )}
+                  {photo.sort_order !== null && photo.sort_order > 0 && (
+                    <span className="text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-500/80 text-white">
+                      #{photo.sort_order}
+                    </span>
+                  )}
                 </div>
 
-                {/* Overlays de control en Hover */}
+                {/* Hover Overlay */}
                 <AnimatePresence>
                   {hoveredId === photo.id && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-stone-950/70 p-3 flex flex-col justify-between text-white">
@@ -832,21 +745,14 @@ export default function GaleriaAdminPage() {
                             <button onClick={(e) => {
                               e.stopPropagation()
                               setEditingPhoto(photo)
-                              setIsBeforeAfter(false) // Admin NO usa before/after
                               setFormData({
                                 title: photo.title || '',
                                 category: photo.category || 'Nail Art',
-                                sensory_category: photo.sensory_category || 'Clásico',
                                 description: photo.description || '',
                                 image_url: photo.image_url || '',
-                                before_image_url: '',
-                                after_image_url: '',
                                 is_active: photo.is_active,
                                 sort_order: photo.sort_order || 0,
-                                professional_id: photo.professional_id || '',
-                                price: photo.price ? photo.price.toString() : '',
-                                polish_used: photo.polish_used || '',
-                                tagsInput: photo.tags ? photo.tags.join(', ') : ''
+                                professional_id: photo.professional_id || ''
                               })
                               setShowModal(true)
                             }} className="p-2 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/30 rounded-xl transition-all"><Edit3 className="w-3.5 h-3.5" /></button>
@@ -858,12 +764,12 @@ export default function GaleriaAdminPage() {
 
                       <div>
                         <h4 className="text-xs font-bold truncate line-clamp-1">{photo.title || 'Trabajo del Salón'}</h4>
-                        <p className="text-[10px] text-stone-300 truncate line-clamp-1 mt-0.5">{photo.category} • {photo.sensory_category}</p>
-                        <div className="flex items-center gap-3 mt-1.5 text-[9px] text-stone-400 font-mono border-t border-white/10 pt-1.5">
-                          <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {photo.views || 0}</span>
-                          <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {photo.likes || 0}</span>
-                          {photo.price && <span className="flex items-center text-emerald-400">${photo.price}</span>}
-                        </div>
+                        <p className="text-[10px] text-stone-300 truncate line-clamp-1 mt-0.5">{photo.category}</p>
+                        {photo.professional_id && professionalMap[photo.professional_id] && (
+                          <p className="text-[9px] text-stone-400 flex items-center gap-1">
+                            <User className="w-2.5 h-2.5" /> {professionalMap[photo.professional_id]}
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -874,7 +780,7 @@ export default function GaleriaAdminPage() {
         </div>
       )}
 
-      {/* LIGHTBOX AVANZADO */}
+      {/* LIGHTBOX */}
       <AnimatePresence>
         {showLightbox && selectedPhoto && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
@@ -886,7 +792,7 @@ export default function GaleriaAdminPage() {
               <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40"><ChevronRight className="w-6 h-6" /></button>
 
               {selectedPhoto.before_image_url && selectedPhoto.after_image_url && selectedPhoto.source === 'client' ? (
-                /* SLIDER ANTES/DESPUÉS - Solo para clientes */
+                /* SLIDER ANTES/DESPUÉS */
                 <div className="relative w-full max-w-2xl aspect-square md:max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl bg-stone-900 border border-white/5 select-none">
                   <img src={selectedPhoto.after_image_url} alt="Después" className="w-full h-full object-cover pointer-events-none" />
 
@@ -917,49 +823,36 @@ export default function GaleriaAdminPage() {
                   <span className="absolute bottom-4 right-4 bg-stone-950/80 text-white text-[9px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-md z-10 border border-white/10">DESPUÉS →</span>
                 </div>
               ) : (
-                /* Imagen Fija */
                 <img src={getImageUrl(selectedPhoto)} alt={selectedPhoto.title || ''} className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl" />
               )}
             </div>
 
-            {/* Barra de Información Lateral */}
-            <div className="w-full md:w-96 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
+            {/* Panel de información */}
+            <div className="w-full md:w-80 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-6">
                 <div className="hidden md:flex justify-between items-center">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle Técnico</span>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle</span>
                   <button onClick={closeLightbox} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white"><X className="w-4 h-4" /></button>
                 </div>
 
                 <div>
                   <span className="px-2.5 py-1 bg-white/10 rounded-md text-[9px] font-mono font-bold uppercase tracking-wider">{selectedPhoto.category}</span>
-                  <h3 className="text-xl font-serif font-bold text-white mt-3">{selectedPhoto.title || 'Trabajo sin Título'}</h3>
-                  <p className="text-xs text-stone-400 mt-2 leading-relaxed">{selectedPhoto.description || 'Sin descripción técnica añadida.'}</p>
+                  <h3 className="text-xl font-serif font-bold text-white mt-3">{selectedPhoto.title || 'Sin título'}</h3>
+                  <p className="text-xs text-stone-400 mt-2 leading-relaxed">{selectedPhoto.description || 'Sin descripción.'}</p>
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-white/10 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-stone-400 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Estilo:</span>
-                    <span className="font-medium text-white">{selectedPhoto.sensory_category || 'Clásico'}</span>
-                  </div>
-
-                  {selectedPhoto.professional_id && (
+                  {selectedPhoto.professional_id && professionalMap[selectedPhoto.professional_id] && (
                     <div className="flex items-center justify-between">
                       <span className="text-stone-400 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Profesional:</span>
-                      <span className="font-medium text-white">{professionalMap[selectedPhoto.professional_id] || 'Asignado'}</span>
+                      <span className="font-medium text-white">{professionalMap[selectedPhoto.professional_id]}</span>
                     </div>
                   )}
 
-                  {selectedPhoto.polish_used && (
+                  {selectedPhoto.sort_order !== null && selectedPhoto.sort_order > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-stone-400 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Material / Esmalte:</span>
-                      <span className="font-medium text-pink-400 font-mono">{selectedPhoto.polish_used}</span>
-                    </div>
-                  )}
-
-                  {selectedPhoto.price && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-stone-400 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Valor Comercial:</span>
-                      <span className="font-bold text-emerald-400">${selectedPhoto.price}</span>
+                      <span className="text-stone-400 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Orden:</span>
+                      <span className="font-medium text-white">#{selectedPhoto.sort_order}</span>
                     </div>
                   )}
 
@@ -967,46 +860,37 @@ export default function GaleriaAdminPage() {
                     <span className="text-stone-400 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Registro:</span>
                     <span className="font-mono text-stone-300">{new Date(selectedPhoto.created_at).toLocaleDateString()}</span>
                   </div>
-                </div>
 
-                {selectedPhoto.tags && selectedPhoto.tags.length > 0 && (
-                  <div className="pt-4 border-t border-white/10">
-                    <span className="block text-[10px] uppercase font-bold text-stone-400 mb-2 font-mono">Etiquetas de Búsqueda</span>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedPhoto.tags.map(t => <span key={t} className="px-2 py-0.5 bg-white/5 border border-white/5 text-stone-300 rounded text-[9px] font-mono">#{t}</span>)}
+                  {selectedPhoto.source === 'client' && selectedPhoto.client_name && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-stone-400 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Cliente:</span>
+                      <span className="font-medium text-amber-400">{selectedPhoto.client_name}</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* Acciones del Administrador */}
+              {/* Acciones */}
               {selectedPhoto.source === 'admin' && (
                 <div className="pt-6 border-t border-white/10 flex gap-2">
                   <button 
                     onClick={(e) => {
                       closeLightbox()
                       setEditingPhoto(selectedPhoto)
-                      setIsBeforeAfter(false)
                       setFormData({
                         title: selectedPhoto.title || '',
                         category: selectedPhoto.category || 'Nail Art',
-                        sensory_category: selectedPhoto.sensory_category || 'Clásico',
                         description: selectedPhoto.description || '',
                         image_url: selectedPhoto.image_url || '',
-                        before_image_url: '',
-                        after_image_url: '',
                         is_active: selectedPhoto.is_active,
                         sort_order: selectedPhoto.sort_order || 0,
-                        professional_id: selectedPhoto.professional_id || '',
-                        price: selectedPhoto.price ? selectedPhoto.price.toString() : '',
-                        polish_used: selectedPhoto.polish_used || '',
-                        tagsInput: selectedPhoto.tags ? selectedPhoto.tags.join(', ') : ''
+                        professional_id: selectedPhoto.professional_id || ''
                       })
                       setShowModal(true)
                     }}
                     className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                   >
-                    <Edit3 className="w-4 h-4" /> Editar Obra
+                    <Edit3 className="w-4 h-4" /> Editar
                   </button>
                   <button 
                     onClick={(e) => deletePhoto(selectedPhoto.id, e, selectedPhoto.source)}
@@ -1022,7 +906,7 @@ export default function GaleriaAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* MODAL DE SUBIDA / EDICIÓN CORREGIDO */}
+      {/* MODAL DE SUBIDA/EDICIÓN */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -1040,29 +924,19 @@ export default function GaleriaAdminPage() {
                   <Layers className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-serif font-extrabold text-stone-900 dark:text-white">
-                  {editingPhoto ? 'Modificar Registro de Obra' : 'Subir Nueva Creación al Portafolio'}
+                  {editingPhoto ? 'Editar Obra' : 'Subir Nueva Obra'}
                 </h3>
               </div>
 
-              {/* NOTA: Admin SOLO usa imagen estándar, no before/after */}
-              {!editingPhoto && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
-                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium flex items-center gap-2">
-                    <Info className="w-3.5 h-3.5" />
-                    Las fotos del portafolio del salón usan formato estándar. El formato "Antes/Después" está reservado para clientes.
-                  </p>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-4">
 
-                {/* IMAGEN ESTÁNDAR (Único formato para admin) */}
+                {/* Imagen */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">
-                    Imagen de Trabajo Principal *
+                    Imagen *
                   </label>
                   <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
-                    <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelectGeneric(e, setSelectedFile, setPreviewUrl)} className="hidden" />
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                     {previewUrl ? (
                       <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
                     ) : formData.image_url ? (
@@ -1070,81 +944,101 @@ export default function GaleriaAdminPage() {
                     ) : (
                       <div className="py-2">
                         <ImageIcon className="w-7 h-7 mx-auto text-stone-400 mb-1" />
-                        <p className="text-xs text-stone-600 dark:text-stone-300">Presiona para cargar el archivo multimedia</p>
+                        <p className="text-xs text-stone-600 dark:text-stone-300">Seleccionar imagen</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* FILA DE TEXTOS BÁSICOS */}
+                {/* Título y Categoría */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Título del Servicio</label>
-                    <input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1" placeholder="Ej: Kapping Gel con Deco Francesa" />
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Título</label>
+                    <input 
+                      type="text" 
+                      value={formData.title} 
+                      onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                      className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1" 
+                      placeholder="Ej: Kapping Gel con Deco" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Profesional que Ejecutó</label>
-                    <select value={formData.professional_id} onChange={(e) => setFormData({...formData, professional_id: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs">
-                      <option value="">No asignar / Salón General</option>
-                      {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {/* FILA DE METADATA AVANZADA */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Categoría Principal</label>
-                    <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Categoría</label>
+                    <select 
+                      value={formData.category} 
+                      onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                      className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs"
+                    >
                       {categories.filter(c => c !== 'Todas').map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Estilo / Sensorial</label>
-                    <select value={formData.sensory_category} onChange={(e) => setFormData({...formData, sensory_category: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs">
-                      {sensoryCategories.map(s => <option key={s} value={s}>{s}</option>)}
+                </div>
+
+                {/* Profesional y Orden */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Profesional</label>
+                    <select 
+                      value={formData.professional_id} 
+                      onChange={(e) => setFormData({...formData, professional_id: e.target.value})} 
+                      className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs"
+                    >
+                      <option value="">No asignar</option>
+                      {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
                     </select>
                   </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Precio de Venta (Ref)</label>
-                    <input type="number" step="any" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs" placeholder="Ej: 2500" />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Material / Esmalte</label>
-                    <input type="text" value={formData.polish_used} onChange={(e) => setFormData({...formData, polish_used: e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-white text-xs" placeholder="Ej: OPI Sec 22" />
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Orden</label>
+                    <input 
+                      type="number" 
+                      value={formData.sort_order} 
+                      onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})} 
+                      className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs"
+                      placeholder="0"
+                    />
                   </div>
                 </div>
 
-                {/* INPUT DE ETIQUETAS */}
+                {/* Descripción */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Etiquetas Clave (Separadas por comas)</label>
-                  <input type="text" value={formData.tagsInput} onChange={(e) => setFormData({...formData, tagsInput: e.target.value})} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs" placeholder="Ej: matte, stiletto, neón, halloween" />
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Descripción</label>
+                  <textarea 
+                    value={formData.description} 
+                    onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                    rows={2} 
+                    className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs resize-none" 
+                    placeholder="Detalles técnicos del trabajo..."
+                  />
                 </div>
 
-                {/* DESCRIPCIÓN */}
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Descripción Técnica Ampliada</label>
-                  <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs resize-none" placeholder="Escribe detalles técnicos, duración del proceso o cuidados requeridos..." />
+                {/* Visibilidad */}
+                <div className="flex items-center gap-2 pt-1">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.is_active} 
+                    onChange={(e) => setFormData({...formData, is_active: e.target.checked})} 
+                    className="w-4 h-4 rounded border-stone-300 text-pink-500 focus:ring-0" 
+                  />
+                  <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Visible en el catálogo</span>
                 </div>
 
-                {/* VISIBILIDAD Y ORDEN */}
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} className="w-4 h-4 rounded border-stone-300 text-pink-500 focus:ring-0" />
-                    <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Habilitar visibilidad inmediata en catálogo comercial</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono uppercase font-bold text-stone-400">Orden (Sort):</span>
-                    <input type="number" value={formData.sort_order} onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})} className="w-14 p-1 border rounded-lg text-center text-xs bg-white text-stone-900" />
-                  </div>
-                </div>
-
-                {/* BOTONES */}
+                {/* Botones */}
                 <div className="flex gap-3 pt-3 border-t dark:border-stone-800">
-                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300">Cancelar</button>
-                  <button type="submit" disabled={uploading} className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md" style={primaryBgStyle}>
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowModal(false); resetForm(); }} 
+                    className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={uploading} 
+                    className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md" 
+                    style={primaryBgStyle}
+                  >
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    {uploading ? 'Guardando cambios...' : 'Confirmar y Guardar'}
+                    {uploading ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
 
