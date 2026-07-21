@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -18,8 +19,8 @@ export async function middleware(request: NextRequest) {
         getAll() { 
           return request.cookies.getAll() 
         },
-        setAll(cookiesToSet) {
-          // Es OBLIGATORIO actualizar tanto la petición como la respuesta
+        // CORRECCIÓN: Tipado explícito para que Vercel compile en verde
+        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -40,11 +41,9 @@ export async function middleware(request: NextRequest) {
 
   // 🔥 Si no hay usuario autenticado
   if (!user) {
-    // Si ya va a una página pública, lo dejamos pasar de largo
     if (pathname === '/login' || pathname === '/auth' || pathname === '/reset-password') {
       return response
     }
-    // Si intenta ir a cualquier otra ruta protegida, al login de cabeza
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -77,7 +76,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
-  // Si es un administrador e intenta ir a /portal (asumiendo que los admins no deben estar ahí)
+  // Si es un administrador e intenta ir a /portal
   if (isAdmin && pathname === '/portal') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
