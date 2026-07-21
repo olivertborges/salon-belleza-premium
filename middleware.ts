@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { CookieSerializeOptions } from 'cookie'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,8 +14,8 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        // ✅ Tipo agregado: arreglo de objetos con nombre, valor y opciones
-        setAll(cookiesToSet: { name: string; value: string; options?: CookieSerializeOptions }[]) {
+        // ✅ Tipado nativo de Next.js, sin importar paquetes externos
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -28,7 +27,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Sin sesión → solo permitir acceso a login y raíz
   if (!user) {
     if (pathname !== '/login' && pathname !== '/') {
       console.log('🔒 Sin sesión, redirigiendo a login')
@@ -37,12 +35,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // No redirigir desde servidor en login/raíz → lo decide el cliente
   if (pathname === '/login' || pathname === '/') {
     return response
   }
 
-  // Verificar rol para rutas protegidas
   let userRole = 'client'
   try {
     const { data: profile } = await supabase
