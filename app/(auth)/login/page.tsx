@@ -1,17 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Sparkles, Mail, Lock, Eye, EyeOff, 
-  User, LogIn, Shield, Crown, Gem, 
+  User, LogIn, Shield, 
   ArrowRight, CheckCircle2, XCircle,
-  Heart, Star, Zap, Fingerprint, 
-  Flower2, Waves, Palette, Gift,
-  Bug, AlertCircle
+  Heart, Gem, Gift, Bug
 } from 'lucide-react'
 
 // ===== ANIMACIONES =====
@@ -60,18 +58,6 @@ const glowPulse = {
   }
 }
 
-const floatingIcons = {
-  animate: {
-    y: [0, -10, 0],
-    rotate: [0, 5, -5, 0],
-    transition: {
-      duration: 6,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-}
-
 export default function AuthMobilDefinitivo() {
   const router = useRouter()
   const { signIn, signUp, role, user, loading: authLoading } = useAuth()
@@ -84,8 +70,7 @@ export default function AuthMobilDefinitivo() {
   const [showPassword, setShowPassword] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
   const [showLogs, setShowLogs] = useState(true)
-  const [isRedirecting, setIsRedirecting] = useState(false)
-  const [redirectAttempted, setRedirectAttempted] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -111,128 +96,71 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ LOGS DE AUTENTICACIÓN EN PANTALLA
+  // ✅ REDIRECCIÓN SIMPLE Y CONFIABLE
   useEffect(() => {
-    addLog(`📊 Estado: user=${!!user}, role=${role || 'null'}, loading=${authLoading}`)
-
-    if (user) {
-      addLog(`👤 Usuario: ${user.email}`)
-    }
-    if (role) {
-      addLog(`🎯 Rol: ${role}`)
-    }
-  }, [user, role, authLoading])
-
-  // ✅ REDIRECCIÓN MEJORADA - FORZADA
-  useEffect(() => {
-    // Si ya estamos redirigiendo o ya intentamos, no hacer nada
-    if (isRedirecting || redirectAttempted) {
+    // Si ya estamos redirigiendo, no hacer nada
+    if (redirecting) {
+      addLog(`⏳ Ya redirigiendo, esperando...`)
       return
     }
 
-    addLog(`🔄 Verificando redirección - mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
-
-    // Si no está montado, esperar
-    if (!mounted) {
-      addLog(`⏳ Componente no montado, esperando...`)
+    // Si no está montado o está cargando, esperar
+    if (!mounted || authLoading) {
+      addLog(`⏳ Esperando... mounted=${mounted}, authLoading=${authLoading}`)
       return
     }
 
-    // Si está cargando, esperar
-    if (authLoading) {
-      addLog(`⏳ Auth cargando, esperando...`)
-      return
-    }
-
-    // Si no hay usuario, no redirigir
-    if (!user) {
-      addLog(`👤 Sin usuario, permaneciendo en login`)
-      return
-    }
-
-    // Si hay usuario pero aún no hay rol, esperar un poco más
-    if (!role) {
-      addLog(`⏳ Usuario sin rol, esperando...`)
-      // Dar tiempo a que se cargue el rol
-      setTimeout(() => {
-        if (user && !role) {
-          addLog(`⚠️ Timeout: Usuario sin rol, forzando recarga...`)
-          window.location.reload()
-        }
-      }, 3000)
+    // Si no hay usuario o rol, no redirigir
+    if (!user || !role) {
+      addLog(`👤 Sin usuario o rol, permaneciendo en login`)
       return
     }
 
     // Determinar ruta destino
-    let targetPath = '/portal'
-    if (role === 'admin' || role === 'staff' || role === 'owner') {
-      targetPath = '/dashboard'
-    }
-
-    addLog(`🎯 Path actual: ${window.location.pathname}`)
-    addLog(`🎯 Path destino: ${targetPath}`)
+    const targetPath = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
+    
+    addLog(`🎯 Usuario ${user.email} con rol ${role} → ${targetPath}`)
 
     // Si ya estamos en la ruta correcta, no hacer nada
     if (window.location.pathname === targetPath) {
-      addLog(`✅ Ya estamos en la ruta correcta`)
+      addLog(`✅ Ya en la ruta correcta`)
       return
     }
 
-    // 🔥 FORZAR REDIRECCIÓN - Ignorar cualquier flag anterior
-    addLog(`🚀 FORZANDO REDIRECCIÓN a: ${targetPath}`)
-    setIsRedirecting(true)
-    setRedirectAttempted(true)
-    
-    // Limpiar flags antiguos
-    sessionStorage.removeItem('freshnails_redirected')
-    
-    // Mostrar mensaje de éxito
-    setSuccess(`✅ Redirigiendo al panel de ${role}...`)
-    
-    // Redirigir con router de Next.js
-    setTimeout(() => {
+    // Si estamos en login, redirigir UNA SOLA VEZ
+    if (window.location.pathname === '/login' || window.location.pathname === '/auth') {
+      addLog(`🚀 Redirigiendo a ${targetPath}`)
+      setRedirecting(true)
+      
+      // Usar router.push primero
       router.push(targetPath)
-    }, 500)
+      
+      // Fallback por si router.push no funciona
+      setTimeout(() => {
+        if (window.location.pathname !== targetPath) {
+          addLog(`🔄 Fallback: window.location a ${targetPath}`)
+          window.location.href = targetPath
+        }
+      }, 1000)
+      
+      // Segundo fallback más agresivo
+      setTimeout(() => {
+        if (window.location.pathname !== targetPath) {
+          addLog(`🔄 Fallback 2: forzando window.location`)
+          window.location.replace(targetPath)
+        }
+      }, 3000)
+    }
 
-    // Fallback: si router.push no funciona, usar window.location
-    setTimeout(() => {
-      if (window.location.pathname !== targetPath) {
-        addLog(`🔄 Fallback: usando window.location.href`)
-        window.location.href = targetPath
-      }
-    }, 1500)
-
-  }, [user, role, authLoading, mounted, router, isRedirecting, redirectAttempted])
+  }, [user, role, authLoading, mounted, router, redirecting])
 
   // ============================================================
-  // HANDLE LOGIN - CON PREVENCIÓN DE DUPLICADOS
+  // HANDLE LOGIN
   // ============================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // 🛡️ PREVENIR LOGIN DUPLICADO
-    if (user && role) {
-      addLog(`⛔ Usuario ya autenticado como ${role}, redirigiendo...`)
-      
-      const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
-        ? '/dashboard' 
-        : '/portal'
-      
-      setSuccess(`✅ Ya tienes sesión activa como ${role}. Redirigiendo...`)
-      
-      // Forzar redirección inmediata
-      setIsRedirecting(true)
-      setRedirectAttempted(true)
-      sessionStorage.removeItem('freshnails_redirected')
-      
-      setTimeout(() => {
-        router.push(targetPath)
-      }, 500)
-      
-      return
-    }
-
-    if (loading || isRedirecting) {
+    if (loading || redirecting) {
       addLog(`⏳ Operación en curso, ignorando...`)
       return
     }
@@ -268,8 +196,7 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Login exitoso para: ${email}`)
       setSuccess('🎉 ¡Ingreso exitoso! Redirigiendo...')
 
-      sessionStorage.removeItem('freshnails_redirected')
-      
+      // La redirección la manejará el useEffect
       setTimeout(() => {
         setLoading(false)
       }, 500)
@@ -287,7 +214,7 @@ export default function AuthMobilDefinitivo() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (loading || isRedirecting) return
+    if (loading || redirecting) return
     
     if (!email || !password || !fullName) {
       setError('⚠️ Por favor, completa todos los campos obligatorios')
@@ -322,15 +249,13 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Registro exitoso para: ${email}`)
       setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
 
-      sessionStorage.removeItem('freshnails_redirected')
-      
       setTimeout(async () => {
         try {
           await signIn(email, password)
           addLog(`🔄 Login automático después del registro`)
         } catch (err: any) {
           addLog(`⚠️ Login automático falló: ${err.message}`)
-          setError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Intenta ingresar manualmente.')
+          setError('Registro exitoso, pero no se pudo iniciar sesión automáticamente.')
         } finally {
           setLoading(false)
         }
@@ -349,7 +274,7 @@ export default function AuthMobilDefinitivo() {
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (loading || isRedirecting) return
+    if (loading || redirecting) return
     
     if (!email) {
       setError('⚠️ Por favor, ingresa tu email')
@@ -374,8 +299,6 @@ export default function AuthMobilDefinitivo() {
       addLog(`✅ Enlace enviado a: ${email}`)
       setSuccess('📧 ¡Enlace de recuperación enviado! Revisa tu correo.')
       
-      setEmail('')
-      
     } catch (err: any) {
       setError(err.message || 'Error al enviar el correo de recuperación.')
     } finally {
@@ -384,23 +307,18 @@ export default function AuthMobilDefinitivo() {
   }
 
   // ============================================================
-  // REDIRECCIÓN MANUAL - Botón "Ir al panel ahora"
+  // REDIRECCIÓN MANUAL
   // ============================================================
   const handleManualRedirect = () => {
-    if (!user || !role) return
+    if (!user || !role || redirecting) return
     
-    const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
-      ? '/dashboard' 
-      : '/portal'
+    const targetPath = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
     
-    addLog(`🔄 Redirección manual a: ${targetPath}`)
-    setIsRedirecting(true)
-    setRedirectAttempted(true)
-    sessionStorage.removeItem('freshnails_redirected')
+    addLog(`🔄 Redirección manual a ${targetPath}`)
+    setRedirecting(true)
     
     router.push(targetPath)
     
-    // Fallback
     setTimeout(() => {
       if (window.location.pathname !== targetPath) {
         window.location.href = targetPath
@@ -445,19 +363,21 @@ export default function AuthMobilDefinitivo() {
         }}
         initial={glowPulse.initial}
       />
-
-      <motion.div className="absolute top-10 left-6 text-pink-300/20 dark:text-pink-400/10" animate={floatingIcons.animate}>
+      <motion.div className="absolute top-10 left-6 text-pink-300/20" animate={{
+        y: [0, -10, 0],
+        transition: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+      }}>
         <Sparkles className="w-6 h-6" />
       </motion.div>
-      <motion.div className="absolute bottom-20 right-6 text-amber-300/20 dark:text-amber-400/10" animate={{
-        ...floatingIcons.animate,
-        transition: { ...floatingIcons.animate.transition, delay: 1.2 }
+      <motion.div className="absolute bottom-20 right-6 text-amber-300/20" animate={{
+        y: [0, -10, 0],
+        transition: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.2 }
       }}>
         <Gem className="w-5 h-5" />
       </motion.div>
-      <motion.div className="absolute top-1/2 left-4 text-rose-300/15 dark:text-rose-400/10" animate={{
-        ...floatingIcons.animate,
-        transition: { ...floatingIcons.animate.transition, delay: 2.5 }
+      <motion.div className="absolute top-1/2 left-4 text-rose-300/15" animate={{
+        y: [0, -10, 0],
+        transition: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2.5 }
       }}>
         <Heart className="w-4 h-4" />
       </motion.div>
@@ -465,7 +385,7 @@ export default function AuthMobilDefinitivo() {
   )
 
   // ============================================================
-  // TABS DECORADOS
+  // TABS
   // ============================================================
   const Tabs = () => (
     <div className="flex gap-1 p-1 rounded-2xl bg-pink-50/50 dark:bg-[#1a1520] border border-pink-100/30 dark:border-fuchsia-950/30 mb-6">
@@ -484,7 +404,6 @@ export default function AuthMobilDefinitivo() {
               setActiveTab(tab.id as any)
               setError('')
               setSuccess('')
-              addLog(`📑 Cambiando a tab: ${tab.label}`)
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.96] ${
               isActive
@@ -507,11 +426,9 @@ export default function AuthMobilDefinitivo() {
   // BANNER DE SESIÓN ACTIVA
   // ============================================================
   const ActiveSessionBanner = () => {
-    if (!user || !role || isRedirecting) return null
+    if (!user || !role || redirecting) return null
     
-    const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
-      ? '/dashboard' 
-      : '/portal'
+    const targetPath = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
     
     return (
       <motion.div 
@@ -521,12 +438,12 @@ export default function AuthMobilDefinitivo() {
       >
         <div className="flex items-start gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-          <div>
+          <div className="flex-1">
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               ✅ Sesión activa como <span className="font-bold">{role}</span>
             </p>
-            <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
-              {user?.email} • Serás redirigido automáticamente
+            <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1 truncate">
+              {user?.email}
             </p>
             <button
               onClick={handleManualRedirect}
@@ -565,7 +482,7 @@ export default function AuthMobilDefinitivo() {
         className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
       >
 
-        {/* ===== PANEL DE LOGS EN PANTALLA ===== */}
+        {/* ===== PANEL DE LOGS ===== */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-1">
             <button
@@ -593,9 +510,8 @@ export default function AuthMobilDefinitivo() {
                     <div key={i} className={`${
                       log.includes('❌') ? 'text-rose-400' :
                       log.includes('✅') ? 'text-emerald-400' :
-                      log.includes('🚀') || log.includes('➡️') ? 'text-pink-400' :
+                      log.includes('🚀') ? 'text-pink-400' :
                       log.includes('🎯') ? 'text-amber-400' :
-                      log.includes('⛔') ? 'text-rose-500' :
                       'text-stone-400'
                     }`}>
                       {log}
@@ -672,7 +588,7 @@ export default function AuthMobilDefinitivo() {
           )}
         </AnimatePresence>
 
-        {/* CONTENIDO CON ANIMACIÓN Y CLAVE ÚNICA PARA CADA TAB */}
+        {/* CONTENIDO */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeTab}-content`}
@@ -745,7 +661,7 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading || !!(user && role) || isRedirecting}
+                  disabled={loading || !!(user && role) || redirecting}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
                 >
@@ -877,7 +793,7 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading || !!(user && role) || isRedirecting}
+                  disabled={loading || !!(user && role) || redirecting}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)' }}
                 >
@@ -929,7 +845,7 @@ export default function AuthMobilDefinitivo() {
                     <Shield className="w-7 h-7" />
                   </div>
                   <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                    Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso a través de Supabase.
+                    Ingresa tu email y te enviaremos un enlace seguro para recuperar tu acceso.
                   </p>
                 </div>
 
@@ -954,7 +870,7 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading || !!(user && role) || isRedirecting}
+                  disabled={loading || !!(user && role) || redirecting}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #f472b6)' }}
                 >
@@ -997,7 +913,7 @@ export default function AuthMobilDefinitivo() {
           </motion.div>
         </AnimatePresence>
 
-        {/* FOOTER DECORATIVO */}
+        {/* FOOTER */}
         <motion.div 
           variants={itemVariants}
           className="mt-6 pt-4 border-t border-pink-100/30 dark:border-fuchsia-950/30 text-center"
@@ -1005,11 +921,6 @@ export default function AuthMobilDefinitivo() {
           <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-stone-400 dark:text-stone-500">
             <span className="text-pink-400">✦</span> Fresh Nails Studio <span className="text-pink-400">✦</span>
           </p>
-          <div className="flex items-center justify-center gap-2 mt-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" style={{ animationDelay: '1s' }} />
-          </div>
         </motion.div>
 
       </motion.div>
