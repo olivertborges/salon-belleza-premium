@@ -5,14 +5,14 @@ import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 1. Crear respuesta inicial limpia
+  // 1. Inicializamos la respuesta UNA SOLA VEZ
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // 2. Inicializar cliente SSR de Supabase mutando cookies de forma segura
+  // 2. Inicializamos Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,11 +22,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
+          // CORRECCIÓN: Modificamos las cookies sobre la respuesta existente, 
+          // NUNCA volvemos a instanciar "NextResponse.next()" aquí adentro.
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
-            response = NextResponse.next({
-              request: { headers: request.headers },
-            })
             response.cookies.set({ name, value, ...options })
           })
         },
@@ -34,18 +33,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Obtener el usuario controlando el error de sesión ausente
-  // Usamos un bloque interno para que "Auth session missing!" no rompa el Middleware
-  let user = null
-  try {
-    const { data } = await supabase.auth.getUser()
-    user = data?.user || null
-  } catch (e) {
-    // Si no hay sesión o falla la lectura, asumimos que no hay usuario autenticado
-    user = null
-  }
+  // 3. Validamos el usuario. 
+  // Si no hay sesión, supabase.auth.getUser() devolverá data.user = null de forma segura.
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // 4. Si el usuario NO está autenticado y busca una ruta protegida -> Redirigir a /login
+  // 4. Lógica de protección de rutas públicas/privadas
   if (!user) {
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/portal')) {
       const loginUrl = new URL('/login', request.url)
@@ -54,8 +46,8 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // 5. Si ya está autenticado e intenta ir a /login, lo mandamos a su panel correspondiente
-  if (user && pathname === '/login') {
+  // 5. Si está autenticado e intenta ir a /login, redirigir a su panel
+  if (pathname === '/login') {
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -65,15 +57,15 @@ export async function middleware(request: NextRequest) {
 
       const userRole = profile?.role || 'client'
       const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
-
       const target = isAdmin ? '/dashboard' : '/portal'
+      
       return NextResponse.redirect(new URL(target, request.url))
     } catch (e) {
-      // Si falla la DB, lo dejamos pasar al flujo normal
+      return response
     }
   }
 
-  // 6. Si SÍ está autenticado, verificamos su rol para evitar accesos cruzados
+  // 6. Restricciones de Roles cruzados
   try {
     const { data: profile } = await supabase
       .from('profiles')
@@ -84,12 +76,10 @@ export async function middleware(request: NextRequest) {
     const userRole = profile?.role || 'client'
     const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
 
-    // Si es un cliente intentando entrar al panel de administración
     if (pathname.startsWith('/dashboard') && !isAdmin) {
       return NextResponse.redirect(new URL('/portal', request.url))
     }
 
-    // Si es un administrador intentando entrar a la vista de clientes
     if (pathname.startsWith('/portal') && isAdmin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
