@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Mail, Lock, Eye, EyeOff, User, LogIn, Shield, CheckCircle2, XCircle } from 'lucide-react'
 
 export default function AuthMobilDefinitivo() {
-  const { signIn, signUp, role, user, loading: authLoading } = useAuth()
+  const { signIn, role, user, loading: authLoading } = useAuth
 
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'recover'>('login')
@@ -17,23 +17,21 @@ export default function AuthMobilDefinitivo() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
 
-  // 🟦 PANEL DE ESTADO: TODO LO QUE PASA SE VE AQUÍ
+  // 🟦 PANEL DE ESTADO VISIBLE EN PANTALLA
   const [panelEstado, setPanelEstado] = useState<Array<{hora:string; texto:string; color:string}>>([])
   const agregarEstado = (texto:string, color:string='blanco') => {
     const hora = new Date().toLocaleTimeString()
     setPanelEstado(antiguo => [{hora, texto, color}, ...antiguo].slice(0,8))
   }
 
-  // 🔄 ACTUALIZA AUTOMÁTICAMENTE EL ESTADO EN PANTALLA
+  // 🔄 ACTUALIZA ESTADO EN TIEMPO REAL
   useEffect(() => {
     if (!mounted) return
     agregarEstado(`Usuario: ${user?.email || 'NO DETECTADO'}`, user ? 'verde' : 'rojo')
     agregarEstado(`Rol: ${role || 'NO CARGADO'}`, role ? 'verde' : 'amarillo')
-    agregarEstado(`Cargando datos: ${authLoading ? 'SÍ' : 'NO'}`, authLoading ? 'naranja' : 'verde')
-    agregarEstado(`Ruta actual: ${window.location.pathname}`, 'azul')
+    agregarEstado(`Cargando: ${authLoading ? 'SÍ' : 'NO'}`, authLoading ? 'naranja' : 'verde')
+    agregarEstado(`Ruta: ${window.location.pathname}`, 'azul')
   }, [user, role, authLoading, mounted])
 
   useEffect(() => {
@@ -49,11 +47,11 @@ export default function AuthMobilDefinitivo() {
     if (loading) return
     if (!email || !password) {
       setError('⚠️ Escribe correo y contraseña')
-      agregarEstado('Faltan datos para ingresar', 'rojo')
+      agregarEstado('Faltan datos', 'rojo')
       return
     }
 
-    agregarEstado(`Intentando ingresar con: ${email}`, 'azul')
+    agregarEstado(`Intentando: ${email}`, 'azul')
     setLoading(true)
     setError('')
     setSuccess('')
@@ -63,12 +61,11 @@ export default function AuthMobilDefinitivo() {
       if (errorIngreso) throw errorIngreso
 
       agregarEstado('✅ INGRESO EXITOSO', 'verde')
-      setSuccess('¡Bien! El sistema te llevará al panel...')
+      setSuccess('¡Bien! Redirigiendo...')
       
-      // Forzamos recarga leve para que el middleware actúe
       setTimeout(() => {
-        agregarEstado('🔄 Activando redirección...', 'naranja')
-        window.location.href = window.location.pathname
+        agregarEstado('🔄 Activando...', 'naranja')
+        window.location.reload()
       }, 1200)
 
     } catch (err:any) {
@@ -80,25 +77,31 @@ export default function AuthMobilDefinitivo() {
   }
 
   // ============================================================
-  // BOTÓN DE EMERGENCIA: SI NO SE MUEVE SOLO, LO HACES TÚ
+  // BOTÓN MANUAL
   // ============================================================
   const irYoMismo = () => {
     if (!user || !role) {
-      agregarEstado('❌ No hay usuario o rol definido', 'rojo')
+      agregarEstado('❌ Falta usuario o rol', 'rojo')
       return
     }
     const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
-    agregarEstado(`👉 Yendo manualmente a: ${destino}`, 'verde')
+    agregarEstado(`👉 Yendo a: ${destino}`, 'verde')
     window.location.replace(destino)
   }
 
-  if (!mounted) return <div className="flex items-center justify-center h-screen bg-[#0a0908] text-pink-400 text-sm">Iniciando...</div>
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#0a0908] text-pink-400 text-sm">
+        Iniciando...
+      </div>
+    )
+  }
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20 dark:from-[#0a0908] dark:via-[#0f0c1b] dark:to-[#0a0908] flex items-center justify-center p-3">
       <div className="w-full max-w-md bg-white/90 dark:bg-[#141211]/95 rounded-3xl p-4 shadow-xl">
 
-        {/* 🟦 RECUADRO DE ESTADO: LO VES TODO SIN CONSOLA */}
+        {/* 🟦 RECUADRO DE ESTADO */}
         <div className="mb-4 p-3 bg-gray-900/90 rounded-xl border border-gray-700">
           <p className="text-xs font-bold text-gray-300 mb-2">📋 LO QUE PASA:</p>
           <div className="space-y-1 text-[10px] font-mono">
@@ -109,20 +112,18 @@ export default function AuthMobilDefinitivo() {
                 ${e.color==='amarillo'?'text-yellow-400'}
                 ${e.color==='naranja'?'text-orange-400'}
                 ${e.color==='azul'?'text-blue-400'}
-                ${e.color==='blanco'?'text-gray-300'}
               `}>[{e.hora}] {e.texto}</p>
             ))}
           </div>
 
-          {/* BOTÓN DE EMERGENCIA SOLO SI YA HAY SESIÓN */}
-          {(user && role) && (
-            <button onClick={irYoMismo} className="mt-3 w-full py-2 bg-green-600 hover:bg-green-500 text-white text-[11px] font-bold rounded-lg transition-colors">
+          {user && role && (
+            <button onClick={irYoMismo} className="mt-3 w-full py-2 bg-green-600 hover:bg-green-500 text-white text-[11px] font-bold rounded-lg">
               🛠️ IR AL PANEL AHORA
             </button>
           )}
         </div>
 
-        {/* ENCABEZADO Y PESTAÑAS */}
+        {/* ENCABEZADO */}
         <div className="text-center mb-4">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl text-white mb-2" style={{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}}>
             <Sparkles className="w-7 h-7" />
@@ -130,25 +131,41 @@ export default function AuthMobilDefinitivo() {
           <h2 className="text-xl font-bold" style={{background:'linear-gradient(135deg,#ec4899,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Fresh Nails</h2>
         </div>
 
+        {/* PESTAÑAS */}
         <div className="flex gap-1 p-1 rounded-xl bg-pink-50/50 dark:bg-[#1a1520] mb-4">
-          {[{id:'login',label:'Ingresar',icon:LogIn},{id:'register',label:'Registro',icon:User},{id:'recover',label:'Ayuda',icon:Shield}].map(tab=>{
+          {[
+            {id:'login',label:'Ingresar',icon:LogIn},
+            {id:'register',label:'Registro',icon:User},
+            {id:'recover',label:'Ayuda',icon:Shield}
+          ].map(tab=>{
             const Icon = tab.icon
             const activo = activeTab===tab.id
-            return <button key={tab.id} onClick={()=>{setActiveTab(tab.id as any);setError('');setSuccess('')}}
-              className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ${activo?'text-white':'text-gray-400'}`}
-              style={activo?{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}:{}}>
-              <Icon className="w-3.5 h-3.5"/>{tab.label}
-            </button>
+            return (
+              <button key={tab.id} onClick={()=>{setActiveTab(tab.id as any);setError('');setSuccess('')}}
+                className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ${activo?'text-white':'text-gray-400'}`}
+                style={activo?{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}:{}}>
+                <Icon className="w-3.5 h-3.5"/>
+                {tab.label}
+              </button>
+            )
           })}
         </div>
 
         {/* MENSAJES */}
         <AnimatePresence>
-          {error && <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] rounded-lg flex items-center gap-1"><XCircle className="w-3 h-3"/>{error}</div>}
-          {success && <div className="mb-3 p-2 bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/>{success}</div>}
+          {error && (
+            <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] rounded-lg flex items-center gap-1">
+              <XCircle className="w-3 h-3"/>{error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-3 p-2 bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] rounded-lg flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3"/>{success}
+            </div>
+          )}
         </AnimatePresence>
 
-        {/* FORMULARIO INGRESO */}
+        {/* FORMULARIO */}
         {activeTab==='login' && (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -176,9 +193,8 @@ export default function AuthMobilDefinitivo() {
           </form>
         )}
 
-        {/* Formularios de registro y recuperación iguales, simplificados */}
-        {activeTab==='register' && <div className="text-center text-[11px] text-gray-400 p-4">Usa el formulario de ingreso primero para probar la redirección</div>}
-        {activeTab==='recover' && <div className="text-center text-[11px] text-gray-400 p-4">Usa el formulario de ingreso primero para probar la redirección</div>}
+        {activeTab==='register' && <div className="text-center text-[11px] text-gray-400 p-4">Prueba primero ingresar</div>}
+        {activeTab==='recover' && <div className="text-center text-[11px] text-gray-400 p-4">Prueba primero ingresar</div>}
       </div>
     </div>
   )
