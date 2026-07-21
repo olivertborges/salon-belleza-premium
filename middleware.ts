@@ -5,12 +5,14 @@ import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 1. Crear respuesta inicial
+  // 1. Creamos la respuesta base única. NUNCA la volveremos a sobreescribir con "NextResponse.next()".
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: request.headers,
+    },
   })
 
-  // 2. Instanciar Supabase con asignación estricta de cookies y TIPADO CORRECTO
+  // 2. Inicializar cliente Supabase SSR oficial
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,20 +21,10 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        // CORRECCIÓN: Tipamos explícitamente el parámetro para que Vercel compile en verde
         setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
-          // Actualizamos las cookies en la petición
+          // El método oficial muta las cookies directamente sobre los objetos existentes sin romper la instancia.
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
-          })
-
-          // Re-instanciamos la respuesta para asegurar que viaje limpia con las nuevas cabeceras
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          })
-
-          // Fijamos las cookies en la respuesta final para el navegador
-          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set({ name, value, ...options })
           })
         },
@@ -40,24 +32,21 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Obtener el usuario de forma segura
-  let user = null
-  try {
-    const { data } = await supabase.auth.getUser()
-    user = data?.user || null
-  } catch (error) {
-    user = null
+  // 3. Obtener sesión de forma segura
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // --- COMPROBACIÓN DE RUTAS ---
+
+  // CASO A: No hay sesión y se intenta acceder a zonas protegidas
+  if (!user) {
+    if (pathname === '/dashboard' || pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return response
   }
 
-  // --- COMPROBACIÓN RÁPIDA DE RUTAS ---
-  
-  // Si no está logueado e intenta ir a zonas de admin
-  if (!user && (pathname === '/dashboard' || pathname.startsWith('/admin'))) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // Si está logueado e intenta entrar a /login
-  if (user && pathname === '/login') {
+  // CASO B: Sí hay sesión y está parado en /login
+  if (pathname === '/login') {
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -68,14 +57,15 @@ export async function middleware(request: NextRequest) {
       const userRole = profile?.role || 'client'
       const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
 
+      // Si es admin va al dashboard inicial, si es cliente va al /portal
       return NextResponse.redirect(new URL(isAdmin ? '/dashboard' : '/portal', request.url))
     } catch (e) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // Si un cliente intenta pisar /admin
-  if (user && pathname.startsWith('/admin')) {
+  // CASO C: Protección de rutas /admin contra clientes malintencionados
+  if (pathname.startsWith('/admin')) {
     try {
       const { data: profile } = await supabase
         .from('profiles')
