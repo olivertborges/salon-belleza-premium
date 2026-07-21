@@ -1,9 +1,9 @@
-// @ts-nocheck
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
   user: User | null
@@ -22,6 +22,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
@@ -33,26 +34,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isMountedRef = useRef(true)
 
   // ============================================================
-  // 1. OBTENER PERFIL DEL USUARIO (CON LOGS)
+  // 1. OBTENER PERFIL DEL USUARIO
   // ============================================================
   const fetchUserDataAndRole = async (userId: string) => {
-    if (!userId) {
-      console.log('⚠️ fetchUserDataAndRole: userId vacío')
-      return
-    }
+    if (!userId) return
 
-    // Si ya tenemos el rol y es el mismo usuario, no volvemos a consultar
     if (lastFetchedUserId.current === userId && role !== null) {
-      console.log('♻️ Usando caché de rol para:', userId)
       return
     }
-
-    console.log('📝 fetchUserDataAndRole para:', userId)
 
     try {
       lastFetchedUserId.current = userId
 
-      // 1. Obtener perfil del usuario
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('role, tenant_id')
@@ -69,18 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      console.log('✅ Perfil obtenido:', profile)
-
       const userRole = profile?.role || 'client'
       setRole(userRole)
 
-      // 2. Asignar tenant_id
       if (profile?.tenant_id) {
-        console.log('🏢 Tenant asignado:', profile.tenant_id)
         setTenantId(profile.tenant_id)
       }
 
-      // 3. Si es cliente, buscar datos adicionales
       if (userRole === 'client') {
         const { data: client, error: clientErr } = await supabase
           .from('clients')
@@ -105,14 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .maybeSingle()
 
           if (wallet) {
-            const totalPoints = (wallet.glow_points || 0) + (wallet.hair_points || 0)
-            setPoints(totalPoints)
-            console.log('⭐ Puntos:', totalPoints)
+            setPoints((wallet.glow_points || 0) + (wallet.hair_points || 0))
           }
         }
       }
-
-      console.log('✅ fetchUserDataAndRole completado. Rol:', userRole)
 
     } catch (error) {
       console.error('❌ Error en fetchUserDataAndRole:', error)
@@ -123,17 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 2. OBTENER TENANT DE EMERGENCIA
   // ============================================================
   const getEmergencyTenantId = async (): Promise<string | null> => {
-    if (tenantId) {
-      console.log('🏢 tenantId ya existe:', tenantId)
-      return tenantId
-    }
-
-    if (!user?.id) {
-      console.log('⚠️ getEmergencyTenantId: sin usuario')
-      return null
-    }
-
-    console.log('🔍 Buscando tenantId de emergencia...')
+    if (tenantId) return tenantId
+    if (!user?.id) return null
 
     try {
       const { data, error } = await supabase
@@ -148,14 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.tenant_id) {
-        console.log('🏢 tenantId de emergencia:', data.tenant_id)
         setTenantId(data.tenant_id)
         return data.tenant_id
       }
 
-      console.log('⚠️ No se encontró tenant de emergencia')
       return null
-
     } catch (error) {
       console.error('❌ Error en getEmergencyTenantId:', error)
       return null
@@ -176,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 4. INICIALIZAR AUTENTICACIÓN (CON RESTAURACIÓN DE SESIÓN)
+  // 4. INICIALIZAR AUTENTICACIÓN
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true
@@ -185,7 +157,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🚀 Inicializando autenticación...')
 
       try {
-        // 1. Intentar obtener la sesión del localStorage
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
@@ -199,7 +170,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (isMountedRef.current) {
             setUser(session.user)
-            // Esperamos a que se cargue el perfil antes de terminar el loading
             await fetchUserDataAndRole(session.user.id)
           }
         } else {
@@ -218,9 +188,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // ============================================================
-    // 5. ESCUCHAR CAMBIOS DE AUTENTICACIÓN
-    // ============================================================
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Evento de autenticación:', event)
 
@@ -241,7 +208,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
 
-      // 🔑 IMPORTANTE: Cuando se restaura la sesión desde el storage
       if (event === 'INITIAL_SESSION') {
         console.log('🔄 Sesión inicial restaurada')
         if (session?.user) {
@@ -259,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // ============================================================
-  // 6. REFRESCAR DATOS DEL USUARIO
+  // 5. REFRESCAR DATOS DEL USUARIO
   // ============================================================
   const refreshUserData = async () => {
     if (user?.id) {
@@ -270,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 7. INICIAR SESIÓN
+  // 6. INICIAR SESIÓN
   // ============================================================
   const signIn = async (email: string, password: string) => {
     try {
@@ -305,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 8. REGISTRAR USUARIO
+  // 7. REGISTRAR USUARIO
   // ============================================================
   const signUp = async (email: string, password: string, fullName: string, phone?: string, referralCode?: string) => {
     try {
@@ -342,7 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 9. CERRAR SESIÓN
+  // 8. CERRAR SESIÓN
   // ============================================================
   const signOut = async () => {
     try {
@@ -357,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       clearAuthState()
       console.log('✅ Sesión cerrada correctamente')
+      router.push('/login')
 
     } catch (err) {
       console.error('❌ Error en signOut:', err)
@@ -366,7 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ============================================================
-  // 10. PROVIDER
+  // 9. PROVIDER
   // ============================================================
   const value = {
     user,
