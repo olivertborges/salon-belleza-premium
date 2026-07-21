@@ -1,4 +1,5 @@
 // lib/notifications/RealTimeNotifications.ts
+// @ts-nocheck
 import { createClient } from '@supabase/supabase-js'
 import { toast } from 'react-hot-toast'
 

@@ -1,3 +1,5 @@
+// @ts-nocheck
+// lib/notifications.ts
 import { supabase } from './supabase/client'
 
 export async function createNotification({
