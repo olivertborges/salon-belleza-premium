@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { 
   FaArrowRight, 
@@ -20,7 +21,11 @@ import {
   FaPlay,
   FaPause,
   FaGem,
-  FaUser
+  FaUser,
+  FaBars, 
+  FaTimes,
+  FaCalendarCheck,
+  FaGraduationCap
 } from 'react-icons/fa'
 
 // ============================================================
@@ -116,40 +121,230 @@ const TESTIMONIALS = [
 // SUBCOMPONENTES
 // ============================================================
 
+// ============================================================
+// HEADER REDISEÑADO - NAVBAR ESPECTACULAR
+// ============================================================
 const Header = () => {
   const { user } = useAuth()
+  const [isOpen, setIsOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const navLinks = [
+    { name: 'Servicios', href: '#servicios', icon: 'FaScissors' },
+    { name: 'Galería', href: '#galeria', icon: 'FaGem' },
+    { name: 'Reservar', href: '/reservas', icon: 'FaCalendarCheck' },
+    { name: 'Academia', href: '/academy', icon: 'FaGraduationCap' },
+  ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <span className="text-white font-serif text-xl">Fresh Nails</span>
-        <nav className="flex items-center gap-6 text-xs text-stone-400">
-          <a href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</a>
-          <a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a>
-          <a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a>
+    <header 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled 
+          ? 'bg-[#0d0b0a]/95 backdrop-blur-xl border-b border-[#C9A96E]/10 shadow-2xl shadow-black/50' 
+          : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
           
-          {/* ✅ ENLACE DE INICIO DE SESIÓN */}
-          {user ? (
-            <Link 
-              href={user.role === 'admin' || user.role === 'owner' || user.role === 'staff' ? '/dashboard' : '/portal'}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-[#C9A96E]/30 hover:border-[#C9A96E]/60 transition-all duration-300 text-stone-300 hover:text-white"
-              style={{ background: `linear-gradient(to right, ${COLORS.pink}10, ${COLORS.gold}10)` }}
+          {/* ===== LOGO ===== */}
+          <Link 
+            href="/" 
+            className="flex items-center gap-2 group shrink-0"
+          >
+            <div className="relative">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#DB5B9A] to-[#C9A96E] flex items-center justify-center shadow-lg shadow-[#DB5B9A]/20 group-hover:scale-110 transition-transform duration-300">
+                <FaGem className="w-4 h-4 text-white" />
+              </div>
+              <div className="absolute -inset-1 rounded-xl bg-gradient-to-br from-[#DB5B9A]/20 to-[#C9A96E]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+            <span className="text-white font-serif text-xl tracking-tight group-hover:text-[#C9A96E] transition-colors duration-300">
+              Fresh<span className="text-[#DB5B9A]">. NAILS</span>
+            </span>
+          </Link>
+
+          {/* ===== DESKTOP NAV ===== */}
+          <nav className="hidden md:flex items-center gap-8">
+            {navLinks.map((link) => {
+              const isActive = false // Podrías agregar lógica de active
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`relative group flex items-center gap-2 text-sm font-light tracking-wide transition-all duration-300 ${
+                    isActive 
+                      ? 'text-[#C9A96E]' 
+                      : 'text-stone-400 hover:text-white'
+                  }`}
+                >
+                  <span>{link.name}</span>
+                  
+                  {isActive && (
+                    <motion.span 
+                      layoutId="activeNav"
+                      className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] rounded-full"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  
+                  <span className="absolute -bottom-1 left-0 right-0 h-[1px] bg-gradient-to-r from-[#DB5B9A]/0 via-[#C9A96E]/50 to-[#DB5B9A]/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* ===== AUTH BUTTON DESKTOP ===== */}
+          <div className="hidden md:flex items-center gap-4">
+            {user ? (
+              <Link
+                href={user.role === 'admin' || user.role === 'owner' || user.role === 'staff' ? '/dashboard' : '/portal'}
+                className="group flex items-center gap-2 px-5 py-2 rounded-xl border border-[#C9A96E]/20 hover:border-[#C9A96E]/50 transition-all duration-300 bg-gradient-to-r from-[#DB5B9A]/5 to-[#C9A96E]/5 hover:from-[#DB5B9A]/10 hover:to-[#C9A96E]/10"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#DB5B9A] to-[#C9A96E] flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-[#DB5B9A]/20">
+                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <span className="text-xs text-stone-300 group-hover:text-white transition-colors font-medium">
+                  Mi Cuenta
+                </span>
+                <FaArrowRight className="w-3 h-3 text-[#C9A96E] group-hover:translate-x-1 transition-transform duration-300" />
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="group relative overflow-hidden px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300"
+              >
+                <span className="relative z-10 flex items-center gap-2 text-white">
+                  <FaUser className="w-3.5 h-3.5" />
+                  Iniciar Sesión
+                </span>
+                <span className="absolute inset-0 bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="absolute inset-[1px] bg-[#0d0b0a] rounded-xl group-hover:opacity-0 transition-opacity duration-300" />
+                <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+              </Link>
+            )}
+          </div>
+
+          {/* ===== MOBILE MENU BUTTON ===== */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden relative w-10 h-10 rounded-xl border border-stone-800 hover:border-[#C9A96E]/40 transition-all duration-300 flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
+          >
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <FaUser className="text-[10px]" style={{ color: COLORS.pink }} />
-              <span>Mi Cuenta</span>
-            </Link>
-          ) : (
-            <Link 
-              href="/login"
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-[#C9A96E]/30 hover:border-[#C9A96E]/60 transition-all duration-300 text-stone-300 hover:text-white"
-              style={{ background: `linear-gradient(to right, ${COLORS.pink}10, ${COLORS.gold}10)` }}
-            >
-              <FaUser className="text-[10px]" style={{ color: COLORS.pink }} />
-              <span>Iniciar Sesión</span>
-            </Link>
-          )}
-        </nav>
+              {isOpen ? (
+                <FaTimes className="w-5 h-5 text-white" />
+              ) : (
+                <FaBars className="w-5 h-5 text-white" />
+              )}
+            </motion.div>
+          </button>
+        </div>
       </div>
+
+      {/* ===== MOBILE MENU ===== */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="md:hidden overflow-hidden border-t border-[#C9A96E]/10 bg-[#0d0b0a]/95 backdrop-blur-xl"
+          >
+            <div className="px-4 py-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              
+              {/* Nav Links Mobile */}
+              <nav className="space-y-2">
+                {navLinks.map((link, index) => {
+                  return (
+                    <motion.div
+                      key={link.name}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 text-stone-400 hover:text-white hover:bg-stone-900/50`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-stone-900 text-stone-500`}>
+                          {link.name === 'Servicios' && <FaScissors className="w-4 h-4" />}
+                          {link.name === 'Galería' && <FaGem className="w-4 h-4" />}
+                          {link.name === 'Reservar' && <FaCalendarCheck className="w-4 h-4" />}
+                          {link.name === 'Academia' && <FaGraduationCap className="w-4 h-4" />}
+                        </div>
+                        <span className="text-sm font-medium">{link.name}</span>
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </nav>
+
+              <div className="h-px bg-gradient-to-r from-transparent via-[#C9A96E]/20 to-transparent" />
+
+              {/* Auth Section Mobile */}
+              {user ? (
+                <Link
+                  href={user.role === 'admin' || user.role === 'owner' || user.role === 'staff' ? '/dashboard' : '/portal'}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#DB5B9A]/10 to-[#C9A96E]/10 border border-[#C9A96E]/20 text-white hover:from-[#DB5B9A]/20 hover:to-[#C9A96E]/20 transition-all duration-300"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#DB5B9A] to-[#C9A96E] flex items-center justify-center text-white font-bold shadow-lg shadow-[#DB5B9A]/20">
+                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Mi Cuenta</p>
+                    <p className="text-[10px] text-stone-400">{user.email}</p>
+                  </div>
+                  <FaArrowRight className="ml-auto text-[#C9A96E]" />
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#DB5B9A]/20"
+                >
+                  <FaUser className="w-4 h-4" />
+                  Iniciar Sesión
+                </Link>
+              )}
+
+              {/* Social Icons Mobile */}
+              <div className="flex items-center justify-center gap-6 pt-4">
+                <a href="#" className="text-stone-500 hover:text-[#C9A96E] transition-colors hover:scale-110 transform duration-300">
+                  <FaInstagram className="w-5 h-5" />
+                </a>
+                <a href="#" className="text-stone-500 hover:text-[#C9A96E] transition-colors hover:scale-110 transform duration-300">
+                  <FaWhatsapp className="w-5 h-5" />
+                </a>
+              </div>
+
+              {/* Brand */}
+              <div className="text-center pt-4">
+                <p className="text-[10px] tracking-[0.3em] text-stone-600 font-light">
+                  ✦ FRESH NAILS STUDIO ✦
+                </p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#DB5B9A] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E] animate-pulse" style={{ animationDelay: '0.3s' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#DB5B9A] animate-pulse" style={{ animationDelay: '0.6s' }} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
