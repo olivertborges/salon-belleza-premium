@@ -83,9 +83,6 @@ export default function AuthMobilDefinitivo() {
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  // ✅ Ref para evitar redirección múltiple
-  const hasRedirected = useRef(false)
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -99,12 +96,24 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ REDIRECCIÓN DIRECTA CON FILTRO ANTI-BUCLE ESTRICTO
+  // ✅ REDIRECCIÓN CON PERSISTENCIA EN SESSIONSTORAGE
   useEffect(() => {
-    if (hasRedirected.current) return
-    if (!mounted || authLoading) return
+    // Verificar si ya redirigió en esta sesión
+    const redirectKey = 'freshnails_redirected'
+    const alreadyRedirected = sessionStorage.getItem(redirectKey)
+
+    if (alreadyRedirected === 'true') {
+      console.log('⏭️ Ya redirigió en esta sesión, saltando...')
+      return
+    }
+
+    if (!mounted || authLoading) {
+      console.log('⏳ Esperando: mounted=', mounted, 'authLoading=', authLoading)
+      return
+    }
+
     if (!user || !role) {
-      hasRedirected.current = false
+      console.log('👤 Esperando usuario o rol...')
       return
     }
 
@@ -113,15 +122,20 @@ export default function AuthMobilDefinitivo() {
       targetPath = '/dashboard'
     }
 
-    // SI YA ESTAMOS EN LA RUTA DESTINO, SE INTERRUMPE LA REDIRECCIÓN
-    if (typeof window !== 'undefined' && window.location.pathname === targetPath) {
+    // Si ya estamos en la ruta destino, marcar y salir
+    if (window.location.pathname === targetPath) {
+      sessionStorage.setItem(redirectKey, 'true')
       return
     }
 
-    console.log('🚀 [Anti-Bucle] Forzando redirección limpia y controlada a:', targetPath)
-    hasRedirected.current = true
-
+    console.log('🚀 Redirigiendo a:', targetPath)
+    
+    // Marcar en sessionStorage antes de redirigir
+    sessionStorage.setItem(redirectKey, 'true')
+    
+    // Redirigir
     window.location.href = targetPath
+
   }, [user, role, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -136,10 +150,11 @@ export default function AuthMobilDefinitivo() {
       if (signInError) throw signInError
 
       setSuccess('¡Ingreso correcto! Cargando salón...')
-      
-      // Delay controlado para que se asienten las cookies en el storage antes de evaluar el useEffect
+
+      // ✅ Limpiar flag para permitir redirección después del login
+      sessionStorage.removeItem('freshnails_redirected')
+
       setTimeout(() => {
-        hasRedirected.current = false 
         setLoading(false)
       }, 450)
 
@@ -175,9 +190,9 @@ export default function AuthMobilDefinitivo() {
       }
 
       setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
-      hasRedirected.current = false
+      sessionStorage.removeItem('freshnails_redirected')
       await signIn(email, password)
-      
+
       setTimeout(() => {
         setLoading(false)
       }, 450)
