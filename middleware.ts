@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -9,7 +10,7 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   })
 
-  // 2. Instanciar Supabase con asignación estricta de cookies
+  // 2. Instanciar Supabase con asignación estricta de cookies y TIPADO CORRECTO
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,13 +19,14 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          // Actualizamos las cookies en la petición (para que Supabase las lea en esta misma ejecución)
+        // CORRECCIÓN: Tipamos explícitamente el parámetro para que Vercel compile en verde
+        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
+          // Actualizamos las cookies en la petición
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
           })
 
-          // Re-instanciamos la respuesta para asegurar que viaje limpia con las nuevas cabeceras de petición
+          // Re-instanciamos la respuesta para asegurar que viaje limpia con las nuevas cabeceras
           response = NextResponse.next({
             request: { headers: request.headers },
           })
@@ -38,7 +40,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Obtener el usuario
+  // 3. Obtener el usuario de forma segura
   let user = null
   try {
     const { data } = await supabase.auth.getUser()
