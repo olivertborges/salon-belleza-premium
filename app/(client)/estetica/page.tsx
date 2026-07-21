@@ -29,7 +29,18 @@ import {
   Grid3x3,
   LayoutList,
   StarHalf,
-  Flower2
+  Flower2,
+  Gem,
+  ArrowRight,
+  Heart,
+  Compass,
+  Zap,
+  Shield,
+  Award,
+  Sparkle,
+  Sun,
+  Moon,
+  Wind
 } from 'lucide-react'
 
 interface Servicio {
@@ -110,7 +121,7 @@ export default function EsteticaPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
 
   useEffect(() => {
@@ -355,88 +366,135 @@ export default function EsteticaPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="relative flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin" />
-          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Sparkles className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              BIENESTAR & MEDISPA
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
         </div>
-        <p className={`text-xs font-mono tracking-widest uppercase font-black animate-pulse ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-          Iniciando Módulo Estética...
-        </p>
       </div>
     )
   }
 
   return (
-    <div className={`w-full min-h-screen overflow-x-hidden transition-colors duration-500 ${
-      isDark ? 'bg-stone-950 text-stone-200' : 'bg-gradient-to-b from-pink-50/10 via-amber-50/5 to-stone-50/30 text-stone-800'
+    <div className={`w-full min-h-screen overflow-x-hidden transition-colors duration-700 ${
+      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-stone-200' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-800'
     }`}>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative">
+        
+        {/* Efectos de fondo */}
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] rounded-full blur-[160px] bg-pink-500/[0.03] pointer-events-none" />
         <div className="absolute bottom-20 right-1/4 w-[300px] h-[300px] rounded-full blur-[140px] bg-amber-500/[0.02] pointer-events-none" />
 
         {/* MENSAJES */}
         {errorMessage && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400 max-w-[90vw]">
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[999] px-6 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-medium backdrop-blur-xl shadow-2xl animate-fadeIn flex items-center gap-3 max-w-[90vw]">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span className="text-sm font-medium truncate">{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 max-w-[90vw]">
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[999] px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-medium backdrop-blur-xl shadow-2xl animate-fadeIn flex items-center gap-3 max-w-[90vw]">
             <CheckCircle2 className="w-5 h-5 shrink-0" />
             <span className="text-sm font-medium truncate">{successMessage}</span>
           </div>
         )}
 
-        {/* HERO BANNER */}
-        <div className={`relative overflow-hidden rounded-3xl border p-5 sm:p-6 md:p-8 shadow-xl transition-all duration-300 ${
-          isDark
-            ? 'bg-gradient-to-br from-stone-950 via-pink-950/10 to-neutral-950 border-pink-950/30'
-            : 'bg-gradient-to-br from-stone-900 via-pink-600 to-amber-500 border-pink-100'
+        {/* ============================================================ */}
+        {/* HERO BANNER — PRESTIGE EDITION */}
+        {/* ============================================================ */}
+        <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl transition-all duration-500 mt-4 ${
+          isDark 
+            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
+            : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
         }`}>
-          <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+          {/* Efectos de luz ambiental */}
+          <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
+          <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          {/* Rejilla decorativa */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-            <div className="space-y-1">
-              <div className={`inline-flex items-center gap-2 border px-3 py-1 rounded-full backdrop-blur-md ${isDark ? 'bg-pink-500/10 border-pink-500/30' : 'bg-white/20 border-white/30'}`}>
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
+                isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/20 border-white/30'
+              }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-                <span className={`text-[9px] uppercase tracking-widest font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>Cuidado & Estética Avanzada</span>
+                <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+                  isDark ? 'text-pink-300' : 'text-white'
+                }`}>
+                  ✦ Cuidado & Estética Avanzada ✦
+                </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                Bienestar & <span className="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white">MediSpa</span>
+
+              <h2 className={`text-3xl md:text-5xl font-black tracking-tight leading-[1.1] ${
+                isDark ? 'text-white' : 'text-white'
+              }`}>
+                Bienestar &{' '}
+                <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+                  MediSpa
+                </span>
               </h2>
-              <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-pink-100/90 font-medium'}`}>
+              <p className={`text-xs font-medium tracking-wide max-w-md ${
+                isDark ? 'text-stone-400' : 'text-pink-100/90'
+              }`}>
                 Tratamientos faciales, corporales y masajes para equilibrar cuerpo y mente.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-auto">
-              <div className={`px-3 py-1.5 sm:py-2 rounded-xl border text-[10px] font-mono font-black uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md ${
-                isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-white/90 border-pink-100 text-stone-800'
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className={`px-4 py-2.5 rounded-xl border text-[9px] font-mono font-black uppercase tracking-[0.15em] flex items-center gap-2 backdrop-blur-md shadow-lg ${
+                isDark ? 'bg-stone-900/80 border-stone-800/80 text-stone-400' : 'bg-white/90 border-pink-100/80 text-stone-800 shadow-pink-200/20'
               }`}>
-                <Crown className="w-3 h-3 text-amber-400" />
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
                 {servicios.length} Rituales
               </div>
 
               <Link
                 href={user ? '/agenda' : '/login'}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] font-mono font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 border shadow-sm ${
-                  isDark
-                    ? 'bg-pink-500/20 border-pink-500/30 text-pink-300 hover:bg-pink-500/30'
-                    : 'bg-stone-950 border-stone-900 text-white hover:bg-stone-900'
-                }`}
+                className="group relative overflow-hidden px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-2.5 transition-all duration-500 hover:-translate-y-0.5 active:scale-[0.97]"
+                style={brandGradient}
               >
-                <Calendar className="w-3.5 h-3.5" />
-                Agendar Cita
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+                <Calendar className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform duration-500" />
+                <span className="relative">Agendar Cita</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
             </div>
           </div>
         </div>
 
-        {/* TABS NAVEGACIÓN */}
-        <div className="flex border-b border-pink-100/60 dark:border-fuchsia-950/60 mt-6 sm:mt-8 overflow-x-auto">
+        {/* ============================================================ */}
+        {/* TABS NAVEGACIÓN — REDISEÑADOS */}
+        {/* ============================================================ */}
+        <div className={`flex border-b pb-0 mt-6 sm:mt-8 overflow-x-auto ${
+          isDark ? 'border-stone-900/60' : 'border-stone-200/60'
+        }`}>
           {[
             { id: 'servicios', label: 'Servicios', icon: <Sparkles className="w-4 h-4" /> },
             { id: 'galeria', label: 'Galería', icon: <Camera className="w-4 h-4" /> },
@@ -445,39 +503,51 @@ export default function EsteticaPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 sm:px-4 py-2.5 sm:py-3 text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-1.5 sm:gap-2 border-b-2 whitespace-nowrap ${
+              className={`relative px-6 py-3.5 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center gap-2 whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'text-stone-900 dark:text-white'
-                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                  ? 'text-pink-500' 
+                  : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
               }`}
-              style={activeTab === tab.id ? { borderColor: primaryColor, color: primaryColor } : {}}
+              style={activeTab === tab.id ? { color: primaryColor } : {}}
             >
               {tab.icon}
-              {tab.label}
+              <span className="relative z-10">{tab.label}</span>
+              {activeTab === tab.id && (
+                <motion.span 
+                  layoutId="tabIndicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                  style={{ backgroundColor: primaryColor }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
             </button>
           ))}
         </div>
 
-        {/* TAB: SERVICIOS */}
+        {/* ============================================================ */}
+        {/* TAB: SERVICIOS — REDISEÑADO */}
+        {/* ============================================================ */}
         {activeTab === 'servicios' && (
-          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+          <div className="mt-6 space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider font-mono flex items-center gap-2 text-stone-800 dark:text-stone-200">
+              <h3 className={`text-xs sm:text-sm font-black uppercase tracking-wider font-mono flex items-center gap-2 ${
+                isDark ? 'text-stone-200' : 'text-stone-800'
+              }`}>
                 <Sparkles className="w-4 h-4 text-pink-500" />
                 Filtrar Tratamientos
               </h3>
               {selectedCategory !== 'todos' && (
                 <button
                   onClick={() => setSelectedCategory('todos')}
-                  className="text-[10px] font-mono font-black uppercase tracking-widest text-pink-500 hover:text-pink-400 transition-colors"
+                  className="text-[10px] font-mono font-black uppercase tracking-widest text-pink-500 hover:text-pink-400 transition-colors flex items-center gap-1"
                 >
-                  Ver Todos →
+                  Ver Todos <ArrowRight className="w-3 h-3" />
                 </button>
               )}
             </div>
 
-            {/* Grid de Filtros Rápidos de Categoría */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 sm:gap-2">
+            {/* Grid de Filtros Rápidos */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
               {categoriasFinal.map((cat) => {
                 const Icon = cat.icon
                 const isActive = selectedCategory === cat.id
@@ -485,52 +555,84 @@ export default function EsteticaPage() {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border text-left transition-all duration-300 text-[10px] sm:text-xs ${
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all duration-500 text-[10px] sm:text-xs relative overflow-hidden group ${
                       isActive
-                        ? isDark
-                          ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 shadow-sm'
-                          : 'bg-stone-950 border-stone-900 text-white shadow-sm'
+                        ? `text-white shadow-xl scale-[1.02] bg-gradient-to-r from-pink-500 to-rose-500 border-transparent`
                         : isDark
-                          ? 'bg-stone-900/40 border-stone-900 text-stone-400 hover:border-pink-500/20 hover:text-stone-200'
-                          : 'bg-white border-pink-100/60 text-stone-500 hover:border-pink-300 hover:text-stone-800 shadow-sm'
+                          ? 'bg-stone-900/40 border-stone-900/60 text-stone-400 hover:border-pink-500/30 hover:text-stone-200'
+                          : 'bg-white/80 border-stone-200/60 text-stone-500 hover:border-pink-300 hover:shadow-md'
                     }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-pink-400' : 'text-stone-400'}`} />
-                    <span className="font-bold uppercase tracking-wide truncate">{cat.label}</span>
-                  </button>
-                )
+                    >
+                      {isActive && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/60 animate-ping" />
+                      )}
+                      <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                        isActive ? 'text-white' : isDark ? 'text-stone-500 group-hover:text-pink-400' : 'text-stone-400 group-hover:text-pink-500'
+                      }`} />
+                      <span className="font-bold uppercase tracking-wide truncate">{cat.label}</span>
+                    </button>
+                  )
+                }
               })}
             </div>
 
-            {/* Buscador Superior y Selectores de Vista */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-              <div className="flex-1 flex items-center gap-2 sm:gap-3 min-w-0">
-                <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
+            {/* Buscador y Selectores */}
+            <div className={`flex flex-col sm:flex-row gap-3 p-4 rounded-2xl border shadow-lg ${
+              isDark 
+                ? 'bg-[#130f24]/80 border-stone-900/60 shadow-black/20' 
+                : 'bg-white/80 border-stone-200/60 shadow-stone-200/20 backdrop-blur-sm'
+            }`}>
+              <div className="flex-1 flex items-center gap-3 min-w-0">
+                <Search className={`w-4 h-4 shrink-0 ${
+                  isDark ? 'text-stone-500' : 'text-stone-400'
+                }`} />
                 <input 
                   type="text" 
                   placeholder="Buscar tratamientos por nombre o descripción..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full min-w-0"
+                  className={`bg-transparent border-none outline-none text-xs w-full font-medium min-w-0 ${
+                    isDark ? 'text-white placeholder:text-stone-600' : 'text-stone-800 placeholder:text-stone-400'
+                  }`}
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-medium flex items-center gap-1.5 border ${
-                    showFilters ? 'text-white border-transparent shadow-md' : 'bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950'
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-medium flex items-center gap-1.5 border transition-all duration-300 ${
+                    showFilters 
+                      ? 'text-white border-transparent shadow-md scale-105' 
+                      : isDark ? 'bg-[#0f0c1b] border-stone-800/60 text-stone-400' : 'bg-white border-stone-200/60 text-stone-500'
                   }`}
                   style={showFilters ? { background: brandGradient.backgroundImage } : {}}
                 >
                   <Filter className="w-3.5 h-3.5" /> Filtros
                 </button>
 
-                <div className="flex rounded-xl overflow-hidden border p-0.5 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950">
-                  <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}>
+                <div className={`flex rounded-xl overflow-hidden border p-0.5 ${
+                  isDark ? 'border-stone-800/60 bg-[#0f0c1b]' : 'border-stone-200/60 bg-white'
+                }`}>
+                  <button 
+                    onClick={() => setViewMode('grid')} 
+                    className={`p-1.5 rounded-lg transition-all duration-300 ${
+                      viewMode === 'grid' 
+                        ? 'text-white shadow-sm' 
+                        : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                    }`}
+                    style={viewMode === 'grid' ? { background: brandGradient.backgroundImage } : {}}
+                  >
                     <Grid3x3 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white shadow-sm' : 'text-stone-400'}`} style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}>
+                  <button 
+                    onClick={() => setViewMode('list')} 
+                    className={`p-1.5 rounded-lg transition-all duration-300 ${
+                      viewMode === 'list' 
+                        ? 'text-white shadow-sm' 
+                        : isDark ? 'text-stone-500 hover:text-stone-300' : 'text-stone-400 hover:text-stone-600'
+                    }`}
+                    style={viewMode === 'list' ? { background: brandGradient.backgroundImage } : {}}
+                  >
                     <LayoutList className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -542,14 +644,31 @@ export default function EsteticaPage() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4" : "space-y-3"}
+              className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "space-y-3"}
             >
               {filteredServicios.length === 0 ? (
-                <div className={`col-span-full border border-dashed rounded-3xl p-12 sm:p-16 text-center ${
-                  isDark ? 'border-stone-800 bg-stone-900/10' : 'border-pink-100 bg-white/40 shadow-inner'
+                <div className={`col-span-full border border-dashed rounded-3xl p-16 text-center transition-all duration-500 ${
+                  isDark 
+                    ? 'border-stone-800/60 bg-stone-900/20' 
+                    : 'border-stone-200/60 bg-white/40 shadow-inner'
                 }`}>
-                  <Sparkles className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-stone-800' : 'text-pink-200'}`} />
-                  <p className="text-sm font-black tracking-tight text-stone-800 dark:text-stone-200">No se encontraron tratamientos con esos criterios</p>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                    isDark ? 'bg-stone-800/50' : 'bg-pink-100/50'
+                  }`}>
+                    <Sparkles className={`w-8 h-8 ${
+                      isDark ? 'text-stone-600' : 'text-pink-300'
+                    }`} />
+                  </div>
+                  <p className={`text-sm font-black tracking-tight ${
+                    isDark ? 'text-stone-300' : 'text-stone-700'
+                  }`}>
+                    No se encontraron tratamientos
+                  </p>
+                  <p className={`text-xs mt-1 ${
+                    isDark ? 'text-stone-500' : 'text-stone-400'
+                  }`}>
+                    Intenta con otros filtros o palabras clave
+                  </p>
                 </div>
               ) : (
                 filteredServicios.map((servicio) => {
@@ -561,66 +680,86 @@ export default function EsteticaPage() {
                   return (
                     <motion.div key={servicio.id} variants={itemVariants}>
                       <div
-                        className={`group relative rounded-2xl border p-4 sm:p-5 transition-all duration-300 transform hover:-translate-y-0.5 flex ${
-                          viewMode === 'grid' ? 'flex-col justify-between min-h-[200px] sm:min-h-[220px]' : 'flex-row gap-4 items-center'
+                        className={`group relative rounded-2xl border p-5 transition-all duration-500 transform hover:-translate-y-1.5 flex ${
+                          viewMode === 'grid' ? 'flex-col justify-between min-h-[220px]' : 'flex-row gap-6 items-center'
                         } overflow-hidden cursor-pointer ${
                           isDark
-                            ? 'bg-stone-900/40 border-stone-900 hover:border-pink-500/20 hover:bg-stone-900/60 shadow-lg'
-                            : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-md'
+                            ? 'bg-gradient-to-br from-[#130f24]/80 via-[#130f24]/40 to-[#130f24]/80 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl shadow-lg'
+                            : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl shadow-md'
                         }`}
                         onClick={() => {
                           setSelectedService(servicio)
                           setIsModalOpen(true)
                         }}
                       >
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-500/[0.02] to-transparent rounded-bl-full pointer-events-none" />
+                        {/* Gradiente de fondo sutil */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-pink-500/[0.03] to-rose-500/[0.01]" />
 
-                        <div className={viewMode === 'list' ? 'flex-1 flex gap-4 items-center min-w-0' : 'w-full'}>
-                          <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
-                            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-105 ${
-                              isDark ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' : 'bg-stone-50 border border-stone-100 text-pink-600'
-                            }`}>
-                              <Icon className="w-3.5 h-3.5 sm:w-4 h-4" />
-                            </div>
+                        {/* Badge flotante */}
+                        {servicio.badge && viewMode === 'grid' && (
+                          <span className={`absolute top-4 right-4 z-10 text-[7px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border ${badgeColor}`}>
+                            {servicio.badge}
+                          </span>
+                        )}
+
+                        <div className={viewMode === 'list' ? 'flex-1 flex gap-5 items-center min-w-0 relative z-10' : 'w-full relative z-10'}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shrink-0 ${
+                            isDark ? 'bg-pink-500/10 border border-pink-500/20 text-pink-400' : 'bg-stone-50 border border-stone-100/80 text-pink-600'
+                          }`}>
+                            <Icon className="w-4 h-4" />
                           </div>
 
-                          <div className="space-y-1 flex-1 min-w-0">
+                          <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="font-black text-xs sm:text-sm tracking-tight text-stone-900 dark:text-stone-200 group-hover:text-pink-500 transition-colors truncate">
+                              <h4 className={`font-black text-sm tracking-tight transition-colors truncate ${
+                                isDark ? 'text-stone-100 group-hover:text-pink-400' : 'text-stone-800 group-hover:text-pink-600'
+                              }`}>
                                 {servicio.name}
                               </h4>
                               {servicio.badge && viewMode === 'list' && (
-                                <span className={`text-[8px] font-mono font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                                <span className={`text-[7px] font-mono font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border ${badgeColor}`}>
                                   {servicio.badge}
                                 </span>
                               )}
                             </div>
-                            <p className={`text-[10px] sm:text-[11px] leading-relaxed line-clamp-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                            <p className={`text-[10px] leading-relaxed line-clamp-2 ${
+                              isDark ? 'text-stone-400' : 'text-stone-500'
+                            }`}>
                               {servicio.description || 'Tratamiento profesional estético de alta gama.'}
                             </p>
 
-                            <div className="flex items-center gap-1.5 sm:gap-2 mt-2">
+                            <div className="flex items-center gap-2 mt-1.5">
                               {avgRating > 0 ? (
                                 <>
                                   {renderStars(avgRating, 'sm')}
-                                  <span className="text-[9px] sm:text-[10px] font-bold text-stone-600 dark:text-stone-400">{avgRating.toFixed(1)}</span>
-                                  <span className="text-[8px] sm:text-[9px] text-stone-400">({ratingCount})</span>
+                                  <span className={`text-[9px] font-bold ${
+                                    isDark ? 'text-stone-400' : 'text-stone-600'
+                                  }`}>{avgRating.toFixed(1)}</span>
+                                  <span className={`text-[8px] ${
+                                    isDark ? 'text-stone-500' : 'text-stone-400'
+                                  }`}>({ratingCount})</span>
                                 </>
                               ) : (
-                                <span className="text-[9px] sm:text-[10px] text-stone-400">Sin calificaciones</span>
+                                <span className={`text-[9px] ${
+                                  isDark ? 'text-stone-500' : 'text-stone-400'
+                                }`}>Sin calificaciones</span>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className={`flex items-center justify-between border-dashed ${
-                          viewMode === 'grid' ? 'border-t mt-3 sm:mt-4 pt-3 sm:pt-3.5' : 'flex-col sm:flex-row gap-2 border-l pl-4'
-                        } ${isDark ? 'border-stone-800/80' : 'border-stone-100'}`}>
-                          <div className="flex items-center gap-2 whitespace-nowrap">
-                            <span className={`text-sm sm:text-base font-mono font-black tracking-tight ${isDark ? 'text-pink-400' : 'text-stone-950'}`}>
+                        <div className={`flex items-center justify-between border-dashed relative z-10 ${
+                          viewMode === 'grid' ? 'border-t mt-3 pt-3.5' : 'flex-col sm:flex-row gap-2 border-l pl-5'
+                        } ${isDark ? 'border-stone-800/60' : 'border-stone-200/60'}`}>
+                          <div className="flex items-center gap-2.5 whitespace-nowrap">
+                            <span className={`text-base font-mono font-black tracking-tight ${
+                              isDark ? 'text-pink-400' : 'text-stone-950'
+                            }`}>
                               ${servicio.price?.toLocaleString()}
                             </span>
-                            <span className="text-[8px] sm:text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                            <span className={`text-[8px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 ${
+                              isDark ? 'text-stone-500' : 'text-stone-400'
+                            }`}>
                               <Clock className="w-3 h-3 text-pink-400" />
                               {servicio.duration || 60} Min
                             </span>
@@ -636,8 +775,8 @@ export default function EsteticaPage() {
                               }}
                               className={`p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
                                 isDark
-                                  ? 'bg-stone-950/60 border border-stone-800 text-stone-400 hover:text-amber-400 hover:border-amber-500/30'
-                                  : 'bg-stone-50 border border-stone-100 text-stone-400 hover:text-amber-500 hover:border-amber-300'
+                                  ? 'bg-stone-950/60 border border-stone-800/60 text-stone-400 hover:text-amber-400 hover:border-amber-500/30'
+                                  : 'bg-stone-50 border border-stone-100/60 text-stone-400 hover:text-amber-500 hover:border-amber-300'
                               }`}
                             >
                               <Star className="w-3.5 h-3.5" />
@@ -646,15 +785,14 @@ export default function EsteticaPage() {
                               href={user ? '/agenda' : '/login'}
                               className={`p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
                                 isDark
-                                  ? 'bg-stone-950/60 border border-stone-800 text-stone-400 hover:text-pink-400 hover:border-pink-500/30'
-                                  : 'bg-stone-50 border border-stone-100 text-stone-500 hover:text-stone-950 hover:border-pink-300'
+                                  ? 'bg-stone-950/60 border border-stone-800/60 text-stone-400 hover:text-pink-400 hover:border-pink-500/30'
+                                  : 'bg-stone-50 border border-stone-100/60 text-stone-500 hover:text-stone-950 hover:border-pink-300'
                               }`}
                             >
                               <Calendar className="w-3.5 h-3.5" />
                             </Link>
                           </div>
                         </div>
-
                       </div>
                     </motion.div>
                   )
@@ -664,21 +802,36 @@ export default function EsteticaPage() {
           </div>
         )}
 
-        {/* TAB: GALERÍA */}
+        {/* ============================================================ */}
+        {/* TAB: GALERÍA — REDISEÑADA */}
+        {/* ============================================================ */}
         {activeTab === 'galeria' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mt-4 sm:mt-6">
-            <p className="text-sm text-stone-500 dark:text-stone-400 text-center">Descubre nuestro trabajo y resultados en estética</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 mt-6">
+            <p className={`text-sm text-center ${
+              isDark ? 'text-stone-400' : 'text-stone-500'
+            }`}>
+              Descubre nuestro trabajo y resultados en estética
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { src: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=400&fit=crop', title: 'Tratamiento facial' },
                 { src: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop', title: 'Limpieza profunda' },
                 { src: 'https://images.unsplash.com/photo-1540555700478-4be6f5f1ccd7?w=400&h=400&fit=crop', title: 'Tratamiento corporal' },
                 { src: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop', title: 'Bienestar' },
               ].map((img, idx) => (
-                <motion.div key={idx} whileHover={{ scale: 1.02 }} className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer">
-                  <img src={img.src} alt={img.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 sm:p-3">
-                    <p className="text-white text-[10px] sm:text-xs font-bold">{img.title}</p>
+                <motion.div 
+                  key={idx} 
+                  whileHover={{ scale: 1.03 }}
+                  className={`relative aspect-square rounded-2xl overflow-hidden group cursor-pointer transition-all duration-500 ${
+                    isDark ? 'shadow-black/20' : 'shadow-stone-200/20'
+                  }`}
+                >
+                  <img src={img.src} alt={img.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-end p-3">
+                    <p className="text-white text-xs font-bold tracking-wide">{img.title}</p>
+                  </div>
+                  <div className="absolute top-3 left-3 text-[7px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white/80">
+                    #{String(idx + 1).padStart(2, '0')}
                   </div>
                 </motion.div>
               ))}
@@ -686,30 +839,58 @@ export default function EsteticaPage() {
           </motion.div>
         )}
 
-        {/* TAB: TESTIMONIOS */}
+        {/* ============================================================ */}
+        {/* TAB: TESTIMONIOS — REDISEÑADO */}
+        {/* ============================================================ */}
         {activeTab === 'testimonios' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mt-4 sm:mt-6">
-            <p className="text-sm text-stone-500 dark:text-stone-400 text-center">Lo que dicen nuestros clientes sobre su experiencia</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5 mt-6">
+            <p className={`text-sm text-center ${
+              isDark ? 'text-stone-400' : 'text-stone-500'
+            }`}>
+              Lo que dicen nuestros clientes sobre su experiencia
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.values(reviews).flat().length > 0 ? (
                 Object.values(reviews).flat().slice(0, 6).map((review, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.4 }}
+                    className={`group p-5 rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
+                      isDark 
+                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
+                        : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-pink-500/20">
                         {review.client_name?.charAt(0) || 'C'}
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-stone-900 dark:text-white">{review.client_name}</p>
-                        <p className="text-xs text-stone-400">Estética</p>
+                        <p className={`font-black text-sm tracking-tight ${
+                          isDark ? 'text-stone-100' : 'text-stone-800'
+                        }`}>
+                          {review.client_name}
+                        </p>
+                        <p className={`text-[10px] font-medium ${
+                          isDark ? 'text-stone-500' : 'text-stone-400'
+                        }`}>
+                          Estética
+                        </p>
                       </div>
                     </div>
-                    <div className="flex text-amber-400 text-xs mb-2">
+                    <div className="flex text-amber-400 text-sm mb-2">
                       {[...Array(review.rating || 5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                        <Star key={i} className="w-4 h-4 fill-current" />
                       ))}
                     </div>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{review.comment}"</p>
-                  </div>
+                    <p className={`text-sm leading-relaxed ${
+                      isDark ? 'text-stone-300' : 'text-stone-600'
+                    }`}>
+                      "{review.comment}"
+                    </p>
+                  </motion.div>
                 ))
               ) : (
                 [
@@ -717,34 +898,60 @@ export default function EsteticaPage() {
                   { name: 'Laura Pérez', comment: 'El masaje corporal fue una experiencia relajante.', rating: 5 },
                   { name: 'Carmen Sánchez', comment: 'Me encanta el servicio de depilación. Rápido, indoloro y resultados perfectos.', rating: 5 },
                 ].map((t, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 flex items-center justify-center text-white font-bold text-sm">
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05, duration: 0.4 }}
+                    className={`group p-5 rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
+                      isDark 
+                        ? 'bg-gradient-to-br from-[#130f24]/80 to-[#130f24]/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
+                        : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-pink-500/20">
                         {t.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-stone-900 dark:text-white">{t.name}</p>
-                        <p className="text-xs text-stone-400">Estética</p>
+                        <p className={`font-black text-sm tracking-tight ${
+                          isDark ? 'text-stone-100' : 'text-stone-800'
+                        }`}>
+                          {t.name}
+                        </p>
+                        <p className={`text-[10px] font-medium ${
+                          isDark ? 'text-stone-500' : 'text-stone-400'
+                        }`}>
+                          Estética
+                        </p>
                       </div>
                     </div>
-                    <div className="flex text-amber-400 text-xs mb-2">
+                    <div className="flex text-amber-400 text-sm mb-2">
                       {[...Array(t.rating || 5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                        <Star key={i} className="w-4 h-4 fill-current" />
                       ))}
                     </div>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">"{t.comment}"</p>
-                  </div>
+                    <p className={`text-sm leading-relaxed ${
+                      isDark ? 'text-stone-300' : 'text-stone-600'
+                    }`}>
+                      "{t.comment}"
+                    </p>
+                  </motion.div>
                 ))
               )}
             </div>
           </motion.div>
         )}
 
-        {/* MODAL DETALLES DEL SERVICIO */}
+        {/* ============================================================ */}
+        {/* MODAL DETALLES DEL SERVICIO — REDISEÑADO */}
+        {/* ============================================================ */}
         <AnimatePresence>
           {isModalOpen && selectedService && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md" onClick={() => setIsModalOpen(false)}>
-              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'}`} onClick={(e) => e.stopPropagation()}>
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto ${
+                isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
+              }`} onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                   <X className="w-5 h-5 text-stone-400" />
                 </button>
@@ -752,11 +959,18 @@ export default function EsteticaPage() {
                   <img src={selectedService.image_url || 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop'} alt={selectedService.name} className="w-full h-full object-cover" />
                   <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-white text-xs font-bold">{selectedService.duration} min</div>
                 </div>
-                <h3 className="text-2xl font-bold text-stone-900 dark:text-white">{selectedService.name}</h3>
-                <p className="text-sm text-stone-600 dark:text-stone-400 mt-2 leading-relaxed">{selectedService.description}</p>
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-pink-100/60 dark:border-fuchsia-950">
+                <h3 className={`text-2xl font-bold ${
+                  isDark ? 'text-white' : 'text-stone-900'
+                }`}>{selectedService.name}</h3>
+                <p className={`text-sm mt-2 leading-relaxed ${
+                  isDark ? 'text-stone-400' : 'text-stone-600'
+                }`}>{selectedService.description}</p>
+                <div className={`flex items-center justify-between mt-4 pt-4 border-t ${
+                  isDark ? 'border-fuchsia-950' : 'border-pink-100/60'
+                }`}>
                   <div className="text-2xl font-bold text-emerald-500">${selectedService.price}</div>
-                  <Link href="/agenda" className="px-4 py-2 rounded-xl text-white text-xs font-bold uppercase tracking-widest flex items-center gap-1" style={{ background: brandGradient.backgroundImage }}>
+                  <Link href="/agenda" className="group relative overflow-hidden px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] text-white shadow-xl flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95" style={brandGradient}>
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
                     <Calendar className="w-4 h-4" /> Agendar
                   </Link>
                 </div>
@@ -765,26 +979,60 @@ export default function EsteticaPage() {
           )}
         </AnimatePresence>
 
-        {/* MODAL DE RESEÑAS / CALIFICACIÓN */}
+        {/* ============================================================ */}
+        {/* MODAL DE RESEÑAS / CALIFICACIÓN — REDISEÑADO */}
+        {/* ============================================================ */}
         <AnimatePresence>
           {showReviewModal && selectedService && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setShowReviewModal(false)}>
-              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl ${isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'}`} onClick={(e) => e.stopPropagation()}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md" onClick={() => setShowReviewModal(false)}>
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className={`relative w-full max-w-md rounded-3xl border p-6 shadow-2xl ${
+                isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
+              }`} onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                   <X className="w-5 h-5 text-stone-400" />
                 </button>
-                <h3 className="text-xl font-bold text-stone-900 dark:text-white">Calificar {selectedService.name}</h3>
-                <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Comparte tu experiencia con este servicio</p>
+                
+                <div className="text-center mb-4">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+                    isDark ? 'bg-amber-500/10' : 'bg-amber-50'
+                  }`}>
+                    <Star className="w-8 h-8 text-amber-400" />
+                  </div>
+                  <h3 className={`text-xl font-black tracking-tight ${
+                    isDark ? 'text-white' : 'text-stone-900'
+                  }`}>
+                    Calificar {selectedService.name}
+                  </h3>
+                  <p className={`text-xs mt-1 ${
+                    isDark ? 'text-stone-400' : 'text-stone-500'
+                  }`}>
+                    Comparte tu experiencia con este servicio
+                  </p>
+                </div>
 
                 <div className="flex items-center gap-1 my-6 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} onClick={() => setRating(star)} className="p-1 transition-transform hover:scale-110">
-                      <Star className={`w-10 h-10 ${(hoverRating || rating) >= star ? 'fill-amber-400 text-amber-400' : 'text-stone-300 dark:text-stone-600'} transition-colors`} />
-                    </button>
+                    <motion.button 
+                      key={star} 
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      onMouseEnter={() => setHoverRating(star)} 
+                      onMouseLeave={() => setHoverRating(0)} 
+                      onClick={() => setRating(star)} 
+                      className="p-1 transition-transform"
+                    >
+                      <Star className={`w-10 h-10 transition-all duration-300 ${
+                        (hoverRating || rating) >= star 
+                          ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.3)]' 
+                          : isDark ? 'text-stone-700' : 'text-stone-300'
+                      }`} />
+                    </motion.button>
                   ))}
                 </div>
 
-                <p className="text-center text-sm font-medium text-stone-600 dark:text-stone-400 mb-4">
+                <p className={`text-center text-sm font-medium mb-4 ${
+                  isDark ? 'text-stone-400' : 'text-stone-600'
+                }`}>
                   {rating === 0 ? 'Selecciona una calificación' : 
                    rating === 1 ? '⭐ Muy malo' :
                    rating === 2 ? '⭐⭐ Regular' :
@@ -797,20 +1045,43 @@ export default function EsteticaPage() {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Escribe tu experiencia con este servicio..."
-                  className={`w-full px-4 py-3 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 resize-none ${isDark ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder-stone-500' : 'bg-stone-50 border-pink-100/60 text-stone-900 placeholder-stone-400'}`}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20 resize-none ${
+                    isDark 
+                      ? 'bg-stone-900/60 border-stone-800/60 text-white placeholder:text-stone-500' 
+                      : 'bg-stone-50/80 border-stone-200/60 text-stone-900 placeholder:text-stone-400'
+                  }`}
                   rows={4}
-                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  style={comment ? { borderColor: primaryColor, borderWidth: '1px' } : {}}
                 />
 
                 <div className="flex gap-3 mt-4">
-                  <button onClick={() => setShowReviewModal(false)} className="flex-1 px-4 py-2.5 rounded-xl border text-sm font-semibold text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700">Cancelar</button>
+                  <button 
+                    onClick={() => setShowReviewModal(false)} 
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 border ${
+                      isDark 
+                        ? 'border-stone-800/60 text-stone-400 hover:bg-stone-800/50' 
+                        : 'border-stone-200/60 text-stone-500 hover:bg-stone-50'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
                   <button
                     onClick={handleSubmitReview}
                     disabled={submitting || rating === 0 || !comment.trim()}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-white text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ backgroundColor: primaryColor }}
                   >
-                    {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando</> : <><Send className="w-4 h-4" /> Enviar</>}
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> 
+                        Enviando
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" /> 
+                        Enviar
+                      </>
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -818,6 +1089,31 @@ export default function EsteticaPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shine {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(100%); }
+        }
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+        .animate-shine {
+          animation: shine 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }
