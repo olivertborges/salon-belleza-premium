@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
 
@@ -15,82 +15,165 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [panelEstado, setPanelEstado] = useState([])
 
-  const agregarEstado = (texto, color='blanco') => {
+  const agregarEstado = function(texto, color) {
+    if (!color) color = 'blanco'
     const hora = new Date().toLocaleTimeString()
-    setPanelEstado(a => [{hora, texto, color}, ...a].slice(0,8))
+    const nuevo = [{hora: hora, texto: texto, color: color}]
+    setPanelEstado(nuevo.concat(panelEstado).slice(0,8))
   }
 
-  useEffect(() => {
+  useEffect(function() {
     if (!mounted) return
-    agregarEstado(`Usuario: ${user?.email || 'NO'}`, user ? 'verde' : 'rojo')
-    agregarEstado(`Rol: ${role || 'NO'}`, role ? 'verde' : 'amarillo')
-    agregarEstado(`Cargando: ${authLoading ? 'SI' : 'NO'}`, authLoading ? 'naranja' : 'verde')
+    const textoUsuario = user ? user.email : 'NO DETECTADO'
+    const colorUsuario = user ? 'verde' : 'rojo'
+    agregarEstado('Usuario: ' + textoUsuario, colorUsuario)
+    
+    const textoRol = role || 'NO CARGADO'
+    const colorRol = role ? 'verde' : 'amarillo'
+    agregarEstado('Rol: ' + textoRol, colorRol)
+    
+    const textoCarga = authLoading ? 'SI' : 'NO'
+    const colorCarga = authLoading ? 'naranja' : 'verde'
+    agregarEstado('Cargando: ' + textoCarga, colorCarga)
   }, [user, role, authLoading, mounted])
 
-  useEffect(() => { setMounted(true); agregarEstado('LISTO', 'verde') }, [])
+  useEffect(function() {
+    setMounted(true)
+    agregarEstado('COMPONENTE LISTO', 'verde')
+  }, [])
 
-  const handleLogin = async (e) => {
+  const handleLogin = async function(e) {
     e.preventDefault()
-    if (loading || !email || !password) return setError('Completa los datos')
-    setLoading(true); setError('')
+    if (loading) return
+    if (!email || !password) {
+      setError('Escribe correo y contraseña')
+      agregarEstado('Faltan datos', 'rojo')
+      return
+    }
+    agregarEstado('Intentando: ' + email, 'azul')
+    setLoading(true)
+    setError('')
     try {
-      const { error: err } = await signIn(email, password)
-      if (err) throw err
-      agregarEstado('INGRESO OK', 'verde')
+      const res = await signIn(email, password)
+      if (res.error) throw res.error
+      agregarEstado('INGRESO EXITOSO', 'verde')
       setSuccess('Redirigiendo...')
-      setTimeout(() => window.location.reload(), 1000)
+      setTimeout(function() {
+        window.location.reload()
+      }, 1000)
     } catch (err) {
       setError(err.message)
-      agregarEstado('ERROR', 'rojo')
-    } finally { setLoading(false) }
+      agregarEstado('ERROR: ' + err.message, 'rojo')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const irManual = () => {
-    if (!user || !role) return
-    const dest = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
-    agregarEstado(`IR A: ${dest}`, 'verde')
-    window.location.replace(dest)
+  const irManual = function() {
+    if (!user || !role) {
+      agregarEstado('Falta usuario o rol', 'rojo')
+      return
+    }
+    let destino = '/portal'
+    if (role === 'admin' || role === 'staff' || role === 'owner') {
+      destino = '/dashboard'
+    }
+    agregarEstado('Yendo a: ' + destino, 'verde')
+    window.location.replace(destino)
   }
 
   if (!mounted) {
-    return React.createElement('div', { className: 'flex items-center justify-center h-screen bg-black text-pink-400' }, 'Cargando...')
+    return React.createElement('div', {
+      className: 'flex items-center justify-center h-screen bg-black text-pink-400'
+    }, 'Cargando...')
   }
 
-  return React.createElement('div', { className: 'w-full min-h-screen bg-gradient-to-br from-pink-50 to-amber-50 dark:from-black dark:to-gray-900 flex items-center justify-center p-3' },
-    React.createElement('div', { className: 'w-full max-w-md bg-white/90 dark:bg-gray-900/95 rounded-3xl p-4' },
-      React.createElement('div', { className: 'mb-4 p-3 bg-gray-800 rounded-xl' },
-        React.createElement('p', { className: 'text-xs font-bold text-gray-300 mb-2' }, 'ESTADO:'),
-        React.createElement('div', { className: 'space-y-1 text-[10px] font-mono' },
-          panelEstado.map((e,i) => React.createElement('p', { key: i, className: `${e.color==='verde'?'text-green-400'} ${e.color==='rojo'?'text-red-400'} ${e.color==='amarillo'?'text-yellow-400'} ${e.color==='naranja'?'text-orange-400'}` }, `[${e.hora}] ${e.texto}`))
+  const colorClase = function(color) {
+    if (color === 'verde') return 'text-green-400'
+    if (color === 'rojo') return 'text-red-400'
+    if (color === 'amarillo') return 'text-yellow-400'
+    if (color === 'naranja') return 'text-orange-400'
+    if (color === 'azul') return 'text-blue-400'
+    return 'text-gray-300'
+  }
+
+  return React.createElement('div', {
+    className: 'w-full min-h-screen bg-gradient-to-br from-pink-50 to-amber-50 dark:from-black dark:to-gray-900 flex items-center justify-center p-3'
+  },
+    React.createElement('div', {className: 'w-full max-w-md bg-white/90 dark:bg-gray-900/95 rounded-3xl p-4'},
+      React.createElement('div', {className: 'mb-4 p-3 bg-gray-800 rounded-xl'},
+        React.createElement('p', {className: 'text-xs font-bold text-gray-300 mb-2'}, 'ESTADO:'),
+        React.createElement('div', {className: 'space-y-1 text-[10px] font-mono'},
+          panelEstado.map(function(item, idx) {
+            return React.createElement('p', {key: idx, className: colorClase(item.color)}, '[' + item.hora + '] ' + item.texto)
+          })
         ),
-        user && role ? React.createElement('button', { onClick: irManual, className: 'mt-3 w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg' }, 'IR AL PANEL') : null
+        (user && role) ? React.createElement('button', {
+          onClick: irManual,
+          className: 'mt-3 w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg'
+        }, 'IR AL PANEL AHORA') : null
       ),
-      React.createElement('div', { className: 'text-center mb-4' },
-        React.createElement('div', { className: 'inline-flex items-center justify-center w-14 h-14 rounded-2xl text-white mb-2', style: {background:'linear-gradient(135deg,#ec4899,#f59e0b)'} }, React.createElement(Sparkles, { className: 'w-7 h-7' })),
-        React.createElement('h2', { className: 'text-xl font-bold', style: {background:'linear-gradient(135deg,#ec4899,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'} }, 'Fresh Nails')
+      React.createElement('div', {className: 'text-center mb-4'},
+        React.createElement('div', {
+          className: 'inline-flex items-center justify-center w-14 h-14 rounded-2xl text-white mb-2',
+          style: {background: 'linear-gradient(135deg, #ec4899, #f59e0b)'}
+        }, React.createElement(Sparkles, {className: 'w-7 h-7'})),
+        React.createElement('h2', {
+          className: 'text-xl font-bold',
+          style: {background: 'linear-gradient(135deg, #ec4899, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}
+        }, 'Fresh Nails')
       ),
-      React.createElement('div', { className: 'flex gap-1 p-1 rounded-xl bg-pink-100 dark:bg-gray-800 mb-4' },
-        [{id:'login',label:'Ingresar',icon:LogIn},{id:'reg',label:'Registro',icon:User},{id:'rec',label:'Ayuda',icon:Shield}].map(t => 
-          React.createElement('button', { key: t.id, onClick: ()=>{setActiveTab(t.id);setError('')}, className: `flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ${activeTab===t.id?'text-white':'text-gray-400'}`, style: activeTab===t.id?{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}:{} },
-            React.createElement(t.icon, { className: 'w-4 h-4' }), t.label
-          )
-        )
+      React.createElement('div', {className: 'flex gap-1 p-1 rounded-xl bg-pink-100 dark:bg-gray-800 mb-4'},
+        [
+          {id: 'login', label: 'Ingresar', icon: LogIn},
+          {id: 'reg', label: 'Registro', icon: User},
+          {id: 'rec', label: 'Ayuda', icon: Shield}
+        ].map(function(tab) {
+          const activo = activeTab === tab.id
+          return React.createElement('button', {
+            key: tab.id,
+            onClick: function() { setActiveTab(tab.id); setError('') },
+            className: 'flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ' + (activo ? 'text-white' : 'text-gray-400'),
+            style: activo ? {background: 'linear-gradient(135deg, #ec4899, #f59e0b)'} : {}
+          }, React.createElement(tab.icon, {className: 'w-4 h-4'}), tab.label)
+        })
       ),
-      error ? React.createElement('div', { className: 'mb-3 p-2 bg-red-900/30 text-red-400 text-xs rounded-lg flex items-center gap-1' }, React.createElement(XCircle, { className: 'w-3 h-3' }), error) : null,
-      success ? React.createElement('div', { className: 'mb-3 p-2 bg-green-900/30 text-green-400 text-xs rounded-lg flex items-center gap-1' }, React.createElement(CheckCircle2, { className: 'w-3 h-3' }), success) : null,
-      activeTab==='login' ? React.createElement('form', { onSubmit: handleLogin, className: 'space-y-4' },
+      error ? React.createElement('div', {className: 'mb-3 p-2 bg-red-900/30 text-red-400 text-xs rounded-lg flex items-center gap-1'}, React.createElement(XCircle, {className: 'w-3 h-3'}), error) : null,
+      success ? React.createElement('div', {className: 'mb-3 p-2 bg-green-900/30 text-green-400 text-xs rounded-lg flex items-center gap-1'}, React.createElement(CheckCircle2, {className: 'w-3 h-3'}), success) : null,
+      activeTab === 'login' ? React.createElement('form', {onSubmit: handleLogin, className: 'space-y-4'},
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-xs text-gray-500' }, 'Correo'),
-          React.createElement('input', { type: 'email', value: email, onChange: e=>setEmail(e.target.value), className: 'w-full p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none', required: true })
+          React.createElement('label', {className: 'text-xs text-gray-500'}, 'Correo'),
+          React.createElement('input', {
+            type: 'email',
+            value: email,
+            onChange: function(e) { setEmail(e.target.value) },
+            className: 'w-full p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none',
+            required: true
+          })
         ),
         React.createElement('div', null,
-          React.createElement('label', { className: 'text-xs text-gray-500' }, 'Contraseña'),
-          React.createElement('div', { className: 'flex items-center' },
-            React.createElement('input', { type: showPassword?'text':'password', value: password, onChange: e=>setPassword(e.target.value), className: 'flex-1 p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none', required: true }),
-            React.createElement('button', { type: 'button', onClick: ()=>setShowPassword(!showPassword), className: 'p-2 text-gray-500' }, showPassword?React.createElement(EyeOff, { size: 16 }):React.createElement(Eye, { size: 16 }))
+          React.createElement('label', {className: 'text-xs text-gray-500'}, 'Contraseña'),
+          React.createElement('div', {className: 'flex items-center'},
+            React.createElement('input', {
+              type: showPassword ? 'text' : 'password',
+              value: password,
+              onChange: function(e) { setPassword(e.target.value) },
+              className: 'flex-1 p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none',
+              required: true
+            }),
+            React.createElement('button', {
+              type: 'button',
+              onClick: function() { setShowPassword(!showPassword) },
+              className: 'p-2 text-gray-500'
+            }, showPassword ? React.createElement(EyeOff, {size: 16}) : React.createElement(Eye, {size: 16}))
           )
         ),
-        React.createElement('button', { type: 'submit', disabled: loading, className: 'w-full py-3 rounded-xl text-white text-xs font-bold', style: {background:'linear-gradient(135deg,#ec4899,#f59e0b)'} }, loading?'...':'Ingresar')
+        React.createElement('button', {
+          type: 'submit',
+          disabled: loading,
+          className: 'w-full py-3 rounded-xl text-white text-xs font-bold',
+          style: {background: 'linear-gradient(135deg, #ec4899, #f59e0b)'}
+        }, loading ? '...' : 'Ingresar')
       ) : null
     )
   )
