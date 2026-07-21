@@ -67,38 +67,7 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ REDIRECCIÓN DEFINITIVA: SI YA TENEMOS TODO, VAMOS DIRECTO
-useEffect(() => {
-  // No hacemos nada si falta algo o ya estamos yendo
-  if (redirecting || !mounted || authLoading || !role || !user) {
-    addLog(`⏳ Esperando... ok cuando todo esté listo`)
-    return
-  }
-
-  const destino = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
-
-  // Si ya estamos ahí, no hacer nada
-  if (window.location.pathname === destino) {
-    addLog(`✅ Ya estás en ${destino}`)
-    return
-  }
-
-  addLog(`🎯 TODO LISTO: ${user.email} | Rol: ${role} → IR A ${destino}`)
-  setRedirecting(true)
-
-  // ✅ Usamos router.replace y también forzamos por si hay fallos
-  router.replace(destino)
   
-  // Plan B por si el router falla
-  setTimeout(() => {
-    if (window.location.pathname !== destino) {
-      addLog(`🔄 Plan B: redirigiendo con location`)
-      window.location.href = destino
-    }
-  }, 250)
-
-}, [user, role, authLoading, mounted, router, redirecting])
-
 
   // ============================================================
   // INICIO DE SESIÓN
