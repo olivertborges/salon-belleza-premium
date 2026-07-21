@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase/client'
@@ -83,8 +83,8 @@ export default function AuthMobilDefinitivo() {
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
-  // ✅ Estado para mostrar info de debug
-  const [authDebug, setAuthDebug] = useState({ user: false, role: 'null', loading: true })
+  // ✅ Ref para evitar redirección múltiple
+  const hasRedirected = useRef(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -99,30 +99,39 @@ export default function AuthMobilDefinitivo() {
     if (ref) setReferralCode(ref);
   }, [])
 
-  // ✅ Actualizar debug
+  // ✅ REDIRECCIÓN SEGURA - CON PREVENCIÓN DE BUCLE
   useEffect(() => {
-    setAuthDebug({
-      user: !!user,
-      role: role || 'null',
-      loading: authLoading
-    })
-  }, [user, role, authLoading])
-
-  // ✅ REDIRECCIÓN DESACTIVADA TEMPORALMENTE - SOLO MOSTRAR INFO
-  useEffect(() => {
-    // No redirigir automáticamente - solo mostrar estado
-    console.log('🔍 Estado de autenticación:', { 
-      user: !!user, 
-      role, 
-      authLoading,
-      mounted 
-    })
-    
-    // ✅ Si hay usuario y rol, mostrar un botón para redirigir manualmente
-    if (user && role) {
-      console.log('👤 Usuario autenticado:', user.email, 'Rol:', role)
+    // Si ya redirigió, no hacer nada
+    if (hasRedirected.current) {
+      console.log('⏭️ Ya redirigió, saltando...')
+      return
     }
-  }, [user, role, authLoading, mounted])
+
+    // Si no está montado o está cargando, esperar
+    if (!mounted || authLoading) {
+      console.log('⏳ Esperando: mounted=', mounted, 'authLoading=', authLoading)
+      return
+    }
+
+    // Si no hay usuario o no hay rol, esperar
+    if (!user || !role) {
+      console.log('👤 Esperando usuario o rol...')
+      return
+    }
+
+    // ✅ Si llegamos aquí, tenemos todo - REDIRIGIR UNA SOLA VEZ
+    console.log('🚀 REDIRIGIENDO a:', role === 'admin' || role === 'staff' || role === 'owner' ? '/dashboard' : '/portal')
+    
+    // Marcar que ya redirigió
+    hasRedirected.current = true
+    
+    // Usar router.replace para evitar que el usuario vuelva atrás
+    if (role === 'admin' || role === 'staff' || role === 'owner') {
+      router.replace('/dashboard')
+    } else {
+      router.replace('/portal')
+    }
+  }, [user, role, authLoading, mounted, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -137,14 +146,8 @@ export default function AuthMobilDefinitivo() {
 
       setSuccess('¡Ingreso correcto!')
       
-      // ✅ Después del login exitoso, esperar y redirigir manualmente
-      setTimeout(() => {
-        if (role === 'admin' || role === 'staff' || role === 'owner') {
-          window.location.href = '/dashboard'
-        } else {
-          window.location.href = '/portal'
-        }
-      }, 1000)
+      // Resetear el flag de redirección para permitir la redirección después del login
+      hasRedirected.current = false
 
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
@@ -180,6 +183,8 @@ export default function AuthMobilDefinitivo() {
       }
 
       setSuccess('✅ ¡Registro exitoso!')
+      
+      hasRedirected.current = false
       await signIn(email, password)
 
     } catch (err: any) {
@@ -200,21 +205,6 @@ export default function AuthMobilDefinitivo() {
     setLoading(false)
   }
 
-  // ✅ Función para ir al dashboard manualmente
-  const goToDashboard = () => {
-    if (role === 'admin' || role === 'staff' || role === 'owner') {
-      window.location.href = '/dashboard'
-    } else {
-      window.location.href = '/portal'
-    }
-  }
-
-  // ✅ Función para limpiar sesión
-  const clearSession = async () => {
-    await supabase.auth.signOut()
-    window.location.reload()
-  }
-
   if (!mounted) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
@@ -224,6 +214,21 @@ export default function AuthMobilDefinitivo() {
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
           Cargando...
+        </p>
+      </div>
+    )
+  }
+
+  // Si ya hay usuario y rol, mostrar spinner de redirección
+  if (user && role) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
+          Redirigiendo...
         </p>
       </div>
     )
@@ -324,40 +329,6 @@ export default function AuthMobilDefinitivo() {
         exit="exit"
         className="w-full max-w-md bg-white/80 dark:bg-[#141211]/90 backdrop-blur-2xl border border-pink-100/40 dark:border-fuchsia-950/40 rounded-[32px] p-6 shadow-2xl shadow-pink-500/5 relative overflow-hidden"
       >
-
-        {/* ✅ PANEL DE DEBUG DE AUTENTICACIÓN */}
-        <div className="mb-4 p-3 rounded-xl bg-stone-950/90 backdrop-blur-sm border border-stone-800">
-          <p className="text-[8px] font-mono font-bold uppercase tracking-wider text-pink-400 mb-1">🔐 ESTADO DE AUTENTICACIÓN</p>
-          <div className="space-y-0.5 font-mono text-[8px]">
-            <p className={authDebug.user ? 'text-emerald-400' : 'text-stone-500'}>
-              Usuario: {authDebug.user ? '✅ Autenticado' : '❌ No autenticado'}
-            </p>
-            <p className={authDebug.role !== 'null' ? 'text-emerald-400' : 'text-stone-500'}>
-              Rol: {authDebug.role !== 'null' ? `✅ ${authDebug.role}` : '⏳ Cargando...'}
-            </p>
-            <p className={!authDebug.loading ? 'text-emerald-400' : 'text-stone-500'}>
-              Loading: {authDebug.loading ? '⏳ Cargando...' : '✅ Listo'}
-            </p>
-          </div>
-          
-          {/* ✅ Botones de acción para debug */}
-          <div className="flex gap-2 mt-3">
-            {authDebug.user && authDebug.role !== 'null' && (
-              <button
-                onClick={goToDashboard}
-                className="flex-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-amber-500 text-white text-[8px] font-bold uppercase tracking-wider hover:opacity-90 transition-all"
-              >
-                Ir al Dashboard
-              </button>
-            )}
-            <button
-              onClick={clearSession}
-              className="px-3 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/20 text-rose-400 text-[8px] font-bold uppercase tracking-wider hover:bg-rose-500/30 transition-all"
-            >
-              Limpiar Sesión
-            </button>
-          </div>
-        </div>
 
         {/* HEADER */}
         <motion.div variants={itemVariants} className="text-center mb-6 relative">
