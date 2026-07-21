@@ -1,8 +1,7 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Sparkles, Mail, Lock, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const { signIn, role, user, loading: authLoading } = useAuth
@@ -18,52 +17,39 @@ export default function LoginPage() {
 
   const agregarEstado = (texto, color='blanco') => {
     const hora = new Date().toLocaleTimeString()
-    setPanelEstado(antiguo => [{hora, texto, color}, ...antiguo].slice(0,8))
+    setPanelEstado(a => [{hora, texto, color}, ...a].slice(0,8))
   }
 
   useEffect(() => {
     if (!mounted) return
-    agregarEstado(`Usuario: ${user?.email || 'NO DETECTADO'}`, user ? 'verde' : 'rojo')
-    agregarEstado(`Rol: ${role || 'NO CARGADO'}`, role ? 'verde' : 'amarillo')
+    agregarEstado(`Usuario: ${user?.email || 'NO'}`, user ? 'verde' : 'rojo')
+    agregarEstado(`Rol: ${role || 'NO'}`, role ? 'verde' : 'amarillo')
     agregarEstado(`Cargando: ${authLoading ? 'SI' : 'NO'}`, authLoading ? 'naranja' : 'verde')
-    agregarEstado(`Ruta: ${window.location.pathname}`, 'azul')
   }, [user, role, authLoading, mounted])
 
-  useEffect(() => {
-    setMounted(true)
-    agregarEstado('Listo', 'verde')
-  }, [])
+  useEffect(() => { setMounted(true); agregarEstado('LISTO', 'verde') }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    if (loading) return
-    if (!email || !password) {
-      setError('Faltan datos')
-      agregarEstado('Faltan datos', 'rojo')
-      return
-    }
-    agregarEstado(`Ingresando: ${email}`, 'azul')
-    setLoading(true)
-    setError('')
+    if (loading || !email || !password) return setError('Completa los datos')
+    setLoading(true); setError('')
     try {
       const { error: err } = await signIn(email, password)
       if (err) throw err
       agregarEstado('INGRESO OK', 'verde')
       setSuccess('Redirigiendo...')
-      setTimeout(() => window.location.reload(), 1200)
+      setTimeout(() => window.location.reload(), 1000)
     } catch (err) {
-      agregarEstado(`Error: ${err.message}`, 'rojo')
       setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+      agregarEstado('ERROR', 'rojo')
+    } finally { setLoading(false) }
   }
 
-  const irYoMismo = () => {
+  const irManual = () => {
     if (!user || !role) return
-    const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
-    agregarEstado(`Yendo a: ${destino}`, 'verde')
-    window.location.replace(destino)
+    const dest = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
+    agregarEstado(`IR A: ${dest}`, 'verde')
+    window.location.replace(dest)
   }
 
   if (!mounted) return <div className="flex items-center justify-center h-screen bg-black text-pink-400">Cargando...</div>
@@ -76,20 +62,12 @@ export default function LoginPage() {
           <p className="text-xs font-bold text-gray-300 mb-2">ESTADO:</p>
           <div className="space-y-1 text-[10px] font-mono">
             {panelEstado.map((e,i) => (
-              <p key={i} className={`
-                ${e.color==='verde'?'text-green-400'}
-                ${e.color==='rojo'?'text-red-400'}
-                ${e.color==='amarillo'?'text-yellow-400'}
-                ${e.color==='naranja'?'text-orange-400'}
-                ${e.color==='azul'?'text-blue-400'}
-              `}>[{e.hora}] {e.texto}</p>
+              <p key={i} className={`${e.color==='verde'?'text-green-400'} ${e.color==='rojo'?'text-red-400'} ${e.color==='amarillo'?'text-yellow-400'} ${e.color==='naranja'?'text-orange-400'}`}>
+                [{e.hora}] {e.texto}
+              </p>
             ))}
           </div>
-          {user && role && (
-            <button onClick={irYoMismo} className="mt-3 w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg">
-              IR AL PANEL
-            </button>
-          )}
+          {user && role && <button onClick={irManual} className="mt-3 w-full py-2 bg-green-600 text-white text-xs font-bold rounded-lg">IR AL PANEL</button>}
         </div>
 
         <div className="text-center mb-4">
@@ -100,46 +78,20 @@ export default function LoginPage() {
         </div>
 
         <div className="flex gap-1 p-1 rounded-xl bg-pink-100 dark:bg-gray-800 mb-4">
-          {[
-            {id:'login',label:'Ingresar',icon:LogIn},
-            {id:'reg',label:'Registro',icon:User},
-            {id:'rec',label:'Ayuda',icon:Shield}
-          ].map(tab=>{
-            const Icon = tab.icon
-            const activo = activeTab===tab.id
-            return (
-              <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setError('')}}
-                className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ${activo?'text-white':'text-gray-400'}`}
-                style={activo?{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}:{}}>
-                <Icon className="w-4 h-4"/>{tab.label}
-              </button>
-            )
+          {[{id:'login',label:'Ingresar',icon:LogIn},{id:'reg',label:'Registro',icon:User},{id:'rec',label:'Ayuda',icon:Shield}].map(t=>{
+            const I = t.icon
+            return <button key={t.id} onClick={()=>{setActiveTab(t.id);setError('')}} className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg text-[10px] font-bold ${activeTab===t.id?'text-white':'text-gray-400'}`} style={activeTab===t.id?{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}:{}}><I className="w-4 h-4"/>{t.label}</button>
           })}
         </div>
 
         {error && <div className="mb-3 p-2 bg-red-900/30 text-red-400 text-xs rounded-lg flex items-center gap-1"><XCircle className="w-3 h-3"/>{error}</div>}
         {success && <div className="mb-3 p-2 bg-green-900/30 text-green-400 text-xs rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/>{success}</div>}
 
-        {activeTab==='login' && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="text-xs text-gray-500">Correo</label>
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none" required/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">Contraseña</label>
-              <div className="flex items-center">
-                <input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} className="flex-1 p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none" required/>
-                <button type="button" onClick={()=>setShowPassword(!showPassword)} className="p-2 text-gray-500">
-                  {showPassword?<EyeOff size={16}/>:<Eye size={16}/>}
-                </button>
-              </div>
-            </div>
-            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl text-white text-xs font-bold" style={{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}}>
-              {loading?'...':'Ingresar'}
-            </button>
-          </form>
-        )}
+        {activeTab==='login' && <form onSubmit={handleLogin} className="space-y-4">
+          <div><label className="text-xs text-gray-500">Correo</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none" required/></div>
+          <div><label className="text-xs text-gray-500">Contraseña</label><div className="flex items-center"><input type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} className="flex-1 p-2 border-b border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:border-pink-500 outline-none" required/><button type="button" onClick={()=>setShowPassword(!showPassword)} className="p-2 text-gray-500">{showPassword?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></div>
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl text-white text-xs font-bold" style={{background:'linear-gradient(135deg,#ec4899,#f59e0b)'}}>{loading?'...':'Ingresar'}</button>
+        </form>}
       </div>
     </div>
   )
