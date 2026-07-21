@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation' // ✅ Importamos el router oficial
 
 export default function LoginPage() {
   const { signIn, role, user, loading: authLoading } = useAuth()
+  const router = useRouter() // ✅ Herramienta para moverse entre páginas
 
   const [mounted, setMounted] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<string>('login')
@@ -16,27 +18,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState<string>('')
   const [panelEstado, setPanelEstado] = useState<Array<{hora:string; texto:string; color:string}>>([])
 
-  // ✅ Tipos agregados aquí
   const agregarEstado = function(texto: string, color: string = 'blanco') {
     const hora = new Date().toLocaleTimeString()
     const nuevo = [{hora: hora, texto: texto, color: color}]
     setPanelEstado(nuevo.concat(panelEstado).slice(0,8))
   }
 
-  useEffect(function() {
+  // ✅ Si el usuario ya está logueado al entrar, lo mandamos directo
+  useEffect(() => {
     if (!mounted) return
-    const textoUsuario = user ? user.email : 'NO DETECTADO'
-    const colorUsuario = user ? 'verde' : 'rojo'
-    agregarEstado('Usuario: ' + textoUsuario, colorUsuario)
-    
-    const textoRol = role || 'NO CARGADO'
-    const colorRol = role ? 'verde' : 'amarillo'
-    agregarEstado('Rol: ' + textoRol, colorRol)
-    
-    const textoCarga = authLoading ? 'SI' : 'NO'
-    const colorCarga = authLoading ? 'naranja' : 'verde'
-    agregarEstado('Cargando: ' + textoCarga, colorCarga)
-  }, [user, role, authLoading, mounted])
+    if (user && role) {
+      agregarEstado(`USUARIO: ${user.email}`, 'verde')
+      agregarEstado(`ROL: ${role}`, 'verde')
+      const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
+      agregarEstado(`YA ESTÁS DENTRO → ${destino}`, 'verde')
+      setTimeout(() => router.push(destino), 800)
+    }
+  }, [user, role, mounted, router])
 
   useEffect(function() {
     setMounted(true)
@@ -51,20 +49,18 @@ export default function LoginPage() {
       agregarEstado('Faltan datos', 'rojo')
       return
     }
-    agregarEstado('Intentando: ' + email, 'azul')
+    agregarEstado('Intentando ingresar...', 'azul')
     setLoading(true)
     setError('')
     try {
       const res = await signIn(email, password)
       if (res.error) throw res.error
-      agregarEstado('INGRESO EXITOSO', 'verde')
-      setSuccess('Redirigiendo...')
-      setTimeout(function() {
-        window.location.reload()
-      }, 1000)
+      agregarEstado('✓ INGRESO CORRECTO', 'verde')
+      setSuccess('Entrando...')
+      // ✅ YA NO RECARGAMOS: el efecto de arriba se encarga de mandarte
     } catch (err: any) {
       setError(err.message)
-      agregarEstado('ERROR: ' + err.message, 'rojo')
+      agregarEstado(`ERROR: ${err.message}`, 'rojo')
     } finally {
       setLoading(false)
     }
@@ -72,15 +68,12 @@ export default function LoginPage() {
 
   const irManual = function() {
     if (!user || !role) {
-      agregarEstado('Falta usuario o rol', 'rojo')
+      agregarEstado('No hay sesión activa', 'rojo')
       return
     }
-    let destino = '/portal'
-    if (role === 'admin' || role === 'staff' || role === 'owner') {
-      destino = '/dashboard'
-    }
-    agregarEstado('Yendo a: ' + destino, 'verde')
-    window.location.replace(destino)
+    const destino = ['admin','staff','owner'].includes(role) ? '/dashboard' : '/portal'
+    agregarEstado(`YENDO A: ${destino}`, 'verde')
+    router.push(destino)
   }
 
   if (!mounted) {
@@ -103,7 +96,7 @@ export default function LoginPage() {
   },
     React.createElement('div', {className: 'w-full max-w-md bg-white/90 dark:bg-gray-900/95 rounded-3xl p-4'},
       React.createElement('div', {className: 'mb-4 p-3 bg-gray-800 rounded-xl'},
-        React.createElement('p', {className: 'text-xs font-bold text-gray-300 mb-2'}, 'ESTADO:'),
+        React.createElement('p', {className: 'text-xs font-bold text-gray-300 mb-2'}, 'ESTADO DEL SISTEMA:'),
         React.createElement('div', {className: 'space-y-1 text-[10px] font-mono'},
           panelEstado.map(function(item, idx) {
             return React.createElement('p', {key: idx, className: colorClase(item.color)}, '[' + item.hora + '] ' + item.texto)
@@ -112,7 +105,7 @@ export default function LoginPage() {
         (user && role) ? React.createElement('button', {
           onClick: irManual,
           className: 'mt-3 w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-lg'
-        }, 'IR AL PANEL AHORA') : null
+        }, '✅ IR AL PANEL AHORA') : null
       ),
       React.createElement('div', {className: 'text-center mb-4'},
         React.createElement('div', {
