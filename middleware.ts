@@ -1,16 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // 1. Inicializar respuesta base
+  // 1. Crear respuesta inicial
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
 
-  // 2. Cliente Supabase SSR
+  // 2. Instanciar Supabase con asignación estricta de cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,9 +18,19 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
+        setAll(cookiesToSet) {
+          // Actualizamos las cookies en la petición (para que Supabase las lea en esta misma ejecución)
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
+          })
+
+          // Re-instanciamos la respuesta para asegurar que viaje limpia con las nuevas cabeceras de petición
+          response = NextResponse.next({
+            request: { headers: request.headers },
+          })
+
+          // Fijamos las cookies en la respuesta final para el navegador
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set({ name, value, ...options })
           })
         },
@@ -29,7 +38,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 3. Obtener usuario de forma segura
+  // 3. Obtener el usuario
   let user = null
   try {
     const { data } = await supabase.auth.getUser()
@@ -38,14 +47,14 @@ export async function middleware(request: NextRequest) {
     user = null
   }
 
-  // --- CONTROL DE FLUJO EXACTO ---
-
-  // CASO 1: No está autenticado e intenta entrar a zonas privadas (/dashboard o /admin)
+  // --- COMPROBACIÓN RÁPIDA DE RUTAS ---
+  
+  // Si no está logueado e intenta ir a zonas de admin
   if (!user && (pathname === '/dashboard' || pathname.startsWith('/admin'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // CASO 2: El usuario se acaba de loguear y está en /login (Redirección inicial)
+  // Si está logueado e intenta entrar a /login
   if (user && pathname === '/login') {
     try {
       const { data: profile } = await supabase
@@ -57,16 +66,13 @@ export async function middleware(request: NextRequest) {
       const userRole = profile?.role || 'client'
       const isAdmin = ['admin', 'staff', 'owner'].includes(userRole)
 
-      // El admin va a /dashboard, el cliente va a /portal
-      const target = isAdmin ? '/dashboard' : '/portal'
-      return NextResponse.redirect(new URL(target, request.url))
+      return NextResponse.redirect(new URL(isAdmin ? '/dashboard' : '/portal', request.url))
     } catch (e) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // CASO 3: Protección de la zona Admin (/admin/:path*)
-  // Si un cliente intenta entrar a las rutas /admin, lo rebotamos a la raíz (/)
+  // Si un cliente intenta pisar /admin
   if (user && pathname.startsWith('/admin')) {
     try {
       const { data: profile } = await supabase
@@ -89,11 +95,10 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
-// 4. El Matcher perfecto para tu arquitectura
 export const config = {
   matcher: [
-    '/dashboard',    // Captura la entrada inicial del Admin
-    '/admin/:path*', // Captura la navegación subsiguiente del Admin
-    '/login'         // Captura el login para ambos
+    '/dashboard',
+    '/admin/:path*',
+    '/login'
   ],
 }
