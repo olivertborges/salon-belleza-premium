@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Sparkles, Mail, Lock, Eye, EyeOff, 
   User, LogIn, Shield, 
-  ArrowRight, CheckCircle2, XCircle,
+  CheckCircle2, XCircle,
   Heart, Gem, Gift, Bug
 } from 'lucide-react'
 
@@ -67,37 +67,35 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ REDIRECCIÓN SEGURA
+  // ✅ REDIRECCIÓN ESTABLE Y DEFINITIVA
   useEffect(() => {
-    if (redirecting || !mounted || authLoading || !role) {
-      addLog(`⏳ Esperando... redirecting=${redirecting}, mounted=${mounted}, authLoading=${authLoading}, role=${!!role}`)
-      return
-    }
-
-    if (!user) {
-      addLog(`👤 Sin usuario activo`)
+    if (redirecting || !mounted || authLoading || !role || !user) {
+      addLog(`⏳ Esperando... redirecting=${redirecting}, mounted=${mounted}, authLoading=${authLoading}, role=${!!role}, user=${!!user}`)
       return
     }
 
     const targetPath = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
 
-    addLog(`🎯 Usuario ${user.email} con rol ${role} → ${targetPath}`)
+    addLog(`🎯 Usuario ${user.email} | Rol: ${role} → Ir a: ${targetPath}`)
 
     if (window.location.pathname === targetPath) {
-      addLog(`✅ Ya en la ruta correcta`)
+      addLog(`✅ Ya estás en la ruta correcta`)
       return
     }
 
     if (window.location.pathname !== '/login' && window.location.pathname !== '/auth') {
-      addLog(`⚠️ No estamos en login, omitiendo redirección`)
+      addLog(`⚠️ No estamos en login, no redirigimos`)
       return
     }
 
-    addLog(`🚀 Redirigiendo a ${targetPath}`)
+    addLog(`🚀 INICIANDO REDIRECCIÓN A: ${targetPath}`)
     setRedirecting(true)
-    router.replace(targetPath)
 
-  }, [user, role, authLoading, mounted, router, redirecting])
+    setTimeout(() => {
+      router.replace(targetPath)
+    }, 150)
+
+  }, [user, role, authLoading, mounted, router])
 
   // ============================================================
   // INICIO DE SESIÓN
@@ -220,7 +218,7 @@ export default function AuthMobilDefinitivo() {
   }
 
   // ============================================================
-  // REDIRECCIÓN MANUAL
+  // REDIRECCIÓN MANUAL DE AUXILIO
   // ============================================================
   const handleManualRedirect = () => {
     if (!user || !role || redirecting) return
