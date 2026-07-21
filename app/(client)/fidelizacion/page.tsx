@@ -9,10 +9,12 @@ import {
   Crown, Gift, Check, ArrowUpRight, Sparkles, Scissors, 
   Ticket, Copy, ShieldCheck, Award, TrendingUp, Lock,
   Gem, Star, Zap, Wallet, ChevronRight, 
-  Diamond, PartyPopper, Medal, Flame, Compass, Heart
+  Diamond, PartyPopper, Medal, Flame, Compass, Heart,
+  X
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { QRCodeSVG } from 'qrcode.react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface WalletData {
   glow_points: number
@@ -74,7 +76,6 @@ export default function VIPClubPage() {
     try {
       setLoading(true)
 
-      // 1. PASO IGUAL AL DASHBOARD DE HOY: Obtener primero el ID relacional de la tabla 'clients'
       const { data: clienteData, error: clienteError } = await supabase
         .from('clients')
         .select('id')
@@ -87,7 +88,6 @@ export default function VIPClubPage() {
         const activeClientId = clienteData.id
         setClientId(activeClientId)
 
-        // 2. PASO IGUAL AL DASHBOARD DE HOY: Buscar la wallet usando el client_id resuelto
         const { data: walletData, error: walletError } = await supabase
           .from('loyalty_wallets')
           .select('*')
@@ -102,7 +102,6 @@ export default function VIPClubPage() {
           glow_level: 'Bronce', hair_level: 'Bronce'
         })
 
-        // 3. Cargar Niveles y Catálogo de Premios filtrando por tenant_id si está presente
         const queryGlowLevels = supabase.from('vip_levels').select('*').eq('wallet_type', 'glow').eq('is_active', true)
         const queryHairLevels = supabase.from('vip_levels').select('*').eq('wallet_type', 'hair').eq('is_active', true)
         const queryGlowRewards = supabase.from('reward_catalog').select('*').eq('wallet_type', 'glow').eq('is_active', true)
@@ -238,7 +237,7 @@ export default function VIPClubPage() {
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
         <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
-        
+
         {/* Rejilla decorativa */}
         <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
@@ -632,8 +631,8 @@ export default function VIPClubPage() {
       {/* ============================================================ */}
       {/* MODAL DE CANJE — REDISEÑADO */}
       {/* ============================================================ */}
-      {showRedeemModal && selectedReward && (
-        <AnimatePresence>
+      <AnimatePresence>
+        {showRedeemModal && selectedReward && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -799,8 +798,8 @@ export default function VIPClubPage() {
               )}
             </motion.div>
           </motion.div>
-        </AnimatePresence>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ============================================================ */}
       {/* STYLES GLOBALES */}
