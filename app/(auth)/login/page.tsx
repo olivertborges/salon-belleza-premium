@@ -4,21 +4,20 @@ import { useAuth } from '@/hooks/useAuth'
 import { Sparkles, Eye, EyeOff, LogIn, User, Shield, CheckCircle2, XCircle } from 'lucide-react'
 
 export default function LoginPage() {
-  // ✅ SOLO AGREGUÉ LOS PARÉNTESIS AQUÍ
   const { signIn, role, user, loading: authLoading } = useAuth()
 
-  const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState('login')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [panelEstado, setPanelEstado] = useState([])
+  const [mounted, setMounted] = useState<boolean>(false)
+  const [activeTab, setActiveTab] = useState<string>('login')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState<string>('')
+  const [showPassword, setShowPassword] = useState<boolean>(false)
+  const [email, setEmail] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+  const [panelEstado, setPanelEstado] = useState<Array<{hora:string; texto:string; color:string}>>([])
 
-  const agregarEstado = function(texto, color) {
-    if (!color) color = 'blanco'
+  // ✅ Tipos agregados aquí
+  const agregarEstado = function(texto: string, color: string = 'blanco') {
     const hora = new Date().toLocaleTimeString()
     const nuevo = [{hora: hora, texto: texto, color: color}]
     setPanelEstado(nuevo.concat(panelEstado).slice(0,8))
@@ -44,7 +43,7 @@ export default function LoginPage() {
     agregarEstado('COMPONENTE LISTO', 'verde')
   }, [])
 
-  const handleLogin = async function(e) {
+  const handleLogin = async function(e: React.FormEvent) {
     e.preventDefault()
     if (loading) return
     if (!email || !password) {
@@ -63,7 +62,7 @@ export default function LoginPage() {
       setTimeout(function() {
         window.location.reload()
       }, 1000)
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
       agregarEstado('ERROR: ' + err.message, 'rojo')
     } finally {
@@ -90,7 +89,7 @@ export default function LoginPage() {
     }, 'Cargando...')
   }
 
-  const colorClase = function(color) {
+  const colorClase = function(color: string) {
     if (color === 'verde') return 'text-green-400'
     if (color === 'rojo') return 'text-red-400'
     if (color === 'amarillo') return 'text-yellow-400'
