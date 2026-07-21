@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -12,7 +11,7 @@ import {
   ArrowRight, CheckCircle2, XCircle,
   Heart, Star, Zap, Fingerprint, 
   Flower2, Waves, Palette, Gift,
-  Bug
+  Bug, AlertCircle
 } from 'lucide-react'
 
 // ===== ANIMACIONES =====
@@ -85,6 +84,7 @@ export default function AuthMobilDefinitivo() {
   const [showPassword, setShowPassword] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
   const [showLogs, setShowLogs] = useState(true)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -101,7 +101,7 @@ export default function AuthMobilDefinitivo() {
   useEffect(() => {
     setMounted(true)
     addLog('🚀 Componente montado')
-    
+
     const searchParams = new URLSearchParams(window.location.search);
     const ref = searchParams.get('ref');
     if (ref) {
@@ -113,7 +113,7 @@ export default function AuthMobilDefinitivo() {
   // ✅ LOGS DE AUTENTICACIÓN EN PANTALLA
   useEffect(() => {
     addLog(`📊 Estado: user=${!!user}, role=${role || 'null'}, loading=${authLoading}`)
-    
+
     if (user) {
       addLog(`👤 Usuario: ${user.email}`)
     }
@@ -122,7 +122,7 @@ export default function AuthMobilDefinitivo() {
     }
   }, [user, role, authLoading])
 
-  // ✅ REDIRECCIÓN CON LOGS EN PANTALLA
+  // ✅ REDIRECCIÓN MEJORADA CON PREVENCIÓN DE LOGIN DUPLICADO
   useEffect(() => {
     const redirectKey = 'freshnails_redirected'
     const alreadyRedirected = sessionStorage.getItem(redirectKey)
@@ -130,21 +130,25 @@ export default function AuthMobilDefinitivo() {
     addLog(`🔄 Verificando redirección - redirectFlag: ${alreadyRedirected || 'no'}`)
     addLog(`📌 Estado: mounted=${mounted}, authLoading=${authLoading}, user=${!!user}, role=${role || 'null'}`)
 
+    // Si ya redirigió, NO hacer nada
     if (alreadyRedirected === 'true') {
       addLog(`⏭️ Ya redirigió, saltando...`)
       return
     }
 
+    // Si no está montado o está cargando, esperar
     if (!mounted || authLoading) {
       addLog(`⏳ Esperando: mounted=${mounted}, authLoading=${authLoading}`)
       return
     }
 
+    // Si no hay usuario o rol, esperar
     if (!user || !role) {
       addLog(`👤 Esperando usuario o rol...`)
       return
     }
 
+    // Determinar ruta destino
     let targetPath = '/portal'
     if (role === 'admin' || role === 'staff' || role === 'owner') {
       targetPath = '/dashboard'
@@ -153,25 +157,72 @@ export default function AuthMobilDefinitivo() {
     addLog(`🎯 Path actual: ${window.location.pathname}`)
     addLog(`🎯 Path destino: ${targetPath}`)
 
+    // Si ya estamos en la ruta correcta, marcar y salir
     if (window.location.pathname === targetPath) {
       addLog(`✅ Ya estamos en la ruta correcta`)
       sessionStorage.setItem(redirectKey, 'true')
       return
     }
 
-    addLog(`🚀 REDIRIGIENDO a: ${targetPath}`)
-    sessionStorage.setItem(redirectKey, 'true')
-    
-    setTimeout(() => {
-      window.location.href = targetPath
-    }, 500)
+    // Si estamos en login o auth, redirigir
+    if (window.location.pathname === '/login' || window.location.pathname === '/auth' || window.location.pathname === '/') {
+      addLog(`🚀 REDIRIGIENDO a: ${targetPath}`)
+      setIsRedirecting(true)
+      sessionStorage.setItem(redirectKey, 'true')
+      
+      // Limpiar cualquier intento de login pendiente
+      setError('')
+      setSuccess('')
+      
+      setTimeout(() => {
+        window.location.href = targetPath
+      }, 800)
+    }
 
   }, [user, role, authLoading, mounted])
 
+  // ============================================================
+  // HANDLE LOGIN - CON PREVENCIÓN DE DUPLICADOS
+  // ============================================================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
     
+    // 🛡️ PREVENIR LOGIN DUPLICADO - SOLUCIÓN PRINCIPAL
+    if (user && role) {
+      addLog(`⛔ Usuario ya autenticado como ${role}, previniendo login duplicado`)
+      
+      // Determinar ruta de destino
+      const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
+        ? '/dashboard' 
+        : '/portal'
+      
+      // Mostrar mensaje amigable
+      setError('')
+      setSuccess(`✅ Ya tienes sesión activa como ${role}. Redirigiendo...`)
+      
+      // Marcar como redirigido para evitar bucles
+      sessionStorage.setItem('freshnails_redirected', 'true')
+      
+      // Redirigir después de un breve delay
+      setTimeout(() => {
+        window.location.href = targetPath
+      }, 1000)
+      
+      return
+    }
+
+    // Si ya está cargando o redirigiendo, no hacer nada
+    if (loading || isRedirecting) {
+      addLog(`⏳ Operación en curso, ignorando...`)
+      return
+    }
+
+    // Validar campos
+    if (!email || !password) {
+      setError('⚠️ Por favor, completa todos los campos')
+      return
+    }
+
     addLog(`🔐 Intentando login para: ${email}`)
     setLoading(true)
     setError('')
@@ -179,32 +230,56 @@ export default function AuthMobilDefinitivo() {
 
     try {
       const { error: signInError } = await signIn(email, password)
+      
       if (signInError) {
         addLog(`❌ Error en login: ${signInError.message}`)
-        throw signInError
+        
+        // Manejar errores específicos
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('❌ Credenciales incorrectas. Verifica tu email y contraseña.')
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('📧 Por favor, confirma tu email antes de iniciar sesión.')
+        } else {
+          setError(signInError.message || 'Ocurrió un error inesperado.')
+        }
+        
+        setLoading(false)
+        return
       }
 
       addLog(`✅ Login exitoso para: ${email}`)
-      setSuccess('¡Ingreso correcto!')
-      
-      sessionStorage.removeItem('freshnails_redirected')
-      addLog(`🔄 Flag de redirección reiniciado`)
+      setSuccess('🎉 ¡Ingreso exitoso! Redirigiendo...')
 
+      // Limpiar flags de redirección anteriores
+      sessionStorage.removeItem('freshnails_redirected')
+      
+      // Esperar a que el contexto actualice el estado
       setTimeout(() => {
         setLoading(false)
-      }, 450)
+        // La redirección la manejará el useEffect
+      }, 500)
 
     } catch (err: any) {
-      addLog(`❌ Error: ${err.message}`)
+      addLog(`❌ Error inesperado: ${err.message}`)
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
     }
   }
 
+  // ============================================================
+  // HANDLE REGISTER
+  // ============================================================
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
     
+    if (loading || isRedirecting) return
+    
+    // Validar campos
+    if (!email || !password || !fullName) {
+      setError('⚠️ Por favor, completa todos los campos obligatorios')
+      return
+    }
+
     addLog(`📝 Intentando registro para: ${email}`)
     setLoading(true)
     setError('')
@@ -224,31 +299,51 @@ export default function AuthMobilDefinitivo() {
       })
 
       const data = await res.json()
+      
       if (!res.ok || !data.success) {
         addLog(`❌ Error en registro: ${data.error}`)
         throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
       addLog(`✅ Registro exitoso para: ${email}`)
-      setSuccess('✅ ¡Registro exitoso!')
-      
-      sessionStorage.removeItem('freshnails_redirected')
-      await signIn(email, password)
+      setSuccess('✅ ¡Registro exitoso! Iniciando sesión...')
 
-      setTimeout(() => {
-        setLoading(false)
-      }, 450)
+      // Limpiar flags
+      sessionStorage.removeItem('freshnails_redirected')
+      
+      // Intentar login automático después del registro
+      setTimeout(async () => {
+        try {
+          await signIn(email, password)
+          addLog(`🔄 Login automático después del registro`)
+        } catch (err: any) {
+          addLog(`⚠️ Login automático falló: ${err.message}`)
+          setError('Registro exitoso, pero no se pudo iniciar sesión automáticamente. Intenta ingresar manualmente.')
+        } finally {
+          setLoading(false)
+        }
+      }, 500)
 
     } catch (err: any) {
       addLog(`❌ Error: ${err.message}`)
-      setError(err.message || 'Error inesperado')
+      setError(err.message || 'Error inesperado en el registro')
       setLoading(false)
     }
   }
 
+  // ============================================================
+  // HANDLE RECOVER
+  // ============================================================
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    
+    if (loading || isRedirecting) return
+    
+    if (!email) {
+      setError('⚠️ Por favor, ingresa tu email')
+      return
+    }
+    
     setLoading(true)
     setError('')
     setSuccess('')
@@ -258,12 +353,18 @@ export default function AuthMobilDefinitivo() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       })
+      
       if (resetError) {
         addLog(`❌ Error en recuperación: ${resetError.message}`)
         throw resetError
       }
+      
       addLog(`✅ Enlace enviado a: ${email}`)
-      setSuccess('📧 Enlace de recuperación enviado a tu correo.')
+      setSuccess('📧 ¡Enlace de recuperación enviado! Revisa tu correo.')
+      
+      // Limpiar campos después de éxito
+      setEmail('')
+      
     } catch (err: any) {
       setError(err.message || 'Error al enviar el correo de recuperación.')
     } finally {
@@ -271,6 +372,9 @@ export default function AuthMobilDefinitivo() {
     }
   }
 
+  // ============================================================
+  // RENDER: LOADING INICIAL
+  // ============================================================
   if (!mounted) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
@@ -285,7 +389,9 @@ export default function AuthMobilDefinitivo() {
     )
   }
 
-  // ===== DECORACIONES DE FONDO =====
+  // ============================================================
+  // DECORACIONES DE FONDO
+  // ============================================================
   const BackgroundDecorations = () => (
     <>
       <motion.div 
@@ -322,7 +428,9 @@ export default function AuthMobilDefinitivo() {
     </>
   )
 
-  // ===== TABS DECORADOS =====
+  // ============================================================
+  // TABS DECORADOS
+  // ============================================================
   const Tabs = () => (
     <div className="flex gap-1 p-1 rounded-2xl bg-pink-50/50 dark:bg-[#1a1520] border border-pink-100/30 dark:border-fuchsia-950/30 mb-6">
       {[
@@ -359,6 +467,49 @@ export default function AuthMobilDefinitivo() {
     </div>
   )
 
+  // ============================================================
+  // BANNER DE SESIÓN ACTIVA
+  // ============================================================
+  const ActiveSessionBanner = () => {
+    if (!user || !role || isRedirecting) return null
+    
+    const targetPath = role === 'admin' || role === 'staff' || role === 'owner' 
+      ? '/dashboard' 
+      : '/portal'
+    
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"
+      >
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              ✅ Sesión activa como <span className="font-bold">{role}</span>
+            </p>
+            <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
+              {user?.email} • Serás redirigido automáticamente
+            </p>
+            <button
+              onClick={() => {
+                sessionStorage.setItem('freshnails_redirected', 'true')
+                window.location.href = targetPath
+              }}
+              className="mt-2 text-[10px] font-mono text-emerald-500 hover:text-emerald-600 underline transition-colors"
+            >
+              Ir al panel ahora →
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // ============================================================
+  // RENDER PRINCIPAL
+  // ============================================================
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-pink-50/30 via-white to-amber-50/20 dark:from-[#0a0908] dark:via-[#0f0c1b] dark:to-[#0a0908] flex items-center justify-center p-4 relative overflow-hidden font-sans">
 
@@ -398,7 +549,7 @@ export default function AuthMobilDefinitivo() {
               Limpiar
             </button>
           </div>
-          
+
           {showLogs && (
             <div className="p-2 rounded-xl bg-stone-950/90 backdrop-blur-sm border border-stone-800 max-h-40 overflow-y-auto">
               <div className="space-y-0.5 font-mono text-[8px] leading-relaxed">
@@ -411,6 +562,7 @@ export default function AuthMobilDefinitivo() {
                       log.includes('✅') ? 'text-emerald-400' :
                       log.includes('🚀') || log.includes('➡️') ? 'text-pink-400' :
                       log.includes('🎯') ? 'text-amber-400' :
+                      log.includes('⛔') ? 'text-rose-500' :
                       'text-stone-400'
                     }`}>
                       {log}
@@ -457,6 +609,9 @@ export default function AuthMobilDefinitivo() {
         <motion.div variants={itemVariants}>
           <Tabs />
         </motion.div>
+
+        {/* BANNER DE SESIÓN ACTIVA */}
+        <ActiveSessionBanner />
 
         {/* MENSAJES */}
         <AnimatePresence mode="wait">
@@ -510,6 +665,7 @@ export default function AuthMobilDefinitivo() {
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
+                      disabled={!!(user && role)}
                     />
                     <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
@@ -526,6 +682,7 @@ export default function AuthMobilDefinitivo() {
                         type="button" 
                         onClick={() => { setActiveTab('recover'); setError(''); setSuccess(''); }}
                         className="text-[10px] font-mono text-pink-400 dark:text-pink-500/60 hover:text-pink-500 uppercase tracking-wider transition-colors focus:outline-none"
+                        disabled={!!(user && role)}
                       >
                         ¿Olvidaste?
                       </button>
@@ -538,11 +695,13 @@ export default function AuthMobilDefinitivo() {
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                         required
+                        disabled={!!(user && role)}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-stone-400 hover:text-pink-500 transition-colors"
+                        disabled={!!(user && role)}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -553,8 +712,8 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
+                  disabled={loading || !!(user && role) || isRedirecting}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -565,6 +724,11 @@ export default function AuthMobilDefinitivo() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         Ingresando...
+                      </>
+                    ) : (user && role) ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Sesión Activa
                       </>
                     ) : (
                       <>
@@ -583,6 +747,7 @@ export default function AuthMobilDefinitivo() {
                       type="button"
                       onClick={() => { setActiveTab('register'); setError(''); setSuccess(''); }}
                       className="ml-2 text-xs font-bold text-pink-500 hover:text-pink-600 uppercase font-mono tracking-wider transition-colors focus:outline-none"
+                      disabled={!!(user && role)}
                     >
                       Regístrate
                     </button>
@@ -607,6 +772,7 @@ export default function AuthMobilDefinitivo() {
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
+                      disabled={!!(user && role)}
                     />
                     <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
@@ -625,6 +791,7 @@ export default function AuthMobilDefinitivo() {
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                       required
+                      disabled={!!(user && role)}
                     />
                     <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
@@ -644,11 +811,13 @@ export default function AuthMobilDefinitivo() {
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none placeholder-stone-300 dark:placeholder-stone-700"
                         required
+                        disabled={!!(user && role)}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-stone-400 hover:text-pink-500 transition-colors"
+                        disabled={!!(user && role)}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -675,8 +844,8 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
+                  disabled={loading || !!(user && role) || isRedirecting}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)' }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -687,6 +856,11 @@ export default function AuthMobilDefinitivo() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         Registrando...
+                      </>
+                    ) : (user && role) ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Sesión Activa
                       </>
                     ) : (
                       <>
@@ -705,6 +879,7 @@ export default function AuthMobilDefinitivo() {
                       type="button"
                       onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
                       className="ml-2 text-xs font-bold text-pink-500 hover:text-pink-600 uppercase font-mono tracking-wider transition-colors focus:outline-none"
+                      disabled={!!(user && role)}
                     >
                       Ingresar
                     </button>
@@ -738,6 +913,7 @@ export default function AuthMobilDefinitivo() {
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-transparent pt-2 pb-1 text-sm text-stone-900 dark:text-white focus:outline-none"
                       required
+                      disabled={!!(user && role)}
                     />
                     <div className="absolute -bottom-[2px] left-0 right-0 h-[2px] bg-gradient-to-r from-pink-500 to-amber-500 scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300 origin-left" />
                   </div>
@@ -745,8 +921,8 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40"
+                  disabled={loading || !!(user && role) || isRedirecting}
+                  className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-amber-500/25 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #f472b6)' }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -757,6 +933,11 @@ export default function AuthMobilDefinitivo() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         Enviando...
+                      </>
+                    ) : (user && role) ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Sesión Activa
                       </>
                     ) : (
                       <>
@@ -772,6 +953,7 @@ export default function AuthMobilDefinitivo() {
                   type="button"
                   onClick={() => { setActiveTab('login'); setError(''); setSuccess(''); }}
                   className="w-full text-center text-xs font-mono text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-white uppercase tracking-widest transition-colors focus:outline-none flex items-center justify-center gap-2"
+                  disabled={!!(user && role)}
                 >
                   <ArrowRight className="w-3.5 h-3.5 rotate-180" />
                   Volver al inicio
