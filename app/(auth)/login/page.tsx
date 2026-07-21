@@ -67,35 +67,38 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ REDIRECCIÓN ESTABLE Y DEFINITIVA
-  useEffect(() => {
-    if (redirecting || !mounted || authLoading || !role || !user) {
-      addLog(`⏳ Esperando... redirecting=${redirecting}, mounted=${mounted}, authLoading=${authLoading}, role=${!!role}, user=${!!user}`)
-      return
+  // ✅ REDIRECCIÓN DEFINITIVA: SI YA TENEMOS TODO, VAMOS DIRECTO
+useEffect(() => {
+  // No hacemos nada si falta algo o ya estamos yendo
+  if (redirecting || !mounted || authLoading || !role || !user) {
+    addLog(`⏳ Esperando... ok cuando todo esté listo`)
+    return
+  }
+
+  const destino = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
+
+  // Si ya estamos ahí, no hacer nada
+  if (window.location.pathname === destino) {
+    addLog(`✅ Ya estás en ${destino}`)
+    return
+  }
+
+  addLog(`🎯 TODO LISTO: ${user.email} | Rol: ${role} → IR A ${destino}`)
+  setRedirecting(true)
+
+  // ✅ Usamos router.replace y también forzamos por si hay fallos
+  router.replace(destino)
+  
+  // Plan B por si el router falla
+  setTimeout(() => {
+    if (window.location.pathname !== destino) {
+      addLog(`🔄 Plan B: redirigiendo con location`)
+      window.location.href = destino
     }
+  }, 250)
 
-    const targetPath = ['admin', 'staff', 'owner'].includes(role) ? '/dashboard' : '/portal'
+}, [user, role, authLoading, mounted, router, redirecting])
 
-    addLog(`🎯 Usuario ${user.email} | Rol: ${role} → Ir a: ${targetPath}`)
-
-    if (window.location.pathname === targetPath) {
-      addLog(`✅ Ya estás en la ruta correcta`)
-      return
-    }
-
-    if (window.location.pathname !== '/login' && window.location.pathname !== '/auth') {
-      addLog(`⚠️ No estamos en login, no redirigimos`)
-      return
-    }
-
-    addLog(`🚀 INICIANDO REDIRECCIÓN A: ${targetPath}`)
-    setRedirecting(true)
-
-    setTimeout(() => {
-      router.replace(targetPath)
-    }, 150)
-
-  }, [user, role, authLoading, mounted, router])
 
   // ============================================================
   // INICIO DE SESIÓN
