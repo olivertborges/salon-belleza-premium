@@ -2,7 +2,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation' // 👈 Integrado
+import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { 
   Calendar as CalendarIcon, Clock, User, Sparkles, ChevronRight, 
   CheckCircle2, ChevronLeft, ChevronRight as ChevronRightIcon,
@@ -31,15 +32,16 @@ const CATEGORIAS_CONFIG: Record<string, { label: string; icon: any; desc: string
   'otros': { label: 'Otros Servicios', icon: Sparkles, desc: 'Cuidado extra para potenciar tu brillo' }
 }
 
-export default function ClientBookingPage() {
+// ✅ COMPONENTE QUE USA useSearchParams - ENVUELTO EN SUSPENSE
+function AgendaContent() {
   const { theme } = useTheme()
   const { user, tenantId } = useAuth()
   const isDark = theme === 'dark'
   
-  // 🧭 LECTURA DE URL PARAMS
+  // 🧭 LECTURA DE URL PARAMS - AHORA DENTRO DE SUSPENSE
   const searchParams = useSearchParams()
-  const urlProfessionalId = searchParams.get('professional')
-  const urlStyleName = searchParams.get('style')
+  const urlProfessionalId = searchParams?.get('professional') || null
+  const urlStyleName = searchParams?.get('style') || null
 
   const [paso, setPaso] = useState<number>(1)
   const [services, setServices] = useState<any[]>([])
@@ -107,7 +109,6 @@ export default function ClientBookingPage() {
         setHorariosDisponibles(horarios)
 
         // 💡 2. LÓGICA DE PRE-SELECCIÓN INTEGRADA:
-        // Evaluamos los parámetros de la URL inmediatamente después de recibir la data de la BD.
         let servicioEncontrado = null
         let profesionalEncontrado = null
 
@@ -127,13 +128,12 @@ export default function ClientBookingPage() {
           }
         }
 
-        // Determinar dinámicamente a qué paso enviar al usuario según lo que ya tenemos
         if (servicioEncontrado && profesionalEncontrado) {
-          setPaso(3) // Salta directo al calendario
+          setPaso(3)
         } else if (servicioEncontrado) {
-          setPaso(2) // Ya eligió ritual, que elija profesional
+          setPaso(2)
         } else if (profesionalEncontrado) {
-          setPaso(1) // Sabe el profesional, pero debe elegir qué ritual hacerse con él
+          setPaso(1)
         }
 
       } catch (err) {
@@ -143,7 +143,7 @@ export default function ClientBookingPage() {
       }
     }
     fetchInicial()
-  }, [urlProfessionalId, urlStyleName]) // Se re-ejecuta de manera segura si cambian los parámetros
+  }, [urlProfessionalId, urlStyleName])
 
   useEffect(() => {
     if (!selectedProfessional) return
@@ -1023,5 +1023,22 @@ export default function ClientBookingPage() {
 
       </div>
     </div>
+  )
+}
+
+// ✅ COMPONENTE PRINCIPAL CON SUSPENSE
+export default function ClientBookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
+          <Sparkles className="w-5 h-5 text-pink-500 absolute animate-pulse" />
+        </div>
+        <p className="text-xs font-mono text-stone-400 animate-pulse">Cargando santuario...</p>
+      </div>
+    }>
+      <AgendaContent />
+    </Suspense>
   )
 }

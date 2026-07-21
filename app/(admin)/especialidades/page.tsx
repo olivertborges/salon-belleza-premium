@@ -183,7 +183,7 @@ export default function EspecialidadesPage() {
                     href={`/reservas?servicio=${encodeURIComponent(esp.title)}`}
                     className="bg-slate-950 border border-slate-800 text-slate-300 font-bold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-xl hover:bg-slate-900 active:scale-95 transition-all flex items-center gap-1.5"
                   >
-                    <FaSparkles className="text-amber-400" /> Agendar Firma
+                    <Sparkles className="text-amber-400" /> Agendar Firma
                   </Link>
                 )}
               </div>
