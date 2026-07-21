@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
+import Link from 'next/link'
 
 import { 
   FaArrowRight, 
@@ -14,10 +16,11 @@ import {
   FaShieldAlt,
   FaChevronLeft,
   FaChevronRight,
-  FaStar, // Cambiado por FaSparkles que fallaba
+  FaStar,
   FaPlay,
   FaPause,
-  FaGem
+  FaGem,
+  FaUser
 } from 'react-icons/fa'
 
 // ============================================================
@@ -43,22 +46,22 @@ const COLORS = {
 // ============================================================
 const GALLERY_IMAGES = [
   {
-    url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
+    url: 'https://images.unsplash.com/photo-1591926079847-8181980b0f09?q=80&w=389&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Manicura Rusa',
     category: 'Combinada'
   },
   {
-    url: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
+    url: 'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Extensiones Soft Gel',
     category: 'Esculturales'
   },
   {
-    url: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&fit=crop&q=90',
+    url: 'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?q=80&w=327&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Nail Art',
     category: 'Mano Alzada'
   },
   {
-    url: 'https://images.unsplash.com/photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    url: 'https://images.unsplash.com/photo-1585885970325-81cba4494c27?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'Micropigmentación',
     category: 'Cejas'
   },
@@ -78,7 +81,7 @@ const SERVICES = [
     description: 'Arquitectura completa de la uña utilizando tips de gel preformados y adhesión molecular. Flexibilidad de vanguardia con un grosor natural.', 
     price: 65, 
     duration: 120, 
-    image: 'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=600&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     tag: 'Tendencia'
   },
   { 
@@ -86,7 +89,7 @@ const SERVICES = [
     description: 'Llevamos tus ideas al lienzo. Diseños geométricos detallados, encapsulados con pan de oro, efectos holográficos avanzados y pedrería fina.', 
     price: 55, 
     duration: 105, 
-    image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?q=80&w=327&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     tag: 'Estilo Único'
   },
 ]
@@ -113,25 +116,50 @@ const TESTIMONIALS = [
 // SUBCOMPONENTES
 // ============================================================
 
-const Header = () => (
-  <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
-    <div className="max-w-7xl mx-auto flex items-center justify-between">
-      <span className="text-white font-serif text-xl">Fresh Nails</span>
-      <nav className="flex gap-6 text-xs text-stone-400">
-        <a href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</a>
-        <a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a>
-        <a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a>
-      </nav>
-    </div>
-  </header>
-)
+const Header = () => {
+  const { user } = useAuth()
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0b0a]/90 backdrop-blur-md border-b border-stone-900 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <span className="text-white font-serif text-xl">Fresh Nails</span>
+        <nav className="flex items-center gap-6 text-xs text-stone-400">
+          <a href="#servicios" className="hover:text-[#C9A96E] transition-colors">Servicios</a>
+          <a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a>
+          <a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a>
+          
+          {/* ✅ ENLACE DE INICIO DE SESIÓN */}
+          {user ? (
+            <Link 
+              href={user.role === 'admin' || user.role === 'owner' || user.role === 'staff' ? '/dashboard' : '/portal'}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-[#C9A96E]/30 hover:border-[#C9A96E]/60 transition-all duration-300 text-stone-300 hover:text-white"
+              style={{ background: `linear-gradient(to right, ${COLORS.pink}10, ${COLORS.gold}10)` }}
+            >
+              <FaUser className="text-[10px]" style={{ color: COLORS.pink }} />
+              <span>Mi Cuenta</span>
+            </Link>
+          ) : (
+            <Link 
+              href="/login"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-[#C9A96E]/30 hover:border-[#C9A96E]/60 transition-all duration-300 text-stone-300 hover:text-white"
+              style={{ background: `linear-gradient(to right, ${COLORS.pink}10, ${COLORS.gold}10)` }}
+            >
+              <FaUser className="text-[10px]" style={{ color: COLORS.pink }} />
+              <span>Iniciar Sesión</span>
+            </Link>
+          )}
+        </nav>
+      </div>
+    </header>
+  )
+}
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
 
   const heroImages = [
     'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&fit=crop&q=90',
-    'https://images.unsplash.com/photo-1626015713026-d8309cdc91ea?w=800&fit=crop&q=90',
+    'https://images.unsplash.com/photo-1641814280326-d74ea2300067?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
   ]
 
@@ -646,6 +674,7 @@ const Footer = () => (
           <li><a href="/reservas" className="hover:text-[#C9A96E] transition-colors">Reservar</a></li>
           <li><a href="/academy" className="hover:text-[#C9A96E] transition-colors">Academia</a></li>
           <li><a href="/contacto" className="hover:text-[#C9A96E] transition-colors">Contacto</a></li>
+          <li><a href="/login" className="hover:text-[#C9A96E] transition-colors">Iniciar Sesión</a></li>
         </ul>
       </div>
 

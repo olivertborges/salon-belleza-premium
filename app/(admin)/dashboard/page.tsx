@@ -356,73 +356,6 @@ export default function DashboardPage() {
     }
   }
 
-  // ✅ BOTÓN DE PRUEBA: SIMULAR PROMOCIÓN APLICADA
-  const simularPromocionAplicada = async () => {
-    if (!user || !tenantId) {
-      setTestMessage('❌ Usuario o tenant no disponible')
-      setTimeout(() => setTestMessage(null), 3000)
-      return
-    }
-
-    try {
-      setTestMessage('⏳ Simulando...')
-      
-      const { data: promos } = await supabase
-        .from('promotions')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .limit(1)
-
-      if (!promos || promos.length === 0) {
-        setTestMessage('❌ No hay promociones activas para simular')
-        setTimeout(() => setTestMessage(null), 3000)
-        return
-      }
-
-      const promo = promos[0]
-
-      const { error: usageError } = await supabase
-        .from('promotion_usage')
-        .insert({
-          promotion_id: promo.id,
-          user_id: user.id,
-          tenant_id: tenantId,
-          action: 'applied',
-          used_at: new Date().toISOString()
-        })
-
-      if (usageError) {
-        console.error('Error creando uso:', usageError)
-        setTestMessage('❌ Error: ' + usageError.message)
-        setTimeout(() => setTestMessage(null), 3000)
-        return
-      }
-
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: user.id,
-          tenant_id: tenantId,
-          title: `🎉 Nueva promoción aplicada (TEST)`,
-          message: `Prueba: ${user.name || 'Un cliente'} aplicó "${promo.title}" (${promo.discount_percent}% off)`,
-          type: 'promo',
-          read: false,
-          created_at: new Date().toISOString()
-        })
-
-      setTestMessage('✅ ¡Promoción simulada con éxito!')
-      setTimeout(() => setTestMessage(null), 3000)
-      
-      cargarPromocionesRecientes()
-      cargarNotificacionesNoLeidas()
-
-    } catch (error) {
-      console.error('Error simulando promoción:', error)
-      setTestMessage('❌ Error al simular')
-      setTimeout(() => setTestMessage(null), 3000)
-    }
-  }
 
   useEffect(() => {
     if (authorized) {
@@ -489,17 +422,6 @@ export default function DashboardPage() {
                 </span>
               )}
             </Link>
-
-            {isAdmin && (
-              <button 
-                onClick={simularPromocionAplicada}
-                className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Simular Promo</span>
-                <span className="sm:hidden">Test</span>
-              </button>
-            )}
 
             <button onClick={handleRefresh} disabled={refreshing} className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }}>
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -781,14 +703,7 @@ export default function DashboardPage() {
             <p className="text-xs text-stone-400">
               No hay promociones aplicadas recientemente
             </p>
-            {isAdmin && (
-              <button 
-                onClick={simularPromocionAplicada}
-                className="mt-3 px-4 py-2 rounded-xl bg-pink-500/10 text-pink-500 text-xs font-bold hover:bg-pink-500/20 transition-colors"
-              >
-                + Simular promoción
-              </button>
-            )}
+
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
