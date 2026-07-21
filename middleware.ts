@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { type ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -20,7 +21,8 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        // ✅ TIPADO CORRECTO PARA COOKIES
+        setAll(cookiesToSet: { name: string; value: string; options: Partial<ResponseCookie> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
             response.cookies.set({ name, value, ...options })
@@ -37,11 +39,9 @@ export async function middleware(request: NextRequest) {
   // ✅ CASO 1: Usuario NO autenticado
   // ============================================================
   if (!user) {
-    // Si intenta entrar a rutas protegidas, redirigir a login
     if (pathname.startsWith('/admin') || pathname === '/dashboard') {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    // Si está en login o cualquier otra ruta pública, dejar pasar
     return response
   }
 
@@ -49,7 +49,6 @@ export async function middleware(request: NextRequest) {
   // ✅ CASO 2: Usuario autenticado
   // ============================================================
   
-  // Obtener el rol del usuario
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -75,13 +74,9 @@ export async function middleware(request: NextRequest) {
       console.log('⛔ Usuario no autorizado en admin, redirigiendo a /portal')
       return NextResponse.redirect(new URL('/portal', request.url))
     }
-    // ✅ Usuario admin, dejar pasar
     return response
   }
 
-  // ============================================================
-  // ✅ CASO 2c: Usuario normal en /portal - dejar pasar
-  // ============================================================
   return response
 }
 
