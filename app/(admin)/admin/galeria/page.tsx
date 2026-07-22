@@ -731,14 +731,14 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX CORREGIDO — Imagen + Panel siempre visibles */}
+      {/* LIGHTBOX CORREGIDO — Admin y Clientes se ven igual */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
         <div 
           className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" 
           onClick={closeLightbox}
         >
-          {/* Contenedor de la imagen - 60% en desktop, 50% en móvil */}
+          {/* Contenedor de la imagen */}
           <div 
             className="relative flex-1 flex items-center justify-center p-3 md:p-6 h-[50vh] md:h-full min-h-[200px]" 
             onClick={(e) => e.stopPropagation()}
@@ -774,7 +774,7 @@ export default function GaleriaAdminPage() {
               {lightboxIndex + 1} / {filteredPhotos.length}
             </div>
 
-            {/* Imagen - se ajusta sin recortar y con tamaño adecuado */}
+            {/* Imagen */}
             <img 
               src={getImageUrl(selectedPhoto)} 
               alt={selectedPhoto.title || ''} 
@@ -782,14 +782,16 @@ export default function GaleriaAdminPage() {
             />
           </div>
 
-          {/* Panel de información - siempre visible y con scroll si es necesario */}
+          {/* Panel de información - SIEMPRE visible */}
           <div 
             className="w-full md:w-80 bg-stone-900/95 md:h-full overflow-y-auto p-4 md:p-6 flex flex-col text-stone-200 border-t md:border-t-0 md:border-l border-white/10" 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del panel */}
             <div className="flex justify-between items-center mb-4 md:mb-5">
-              <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle</span>
+              <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-widest text-stone-400">
+                {selectedPhoto.source === 'client' ? '👤 Aporte de Cliente' : '👑 Trabajo del Salón'}
+              </span>
               <button 
                 onClick={closeLightbox} 
                 className="p-1.5 md:p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
@@ -798,13 +800,18 @@ export default function GaleriaAdminPage() {
               </button>
             </div>
 
-            {/* Contenido del panel - con scroll interno */}
+            {/* Contenido del panel */}
             <div className="flex-1 overflow-y-auto space-y-4 md:space-y-5 pr-1">
               {/* Categoría */}
               <div>
                 <span className="px-2.5 py-1 bg-white/10 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider">
                   {selectedPhoto.category || 'Sin categoría'}
                 </span>
+                {selectedPhoto.source === 'client' && (
+                  <span className="ml-2 px-2.5 py-1 bg-amber-500/20 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400">
+                    Cliente
+                  </span>
+                )}
               </div>
 
               {/* Título */}
@@ -852,39 +859,66 @@ export default function GaleriaAdminPage() {
                     <span className="font-medium text-amber-400">{selectedPhoto.client_name}</span>
                   </div>
                 )}
+
+                {/* ✅ NUEVO: Mostrar vistas y likes para fotos de clientes */}
+                {selectedPhoto.source === 'client' && (
+                  <div className="flex items-center gap-4 pt-1">
+                    {selectedPhoto.views !== undefined && (
+                      <span className="text-stone-400 flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5" /> {selectedPhoto.views || 0}
+                      </span>
+                    )}
+                    {selectedPhoto.likes !== undefined && (
+                      <span className="text-stone-400 flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5" /> {selectedPhoto.likes || 0}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Acciones - siempre visibles al final */}
-            {selectedPhoto.source === 'admin' && (
-              <div className="pt-4 border-t border-white/10 flex gap-2 mt-4">
+            {/* ✅ ACCIONES - SIEMPRE VISIBLES */}
+            <div className="pt-4 border-t border-white/10 flex gap-2 mt-4">
+              {selectedPhoto.source === 'admin' ? (
+                // ✅ Botones para fotos de ADMIN
+                <>
+                  <button 
+                    onClick={() => {
+                      closeLightbox()
+                      setEditingPhoto(selectedPhoto)
+                      setFormData({
+                        title: selectedPhoto.title || '',
+                        category: selectedPhoto.category || 'Uñas',
+                        description: selectedPhoto.description || '',
+                        image_url: selectedPhoto.image_url || '',
+                        is_active: selectedPhoto.is_active,
+                        sort_order: selectedPhoto.sort_order || 0,
+                        professional_id: selectedPhoto.professional_id || ''
+                      })
+                      setShowModal(true)
+                    }}
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Editar
+                  </button>
+                  <button 
+                    onClick={() => deletePhoto(selectedPhoto.id)}
+                    className="p-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                // ✅ Botones para fotos de CLIENTES - Solo cerrar
                 <button 
-                  onClick={() => {
-                    closeLightbox()
-                    setEditingPhoto(selectedPhoto)
-                    setFormData({
-                      title: selectedPhoto.title || '',
-                      category: selectedPhoto.category || 'Uñas',
-                      description: selectedPhoto.description || '',
-                      image_url: selectedPhoto.image_url || '',
-                      is_active: selectedPhoto.is_active,
-                      sort_order: selectedPhoto.sort_order || 0,
-                      professional_id: selectedPhoto.professional_id || ''
-                    })
-                    setShowModal(true)
-                  }}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  onClick={closeLightbox}
+                  className="flex-1 py-2.5 bg-stone-700 hover:bg-stone-600 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                 >
-                  <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Editar
+                  <X className="w-3.5 h-3.5 md:w-4 md:h-4" /> Cerrar
                 </button>
-                <button 
-                  onClick={() => deletePhoto(selectedPhoto.id)}
-                  className="p-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
