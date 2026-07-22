@@ -34,7 +34,7 @@ export default function AdminAgendaPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date())
   const [filtroStaff, setFiltroStaff] = useState<string>('todos')
-  const [viewMode, setViewMode] = useState<ViewMode>('day') // ✅ POR DEFECTO DÍA
+  const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedCita, setSelectedCita] = useState<any>(null)
@@ -56,7 +56,7 @@ export default function AdminAgendaPage() {
     notes: '',
   })
 
-  const isDark = false // Se adaptará con el tema
+  const isDark = false
 
   // Detectar si el usuario es staff (empleada)
   useEffect(() => {
@@ -243,7 +243,7 @@ export default function AdminAgendaPage() {
     }
   }, [fechaSeleccionada, filtroStaff, viewMode, isStaff, staffId])
 
-  const handleRefresh = () => {
+  const cargarDatos = () => {
     setRefreshing(true)
     fetchData(true)
   }
@@ -400,16 +400,15 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // RENDER VISTA DÍA — REDISEÑADA CON FRANJAS HORARIAS
+  // RENDER VISTA DÍA
   // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = getCitasDelDia(fechaSeleccionada)
     const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
 
-    // Franjas horarias
     const franjas = [
-      { nombre: '🌅 Mañana', horas: Array.from({ length: 5 }, (_, i) => i + 8) }, // 8:00 - 12:00
-      { nombre: '☀️ Tarde', horas: Array.from({ length: 6 }, (_, i) => i + 13) }, // 13:00 - 18:00
+      { nombre: '🌅 Mañana', horas: Array.from({ length: 5 }, (_, i) => i + 8) },
+      { nombre: '☀️ Tarde', horas: Array.from({ length: 6 }, (_, i) => i + 13) },
     ]
 
     const getCitaEnHora = (hora: number) => {
@@ -422,7 +421,6 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-4">
-        {/* Cabecera del día con diseño premium */}
         <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${
           isToday(fechaSeleccionada) 
             ? 'bg-gradient-to-r from-pink-500/10 to-rose-500/5 border-pink-500/20' 
@@ -463,7 +461,6 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Franjas horarias */}
         <div className="space-y-4">
           {franjas.map((franja) => (
             <div key={franja.nombre} className="space-y-2">
@@ -492,14 +489,12 @@ export default function AdminAgendaPage() {
                           : 'bg-transparent border-dashed border-pink-200/30 dark:border-fuchsia-800/20 hover:border-pink-300/50 hover:bg-pink-50/10 cursor-pointer'
                       }`}
                     >
-                      {/* Hora */}
                       <div className={`w-14 text-xs font-mono font-bold shrink-0 ${
                         cita ? 'text-stone-600 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'
                       }`}>
                         {horaStr}:00
                       </div>
 
-                      {/* Contenido */}
                       {cita ? (
                         <div className="flex-1 flex items-center justify-between min-w-0">
                           <div className="flex items-center gap-3 min-w-0">
@@ -573,7 +568,6 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-4">
-        {/* Versión móvil */}
         <div className="block md:hidden overflow-x-auto pb-2">
           <div className="flex gap-2 min-w-max">
             {weekDays.map((day) => {
@@ -617,7 +611,6 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Versión desktop */}
         <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[700px]">
             <div className="grid grid-cols-7 gap-2">
@@ -707,7 +700,6 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Lista del día seleccionado */}
         <div className={`p-4 rounded-2xl border shadow-sm ${
           isToday(fechaSeleccionada) 
             ? 'bg-gradient-to-r from-pink-500/5 to-rose-500/5 border-pink-500/20' 
@@ -949,47 +941,53 @@ export default function AdminAgendaPage() {
     <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
       
       {/* ============================================================ */}
-      {/* HEADER — IDÉNTICO AL DASHBOARD */}
+      {/* CABECERA PRINCIPAL DE LA AGENDA — ESTILIZADO PREMIUM DASHBOARD */}
       {/* ============================================================ */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: primaryColor }}>
-              <CalendarIcon className="w-5 h-5 md:w-6 md:h-6" />
+      <div 
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
+      >
+        {/* Efecto de Luces y Brillos de Fondo */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          {/* Textos Principales */}
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Panel de Control En Vivo
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: primaryColor }}>
-                ✨ {settings?.business_name || 'Salón VIP'}
-              </p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Agenda Fresh Nails
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                {isStaff ? 'Tus turnos asignados' : 'Gestión profesional de turnos'}
-              </p>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+              Agenda Fresh Nails
+            </h1>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              Gestiona tus turnos, controla la disponibilidad del equipo y optimiza las reservas de tus clientes en tiempo real.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+          {/* Acciones y Botón Más (+) */}
+          <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            {/* Botón de Refrescar / Ajustes Secundario con Glassmorphism */}
             <button 
-              onClick={handleRefresh} 
-              disabled={refreshing} 
-              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: primaryColor }}
+              onClick={() => cargarDatos()} 
+              className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+              title="Actualizar Agenda"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
-              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+
+            {/* Botón Principal: Agregar Cita */}
             <button 
-              onClick={() => setShowNewAppointment(true)}
-              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ backgroundColor: primaryColor }}
+              onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '12:00')}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-pink-50 hover:scale-105 active:scale-95 transition-all"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Nuevo Turno</span>
-              <span className="sm:hidden">+</span>
+              <div className="p-1 rounded-md bg-stone-900 text-white">
+                <Plus className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span>Nuevo Turno</span>
             </button>
           </div>
         </div>
@@ -1092,7 +1090,7 @@ export default function AdminAgendaPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* FILTRO DE STAFF (SOLO PARA ADMIN) — INTEGRADO ELEGANTEMENTE */}
+      {/* FILTRO DE STAFF (SOLO PARA ADMIN) */}
       {/* ============================================================ */}
       {!isStaff && staff.length > 0 && (
         <div className="relative">
