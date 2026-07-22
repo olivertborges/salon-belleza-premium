@@ -39,7 +39,8 @@ export default function AdminLayout({
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        {/* 🛠️ FIJADO: Agregamos pt-20 (padding-top) para reservar el espacio exacto del header fixed */}
+        <main className="flex-1 p-4 lg:p-6 pt-20 lg:pt-20 overflow-y-auto">
           {children}
         </main>
       </div>
