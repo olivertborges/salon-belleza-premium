@@ -22,7 +22,11 @@ import {
   Loader2,
   TrendingUp,
   CheckCircle2,
-  X
+  X,
+  Sparkles,
+  Crown,
+  Star,
+  Flame
 } from 'lucide-react'
 
 interface PromotionUsage {
@@ -41,6 +45,21 @@ interface PromotionUsage {
     code: string
     category: string
   }
+}
+
+// ✅ CATEGORÍAS CON COLORES
+const categoryColors: Record<string, string> = {
+  flash: 'from-red-500 to-red-600',
+  welcome: 'from-emerald-400 to-emerald-600',
+  referral: 'from-blue-400 to-blue-600',
+  special: 'from-purple-400 to-purple-600'
+}
+
+const categoryIcons: Record<string, React.ReactNode> = {
+  flash: <Flame className="w-3.5 h-3.5" />,
+  welcome: <Gift className="w-3.5 h-3.5" />,
+  referral: <Users className="w-3.5 h-3.5" />,
+  special: <Star className="w-3.5 h-3.5" />
 }
 
 export default function UsoPromocionesPage() {
@@ -76,8 +95,6 @@ export default function UsoPromocionesPage() {
     }
 
     try {
-      console.log('🔍 Cargando usos para tenant:', tenantId)
-
       const { data, error } = await supabase
         .from('promotion_usage')
         .select(`
@@ -88,19 +105,14 @@ export default function UsoPromocionesPage() {
         .eq('action', 'applied')
         .order('used_at', { ascending: false })
 
-      if (error) {
-        console.error('❌ Error en consulta:', error)
-        throw error
-      }
-
-      console.log('📦 Usos encontrados:', data?.length || 0)
+      if (error) throw error
 
       setUsos(data || [])
       setFilteredUsos(data || [])
       setSuccess(`✅ ${data?.length || 0} usos cargados correctamente`)
       setTimeout(() => setSuccess(null), 3000)
     } catch (error: any) {
-      console.error('❌ Error cargando usos:', error)
+      console.error('Error cargando usos:', error)
       setError(`Error al cargar los usos: ${error.message || 'Error desconocido'}`)
       setTimeout(() => setError(null), 3000)
     } finally {
@@ -291,60 +303,85 @@ export default function UsoPromocionesPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* TABLA DE USOS */}
+      {/* TARJETAS DE USOS — SIN TABLA, TOTALMENTE RESPONSIVE */}
       {/* ============================================================ */}
-      <div className="rounded-2xl border overflow-hidden shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className={isDark ? 'bg-[#0f0c1b]' : 'bg-stone-50'}>
-              <tr>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-500">Cliente</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-500">Promoción</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-500">Descuento</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-500">Código</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-stone-500">Fecha</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-200 dark:divide-fuchsia-950/50">
-              {filteredUsos.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Gift className="w-8 h-8 text-stone-300 dark:text-stone-600" />
-                      <p className="text-sm text-stone-500 dark:text-stone-400">No hay usos de promociones registrados</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredUsos.map((uso) => (
-                  <tr key={uso.id} className="hover:bg-stone-50 dark:hover:bg-stone-900/30 transition-colors">
-                    <td className="px-4 py-3">
+      <div className="space-y-3">
+        {filteredUsos.length === 0 ? (
+          <div className="text-center py-16 border border-dashed rounded-2xl border-pink-200 dark:border-fuchsia-950">
+            <div className="flex flex-col items-center gap-2">
+              <Gift className="w-12 h-12 text-stone-300 dark:text-stone-600" />
+              <p className="text-sm text-stone-500 dark:text-stone-400">No hay usos de promociones registrados</p>
+            </div>
+          </div>
+        ) : (
+          filteredUsos.map((uso, index) => {
+            const category = uso.promotion?.category || 'special'
+            const gradientColor = categoryColors[category] || 'from-purple-400 to-purple-600'
+            const icon = categoryIcons[category] || <Star className="w-3.5 h-3.5" />
+
+            return (
+              <div 
+                key={uso.id}
+                className={`group relative rounded-2xl border p-4 md:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                  isDark 
+                    ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
+                    : 'bg-white border-pink-100/60 hover:border-pink-300'
+                }`}
+              >
+                {/* Línea decorativa lateral con color de categoría */}
+                <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b ${gradientColor}`} />
+
+                <div className="pl-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* Columna izquierda: Cliente + Promoción */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    {/* Cliente */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 bg-gradient-to-br from-pink-500 to-rose-500">
+                        {uso.client_name?.charAt(0) || 'C'}
+                      </div>
                       <div>
-                        <p className="text-sm font-medium text-stone-900 dark:text-white">
+                        <p className="text-sm font-bold text-stone-900 dark:text-white truncate">
                           {uso.client_name || 'Cliente sin nombre'}
                         </p>
-                        <p className="text-[10px] text-stone-400 dark:text-stone-500">
+                        <p className="text-[10px] text-stone-400 dark:text-stone-500 truncate">
                           {uso.client_email || 'Sin email'}
                         </p>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-stone-900 dark:text-white">
-                        {uso.promotion?.title || 'Promoción eliminada'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-bold text-emerald-500">
-                        {uso.promotion?.discount_percent || 0}%
+                    </div>
+
+                    {/* Promoción */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest text-white shadow-sm bg-gradient-to-r ${gradientColor}`}>
+                        {icon}
+                        {uso.promotion?.category || 'Special'}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <code className="px-2 py-1 rounded bg-stone-100 dark:bg-stone-800 text-xs font-mono text-stone-700 dark:text-stone-300">
-                        {uso.promotion?.code || 'N/A'}
-                      </code>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-stone-500 dark:text-stone-400">
+                      <span className="text-sm font-medium text-stone-700 dark:text-stone-300 truncate">
+                        {uso.promotion?.title || 'Promoción eliminada'}
+                      </span>
+                      {uso.promotion?.discount_percent > 0 && (
+                        <span className="text-sm font-bold text-emerald-500">
+                          -{uso.promotion.discount_percent}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna derecha: Código + Fecha */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-6 shrink-0">
+                    {/* Código */}
+                    {uso.promotion?.code && (
+                      <div className="flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-stone-400" />
+                        <code className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-xs font-mono font-bold text-stone-700 dark:text-stone-300">
+                          {uso.promotion.code}
+                        </code>
+                      </div>
+                    )}
+
+                    {/* Fecha */}
+                    <div className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>
                         {new Date(uso.used_at).toLocaleDateString('es-ES', {
                           day: '2-digit',
                           month: 'short',
@@ -352,21 +389,23 @@ export default function UsoPromocionesPage() {
                           minute: '2-digit'
                         })}
                       </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer con total */}
-        {filteredUsos.length > 0 && (
-          <div className={`px-4 py-3 border-t text-xs font-mono text-stone-500 dark:text-stone-400 ${isDark ? 'bg-[#0f0c1b]' : 'bg-stone-50'}`}>
-            Mostrando {filteredUsos.length} de {usos.length} usos
-          </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
+
+      {/* ============================================================ */}
+      {/* FOOTER CON TOTAL */}
+      {/* ============================================================ */}
+      {filteredUsos.length > 0 && (
+        <div className={`text-center text-xs font-mono text-stone-500 dark:text-stone-400 py-2 border-t border-pink-100/60 dark:border-fuchsia-950/50`}>
+          Mostrando {filteredUsos.length} de {usos.length} usos
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* STYLES GLOBALES */}
