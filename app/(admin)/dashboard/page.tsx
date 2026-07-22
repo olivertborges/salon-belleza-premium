@@ -266,92 +266,70 @@ export default function DashboardPage() {
   else if (hour >= 18) { saludo = 'Buenas noches'; emoji = '🌙' }
 
   return (
-    <div className={`space-y-6 max-w-7xl mx-auto px-4 pb-12 antialiased transition-colors duration-700 ${
-      isDark 
-        ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b]' 
-        : 'bg-gradient-to-b from-pink-50/20 via-white to-stone-50/30'
-    }`}>
+    <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
       
       {/* ============================================================ */}
       {/* 👑 HEADER — BIENVENIDA */}
       {/* ============================================================ */}
-      <div className={`relative overflow-hidden rounded-2xl border p-6 md:p-8 shadow-2xl transition-all duration-700 ${
+      <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl transition-all duration-700 ${
         isDark 
-          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/80 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
-          : 'bg-gradient-to-br from-rose-50/90 via-pink-50/80 to-amber-50/70 border-pink-200/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
+          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/80 to-black border-zinc-900/60' 
+          : 'bg-gradient-to-br from-rose-50/90 via-pink-50/80 to-amber-50/70 border-pink-200/50'
       }`}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
         
-        <div className={`absolute -top-32 -right-32 w-96 h-96 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite] ${
-          isDark ? 'bg-pink-600/10' : 'bg-pink-300/20'
-        }`} />
-        <div className={`absolute -bottom-32 left-1/4 w-80 h-80 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000 ${
-          isDark ? 'bg-amber-500/5' : 'bg-amber-300/15'
-        }`} />
-
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-2">
-            <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border shadow-sm ${
-              isDark 
-                ? 'bg-white/5 border-white/10' 
-                : 'bg-white/60 border-white/80'
-            }`}>
-              <span className="text-lg">{emoji}</span>
-              <span className={`text-[9px] uppercase tracking-[0.2em] font-black ${
-                isDark 
-                  ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-300' 
-                  : 'text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600'
-              }`}>
-                {saludo}, {user?.email?.split('@')[0] || 'Admin'}
-              </span>
-              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                isDark ? 'bg-pink-500' : 'bg-pink-500'
-              }`} />
+        <div className={`relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+          isDark 
+            ? 'bg-[#0f0c1b]' 
+            : 'bg-white'
+        }`}>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-spin-slow" />
             </div>
-            <h1 className={`text-2xl md:text-3xl font-black tracking-tight ${
-              isDark ? 'text-white' : 'text-stone-800'
-            }`}>
-              <span className={`font-serif italic font-light bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite] ${
-                isDark 
-                  ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200' 
-                  : 'text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600'
+            <div className="min-w-0">
+              <p className={`text-[10px] uppercase tracking-widest font-bold font-mono truncate ${
+                isDark ? 'text-pink-400' : 'text-pink-500'
               }`}>
-                Panel de Control
-              </span>
-              <span className={`text-sm font-light ml-3 ${
-                isDark ? 'text-white/60' : 'text-stone-500'
+                ✨ {settings?.business_name || 'Salón VIP'}
+              </p>
+              <h2 className={`text-xl md:text-2xl font-serif font-extrabold mt-0.5 truncate ${
+                isDark ? 'text-white' : 'text-stone-900'
               }`}>
-                • {settings?.business_name || 'Fresh Beauty'}
-              </span>
-            </h1>
+                Panel Ejecutivo
+              </h2>
+              <p className={`text-xs mt-0.5 truncate ${
+                isDark ? 'text-pink-100/60' : 'text-stone-500'
+              }`}>
+                Control absoluto de tus citas, ingresos y comunidad VIP.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
             <button 
               onClick={handleRefresh} 
               disabled={refreshing} 
-              className={`inline-flex items-center gap-2 text-[8px] font-black tracking-[0.2em] uppercase px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 border group relative overflow-hidden ${
+              className={`px-3 py-2 rounded-xl border hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 ${
                 isDark 
-                  ? 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white' 
-                  : 'border-pink-200/60 bg-pink-50/50 hover:bg-pink-100/50 text-stone-600 hover:text-pink-700'
+                  ? 'bg-fuchsia-950/40 border-fuchsia-900/40 text-pink-400' 
+                  : 'bg-pink-50 border-pink-100/60 text-pink-600'
               }`}
+              style={{ color: isDark ? undefined : settings?.primary_color || '#DB5B9A' }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
-              <RefreshCw className={`w-3 h-3 transition-all duration-500 ${
-                isDark 
-                  ? 'text-pink-400/70 group-hover:text-pink-400' 
-                  : 'text-pink-500/70 group-hover:text-pink-500'
-              } ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
-              <span className="relative">{refreshing ? '...' : 'Actualizar'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Sincronizando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
             </button>
 
             <Link 
               href="/admin/agenda"
-              className="group relative overflow-hidden px-5 py-2 rounded-xl font-black text-[9px] tracking-[0.2em] uppercase flex items-center gap-2 text-white border border-pink-400/20 shadow-[0_15px_40px_rgba(219,91,154,0.25)] hover:shadow-[0_20px_50px_rgba(219,91,154,0.4)]"
-              style={brandGradient}
+              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
+              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
             >
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
               <Calendar className="w-3.5 h-3.5" />
-              <span className="relative">Ver Agenda</span>
+              <span className="hidden sm:inline">Ver Agenda</span>
+              <span className="sm:hidden">Agenda</span>
             </Link>
           </div>
         </div>
@@ -371,8 +349,8 @@ export default function DashboardPage() {
         {/* Card 1: Citas Hoy */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark 
-            ? 'bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60' 
-            : 'bg-white/80 border-stone-200/50 shadow-stone-200/30'
+            ? 'bg-[#130f24] border-fuchsia-950' 
+            : 'bg-white border-pink-100/60'
         }`}>
           <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700 ${
             isDark ? 'bg-pink-500/5' : 'bg-pink-300/20'
@@ -380,17 +358,17 @@ export default function DashboardPage() {
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className={`text-[10px] font-black uppercase tracking-wider ${
-                isDark ? 'text-zinc-400' : 'text-stone-400'
+                isDark ? 'text-stone-400' : 'text-stone-400'
               }`}>Citas Hoy</p>
               <p className={`text-4xl font-black mt-1 ${
-                isDark ? 'text-white' : 'text-stone-800'
+                isDark ? 'text-pink-100' : 'text-stone-800'
               }`}>{stats.citasHoy}</p>
               <p className="text-[10px] text-emerald-500 font-medium mt-0.5">+{stats.citasSemana} esta semana</p>
             </div>
-            <div className={`p-3 rounded-xl border transition-all duration-500 group-hover:scale-110 ${
+            <div className={`p-3 rounded-xl transition-all duration-500 group-hover:scale-110 ${
               isDark 
-                ? 'bg-pink-500/20 border-pink-500/20 text-pink-400' 
-                : 'bg-pink-100/50 border-pink-200/50 text-pink-500'
+                ? 'bg-pink-500/20 text-pink-400' 
+                : 'bg-pink-100/50 text-pink-600'
             }`}>
               <Calendar className="w-6 h-6" />
             </div>
@@ -400,8 +378,8 @@ export default function DashboardPage() {
         {/* Card 2: Pendientes */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark 
-            ? 'bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60' 
-            : 'bg-white/80 border-stone-200/50 shadow-stone-200/30'
+            ? 'bg-[#130f24] border-fuchsia-950' 
+            : 'bg-white border-pink-100/60'
         }`}>
           <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700 ${
             isDark ? 'bg-amber-500/5' : 'bg-amber-300/20'
@@ -409,17 +387,17 @@ export default function DashboardPage() {
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className={`text-[10px] font-black uppercase tracking-wider ${
-                isDark ? 'text-zinc-400' : 'text-stone-400'
+                isDark ? 'text-stone-400' : 'text-stone-400'
               }`}>Pendientes</p>
               <p className={`text-4xl font-black mt-1 ${
-                isDark ? 'text-white' : 'text-stone-800'
+                isDark ? 'text-pink-100' : 'text-stone-800'
               }`}>{stats.pendientes}</p>
               <p className="text-[10px] text-amber-500 font-medium mt-0.5">Requieren atención</p>
             </div>
-            <div className={`p-3 rounded-xl border transition-all duration-500 group-hover:scale-110 ${
+            <div className={`p-3 rounded-xl transition-all duration-500 group-hover:scale-110 ${
               isDark 
-                ? 'bg-amber-500/20 border-amber-500/20 text-amber-400' 
-                : 'bg-amber-100/50 border-amber-200/50 text-amber-500'
+                ? 'bg-amber-500/20 text-amber-400' 
+                : 'bg-amber-100/50 text-amber-600'
             }`}>
               <Clock className="w-6 h-6" />
             </div>
@@ -429,8 +407,8 @@ export default function DashboardPage() {
         {/* Card 3: Ingresos */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark 
-            ? 'bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60' 
-            : 'bg-white/80 border-stone-200/50 shadow-stone-200/30'
+            ? 'bg-[#130f24] border-fuchsia-950' 
+            : 'bg-white border-pink-100/60'
         }`}>
           <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700 ${
             isDark ? 'bg-emerald-500/5' : 'bg-emerald-300/20'
@@ -438,17 +416,17 @@ export default function DashboardPage() {
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className={`text-[10px] font-black uppercase tracking-wider ${
-                isDark ? 'text-zinc-400' : 'text-stone-400'
+                isDark ? 'text-stone-400' : 'text-stone-400'
               }`}>Ingresos</p>
               <p className={`text-4xl font-black mt-1 ${
-                isDark ? 'text-white' : 'text-stone-800'
+                isDark ? 'text-pink-100' : 'text-stone-800'
               }`}>{settings?.currency || '$'}{stats.ingresos.toLocaleString()}</p>
               <p className="text-[10px] text-emerald-500 font-medium mt-0.5">Hoy</p>
             </div>
-            <div className={`p-3 rounded-xl border transition-all duration-500 group-hover:scale-110 ${
+            <div className={`p-3 rounded-xl transition-all duration-500 group-hover:scale-110 ${
               isDark 
-                ? 'bg-emerald-500/20 border-emerald-500/20 text-emerald-400' 
-                : 'bg-emerald-100/50 border-emerald-200/50 text-emerald-500'
+                ? 'bg-emerald-500/20 text-emerald-400' 
+                : 'bg-emerald-100/50 text-emerald-600'
             }`}>
               <DollarSign className="w-6 h-6" />
             </div>
@@ -464,8 +442,8 @@ export default function DashboardPage() {
         {/* Bloque: Próximas Citas */}
         <div className={`lg:col-span-2 rounded-2xl border p-6 transition-all duration-500 shadow-xl ${
           isDark 
-            ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/40' 
-            : 'bg-white/80 border-stone-200/60 shadow-stone-300/30 backdrop-blur-sm'
+            ? 'bg-[#130f24] border-fuchsia-950/50' 
+            : 'bg-white border-pink-100/60'
         }`}>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
@@ -478,12 +456,12 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className={`text-sm font-black tracking-tight ${
-                  isDark ? 'text-white' : 'text-stone-800'
+                  isDark ? 'text-pink-100' : 'text-stone-800'
                 }`}>
                   Próximas <span className="font-serif italic font-normal text-pink-500">Citas</span>
                 </h3>
                 <p className={`text-[9px] ${
-                  isDark ? 'text-zinc-400' : 'text-stone-400'
+                  isDark ? 'text-stone-400' : 'text-stone-400'
                 }`}>Las próximas 4 citas</p>
               </div>
             </div>
@@ -499,13 +477,13 @@ export default function DashboardPage() {
 
           {stats.citasProximas.length === 0 ? (
             <div className={`text-center py-10 border border-dashed rounded-xl ${
-              isDark ? 'border-zinc-800' : 'border-stone-200'
+              isDark ? 'border-fuchsia-950/50' : 'border-pink-100/60'
             }`}>
               <Calendar className={`w-8 h-8 mx-auto mb-2 ${
-                isDark ? 'text-zinc-600' : 'text-stone-300'
+                isDark ? 'text-stone-600' : 'text-stone-300'
               }`} />
               <p className={`text-xs ${
-                isDark ? 'text-zinc-500' : 'text-stone-400'
+                isDark ? 'text-stone-500' : 'text-stone-400'
               }`}>No hay citas próximas</p>
             </div>
           ) : (
@@ -515,7 +493,7 @@ export default function DashboardPage() {
                 const citaDate = new Date(cita.date)
                 const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
                 let label = `En ${diffDias} d`
-                let color = isDark ? 'text-zinc-400' : 'text-stone-400'
+                let color = isDark ? 'text-stone-400' : 'text-stone-400'
                 if (diffDias === 0) { label = 'Hoy'; color = 'text-rose-500' }
                 else if (diffDias === 1) { label = 'Mañana'; color = 'text-amber-500' }
 
@@ -524,8 +502,8 @@ export default function DashboardPage() {
                     key={idx} 
                     className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
                       isDark 
-                        ? 'border-zinc-900/60 bg-zinc-900/20 hover:border-pink-500/30' 
-                        : 'border-stone-200/60 bg-stone-50/40 hover:border-pink-300/50'
+                        ? 'border-fuchsia-950/50 bg-[#0f0c1b] hover:border-pink-500/30' 
+                        : 'border-pink-100/60 bg-pink-50/20 hover:border-pink-300/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -534,15 +512,15 @@ export default function DashboardPage() {
                       </div>
                       <div className="min-w-0">
                         <p className={`text-sm font-bold truncate ${
-                          isDark ? 'text-white' : 'text-stone-800'
+                          isDark ? 'text-pink-100' : 'text-stone-800'
                         }`}>{cita.clienteNombre}</p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span className="text-[10px] font-medium text-pink-500 truncate">{cita.servicioNombre}</span>
                           <span className={`w-1 h-1 rounded-full ${
-                            isDark ? 'bg-zinc-600' : 'bg-stone-300'
+                            isDark ? 'bg-stone-600' : 'bg-stone-300'
                           }`} />
                           <span className={`text-[10px] font-mono ${
-                            isDark ? 'text-zinc-400' : 'text-stone-400'
+                            isDark ? 'text-stone-400' : 'text-stone-400'
                           }`}>{cita.time?.slice(0,5) || '--:--'}</span>
                           <span className={`text-[8px] font-black uppercase tracking-wider ${color}`}>{label}</span>
                         </div>
@@ -561,8 +539,8 @@ export default function DashboardPage() {
         {/* Bloque: Servicios Top */}
         <div className={`rounded-2xl border p-6 transition-all duration-500 shadow-xl ${
           isDark 
-            ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/40' 
-            : 'bg-white/80 border-stone-200/60 shadow-stone-300/30 backdrop-blur-sm'
+            ? 'bg-[#130f24] border-fuchsia-950/50' 
+            : 'bg-white border-pink-100/60'
         }`}>
           <div className="flex items-center gap-3 mb-5">
             <div className={`p-2 rounded-xl ${
@@ -574,25 +552,25 @@ export default function DashboardPage() {
             </div>
             <div>
               <h3 className={`text-sm font-black tracking-tight ${
-                isDark ? 'text-white' : 'text-stone-800'
+                isDark ? 'text-pink-100' : 'text-stone-800'
               }`}>
                 Top <span className="font-serif italic font-normal text-amber-500">Servicios</span>
               </h3>
               <p className={`text-[9px] ${
-                isDark ? 'text-zinc-400' : 'text-stone-400'
+                isDark ? 'text-stone-400' : 'text-stone-400'
               }`}>Los más solicitados</p>
             </div>
           </div>
 
           {stats.serviciosTop.length === 0 ? (
             <div className={`text-center py-10 border border-dashed rounded-xl ${
-              isDark ? 'border-zinc-800' : 'border-stone-200'
+              isDark ? 'border-fuchsia-950/50' : 'border-pink-100/60'
             }`}>
               <BarChart className={`w-8 h-8 mx-auto mb-2 ${
-                isDark ? 'text-zinc-600' : 'text-stone-300'
+                isDark ? 'text-stone-600' : 'text-stone-300'
               }`} />
               <p className={`text-xs ${
-                isDark ? 'text-zinc-500' : 'text-stone-400'
+                isDark ? 'text-stone-500' : 'text-stone-400'
               }`}>Sin datos</p>
             </div>
           ) : (
@@ -610,15 +588,15 @@ export default function DashboardPage() {
                           {idx + 1}
                         </span>
                         <span className={`text-xs font-bold truncate ${
-                          isDark ? 'text-white' : 'text-stone-800'
+                          isDark ? 'text-pink-100' : 'text-stone-800'
                         }`}>{serv.nombre}</span>
                       </div>
                       <span className={`text-[10px] font-mono font-bold ${
-                        isDark ? 'text-zinc-400' : 'text-stone-400'
+                        isDark ? 'text-stone-400' : 'text-stone-400'
                       }`}>{serv.count}x</span>
                     </div>
                     <div className={`w-full rounded-full h-1.5 overflow-hidden ${
-                      isDark ? 'bg-zinc-800/50' : 'bg-stone-200/50'
+                      isDark ? 'bg-fuchsia-950/50' : 'bg-pink-100/30'
                     }`}>
                       <div 
                         className={`h-full rounded-full bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`} 
@@ -641,8 +619,8 @@ export default function DashboardPage() {
           href="/admin/agenda"
           className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
             isDark 
-              ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-pink-500/30' 
-              : 'bg-white/80 border-stone-200/50 shadow-stone-200/20 hover:border-pink-300/50'
+              ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20 hover:border-pink-500/30' 
+              : 'bg-white border-pink-100/60 shadow-pink-200/20 hover:border-pink-300/50'
           }`}
         >
           <div className={`absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -655,7 +633,7 @@ export default function DashboardPage() {
               }`} />
             </div>
             <p className={`text-[10px] font-black uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-stone-800'
+              isDark ? 'text-pink-100' : 'text-stone-800'
             }`}>Nueva Cita</p>
           </div>
         </Link>
@@ -664,8 +642,8 @@ export default function DashboardPage() {
           href="/admin/cliente"
           className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
             isDark 
-              ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-violet-500/30' 
-              : 'bg-white/80 border-stone-200/50 shadow-stone-200/20 hover:border-violet-300/50'
+              ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20 hover:border-violet-500/30' 
+              : 'bg-white border-pink-100/60 shadow-pink-200/20 hover:border-violet-300/50'
           }`}
         >
           <div className={`absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -678,7 +656,7 @@ export default function DashboardPage() {
               }`} />
             </div>
             <p className={`text-[10px] font-black uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-stone-800'
+              isDark ? 'text-pink-100' : 'text-stone-800'
             }`}>Clientes</p>
           </div>
         </Link>
@@ -687,8 +665,8 @@ export default function DashboardPage() {
           href="/admin/servicios"
           className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
             isDark 
-              ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-emerald-500/30' 
-              : 'bg-white/80 border-stone-200/50 shadow-stone-200/20 hover:border-emerald-300/50'
+              ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20 hover:border-emerald-500/30' 
+              : 'bg-white border-pink-100/60 shadow-pink-200/20 hover:border-emerald-300/50'
           }`}
         >
           <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -701,7 +679,7 @@ export default function DashboardPage() {
               }`} />
             </div>
             <p className={`text-[10px] font-black uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-stone-800'
+              isDark ? 'text-pink-100' : 'text-stone-800'
             }`}>Servicios</p>
           </div>
         </Link>
@@ -710,8 +688,8 @@ export default function DashboardPage() {
           href="/admin/staff"
           className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
             isDark 
-              ? 'bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-amber-500/30' 
-              : 'bg-white/80 border-stone-200/50 shadow-stone-200/20 hover:border-amber-300/50'
+              ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20 hover:border-amber-500/30' 
+              : 'bg-white border-pink-100/60 shadow-pink-200/20 hover:border-amber-300/50'
           }`}
         >
           <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -724,7 +702,7 @@ export default function DashboardPage() {
               }`} />
             </div>
             <p className={`text-[10px] font-black uppercase tracking-wider ${
-              isDark ? 'text-white' : 'text-stone-800'
+              isDark ? 'text-pink-100' : 'text-stone-800'
             }`}>Staff</p>
           </div>
         </Link>
@@ -738,16 +716,15 @@ export default function DashboardPage() {
           from { transform: translateX(-100%); }
           to { transform: translateX(100%); }
         }
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
         }
         .animate-shine {
           animation: shine 1.5s ease-in-out infinite;
-        }
-        .animate-gradient {
-          animation: gradient 4s ease-in-out infinite;
         }
       `}</style>
 
