@@ -21,7 +21,8 @@ import {
   Percent,
   Loader2,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react'
 
 interface PromotionUsage {
