@@ -331,6 +331,15 @@ export default function AdminPromocionesPage() {
           </div>
 
           <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            {/* ✅ BOTÓN DE USOS - VER REGISTRO DE USOS */}
+            <Link 
+              href="/admin/promociones/uso"
+              className="p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-500 transition-all active:scale-95 flex items-center gap-2 text-xs font-semibold"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Usos</span>
+            </Link>
+
             <button 
               onClick={() => { setRefreshing(true); loadPromociones() }} 
               disabled={refreshing} 
