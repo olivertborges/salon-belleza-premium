@@ -731,22 +731,22 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX CORREGIDO — Vertical y Horizontal se ven bien */}
+      {/* LIGHTBOX CORREGIDO — Imagen + Panel siempre visibles */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
         <div 
           className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" 
           onClick={closeLightbox}
         >
-          {/* Contenedor de la imagen - ocupa todo el espacio disponible */}
+          {/* Contenedor de la imagen - 60% en desktop, 50% en móvil */}
           <div 
-            className="relative flex-1 flex items-center justify-center p-4 h-[60vh] md:h-full min-h-[300px]" 
+            className="relative flex-1 flex items-center justify-center p-3 md:p-6 h-[50vh] md:h-full min-h-[200px]" 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Botón cerrar (móvil) */}
             <button 
               onClick={closeLightbox} 
-              className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/50 hover:bg-black/70 text-white z-50 md:hidden backdrop-blur-sm border border-white/10"
+              className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white z-50 md:hidden backdrop-blur-sm border border-white/10"
             >
               <X className="w-5 h-5" />
             </button>
@@ -756,58 +756,69 @@ export default function GaleriaAdminPage() {
               <>
                 <button 
                   onClick={() => navigateLightbox('prev')} 
-                  className="absolute left-3 p-3 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
+                  className="absolute left-2 p-2 md:p-3 rounded-xl bg-black/50 hover:bg-black/70 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 <button 
                   onClick={() => navigateLightbox('next')} 
-                  className="absolute right-3 p-3 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
+                  className="absolute right-2 p-2 md:p-3 rounded-xl bg-black/50 hover:bg-black/70 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
               </>
             )}
 
             {/* Contador */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-[10px] tracking-[0.2em] font-mono z-40 bg-black/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/50 text-[9px] md:text-[10px] tracking-[0.2em] font-mono z-40 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
               {lightboxIndex + 1} / {filteredPhotos.length}
             </div>
 
-            {/* Imagen - con object-contain para que se ajuste sin recortar */}
+            {/* Imagen - se ajusta sin recortar y con tamaño adecuado */}
             <img 
               src={getImageUrl(selectedPhoto)} 
               alt={selectedPhoto.title || ''} 
-              className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-xl shadow-2xl"
-              style={{ maxHeight: '85vh' }}
+              className="max-w-full max-h-[45vh] md:max-h-[80vh] w-auto h-auto object-contain rounded-xl shadow-2xl"
             />
           </div>
 
-          {/* Panel de información - se mantiene igual */}
+          {/* Panel de información - siempre visible y con scroll si es necesario */}
           <div 
-            className="w-full md:w-72 bg-stone-900/95 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" 
+            className="w-full md:w-80 bg-stone-900/95 md:h-full overflow-y-auto p-4 md:p-6 flex flex-col text-stone-200 border-t md:border-t-0 md:border-l border-white/10" 
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle</span>
-                <button 
-                  onClick={closeLightbox} 
-                  className="hidden md:block p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Header del panel */}
+            <div className="flex justify-between items-center mb-4 md:mb-5">
+              <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle</span>
+              <button 
+                onClick={closeLightbox} 
+                className="p-1.5 md:p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
+              >
+                <X className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+            </div>
 
+            {/* Contenido del panel - con scroll interno */}
+            <div className="flex-1 overflow-y-auto space-y-4 md:space-y-5 pr-1">
+              {/* Categoría */}
               <div>
-                <span className="px-2.5 py-1 bg-white/10 rounded-md text-[9px] font-mono font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 bg-white/10 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider">
                   {selectedPhoto.category || 'Sin categoría'}
                 </span>
-                <h3 className="text-xl font-serif font-bold text-white mt-3">{selectedPhoto.title || 'Sin título'}</h3>
-                <p className="text-xs text-stone-400 mt-2 leading-relaxed">{selectedPhoto.description || 'Sin descripción.'}</p>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-white/10 text-xs">
+              {/* Título */}
+              <h3 className="text-lg md:text-xl font-serif font-bold text-white">
+                {selectedPhoto.title || 'Sin título'}
+              </h3>
+
+              {/* Descripción */}
+              <p className="text-xs md:text-sm text-stone-400 leading-relaxed">
+                {selectedPhoto.description || 'Sin descripción.'}
+              </p>
+
+              {/* Detalles adicionales */}
+              <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
                 {selectedPhoto.professional_id && professionalMap[selectedPhoto.professional_id] && (
                   <div className="flex items-center justify-between">
                     <span className="text-stone-400 flex items-center gap-1.5">
@@ -844,8 +855,9 @@ export default function GaleriaAdminPage() {
               </div>
             </div>
 
+            {/* Acciones - siempre visibles al final */}
             {selectedPhoto.source === 'admin' && (
-              <div className="pt-6 border-t border-white/10 flex gap-2">
+              <div className="pt-4 border-t border-white/10 flex gap-2 mt-4">
                 <button 
                   onClick={() => {
                     closeLightbox()
@@ -861,9 +873,9 @@ export default function GaleriaAdminPage() {
                     })
                     setShowModal(true)
                   }}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                 >
-                  <Edit3 className="w-4 h-4" /> Editar
+                  <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Editar
                 </button>
                 <button 
                   onClick={() => deletePhoto(selectedPhoto.id)}
