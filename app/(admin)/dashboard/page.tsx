@@ -480,7 +480,7 @@ export default function DashboardPage() {
       {/* ============================================================ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Link 
-          href="/admin/agenda/nueva"
+          href="/admin/agenda"
           className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-pink-500/30"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -493,7 +493,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link 
-          href="/admin/clientes"
+          href="/admin/cliente"
           className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-violet-500/30"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
