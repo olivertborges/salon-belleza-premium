@@ -24,7 +24,8 @@ export default function AdminLayout({
   }, [role, loading, session])
 
   return (
-    <div className="flex min-h-screen bg-stone-50 dark:bg-[#0a0908] fixed inset-0 overflow-hidden">
+    /* 🛠️ CAMBIO AQUÍ: Cambiamos fixed inset-0 por h-screen y eliminamos overflow-hidden general */
+    <div className="flex h-screen w-full bg-stone-50 dark:bg-[#0a0908] overflow-hidden">
       <AdminSidebar 
         collapsed={collapsed} 
         setCollapsed={setCollapsed} 
@@ -32,16 +33,18 @@ export default function AdminLayout({
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+      {/* Aseguramos que este contenedor ocupe el 100% de la altura disponible */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
         <AdminHeader 
           collapsed={collapsed} 
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        {/* 🛠️ CALIBRADO: Quitamos pt-4 / pt-6 de las clases del main para que no sume espacio vertical arriba */}
-        <main className="flex-1 px-4 pb-4 lg:px-6 lg:pb-6 pt-0 overflow-y-auto h-full w-full">
+        {/* 🛠️ CAMBIO AQUÍ: Añadimos pb-20 (padding bottom) para garantizar que al final del scroll 
+            haya un espacio de seguridad y ninguna tarjeta quede tapada en el móvil */}
+        <main className="flex-1 px-4 pb-20 lg:px-6 lg:pb-24 pt-0 overflow-y-auto w-full">
           
-          {/* 🧱 Ajustado a h-[60px] para que coincida con la altura exacta del Header en móviles sin empujar de más */}
+          {/* Tu caja invisible calibrada (usa la altura que te haya quedado bien, ej: h-[45px] o h-[50px]) */}
           <div className="h-[20px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
           
           {children}
