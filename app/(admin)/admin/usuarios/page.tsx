@@ -5,14 +5,14 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/hooks/useAuth'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
+import { 
   Users, UserPlus, Search, Edit, Trash2, 
   Shield, UserCog, UserCheck, UserX,
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  User, Gift, AlertCircle, PlusCircle
+  User, Gift, AlertCircle, Plus,
+  UserCircle, Briefcase, Home, LogOut
 } from 'lucide-react'
 
 type UserProfile = {
@@ -63,7 +63,6 @@ const itemVariants = {
 export default function AdminUsuariosPage() {
   const { settings } = useSettings()
   const { tenantId, user, role, loading: authLoading } = useAuth()
-  const isDark = false // Se adaptará con el tema
 
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -458,12 +457,7 @@ export default function AdminUsuariosPage() {
   // 12. RENDER
   // ============================================================
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6 p-1 max-w-4xl mx-auto"
-    >
+    <div className="space-y-6 p-1 max-w-4xl mx-auto">
 
       {/* ============================================================ */}
       {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
@@ -517,31 +511,19 @@ export default function AdminUsuariosPage() {
       {/* ============================================================ */}
       {/* MENSAJES */}
       {/* ============================================================ */}
-      <AnimatePresence>
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs"
-          >
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
-          </motion.div>
-        )}
+      {error && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
+        </div>
+      )}
 
-        {success && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-            <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {success && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+          <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* KPIS — 4 columnas responsivas */}
@@ -641,266 +623,253 @@ export default function AdminUsuariosPage() {
       {/* GRID DE TARJETAS */}
       {/* ============================================================ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence>
-          {filteredUsers.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full text-center py-16 border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
-            >
-              <Users className="w-10 h-10 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
-              <p className="text-sm text-stone-500 dark:text-stone-400">No se encontraron usuarios</p>
-            </motion.div>
-          ) : (
-            filteredUsers.map((user, index) => {
-              const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[2]
-              const RoleIcon = roleConfig.icon
-              const isActive = user.is_active
+        {filteredUsers.length === 0 ? (
+          <div className="col-span-full text-center py-16 border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+            <Users className="w-10 h-10 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
+            <p className="text-sm text-stone-500 dark:text-stone-400">No se encontraron usuarios</p>
+          </div>
+        ) : (
+          filteredUsers.map((user, index) => {
+            const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[2]
+            const RoleIcon = roleConfig.icon
+            const isActive = user.is_active
 
-              return (
-                <motion.div
-                  key={user.id}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={{ delay: 0.05 * index }}
-                  className="rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${
-                        user.role === 'admin' 
-                          ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
-                          : user.role === 'staff'
-                            ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                      }`}>
-                        {user.full_name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">
-                          {user.full_name || 'Usuario'}
-                        </p>
-                        <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
-                          {user.email}
-                        </p>
-                      </div>
+            return (
+              <div
+                key={user.id}
+                className="rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${
+                      user.role === 'admin' 
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
+                        : user.role === 'staff'
+                          ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    }`}>
+                      {user.full_name?.charAt(0).toUpperCase() || 'U'}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">
+                        {user.full_name || 'Usuario'}
+                      </p>
+                      <p className="text-xs text-stone-400 dark:text-stone-500 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
 
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
-                      <RoleIcon className="w-3 h-3" />
-                      {roleConfig.label}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
+                    <RoleIcon className="w-3 h-3" />
+                    {roleConfig.label}
+                  </span>
+                </div>
+
+                {/* Información de contacto */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
+                    <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{user.email}</span>
+                  </div>
+                  {user.phone && (
+                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{user.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">
+                      Creado: {new Date(user.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-
-                  {/* Información de contacto */}
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
-                      <Mail className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-                    {user.phone && (
-                      <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
-                        <Phone className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{user.phone}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">
-                        Creado: {new Date(user.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 col-span-2">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold ${
-                        isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                        {isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2 col-span-2">
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold ${
+                      isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                      {isActive ? 'Activo' : 'Inactivo'}
+                    </span>
                   </div>
+                </div>
 
-                  {/* Acciones */}
-                  <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1 flex-wrap">
-                    <button
-                      onClick={() => toggleUserStatus(user)}
-                      className={`p-2 rounded-xl transition-colors ${
-                        isActive 
-                          ? 'hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500' 
-                          : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-stone-400 hover:text-emerald-500'
-                      }`}
-                      title={isActive ? 'Desactivar' : 'Activar'}
-                    >
-                      {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                    </button>
-                    <button
-                      onClick={() => openEditModal(user)}
-                      className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 text-stone-400 hover:text-blue-500 transition-colors"
-                      title="Editar"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => resetPassword(user.email)}
-                      className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
-                      title="Resetear contraseña"
-                    >
-                      <Key className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deleteUser(user)}
-                      className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 text-stone-400 hover:text-rose-500 transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              )
-            })
-          )}
-        </AnimatePresence>
+                {/* Acciones */}
+                <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1 flex-wrap">
+                  <button
+                    onClick={() => toggleUserStatus(user)}
+                    className={`p-2 rounded-xl transition-colors ${
+                      isActive 
+                        ? 'hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500' 
+                        : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-stone-400 hover:text-emerald-500'
+                    }`}
+                    title={isActive ? 'Desactivar' : 'Activar'}
+                  >
+                    {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 text-stone-400 hover:text-blue-500 transition-colors"
+                    title="Editar"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => resetPassword(user.email)}
+                    className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
+                    title="Resetear contraseña"
+                  >
+                    <Key className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteUser(user)}
+                    className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 text-stone-400 hover:text-rose-500 transition-colors"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
 
       {/* ============================================================ */}
       {/* MODAL — SIN LEVEL */}
       {/* ============================================================ */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-            <div 
-              className="relative w-full max-w-lg rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+      {showModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div 
+            className="relative w-full max-w-lg rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
             >
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <X className="w-5 h-5" />
+            </button>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
-                  {editingUser ? <UserCog className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-                </div>
-                <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
-                  {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
-                </h3>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
+                {editingUser ? <UserCog className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+              </div>
+              <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
+                {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+              </h3>
+            </div>
+
+            <form onSubmit={editingUser ? handleEditUser : handleCreateUser} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                  Nombre Completo *
+                </label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder="Ej: María González"
+                  required
+                />
               </div>
 
-              <form onSubmit={editingUser ? handleEditUser : handleCreateUser} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder="nombre@ejemplo.com"
+                  required
+                  disabled={!!editingUser}
+                />
+              </div>
+
+              {!editingUser && (
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Nombre Completo *
+                    Contraseña *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="Ej: María González"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="nombre@ejemplo.com"
-                    required
-                    disabled={!!editingUser}
-                  />
-                </div>
-
-                {!editingUser && (
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                      Contraseña *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                        placeholder="••••••••"
-                        required={!editingUser}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-pink-500 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                      style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                      placeholder="••••••••"
+                      required={!editingUser}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-pink-500 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
-                )}
-
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="11 2345 6789"
-                  />
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                    Rol *
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    required
-                  >
-                    {ROLES.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder="11 2345 6789"
+                />
+              </div>
 
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md"
-                    style={primaryBgStyle}
-                  >
-                    <Check className="w-4 h-4" />
-                    {editingUser ? 'Actualizar' : 'Crear Usuario'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                  Rol *
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  required
+                >
+                  {ROLES.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md"
+                  style={primaryBgStyle}
+                >
+                  <Check className="w-4 h-4" />
+                  {editingUser ? 'Actualizar' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* STYLES GLOBALES */}
@@ -910,6 +879,6 @@ export default function AdminUsuariosPage() {
         .animate-spin-slow { animation: spin-slow 8s linear infinite; }
       `}</style>
 
-    </motion.div>
+    </div>
   )
 }
