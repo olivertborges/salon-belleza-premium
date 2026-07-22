@@ -235,10 +235,7 @@ export default function DashboardPage() {
 
   const primaryColor = settings?.primary_color || '#DB5B9A'
   const secondaryColor = settings?.secondary_color || '#E5A46E'
-
-  const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
-  }
+  const brandGradient = { backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})` }
 
   return (
     <div className="space-y-6 p-4 md:p-6 max-w-full overflow-x-hidden">
@@ -253,7 +250,7 @@ export default function DashboardPage() {
           isDark ? 'bg-[#0f0c1b]' : 'bg-white'
         }`}>
           <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: primaryColor }}>
               <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-spin-slow" />
             </div>
             <div className="min-w-0">
@@ -292,7 +289,7 @@ export default function DashboardPage() {
             <Link 
               href="/admin/agenda"
               className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+              style={{ backgroundColor: primaryColor }}
             >
               <Calendar className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Ver Agenda</span>
@@ -301,8 +298,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 📊 MÉTRICAS PRINCIPALES — 3 CARDS */}
+      {/* 📊 MÉTRICAS PRINCIPALES */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Card Citas */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
         }`}>
@@ -318,6 +316,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Card Pendientes */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
         }`}>
@@ -333,6 +332,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Card Ingresos */}
         <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
           isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
         }`}>
@@ -349,21 +349,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 📋 PRÓXIMAS CITAS + SERVICIOS TOP */}
+      {/* 📋 SECCIONES DETALLADAS Y ACCIONES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-xl ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'
-        }`}>
+        <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-xl ${isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'}`}>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-xl ${isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'}`}>
                 <Clock className={`w-4 h-4 ${isDark ? 'text-pink-400' : 'text-pink-600'}`} />
               </div>
-              <div>
-                <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
-                  Próximas <span className="font-serif italic font-normal text-pink-500">Citas</span>
-                </h3>
-              </div>
+              <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
+                Próximas <span className="font-serif italic font-normal text-pink-500">Citas</span>
+              </h3>
             </div>
             <Link href="/admin/agenda" className={`text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>
               Ver todas <ArrowUp className="w-3 h-3 rotate-45" />
@@ -387,9 +383,7 @@ export default function DashboardPage() {
                 else if (diffDias === 1) { label = 'Mañana'; color = 'text-amber-500' }
 
                 return (
-                  <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${
-                    isDark ? 'border-fuchsia-950/50 bg-[#0f0c1b]' : 'border-pink-100/60 bg-pink-50/20'
-                  }`}>
+                  <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'border-fuchsia-950/50 bg-[#0f0c1b]' : 'border-pink-100/60 bg-pink-50/20'}`}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-pink-500 to-rose-500">
                         {citaDate.getDate()}
@@ -413,18 +407,14 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className={`rounded-2xl border p-6 shadow-xl ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'
-        }`}>
+        <div className={`rounded-2xl border p-6 shadow-xl ${isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'}`}>
           <div className="flex items-center gap-3 mb-5">
             <div className={`p-2 rounded-xl ${isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'}`}>
               <TrendingUp className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
             </div>
-            <div>
-              <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
-                Top <span className="font-serif italic font-normal text-amber-500">Servicios</span>
-              </h3>
-            </div>
+            <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
+              Top <span className="font-serif italic font-normal text-amber-500">Servicios</span>
+            </h3>
           </div>
 
           {stats.serviciosTop.length === 0 ? (
@@ -451,10 +441,7 @@ export default function DashboardPage() {
                       <span className="text-[10px] font-mono font-bold text-stone-400">{serv.count}x</span>
                     </div>
                     <div className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-fuchsia-950/50' : 'bg-pink-100/30'}`}>
-                      <div 
-                        className={`h-full rounded-full bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`} 
-                        style={{ width: `${porcentaje}%` }} 
-                      />
+                      <div className={`h-full rounded-full bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`} style={{ width: `${porcentaje}%` }} />
                     </div>
                   </div>
                 )
@@ -466,51 +453,35 @@ export default function DashboardPage() {
 
       {/* 🔧 ACCIONES RÁPIDAS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Link href="/admin/agenda" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'
-        }`}>
+        <Link href="/admin/agenda" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'}`}>
-            <PlusCircle className={`w-5 h-5 ${isDark ? 'text-pink-400' : 'text-pink-600'}`} />
+            <PlusCircle className="w-5 h-5 text-pink-500" />
           </div>
           <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Nueva Cita</p>
         </Link>
-
-        <Link href="/admin/cliente" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'
-        }`}>
+        <Link href="/admin/cliente" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-violet-500/10' : 'bg-violet-100/50'}`}>
-            <Users className={`w-5 h-5 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+            <Users className="w-5 h-5 text-violet-500" />
           </div>
           <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Clientes</p>
         </Link>
-
-        <Link href="/admin/servicios" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'
-        }`}>
+        <Link href="/admin/servicios" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-emerald-500/10' : 'bg-emerald-100/50'}`}>
-            <Scissors className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+            <Scissors className="w-5 h-5 text-emerald-500" />
           </div>
           <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Servicios</p>
         </Link>
-
-        <Link href="/admin/staff" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'
-        }`}>
+        <Link href="/admin/staff" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'}`}>
-            <UserCheck className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <UserCheck className="w-5 h-5 text-amber-500" />
           </div>
           <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Staff</p>
         </Link>
       </div>
 
       <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
       `}</style>
     </div>
   )
