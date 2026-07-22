@@ -239,7 +239,7 @@ export default function DashboardPage() {
 
   return (
     // 🛠️ Se cambió 'p-4 md:p-6' por paddings desglosados con 'pt-0' para engancharse al header perfectamente
-    <div className="space-y-6 px-4 pb-4 md:px-6 md:pb-6 pt-20 max-w-full overflow-x-hidden">
+   <div className="space-y-6 px-4 py-4 md:px-6 md:py-6 max-w-full overflow-x-hidden">
       {/* 👑 HEADER — BIENVENIDA */}
       <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl transition-all duration-700 ${
         isDark 
