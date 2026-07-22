@@ -42,7 +42,7 @@ type Professional = {
   role?: string
 }
 
-const categories = ['Todas', 'Uñas', 'Micropigmentación', 'Peluquería', 'Cejas']
+const categories = ['Todas', 'Uñas', 'Micropigmentacion', 'Peluquería', 'Cejas']
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
