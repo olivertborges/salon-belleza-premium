@@ -266,7 +266,7 @@ export default function DashboardPage() {
   else if (hour >= 18) { saludo = 'Buenas noches'; emoji = '🌙' }
 
   return (
-    <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
+    <div className="space-y-6 p-1 pt-16 md:pt-20 max-w-full overflow-x-hidden">
       
       {/* ============================================================ */}
       {/* 👑 HEADER — BIENVENIDA */}
