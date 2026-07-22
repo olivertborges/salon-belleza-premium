@@ -18,6 +18,7 @@ export default function AdminLayout({
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // 🔓 BYPASS TOTAL PARA TERMUX EN DESARROLLO
   useEffect(() => {
     console.log('📱 [Termux-Layout-Bypass] Estado actual:', { session: !!session, role, loading });
   }, [role, loading, session])
@@ -37,13 +38,11 @@ export default function AdminLayout({
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        {/* 🛠️ SOLUCIÓN PARA CONGELAR EL SCROLL */}
-        {/* Eliminamos el pt-20 de aquí para evitar que el scroll lo multiplique */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto h-full w-full">
+        {/* 🛠️ CALIBRADO: Quitamos pt-4 / pt-6 de las clases del main para que no sume espacio vertical arriba */}
+        <main className="flex-1 px-4 pb-4 lg:px-6 lg:pb-6 pt-0 overflow-y-auto h-full w-full">
           
-          {/* 🧱 ESTA ES LA CAJA INVISIBLE DE CONTROL (Mide exactamente 80px) */}
-          {/* Actúa como un escudo rígido. Al hacer scroll, pasa de largo y no altera el layout */}
-          <div className="h-20 w-full block shrink-0 pointer-events-none" aria-hidden="true" />
+          {/* 🧱 Ajustado a h-[60px] para que coincida con la altura exacta del Header en móviles sin empujar de más */}
+          <div className="h-[60px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
           
           {children}
         </main>
