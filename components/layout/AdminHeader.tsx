@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState } from 'react'
@@ -13,7 +12,7 @@ interface AdminHeaderProps {
   onMenuClick: () => void
 }
 
-export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps) {
+export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [showNotifications, setShowNotifications] = useState(false)
@@ -27,17 +26,20 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
   ]
 
   const unreadCount = notifications.filter(n => !n.read).length
+
+  // ⚡ CONTROL DE ERRORES BLINDADO: Extraemos el nombre de forma 100% segura
   const userName = user?.email || 'Administrador'
   const firstName = userName.split('@')[0] || 'Admin'
 
   return (
-    <header className={`sticky top-0 w-full z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between transition-colors duration-300 ${
+    <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between transition-colors duration-300 ${
       isDark
         ? 'bg-[#0e0c0b]/95 border-stone-900/80 text-white'
         : 'bg-white/95 border-stone-200 text-stone-900'
     }`}>
       {/* LADO IZQUIERDO */}
       <div className="flex items-center gap-3 md:gap-4">
+        {/* Botón hamburguesa (móvil) */}
         <button
           onClick={onMenuClick}
           className={`lg:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
@@ -63,8 +65,10 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
         </div>
       </div>
 
-      {/* LADO DERECHO */}
+      {/* LADO DERECHO - TRES ICONOS JUNTOS (TEMA, NOTIFICACIONES, PERFIL MÓVIL) */}
       <div className="flex items-center gap-2.5 md:gap-4 h-10">
+
+        {/* 1. Icono Cambiar Tema */}
         <button
           onClick={toggleTheme}
           className={`h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
@@ -81,6 +85,7 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
           )}
         </button>
 
+        {/* 2. Icono Notificaciones */}
         <div className="relative h-10 w-10 shrink-0 flex items-center justify-center">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -100,6 +105,7 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
             )}
           </button>
 
+          {/* Dropdown notificaciones */}
           {showNotifications && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
@@ -139,6 +145,8 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
           )}
         </div>
 
+        {/* 3. Icono Perfil móvil / Avatar Desktop */}
+        {/* En móvil se ve como el 3er botón de la fila de 3 iconos */}
         <button className={`md:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
           isDark
             ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
@@ -147,6 +155,7 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
           <User className="w-4 h-4" />
         </button>
 
+        {/* Separador Visual y Perfil (solo visible en Desktop) */}
         <div className={`h-6 w-[1px] mx-0.5 hidden md:block shrink-0 ${isDark ? 'bg-stone-800' : 'bg-stone-200'}`}></div>
 
         <div className="hidden md:flex items-center gap-3 shrink-0">
@@ -168,6 +177,7 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
             {firstName.charAt(0).toUpperCase()}
           </div>
         </div>
+
       </div>
     </header>
   )
