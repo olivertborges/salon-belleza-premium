@@ -27,8 +27,24 @@ import {
   Upload,
   Image as ImageIcon,
   Loader2,
-  Trash2
+  Trash2,
+  PlusCircle
 } from 'lucide-react'
+
+// ✅ CATEGORÍAS SIMPLIFICADAS
+const categories = [
+  { value: 'flash', label: '⚡ Flash', color: 'from-red-500 to-red-600' },
+  { value: 'welcome', label: '🎁 Welcome', color: 'from-emerald-400 to-emerald-600' },
+  { value: 'referral', label: '🔗 Referral', color: 'from-blue-400 to-blue-600' },
+  { value: 'special', label: '⭐ Special', color: 'from-purple-400 to-purple-600' }
+]
+
+// ✅ STYLES
+const styles = [
+  { value: 'volante', label: '📄 Volante' },
+  { value: 'tarjeta', label: '💳 Tarjeta' },
+  { value: 'flyer', label: '📋 Flyer' }
+]
 
 export default function EditarPromocionPage() {
   const router = useRouter()
@@ -38,6 +54,7 @@ export default function EditarPromocionPage() {
   const { settings } = useSettings()
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
 
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
@@ -48,20 +65,26 @@ export default function EditarPromocionPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [promoId, setPromoId] = useState<string | null>(null)
 
+  // ✅ FORMULARIO SIN min_purchase
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     discount_percent: 0,
     code: '',
     valid_until: '',
-    category: 'general' as 'flash' | 'premium' | 'seasonal' | 'welcome' | 'referral',
+    category: 'special' as 'flash' | 'welcome' | 'referral' | 'special',
     style: 'volante' as 'volante' | 'tarjeta' | 'flyer',
     featured: false,
     uses_limit: '',
     terms: '',
-    min_purchase: '',
     image_url: ''
   })
+
+  const brandGradient = {
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+  }
+
+  const primaryBgStyle = { backgroundColor: primaryColor }
 
   useEffect(() => {
     if (params?.id) {
@@ -88,12 +111,11 @@ export default function EditarPromocionPage() {
           discount_percent: data.discount_percent || 0,
           code: data.code || '',
           valid_until: data.valid_until ? data.valid_until.split('T')[0] : '',
-          category: data.category || 'general',
+          category: data.category || 'special',
           style: data.style || 'volante',
           featured: data.featured || false,
           uses_limit: data.uses_limit ? String(data.uses_limit) : '',
           terms: data.terms || '',
-          min_purchase: data.min_purchase ? String(data.min_purchase) : '',
           image_url: data.image_url || ''
         })
         if (data.image_url) {
@@ -103,6 +125,7 @@ export default function EditarPromocionPage() {
     } catch (error) {
       console.error('Error cargando promoción:', error)
       setError('Error al cargar la promoción')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoadingData(false)
     }
@@ -153,7 +176,7 @@ export default function EditarPromocionPage() {
         .getPublicUrl(filePath)
 
       const publicUrl = urlData.publicUrl
-      
+
       setPreviewImage(publicUrl)
       setFormData(prev => ({ ...prev, image_url: publicUrl }))
       setSuccess('Imagen subida correctamente')
@@ -180,7 +203,7 @@ export default function EditarPromocionPage() {
         console.error('Error eliminando imagen:', e)
       }
     }
-    
+
     setPreviewImage(null)
     setFormData(prev => ({ ...prev, image_url: '' }))
     if (fileInputRef.current) {
@@ -211,7 +234,6 @@ export default function EditarPromocionPage() {
         is_active: true,
         uses_limit: formData.uses_limit ? parseInt(formData.uses_limit) : null,
         terms: formData.terms || null,
-        min_purchase: formData.min_purchase ? parseFloat(formData.min_purchase) : null,
         image_url: formData.image_url || null
       }
 
@@ -229,6 +251,7 @@ export default function EditarPromocionPage() {
     } catch (err: any) {
       console.error('Error actualizando promoción:', err)
       setError(err.message || 'Error al actualizar la promoción')
+      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
     }
@@ -242,17 +265,35 @@ export default function EditarPromocionPage() {
     }))
   }
 
-  const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
-  }
-
   if (loadingData) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: primaryColor }} />
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Cargando promoción...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Gift className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              EDITAR PROMOCIÓN
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -260,30 +301,45 @@ export default function EditarPromocionPage() {
   return (
     <div className="space-y-6 p-1 max-w-3xl mx-auto">
 
-      {/* HEADER */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <Link 
-              href="/admin/promociones"
-              className="p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-500 hover:text-pink-500"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="min-w-0">
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Editar Promoción
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                {formData.title || 'Sin título'}
-              </p>
+      {/* ============================================================ */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
+      {/* ============================================================ */}
+      <div 
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
+      >
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Editar Promoción
             </div>
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/admin/promociones"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+                {formData.title || 'Editar Promoción'}
+              </h1>
+            </div>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              Modifica los datos de esta promoción especial.
+            </p>
           </div>
         </div>
       </div>
 
+      {/* ============================================================ */}
       {/* MENSAJES */}
+      {/* ============================================================ */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
@@ -302,14 +358,16 @@ export default function EditarPromocionPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
       {/* FORMULARIO */}
-      <form onSubmit={handleSubmit} className={`rounded-2xl border p-6 space-y-6 ${
+      {/* ============================================================ */}
+      <form onSubmit={handleSubmit} className={`rounded-2xl border p-6 space-y-6 shadow-sm ${
         isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
       }`}>
-        
+
         {/* Título */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
             Título de la promoción *
           </label>
           <input
@@ -330,7 +388,7 @@ export default function EditarPromocionPage() {
 
         {/* Descripción */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
             Descripción
           </label>
           <textarea
@@ -351,7 +409,7 @@ export default function EditarPromocionPage() {
         {/* Grid de campos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               <Percent className="w-3 h-3 inline mr-1" /> Descuento (%)
             </label>
             <input
@@ -371,7 +429,7 @@ export default function EditarPromocionPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               <Tag className="w-3 h-3 inline mr-1" /> Código promocional
             </label>
             <input
@@ -390,7 +448,7 @@ export default function EditarPromocionPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               Categoría
             </label>
             <select
@@ -404,17 +462,14 @@ export default function EditarPromocionPage() {
               }`}
               style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             >
-              <option value="flash">🔥 Flash Sale</option>
-              <option value="premium">👑 Premium</option>
-              <option value="seasonal">✨ Temporada</option>
-              <option value="welcome">🎁 Bienvenida</option>
-              <option value="referral">📣 Referido</option>
-              <option value="general">🎯 General</option>
+              {categories.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               Estilo de presentación
             </label>
             <select
@@ -428,14 +483,14 @@ export default function EditarPromocionPage() {
               }`}
               style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             >
-              <option value="volante">📄 Volante</option>
-              <option value="tarjeta">💳 Tarjeta</option>
-              <option value="flyer">📬 Flyer</option>
+              {styles.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               <Calendar className="w-3 h-3 inline mr-1" /> Válido hasta
             </label>
             <input
@@ -453,7 +508,7 @@ export default function EditarPromocionPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
               <Users className="w-3 h-3 inline mr-1" /> Límite de usos
             </label>
             <input
@@ -475,10 +530,10 @@ export default function EditarPromocionPage() {
 
         {/* Imagen */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
             <ImageIcon className="w-3 h-3 inline mr-1" /> Imagen de la promoción
           </label>
-          
+
           {previewImage ? (
             <div className="relative rounded-xl overflow-hidden border border-pink-100/60 dark:border-fuchsia-950">
               <img 
@@ -531,10 +586,10 @@ export default function EditarPromocionPage() {
           )}
         </div>
 
-        {/* Términos */}
+        {/* Términos (opcional) */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
-            Términos y condiciones
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-700 dark:text-stone-300 mb-1.5">
+            Términos y condiciones (opcional)
           </label>
           <textarea
             name="terms"
@@ -577,14 +632,23 @@ export default function EditarPromocionPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-6 py-2.5 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-            style={{ backgroundColor: primaryColor }}
+            className="flex-1 px-6 py-2.5 rounded-xl text-white text-sm font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md"
+            style={primaryBgStyle}
           >
             <Save className="w-4 h-4" />
             {loading ? 'Guardando...' : 'Actualizar Promoción'}
           </button>
         </div>
       </form>
+
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+      `}</style>
+
     </div>
   )
 }
