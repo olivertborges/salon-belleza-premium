@@ -6,53 +6,72 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useSettings } from '@/contexts/SettingsContext'
 import { 
-  Crown, Gift, Plus, Trash2, Sparkles, Scissors, 
+  Crown, Gift, Plus, Trash2, Sparkles, 
   Percent, Layers, Edit3, Check, X, RefreshCw,
-  Save, Users, Star, Award, Zap
+  Save, Users, Star, Award, Zap, AlertCircle,
+  TrendingUp, Calendar, Package, PlusCircle
 } from 'lucide-react'
 
-interface LevelForm {
-  id?: string
+interface Level {
+  id: string
   name: string
-  emoji: string
   min_points: number
-  wallet_type: 'glow' | 'hair'
+  emoji: string
 }
 
-interface RewardForm {
-  id?: string
+interface Reward {
+  id: string
   name: string
   description: string
   points_required: number
-  tier: string
-  wallet_type: 'glow' | 'hair'
   discount_percentage: number
 }
+
+// ✅ EMOJIS FIJOS POR NIVEL
+const LEVEL_EMOJIS: Record<string, string> = {
+  'Bronce': '🥉',
+  'Plata': '🥈',
+  'Oro': '🥇',
+  'Platino': '💎',
+  'Diamante': '💠'
+}
+
+const DEFAULT_LEVELS = [
+  { name: 'Bronce', emoji: '🥉', min_points: 0 },
+  { name: 'Plata', emoji: '🥈', min_points: 500 },
+  { name: 'Oro', emoji: '🥇', min_points: 1500 },
+  { name: 'Platino', emoji: '💎', min_points: 3000 }
+]
 
 export default function AdminVIPConfigPage() {
   const { tenantId, loading: authLoading } = useAuth()
   const { settings } = useSettings()
 
-  const [activeTab, setActiveTab] = useState<'glow' | 'hair'>('glow')
-  const [levels, setLevels] = useState<LevelForm[]>([])
-  const [rewards, setRewards] = useState<RewardForm[]>([])
+  const [levels, setLevels] = useState<Level[]>([])
+  const [rewards, setRewards] = useState<Reward[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const [newLevel, setNewLevel] = useState<LevelForm>({ name: '', emoji: '✨', min_points: 0, wallet_type: 'glow' })
-  const [newReward, setNewReward] = useState<RewardForm>({ name: '', description: '', points_required: 0, tier: 'Bronce', wallet_type: 'glow', discount_percentage: 0 })
+  // Estados para formularios
+  const [newLevel, setNewLevel] = useState({ name: '', min_points: 0 })
+  const [newReward, setNewReward] = useState({ name: '', description: '', points_required: 0, discount_percentage: 0 })
 
-  const [editingLevelId, setEditingLevelId] = useState<string | null>(null)
-  const [editLevelData, setEditLevelData] = useState<LevelForm | null>(null)
+  // Estados para modales de edición
+  const [editingLevel, setEditingLevel] = useState<Level | null>(null)
+  const [editingReward, setEditingReward] = useState<Reward | null>(null)
+  const [showLevelModal, setShowLevelModal] = useState(false)
+  const [showRewardModal, setShowRewardModal] = useState(false)
 
-  const [editingRewardId, setEditingRewardId] = useState<string | null>(null)
-  const [editRewardData, setEditRewardData] = useState<RewardForm | null>(null)
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
+
+  const primaryBgStyle = { backgroundColor: primaryColor }
 
   useEffect(() => {
     if (tenantId) {
@@ -60,7 +79,7 @@ export default function AdminVIPConfigPage() {
     } else if (authLoading === false || authLoading === undefined) {
       setLoading(false)
     }
-  }, [tenantId, activeTab, authLoading])
+  }, [tenantId, authLoading])
 
   const fetchConfig = async (showLoading = true) => {
     if (showLoading) {
@@ -71,25 +90,45 @@ export default function AdminVIPConfigPage() {
     setError(null)
 
     try {
+      // ✅ SOLO UN SISTEMA DE PUNTOS - Eliminado wallet_type
       const [lvResponse, rwResponse] = await Promise.all([
         supabase
           .from('vip_levels')
           .select('*')
           .eq('tenant_id', tenantId)
-          .eq('wallet_type', activeTab)
           .order('min_points', { ascending: true }),
         supabase
           .from('reward_catalog')
           .select('*')
           .eq('tenant_id', tenantId)
-          .eq('wallet_type', activeTab)
           .order('points_required', { ascending: true })
       ])
 
       if (lvResponse.error) throw lvResponse.error
       if (rwResponse.error) throw rwResponse.error
 
-      setLevels(lvResponse.data || [])
+      // ✅ Si no hay niveles, crear los predeterminados
+      if (!lvResponse.data || lvResponse.data.length === 0) {
+        const defaultLevels = DEFAULT_LEVELS.map(l => ({
+          ...l,
+          tenant_id: tenantId,
+          is_active: true
+        }))
+        const { error: insertError } = await supabase
+          .from('vip_levels')
+          .insert(defaultLevels)
+        if (insertError) throw insertError
+        // Recargar después de crear los niveles por defecto
+        const { data: newLevels } = await supabase
+          .from('vip_levels')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .order('min_points', { ascending: true })
+        setLevels(newLevels || [])
+      } else {
+        setLevels(lvResponse.data || [])
+      }
+
       setRewards(rwResponse.data || [])
     } catch (e: any) {
       console.error('Error cargando configuración VIP:', e)
@@ -104,6 +143,7 @@ export default function AdminVIPConfigPage() {
     fetchConfig(true)
   }
 
+  // ✅ CREAR NIVEL
   const handleAddLevel = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -111,14 +151,16 @@ export default function AdminVIPConfigPage() {
     setSuccess(null)
 
     try {
+      const emoji = LEVEL_EMOJIS[newLevel.name] || '⭐'
       const { error } = await supabase.from('vip_levels').insert([{
-        ...newLevel,
-        wallet_type: activeTab,
+        name: newLevel.name,
+        min_points: newLevel.min_points,
+        emoji: emoji,
         tenant_id: tenantId,
         is_active: true
       }])
       if (error) throw error
-      setNewLevel({ name: '', emoji: '✨', min_points: 0, wallet_type: activeTab })
+      setNewLevel({ name: '', min_points: 0 })
       setSuccess('Rango VIP creado correctamente')
       setTimeout(() => setSuccess(null), 3000)
       fetchConfig(false)
@@ -128,6 +170,7 @@ export default function AdminVIPConfigPage() {
     }
   }
 
+  // ✅ CREAR PREMIO
   const handleAddReward = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -136,13 +179,15 @@ export default function AdminVIPConfigPage() {
 
     try {
       const { error } = await supabase.from('reward_catalog').insert([{
-        ...newReward,
-        wallet_type: activeTab,
+        name: newReward.name,
+        description: newReward.description,
+        points_required: newReward.points_required,
+        discount_percentage: newReward.discount_percentage || 0,
         tenant_id: tenantId,
         is_active: true
       }])
       if (error) throw error
-      setNewReward({ name: '', description: '', points_required: 0, tier: 'Bronce', wallet_type: activeTab, discount_percentage: 0 })
+      setNewReward({ name: '', description: '', points_required: 0, discount_percentage: 0 })
       setSuccess('Premio agregado correctamente')
       setTimeout(() => setSuccess(null), 3000)
       fetchConfig(false)
@@ -152,23 +197,26 @@ export default function AdminVIPConfigPage() {
     }
   }
 
-  const handleSaveLevelEdit = async (id: string) => {
-    if (!editLevelData) return
+  // ✅ ACTUALIZAR NIVEL
+  const handleUpdateLevel = async () => {
+    if (!editingLevel) return
     setError(null)
     setSuccess(null)
 
     try {
+      const emoji = LEVEL_EMOJIS[editingLevel.name] || '⭐'
       const { error } = await supabase
         .from('vip_levels')
         .update({
-          name: editLevelData.name,
-          emoji: editLevelData.emoji,
-          min_points: editLevelData.min_points
+          name: editingLevel.name,
+          min_points: editingLevel.min_points,
+          emoji: emoji
         })
-        .eq('id', id)
+        .eq('id', editingLevel.id)
 
       if (error) throw error
-      setEditingLevelId(null)
+      setShowLevelModal(false)
+      setEditingLevel(null)
       setSuccess('Rango actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
       fetchConfig(false)
@@ -178,8 +226,9 @@ export default function AdminVIPConfigPage() {
     }
   }
 
-  const handleSaveRewardEdit = async (id: string) => {
-    if (!editRewardData) return
+  // ✅ ACTUALIZAR PREMIO
+  const handleUpdateReward = async () => {
+    if (!editingReward) return
     setError(null)
     setSuccess(null)
 
@@ -187,16 +236,16 @@ export default function AdminVIPConfigPage() {
       const { error } = await supabase
         .from('reward_catalog')
         .update({
-          name: editRewardData.name,
-          description: editRewardData.description,
-          points_required: editRewardData.points_required,
-          tier: editRewardData.tier,
-          discount_percentage: editRewardData.discount_percentage
+          name: editingReward.name,
+          description: editingReward.description,
+          points_required: editingReward.points_required,
+          discount_percentage: editingReward.discount_percentage || 0
         })
-        .eq('id', id)
+        .eq('id', editingReward.id)
 
       if (error) throw error
-      setEditingRewardId(null)
+      setShowRewardModal(false)
+      setEditingReward(null)
       setSuccess('Premio actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
       fetchConfig(false)
@@ -206,6 +255,7 @@ export default function AdminVIPConfigPage() {
     }
   }
 
+  // ✅ ELIMINAR NIVEL
   const handleDeleteLevel = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar este rango?')) return
     setError(null)
@@ -223,6 +273,7 @@ export default function AdminVIPConfigPage() {
     }
   }
 
+  // ✅ ELIMINAR PREMIO
   const handleDeleteReward = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar este premio?')) return
     setError(null)
@@ -240,13 +291,38 @@ export default function AdminVIPConfigPage() {
     }
   }
 
+  const totalLevels = levels.length
+  const totalRewards = rewards.length
+
   if (authLoading || (loading && tenantId)) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: settings?.primary_color || '#DB5B9A' }}></div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-          Sincronizando Beneficios...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Crown className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              CLUB VIP FRESH
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -257,7 +333,7 @@ export default function AdminVIPConfigPage() {
         <div className="w-12 h-12 rounded-2xl border flex items-center justify-center mb-4 shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
           <Crown className="w-5 h-5 text-pink-500 stroke-[1.5]" />
         </div>
-        <p className="text-xs font-mono uppercase tracking-[0.2em] font-bold" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+        <p className="text-xs font-mono uppercase tracking-[0.2em] font-bold" style={{ color: primaryColor }}>
           Acceso Restringido
         </p>
         <p className="text-[11px] text-stone-500 dark:text-pink-100/60 mt-2 leading-relaxed">
@@ -270,75 +346,52 @@ export default function AdminVIPConfigPage() {
   return (
     <div className="space-y-6 p-1 max-w-6xl mx-auto">
 
-      {/* HEADER CON GRADIENTE CONFIGURABLE */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-              <Crown className="w-5 h-5 md:w-6 md:h-6" />
+      {/* ============================================================ */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
+      {/* ============================================================ */}
+      <div 
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
+      >
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Configuración de Beneficios
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-                💎 {settings?.business_name || 'Salón VIP'}
-              </p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Club VIP & Beneficios
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                Configure las escalas transaccionales y el catálogo exclusivo de recompensas.
-              </p>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+              Club VIP Fresh Nails
+            </h1>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              Gestiona los rangos VIP y el catálogo de premios para tus clientas.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+          <div className="flex items-center gap-3 self-start md:self-center shrink-0">
             <button 
               onClick={handleRefresh} 
               disabled={refreshing} 
-              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: settings?.primary_color || '#DB5B9A' }}
+              className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+              title="Actualizar Configuración"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{refreshing ? 'Sincronizando...' : 'Actualizar'}</span>
-              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* SELECTOR DE WALLET */}
-      <div className="flex border rounded-xl p-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 self-start">
-        <button 
-          type="button"
-          onClick={() => setActiveTab('glow')} 
-          className={`px-4 py-2 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all duration-300 flex items-center gap-2 ${
-            activeTab === 'glow' 
-              ? 'text-white shadow-sm font-black' 
-              : 'text-stone-400 dark:text-stone-500 hover:text-pink-500 dark:hover:text-pink-300'
-          }`}
-          style={activeTab === 'glow' ? brandGradient : {}}
-        >
-          <Sparkles className="w-3.5 h-3.5" /> Nail & Glow
-        </button>
-        <button 
-          type="button"
-          onClick={() => setActiveTab('hair')} 
-          className={`px-4 py-2 rounded-lg text-[10px] font-mono uppercase tracking-wider font-bold transition-all duration-300 flex items-center gap-2 ${
-            activeTab === 'hair' 
-              ? 'text-white shadow-sm font-black' 
-              : 'text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-amber-300'
-          }`}
-          style={activeTab === 'hair' ? brandGradient : {}}
-        >
-          <Scissors className="w-3.5 h-3.5" /> Hair Crew
-        </button>
-      </div>
-
-      {/* MENSAJES DE ERROR/SUCCESS */}
+      {/* ============================================================ */}
+      {/* MENSAJES */}
+      {/* ============================================================ */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-            <X className="w-4 h-4" />
+            <AlertCircle className="w-4 h-4" />
           </div>
           <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
         </div>
@@ -353,55 +406,78 @@ export default function AdminVIPConfigPage() {
         </div>
       )}
 
-      {/* CONTENEDOR GRID PRINCIPAL */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ============================================================ */}
+      {/* KPIS — 2 columnas responsivas */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Rangos VIP</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-stone-900 dark:text-pink-100">{totalLevels}</h3>
+          </div>
+        </div>
 
-        {/* COLUMNA IZQUIERDA: GESTIÓN DE NIVELES */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Premios</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-amber-500">{totalRewards}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* CONTENIDO PRINCIPAL */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* ============================================================ */}
+        {/* COLUMNA IZQUIERDA: NIVELES VIP */}
+        {/* ============================================================ */}
+        <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Layers className="w-3.5 h-3.5" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-            <h2 className="text-[10px] uppercase font-mono font-bold tracking-widest text-stone-400 dark:text-stone-500">1. Escalafón de Rangos</h2>
+            <Layers className="w-4 h-4" style={{ color: primaryColor }} />
+            <h2 className="text-[10px] uppercase font-mono font-bold tracking-widest text-stone-400 dark:text-stone-500">
+              1. Escalafón de Rangos
+            </h2>
           </div>
 
-          {/* Formulario Nivel */}
+          {/* Formulario Nuevo Nivel */}
           <form onSubmit={handleAddLevel} className="rounded-2xl p-5 space-y-4 border shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre del Rango</label>
-                <input 
-                  type="text" placeholder="Ej: Platinum" required
-                  value={newLevel.name} onChange={e => setNewLevel({...newLevel, name: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
-                />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre</label>
+                <select 
+                  value={newLevel.name} 
+                  onChange={e => setNewLevel({...newLevel, name: e.target.value})}
+                  className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  required
+                >
+                  <option value="">Seleccionar</option>
+                  {Object.keys(LEVEL_EMOJIS).map(name => (
+                    <option key={name} value={name}>{LEVEL_EMOJIS[name]} {name}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5 text-center">Insignia</label>
+                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Puntos Mínimos</label>
                 <input 
-                  type="text" placeholder="✨" required
-                  value={newLevel.emoji} onChange={e => setNewLevel({...newLevel, emoji: e.target.value})}
-                  className="w-full px-3 py-2 text-xs text-center rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
+                  type="number" 
+                  value={newLevel.min_points} 
+                  onChange={e => setNewLevel({...newLevel, min_points: Number(e.target.value)})}
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  required
                 />
               </div>
             </div>
-            <div>
-              <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Puntaje de Corte (Mínimo requerido)</label>
-              <input 
-                type="number" 
-                value={newLevel.min_points} 
-                onChange={e => setNewLevel({...newLevel, min_points: e.target.value === '' ? 0 : Number(e.target.value)})}
-                className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                style={{ 
-                  '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                } as React.CSSProperties}
-              />
-            </div>
-            <button type="submit" className="w-full py-2.5 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+            <button type="submit" className="w-full py-2.5 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md" style={primaryBgStyle}>
               <Plus className="w-3.5 h-3.5" /> Crear Rango VIP
             </button>
           </form>
@@ -410,273 +486,275 @@ export default function AdminVIPConfigPage() {
           <div className="space-y-2.5">
             {levels.length === 0 ? (
               <div className="text-center py-6 border border-dashed rounded-2xl font-mono text-stone-400 text-xs bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-                No se registran rangos de corte activos.
+                No hay rangos configurados
               </div>
             ) : (
-              levels.map((l) => {
-                const isEditing = editingLevelId === l.id;
-                return (
-                  <div key={l.id} className={`rounded-xl p-4 border shadow-sm transition-all hover:border-pink-300 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 ${isEditing ? 'ring-2 ring-pink-500/20' : ''}`}>
-                    {isEditing && editLevelData ? (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2">
-                          <input 
-                            type="text" value={editLevelData.name} onChange={e => setEditLevelData({...editLevelData, name: e.target.value})}
-                            className="col-span-2 p-2 text-xs rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                            style={{ 
-                              '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                            } as React.CSSProperties}
-                          />
-                          <input 
-                            type="text" value={editLevelData.emoji} onChange={e => setEditLevelData({...editLevelData, emoji: e.target.value})}
-                            className="p-2 text-xs text-center rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                            style={{ 
-                              '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                            } as React.CSSProperties}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[8px] font-mono uppercase text-stone-400 block mb-1">Mínimo Requerido</label>
-                          <input 
-                            type="number" value={editLevelData.min_points} onChange={e => setEditLevelData({...editLevelData, min_points: e.target.value === '' ? 0 : Number(e.target.value)})}
-                            className="w-full p-2 text-xs font-mono rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                            style={{ 
-                              '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                            } as React.CSSProperties}
-                          />
-                        </div>
-                        <div className="flex gap-2 justify-end pt-1">
-                          <button type="button" onClick={() => setEditingLevelId(null)} className="px-2.5 py-1 text-[10px] font-mono text-stone-400 hover:text-stone-600 dark:hover:text-pink-100 flex items-center gap-1 transition-colors">
-                            <X className="w-3 h-3" /> Cancelar
-                          </button>
-                          <button type="button" onClick={() => l.id && handleSaveLevelEdit(l.id)} className="px-3 py-1 text-white rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 shadow-sm hover:scale-105 transition-all" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-                            <Check className="w-3 h-3" /> Guardar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-xl border flex items-center justify-center text-sm shadow-inner bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950">
-                            {l.emoji}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-stone-800 dark:text-pink-100 truncate">{l.name}</p>
-                            <p className="text-[10px] font-mono text-stone-400 dark:text-stone-500 mt-0.5 truncate">
-                              Límite base: <span className="font-bold" style={{ color: settings?.primary_color || '#DB5B9A' }}>{l.min_points} pts</span>
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <button type="button" onClick={() => { setEditingLevelId(l.id || null); setEditLevelData(l); }} className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400">
-                            <Edit3 className="w-3.5 h-3.5 stroke-[1.5]" />
-                          </button>
-                          <button type="button" onClick={() => l.id && handleDeleteLevel(l.id)} className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-rose-500">
-                            <Trash2 className="w-3.5 h-3.5 stroke-[1.5]" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
+              levels.map((l) => (
+                <div key={l.id} className="group flex items-center justify-between p-4 rounded-xl border shadow-sm transition-all hover:border-pink-300 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:shadow-md">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-sm bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950">
+                      {l.emoji || '⭐'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">{l.name}</p>
+                      <p className="text-[10px] font-mono text-stone-400 dark:text-stone-500">
+                        {l.min_points} pts mínimos
+                      </p>
+                    </div>
                   </div>
-                )
-              })
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button 
+                      type="button" 
+                      onClick={() => { setEditingLevel(l); setShowLevelModal(true); }}
+                      className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => l.id && handleDeleteLevel(l.id)}
+                      className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-rose-500"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: CATÁLOGO DE PREMIOS */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* ============================================================ */}
+        {/* COLUMNA DERECHA: PREMIOS */}
+        {/* ============================================================ */}
+        <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Gift className="w-3.5 h-3.5 text-rose-500" />
-            <h2 className="text-[10px] uppercase font-mono font-bold tracking-widest text-stone-400 dark:text-stone-500">2. Catálogo de Premios & Canjes</h2>
+            <Gift className="w-4 h-4 text-amber-500" />
+            <h2 className="text-[10px] uppercase font-mono font-bold tracking-widest text-stone-400 dark:text-stone-500">
+              2. Catálogo de Premios
+            </h2>
           </div>
 
-          {/* Formulario Recompensas */}
+          {/* Formulario Nuevo Premio */}
           <form onSubmit={handleAddReward} className="rounded-2xl p-5 space-y-4 border shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre del Premio</label>
-                <input 
-                  type="text" placeholder="Ej: Set Nail Care Premium" required
-                  value={newReward.name} onChange={e => setNewReward({...newReward, name: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Costo (Puntos requeridos)</label>
-                <input 
-                  type="number" placeholder="Ej: 1500" required
-                  value={newReward.points_required || ''} onChange={e => setNewReward({...newReward, points_required: e.target.value === '' ? 0 : Number(e.target.value)})}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Descripción o Condiciones del Beneficio</label>
-              <textarea 
-                placeholder="Indique qué servicios incluye o limitaciones del premio canjeado..." required
-                value={newReward.description} onChange={e => setNewReward({...newReward, description: e.target.value})}
-                className="w-full px-3 py-2 text-xs rounded-xl border h-16 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all resize-none"
-                style={{ 
-                  '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                } as React.CSSProperties}
+              <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Nombre del Premio</label>
+              <input 
+                type="text" placeholder="Ej: Set Nail Care Premium" required
+                value={newReward.name} onChange={e => setNewReward({...newReward, name: e.target.value})}
+                className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
               />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Descripción</label>
+              <textarea 
+                placeholder="Describe el premio o sus condiciones..." required
+                value={newReward.description} onChange={e => setNewReward({...newReward, description: e.target.value})}
+                className="w-full px-3 py-2 text-xs rounded-xl border h-14 bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all resize-none"
+                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Rango Mínimo Autorizado</label>
+                <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5">Puntos Requeridos</label>
                 <input 
-                  type="text" placeholder="Ej: Oro / Todos" required
-                  value={newReward.tier} onChange={e => setNewReward({...newReward, tier: e.target.value})}
-                  className="w-full px-3 py-2 text-xs rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
+                  type="number" placeholder="1500" required
+                  value={newReward.points_required || ''} onChange={e => setNewReward({...newReward, points_required: Number(e.target.value)})}
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                 />
               </div>
               <div>
                 <label className="text-[9px] font-mono font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 block mb-1.5 flex items-center gap-1">
-                  <Percent className="w-2.5 h-2.5" /> Descuento Directo (%)
+                  <Percent className="w-3 h-3" /> Descuento %
                 </label>
                 <input 
-                  type="number" placeholder="Ej: 15 (Opcional)"
+                  type="number" placeholder="15"
                   value={newReward.discount_percentage || ''} 
-                  onChange={e => setNewReward({...newReward, discount_percentage: e.target.value === '' ? 0 : Number(e.target.value)})}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
-                    '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                  } as React.CSSProperties}
+                  onChange={e => setNewReward({...newReward, discount_percentage: Number(e.target.value)})}
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                 />
               </div>
             </div>
-
-            <button type="submit" className="w-full py-2.5 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-              <Plus className="w-3.5 h-3.5" /> Agregar al Catálogo
+            <button type="submit" className="w-full py-2.5 text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md" style={primaryBgStyle}>
+              <Plus className="w-3.5 h-3.5" /> Agregar Premio
             </button>
           </form>
 
-          {/* Grid de Cards de Premios */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
+          {/* Grid de Premios */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {rewards.length === 0 ? (
               <div className="col-span-full text-center py-8 border border-dashed rounded-2xl font-mono text-stone-400 text-xs bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-                No hay premios creados en esta billetera.
+                No hay premios creados
               </div>
             ) : (
-              rewards.map((r) => {
-                const isEditing = editingRewardId === r.id;
-                return (
-                  <div key={r.id} className={`group relative p-4 rounded-xl border flex flex-col justify-between min-h-[140px] shadow-sm transition-all hover:border-pink-300 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 ${isEditing ? 'ring-2 ring-pink-500/20' : ''}`}>
-
-                    {!isEditing && (
-                      <div className="absolute top-3 right-3 flex items-center gap-0.5 z-10">
-                        <button type="button" onClick={() => { setEditingRewardId(r.id || null); setEditRewardData(r); }} className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400">
-                          <Edit3 className="w-3 h-3 stroke-[1.5]" />
-                        </button>
-                        <button type="button" onClick={() => r.id && handleDeleteReward(r.id)} className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-rose-500">
-                          <Trash2 className="w-3 h-3 stroke-[1.5]" />
-                        </button>
-                      </div>
-                    )}
-
-                    {isEditing && editRewardData ? (
-                      <div className="space-y-2.5 w-full text-left">
-                        <input 
-                          type="text" value={editRewardData.name} onChange={e => setEditRewardData({...editRewardData, name: e.target.value})}
-                          className="w-full p-2 text-xs rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 font-bold focus:outline-none focus:ring-2 transition-all"
-                          style={{ 
-                            '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                          } as React.CSSProperties}
-                        />
-                        <textarea 
-                          value={editRewardData.description} onChange={e => setEditRewardData({...editRewardData, description: e.target.value})}
-                          className="w-full p-2 text-[11px] rounded-lg border h-14 resize-none bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-pink-100/60 focus:outline-none focus:ring-2 transition-all"
-                          style={{ 
-                            '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                          } as React.CSSProperties}
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[8px] font-mono uppercase text-stone-400">Rango</label>
-                            <input 
-                              type="text" value={editRewardData.tier} onChange={e => setEditRewardData({...editRewardData, tier: e.target.value})}
-                              className="w-full p-1.5 text-xs rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200 focus:outline-none focus:ring-2 transition-all"
-                              style={{ 
-                                '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                              } as React.CSSProperties}
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[8px] font-mono uppercase text-stone-400">Costo Pts</label>
-                            <input 
-                              type="number" value={editRewardData.points_required} onChange={e => setEditRewardData({...editRewardData, points_required: e.target.value === '' ? 0 : Number(e.target.value)})}
-                              className="w-full p-1.5 text-xs font-mono rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200 focus:outline-none focus:ring-2 transition-all"
-                              style={{ 
-                                '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                              } as React.CSSProperties}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[8px] font-mono uppercase text-stone-400">Descuento %</label>
-                          <input 
-                            type="number" value={editRewardData.discount_percentage} onChange={e => setEditRewardData({...editRewardData, discount_percentage: e.target.value === '' ? 0 : Number(e.target.value)})}
-                            className="w-full p-1.5 text-xs font-mono rounded-lg border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-200 focus:outline-none focus:ring-2 transition-all"
-                            style={{ 
-                              '--tw-ring-color': settings?.primary_color || '#DB5B9A'
-                            } as React.CSSProperties}
-                          />
-                        </div>
-                        <div className="flex gap-2 justify-end pt-1">
-                          <button type="button" onClick={() => setEditingRewardId(null)} className="px-2 py-1 text-[10px] font-mono text-stone-400 hover:text-stone-600 dark:hover:text-pink-100 flex items-center gap-0.5 transition-colors">
-                            <X className="w-2.5 h-2.5" /> Cancelar
-                          </button>
-                          <button type="button" onClick={() => r.id && handleSaveRewardEdit(r.id)} className="px-2.5 py-1 text-white rounded-lg text-[10px] font-bold flex items-center gap-0.5 shadow-sm hover:scale-105 transition-all" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-                            <Check className="w-2.5 h-2.5" /> Guardar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="space-y-1 pr-8">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border tracking-wider bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400`}>
-                              {r.tier}
-                            </span>
-                            {r.discount_percentage > 0 && (
-                              <span className="text-[9px] font-mono font-bold text-rose-500 bg-rose-500/[0.08] dark:bg-rose-500/[0.04] px-1.5 py-0.5 rounded border border-rose-500/10">
-                                -{r.discount_percentage}% OFF
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="text-xs font-bold tracking-tight pt-1 text-stone-800 dark:text-pink-100">{r.name}</h4>
-                          <p className="text-[11px] leading-relaxed line-clamp-2 text-stone-500 dark:text-pink-100/60">{r.description}</p>
-                        </div>
-
-                        <div className={`pt-2.5 mt-3 border-t flex items-center justify-between border-pink-100/60 dark:border-fuchsia-950/50`}>
-                          <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500">Valor de canje</span>
-                          <strong className={`text-xs font-mono font-extrabold`} style={{ color: settings?.primary_color || '#DB5B9A' }}>
-                            {r.points_required} PTS
-                          </strong>
-                        </div>
-                      </>
-                    )}
-
+              rewards.map((r) => (
+                <div key={r.id} className="group p-4 rounded-xl border shadow-sm transition-all hover:border-pink-300 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 hover:shadow-md flex flex-col">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">{r.name}</h4>
+                      <p className="text-[11px] text-stone-500 dark:text-pink-100/60 line-clamp-2">{r.description}</p>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button 
+                        type="button" 
+                        onClick={() => { setEditingReward(r); setShowRewardModal(true); }}
+                        className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-pink-500 dark:hover:text-pink-400"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => r.id && handleDeleteReward(r.id)}
+                        className="p-1.5 rounded-xl border transition-colors bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-400 hover:text-rose-500"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                )
-              })
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50">
+                    <span className="text-[10px] font-mono font-bold" style={{ color: primaryColor }}>
+                      {r.points_required} pts
+                    </span>
+                    {r.discount_percentage > 0 && (
+                      <span className="text-[10px] font-mono font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                        -{r.discount_percentage}% OFF
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
-
       </div>
+
+      {/* ============================================================ */}
+      {/* MODAL: EDITAR NIVEL */}
+      {/* ============================================================ */}
+      {showLevelModal && editingLevel && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }}>
+          <div className="relative w-full max-w-md rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className="absolute top-4 right-4 p-2 hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 rounded-xl transition-colors">
+              <X className="w-5 h-5 text-stone-400" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
+                <Layers className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-serif font-extrabold text-stone-900 dark:text-white">Editar Rango</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Nombre</label>
+                <select 
+                  value={editingLevel.name} 
+                  onChange={e => setEditingLevel({...editingLevel, name: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                >
+                  {Object.keys(LEVEL_EMOJIS).map(name => (
+                    <option key={name} value={name}>{LEVEL_EMOJIS[name]} {name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Puntos Mínimos</label>
+                <input 
+                  type="number" 
+                  value={editingLevel.min_points} 
+                  onChange={e => setEditingLevel({...editingLevel, min_points: Number(e.target.value)})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300">Cancelar</button>
+                <button type="button" onClick={handleUpdateLevel} className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all" style={primaryBgStyle}>
+                  <Check className="w-4 h-4" /> Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: EDITAR PREMIO */}
+      {/* ============================================================ */}
+      {showRewardModal && editingReward && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowRewardModal(false); setEditingReward(null); }}>
+          <div className="relative w-full max-w-md rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className="absolute top-4 right-4 p-2 hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 rounded-xl transition-colors">
+              <X className="w-5 h-5 text-stone-400" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
+                <Gift className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-serif font-extrabold text-stone-900 dark:text-white">Editar Premio</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Nombre</label>
+                <input 
+                  type="text" value={editingReward.name} onChange={e => setEditingReward({...editingReward, name: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Descripción</label>
+                <textarea 
+                  value={editingReward.description} onChange={e => setEditingReward({...editingReward, description: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all resize-none"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  rows={2}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Puntos</label>
+                  <input 
+                    type="number" value={editingReward.points_required} onChange={e => setEditingReward({...editingReward, points_required: Number(e.target.value)})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">Descuento %</label>
+                  <input 
+                    type="number" value={editingReward.discount_percentage} onChange={e => setEditingReward({...editingReward, discount_percentage: Number(e.target.value)})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all"
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300">Cancelar</button>
+                <button type="button" onClick={handleUpdateReward} className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all" style={primaryBgStyle}>
+                  <Check className="w-4 h-4" /> Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+      `}</style>
+
     </div>
   )
 }
