@@ -27,21 +27,17 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
   ]
 
   const unreadCount = notifications.filter(n => !n.read).length
-
   const userName = user?.email || 'Administrador'
   const firstName = userName.split('@')[0] || 'Admin'
 
   return (
-    <header className={`fixed top-0 right-0 left-0 transition-all duration-300 z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between ${
-      collapsed ? 'lg:left-[76px]' : 'lg:left-64'
-    } ${
+    <header className={`sticky top-0 w-full z-30 backdrop-blur-md border-b px-4 md:px-8 h-20 flex items-center justify-between transition-colors duration-300 ${
       isDark
         ? 'bg-[#0e0c0b]/95 border-stone-900/80 text-white'
         : 'bg-white/95 border-stone-200 text-stone-900'
     }`}>
       {/* LADO IZQUIERDO */}
       <div className="flex items-center gap-3 md:gap-4">
-        {/* Botón hamburguesa (móvil) */}
         <button
           onClick={onMenuClick}
           className={`lg:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
@@ -69,7 +65,6 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
 
       {/* LADO DERECHO */}
       <div className="flex items-center gap-2.5 md:gap-4 h-10">
-        {/* 1. Icono Cambiar Tema */}
         <button
           onClick={toggleTheme}
           className={`h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
@@ -86,7 +81,6 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
           )}
         </button>
 
-        {/* 2. Icono Notificaciones */}
         <div className="relative h-10 w-10 shrink-0 flex items-center justify-center">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -145,7 +139,6 @@ export default function AdminHeader({ onMenuClick, collapsed }: AdminHeaderProps
           )}
         </div>
 
-        {/* 3. Icono Perfil móvil */}
         <button className={`md:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
           isDark
             ? 'bg-stone-900/50 border-stone-900 text-stone-400 hover:text-white hover:border-stone-700'
