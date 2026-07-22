@@ -9,7 +9,7 @@ import {
   X, Edit, FileText, Users, ChevronDown, 
   Award, Ban, RefreshCw, Scissors, Loader2, Building2,
   CalendarDays, Smartphone, Check, TrendingUp, Calendar as CalendarIconCheck, Save,
-  Eye, EyeOff, Circle
+  Eye, EyeOff, Circle, Sun, Moon, Cloud
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay, addDays, isSameMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase/client'
 import { TimePicker } from '@/components/TimePicker'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
+import Link from 'next/link'
 
 type ViewMode = 'day' | 'week' | 'month'
 
@@ -33,7 +34,7 @@ export default function AdminAgendaPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date())
   const [filtroStaff, setFiltroStaff] = useState<string>('todos')
-  const [viewMode, setViewMode] = useState<ViewMode>('week')
+  const [viewMode, setViewMode] = useState<ViewMode>('day') // ✅ POR DEFECTO DÍA
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedCita, setSelectedCita] = useState<any>(null)
@@ -43,6 +44,7 @@ export default function AdminAgendaPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [isStaff, setIsStaff] = useState(false)
   const [staffId, setStaffId] = useState<string | null>(null)
+  const [showStaffFilter, setShowStaffFilter] = useState(false)
 
   // Estados para nueva cita
   const [newCita, setNewCita] = useState({
@@ -53,6 +55,8 @@ export default function AdminAgendaPage() {
     time: '',
     notes: '',
   })
+
+  const isDark = false // Se adaptará con el tema
 
   // Detectar si el usuario es staff (empleada)
   useEffect(() => {
@@ -69,7 +73,6 @@ export default function AdminAgendaPage() {
         setIsStaff(isStaffUser)
 
         if (isStaffUser) {
-          // Obtener el ID del staff asociado a este usuario
           const { data: staffData } = await supabase
             .from('staff')
             .select('id')
@@ -88,8 +91,11 @@ export default function AdminAgendaPage() {
     checkUserRole()
   }, [user])
 
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
+  
   const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
 
   // Toast para nuevas citas online
@@ -153,7 +159,6 @@ export default function AdminAgendaPage() {
     try {
       let query = supabase.from('appointments').select('*')
 
-      // Si es staff, solo ver sus citas
       if (isStaff && staffId) {
         query = query.eq('professional_id', staffId)
       }
@@ -206,7 +211,6 @@ export default function AdminAgendaPage() {
     }
   }
 
-  // useEffect principal
   useEffect(() => {
     fetchData(false)
 
@@ -279,7 +283,6 @@ export default function AdminAgendaPage() {
     return citas.filter((c: any) => c.date === dateStr)
   }
 
-  // Cálculos de KPIs
   const totalIngresos = citas
     .filter((c: any) => c.status === 'completed')
     .reduce((sum: number, c: any) => sum + Number(c.services?.price || 0), 0)
@@ -384,7 +387,6 @@ export default function AdminAgendaPage() {
   }
 
   const handleSlotClick = (dateStr: string, horaStr: string) => {
-    // Si es staff, auto-asignar su ID
     setNewCita({
       clientId: '',
       serviceId: '',
@@ -398,102 +400,165 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // RENDER VISTA DÍA
+  // RENDER VISTA DÍA — REDISEÑADA CON FRANJAS HORARIAS
   // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = getCitasDelDia(fechaSeleccionada)
     const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
 
-    const horas = Array.from({ length: 12 }, (_, i) => i + 8) // 8:00 a 20:00
+    // Franjas horarias
+    const franjas = [
+      { nombre: '🌅 Mañana', horas: Array.from({ length: 5 }, (_, i) => i + 8) }, // 8:00 - 12:00
+      { nombre: '☀️ Tarde', horas: Array.from({ length: 6 }, (_, i) => i + 13) }, // 13:00 - 18:00
+    ]
+
+    const getCitaEnHora = (hora: number) => {
+      const horaStr = String(hora).padStart(2, '0')
+      return citasOrdenadas.find((c: any) => {
+        const cHora = c.time ? parseInt(c.time.split(':')[0], 10) : -1
+        return cHora === hora
+      })
+    }
 
     return (
       <div className="space-y-4">
-        {/* Cabecera del día */}
-        <div className={`p-4 rounded-2xl border shadow-sm ${
+        {/* Cabecera del día con diseño premium */}
+        <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${
           isToday(fechaSeleccionada) 
             ? 'bg-gradient-to-r from-pink-500/10 to-rose-500/5 border-pink-500/20' 
             : 'bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950'
         }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-lg font-serif italic font-bold ${
-                isToday(fechaSeleccionada) ? 'text-pink-500' : 'text-stone-900 dark:text-pink-100'
-              }`}>
-                {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}
-              </h3>
-              {isToday(fechaSeleccionada) && (
-                <span className="text-xs font-medium text-pink-500 flex items-center gap-1">
-                  <Circle className="w-2 h-2 fill-current" /> Hoy
-                </span>
-              )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-xl text-white shadow-md ${
+                isToday(fechaSeleccionada) ? 'bg-gradient-to-r from-pink-500 to-rose-500' : ''
+              }`} style={!isToday(fechaSeleccionada) ? { backgroundColor: primaryColor } : {}}>
+                <CalendarIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className={`text-xl font-serif font-bold ${
+                  isToday(fechaSeleccionada) ? 'text-pink-500' : 'text-stone-900 dark:text-pink-100'
+                }`}>
+                  {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}
+                </h3>
+                <div className="flex items-center gap-3 mt-0.5">
+                  {isToday(fechaSeleccionada) && (
+                    <span className="text-[10px] font-black uppercase tracking-wider text-pink-500 flex items-center gap-1">
+                      <Circle className="w-2 h-2 fill-current animate-pulse" /> Hoy
+                    </span>
+                  )}
+                  <span className="text-xs font-medium text-stone-400">
+                    {citasOrdenadas.length} {citasOrdenadas.length === 1 ? 'turno' : 'turnos'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '11:00')}
-                className="px-3 py-1.5 rounded-xl text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:scale-105 transition-all shadow-md"
-                style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
-              >
-                <Plus className="w-3.5 h-3.5" /> Agregar
-              </button>
-            </div>
+            <button 
+              onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '11:00')}
+              className="px-4 py-2 rounded-xl text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 hover:scale-105 transition-all shadow-md"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <Plus className="w-4 h-4" /> Agregar Turno
+            </button>
           </div>
         </div>
 
-        {/* Lista de citas por hora */}
-        <div className="space-y-1">
-          {horas.map((hora) => {
-            const horaStr = String(hora).padStart(2, '0')
-            const citaEnHora = citasOrdenadas.find((c: any) => {
-              const cHora = c.time ? parseInt(c.time.split(':')[0], 10) : -1
-              return cHora === hora
-            })
-
-            return (
-              <div 
-                key={hora} 
-                className={`flex items-center gap-3 p-2 rounded-xl border transition-all hover:shadow-sm ${
-                  citaEnHora 
-                    ? 'bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 cursor-pointer hover:border-pink-300' 
-                    : 'bg-transparent border-transparent hover:border-pink-100/30'
-                }`}
-                onClick={() => citaEnHora ? abrirDetalleCita(citaEnHora) : handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), horaStr)}
-              >
-                <div className="w-16 text-xs font-mono font-bold text-stone-400 shrink-0">
-                  {horaStr}:00
-                </div>
-                
-                {citaEnHora ? (
-                  <div className="flex-1 flex items-center justify-between min-w-0">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gradient-to-br from-pink-500 to-rose-500`}>
-                        {citaEnHora.clients?.name?.charAt(0) || 'C'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-stone-800 dark:text-pink-100 truncate">
-                          {citaEnHora.clients?.name || 'Cliente'}
-                        </p>
-                        <p className="text-[10px] font-medium text-pink-500 truncate">
-                          {citaEnHora.services?.name || 'Servicio'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-mono font-bold text-emerald-500">
-                        ${Number(citaEnHora.services?.price || 0).toLocaleString()}
-                      </span>
-                      <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadge(citaEnHora.status).bg} ${getStatusBadge(citaEnHora.status).color}`}>
-                        {getStatusBadge(citaEnHora.status).label}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 text-xs text-stone-300 dark:text-stone-600 italic font-light">
-                    Sin turno
-                  </div>
-                )}
+        {/* Franjas horarias */}
+        <div className="space-y-4">
+          {franjas.map((franja) => (
+            <div key={franja.nombre} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-xs font-black uppercase tracking-wider text-stone-400">
+                  {franja.nombre}
+                </span>
+                <div className="flex-1 h-px bg-pink-100/40 dark:bg-fuchsia-950/30" />
               </div>
-            )
-          })}
+
+              <div className="grid grid-cols-1 gap-2">
+                {franja.horas.map((hora) => {
+                  const cita = getCitaEnHora(hora)
+                  const horaStr = String(hora).padStart(2, '0')
+                  const isBlocked = cita?.status === 'blocked'
+
+                  return (
+                    <div 
+                      key={hora}
+                      onClick={() => cita ? abrirDetalleCita(cita) : handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), horaStr)}
+                      className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                        cita 
+                          ? isBlocked
+                            ? 'bg-stone-50 dark:bg-stone-900/30 border-stone-200 dark:border-stone-700 cursor-default opacity-70'
+                            : 'bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 cursor-pointer hover:border-pink-300 hover:shadow-md hover:-translate-y-0.5'
+                          : 'bg-transparent border-dashed border-pink-200/30 dark:border-fuchsia-800/20 hover:border-pink-300/50 hover:bg-pink-50/10 cursor-pointer'
+                      }`}
+                    >
+                      {/* Hora */}
+                      <div className={`w-14 text-xs font-mono font-bold shrink-0 ${
+                        cita ? 'text-stone-600 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'
+                      }`}>
+                        {horaStr}:00
+                      </div>
+
+                      {/* Contenido */}
+                      {cita ? (
+                        <div className="flex-1 flex items-center justify-between min-w-0">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {!isBlocked ? (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 bg-gradient-to-br from-pink-500 to-rose-500`}>
+                                {cita.clients?.name?.charAt(0) || 'C'}
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-400 text-white shrink-0">
+                                <Ban className="w-4 h-4" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className={`text-sm font-bold truncate ${
+                                isBlocked 
+                                  ? 'text-stone-400 dark:text-stone-500' 
+                                  : 'text-stone-800 dark:text-pink-100'
+                              }`}>
+                                {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-medium truncate ${
+                                  isBlocked ? 'text-stone-400' : 'text-pink-500'
+                                }`}>
+                                  {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
+                                </span>
+                                {!isBlocked && cita.staff && (
+                                  <>
+                                    <span className="w-1 h-1 rounded-full bg-stone-300 dark:bg-stone-600" />
+                                    <span className="text-[9px] font-medium text-stone-400">
+                                      {cita.staff.name}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {!isBlocked && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs font-mono font-bold text-emerald-500">
+                                ${Number(cita.services?.price || 0).toLocaleString()}
+                              </span>
+                              <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadge(cita.status).bg} ${getStatusBadge(cita.status).color}`}>
+                                {getStatusBadge(cita.status).label}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex-1 text-xs text-stone-300 dark:text-stone-600 italic font-light">
+                          Sin turno — Haz clic para agendar
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -508,7 +573,7 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-4">
-        {/* Versión móvil: scroll horizontal */}
+        {/* Versión móvil */}
         <div className="block md:hidden overflow-x-auto pb-2">
           <div className="flex gap-2 min-w-max">
             {weekDays.map((day) => {
@@ -552,7 +617,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Versión desktop: grilla */}
+        {/* Versión desktop */}
         <div className="hidden md:block overflow-x-auto">
           <div className="min-w-[700px]">
             <div className="grid grid-cols-7 gap-2">
@@ -572,7 +637,7 @@ export default function AdminAgendaPage() {
                           ? 'border-pink-500/20 bg-pink-500/5'
                           : 'border-pink-100/60 dark:border-fuchsia-950'
                     }`}
-                    style={isSelected ? { borderColor: settings?.primary_color || '#DB5B9A' } : {}}
+                    style={isSelected ? { borderColor: primaryColor } : {}}
                   >
                     <div className={`flex items-center justify-between mb-2 ${
                       isSelected ? 'text-pink-500' : isTodayDate ? 'text-pink-500' : 'text-stone-400'
@@ -642,7 +707,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Lista del día seleccionado (móvil y desktop) */}
+        {/* Lista del día seleccionado */}
         <div className={`p-4 rounded-2xl border shadow-sm ${
           isToday(fechaSeleccionada) 
             ? 'bg-gradient-to-r from-pink-500/5 to-rose-500/5 border-pink-500/20' 
@@ -678,9 +743,7 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-4">
-        {/* Calendario en grid */}
         <div className="rounded-2xl overflow-hidden border shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-          {/* Días de la semana */}
           <div className="grid grid-cols-7 text-center font-mono font-black text-[9px] py-2.5 border-b bg-pink-50/30 dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950/50">
             {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, idx) => (
               <span key={idx} className="text-stone-500 dark:text-stone-400">{d}</span>
@@ -740,7 +803,6 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* Lista del día seleccionado */}
         <div className={`p-4 rounded-2xl border shadow-sm ${
           isToday(fechaSeleccionada) 
             ? 'bg-gradient-to-r from-pink-500/5 to-rose-500/5 border-pink-500/20' 
@@ -759,7 +821,7 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // COMPONENTE: Lista de Citas (reutilizable)
+  // COMPONENTE: Lista de Citas
   // ============================================================
   const renderListaCitas = (fecha: Date) => {
     const citasDelDia = getCitasDelDia(fecha)
@@ -887,17 +949,17 @@ export default function AdminAgendaPage() {
     <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
       
       {/* ============================================================ */}
-      {/* HEADER CON GRADIENTE */}
+      {/* HEADER — IDÉNTICO AL DASHBOARD */}
       {/* ============================================================ */}
       <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
         <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
         <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: primaryColor }}>
               <CalendarIcon className="w-5 h-5 md:w-6 md:h-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>
+              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: primaryColor }}>
                 ✨ {settings?.business_name || 'Salón VIP'}
               </p>
               <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
@@ -914,7 +976,7 @@ export default function AdminAgendaPage() {
               onClick={handleRefresh} 
               disabled={refreshing} 
               className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: settings?.primary_color || '#DB5B9A' }}
+              style={{ color: primaryColor }}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
@@ -923,7 +985,7 @@ export default function AdminAgendaPage() {
             <button 
               onClick={() => setShowNewAppointment(true)}
               className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+              style={{ backgroundColor: primaryColor }}
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Nuevo Turno</span>
@@ -959,7 +1021,7 @@ export default function AdminAgendaPage() {
       {/* ============================================================ */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
+          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
             <CalendarIconCheck className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -1015,7 +1077,7 @@ export default function AdminAgendaPage() {
             onClick={() => cambiarDia(-1)} 
             className="p-1.5 hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 rounded-lg transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+            <ChevronLeft className="w-4 h-4" style={{ color: primaryColor }} />
           </button>
           <span className="text-xs font-serif font-extrabold text-stone-900 dark:text-pink-100 px-4 capitalize">
             {formatFechaTitulo()}
@@ -1024,34 +1086,64 @@ export default function AdminAgendaPage() {
             onClick={() => cambiarDia(1)} 
             className="p-1.5 hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 rounded-lg transition-colors"
           >
-            <ChevronRight className="w-4 h-4" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+            <ChevronRight className="w-4 h-4" style={{ color: primaryColor }} />
           </button>
         </div>
       </div>
 
       {/* ============================================================ */}
-      {/* FILTRO DE STAFF (SOLO PARA ADMIN) */}
+      {/* FILTRO DE STAFF (SOLO PARA ADMIN) — INTEGRADO ELEGANTEMENTE */}
       {/* ============================================================ */}
       {!isStaff && staff.length > 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 shadow-sm">
-          <Users className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-          <select
-            value={filtroStaff}
-            onChange={(e) => setFiltroStaff(e.target.value)}
-            className="w-full bg-transparent outline-none text-sm font-medium text-stone-700 dark:text-pink-100 min-w-0"
+        <div className="relative">
+          <button
+            onClick={() => setShowStaffFilter(!showStaffFilter)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all w-full sm:w-auto ${
+              showStaffFilter 
+                ? 'text-white shadow-md' 
+                : 'bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-300'
+            }`}
+            style={showStaffFilter ? brandGradient : {}}
           >
-            <option value="todos">Todos los profesionales</option>
-            {staff.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          {filtroStaff !== 'todos' && (
-            <button 
-              onClick={() => setFiltroStaff('todos')}
-              className="text-[10px] font-black uppercase tracking-wider text-pink-500 hover:text-pink-400 transition-colors"
-            >
-              ✕ Limpiar
-            </button>
+            <Users className="w-4 h-4" />
+            <span className="text-xs font-medium">
+              {filtroStaff !== 'todos' 
+                ? staff.find((s: any) => s.id === filtroStaff)?.name || 'Filtrar'
+                : 'Todos los profesionales'}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showStaffFilter ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showStaffFilter && (
+            <div className={`absolute top-full left-0 mt-1.5 w-full sm:w-64 rounded-xl border shadow-lg z-20 overflow-hidden ${
+              isDark 
+                ? 'bg-[#130f24] border-fuchsia-950' 
+                : 'bg-white border-pink-100/60'
+            }`}>
+              <button
+                onClick={() => { setFiltroStaff('todos'); setShowStaffFilter(false) }}
+                className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 ${
+                  filtroStaff === 'todos' 
+                    ? 'text-pink-500 font-bold' 
+                    : 'text-stone-600 dark:text-stone-300'
+                }`}
+              >
+                Todos los profesionales
+              </button>
+              {staff.map((s: any) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setFiltroStaff(s.id); setShowStaffFilter(false) }}
+                  className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 border-t border-pink-100/20 dark:border-fuchsia-950/20 ${
+                    filtroStaff === s.id 
+                      ? 'text-pink-500 font-bold' 
+                      : 'text-stone-600 dark:text-stone-300'
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -1079,7 +1171,7 @@ export default function AdminAgendaPage() {
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: primaryColor }}>
                 <Plus className="w-5 h-5" />
               </div>
               <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
@@ -1096,7 +1188,7 @@ export default function AdminAgendaPage() {
                   value={newCita.clientId}
                   onChange={(e) => setNewCita({...newCita, clientId: e.target.value})}
                   className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                  style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   required
                 >
                   <option value="">Selecciona Clienta</option>
@@ -1112,7 +1204,7 @@ export default function AdminAgendaPage() {
                   value={newCita.serviceId}
                   onChange={(e) => setNewCita({...newCita, serviceId: e.target.value})}
                   className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                  style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   required
                 >
                   <option value="">Selecciona Servicio</option>
@@ -1129,7 +1221,7 @@ export default function AdminAgendaPage() {
                     value={newCita.staffId}
                     onChange={(e) => setNewCita({...newCita, staffId: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   >
                     <option value="">Sin asignar</option>
                     {staff.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1147,7 +1239,7 @@ export default function AdminAgendaPage() {
                     value={newCita.date}
                     onChange={(e) => setNewCita({...newCita, date: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     required
                   />
                 </div>
@@ -1170,7 +1262,7 @@ export default function AdminAgendaPage() {
                   value={newCita.notes}
                   onChange={(e) => setNewCita({...newCita, notes: e.target.value})}
                   className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm resize-none"
-                  style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   rows={2}
                 />
               </div>
@@ -1192,7 +1284,7 @@ export default function AdminAgendaPage() {
                 <button
                   type="submit"
                   className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
-                  style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   <Save className="w-4 h-4" />
                   Agendar
@@ -1217,7 +1309,7 @@ export default function AdminAgendaPage() {
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+              <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: primaryColor }}>
                 <FileText className="w-5 h-5" />
               </div>
               <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
@@ -1292,6 +1384,8 @@ export default function AdminAgendaPage() {
       <style jsx global>{`
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
     </div>
