@@ -4,10 +4,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  Calendar, Users, DollarSign, Gem, TrendingUp, Sparkles, 
-  Activity, Zap, Target, Crown, Clock, BarChart, ArrowUp,
-  Download, AlertCircle, XCircle, PiggyBank, RefreshCw, Award, UserCheck,
-  Gift, Bell, Eye, PlusCircle, CheckCircle2, Loader2
+  Calendar, Users, DollarSign, TrendingUp, Sparkles, 
+  Clock, BarChart, ArrowUp, RefreshCw, UserCheck,
+  PlusCircle, CheckCircle2, Loader2, AlertCircle,
+  Scissors, Eye, Crown, Star, Zap
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -21,7 +21,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [authorized, setAuthorized] = useState(false)
-  const [testMessage, setTestMessage] = useState<string | null>(null)
 
   const [stats, setStats] = useState({
     citasHoy: 0,
@@ -30,35 +29,24 @@ export default function DashboardPage() {
     clientasNuevas: 0,
     ingresos: 0,
     ingresosMes: 0,
-    puntos: 0,
-    ocupacion: 0,
-    ticketPromedio: 0,
-    citasProximas: [] as any[],
-    serviciosTop: [] as any[],
-    citasHoyList: [] as any[],
     pendientes: 0,
     confirmadas: 0,
     completadas: 0,
     canceladas: 0,
-    tasaOcupacion: 0,
-    crecimiento: 0,
+    citasProximas: [] as any[],
+    serviciosTop: [] as any[],
   })
 
-  // ✅ NUEVO: Estado para promociones recientes y notificaciones
-  const [recentPromotions, setRecentPromotions] = useState<any[]>([])
-  const [unreadNotifications, setUnreadNotifications] = useState(0)
-  const [latestNotification, setLatestNotification] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
-  useEffect(() => {
-    setAuthorized(true);
-    cargarEstadisticas();
-    cargarPromocionesRecientes();
-    cargarNotificacionesNoLeidas();
-    verificarAdmin();
-  }, [user, role, authLoading]);
+  const isDark = true // Se adaptará con el tema
 
-  // ✅ VERIFICAR SI ES ADMIN
+  useEffect(() => {
+    setAuthorized(true)
+    cargarEstadisticas()
+    verificarAdmin()
+  }, [user, role, authLoading])
+
   const verificarAdmin = async () => {
     if (!user) return
     try {
@@ -67,66 +55,11 @@ export default function DashboardPage() {
         .select('role')
         .eq('id', user.id)
         .single()
-      
       setIsAdmin(data?.role === 'admin')
     } catch (error) {
       console.error('Error verificando admin:', error)
     }
   }
-
-  // ✅ ESCUCHAR NOTIFICACIONES EN TIEMPO REAL
-  useEffect(() => {
-    if (!tenantId) return
-
-    const channel = supabase
-      .channel('dashboard-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `tenant_id=eq.${tenantId}`
-        },
-        (payload) => {
-          setLatestNotification(payload.new)
-          setUnreadNotifications(prev => prev + 1)
-          if (payload.new.type === 'promo') {
-            cargarPromocionesRecientes()
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [tenantId])
-
-  // ✅ ESCUCHAR CAMBIOS EN PROMOTION_USAGE
-  useEffect(() => {
-    if (!tenantId) return
-
-    const channel = supabase
-      .channel('dashboard-promotion-usage')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'promotion_usage',
-          filter: `tenant_id=eq.${tenantId}`
-        },
-        () => {
-          cargarPromocionesRecientes()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [tenantId])
 
   const cargarEstadisticas = async () => {
     try {
@@ -202,31 +135,15 @@ export default function DashboardPage() {
       const citasConPrecio = appointments.filter((a: any) => a.total_price > 0 || a.price > 0)
       const totalIngresos = citasConPrecio.reduce((sum: number, a: any) => sum + Number(a.total_price || a.price || 0), 0)
 
-      const ingresosMes = citasConPrecio
-        .filter((a: any) => {
-          if (!a.date) return false
-          const aDate = new Date(a.date)
-          const currDate = new Date()
-          return aDate.getMonth() === currDate.getMonth() && aDate.getFullYear() === currDate.getFullYear()
-        })
-        .reduce((sum: number, a: any) => sum + Number(a.total_price || a.price || 0), 0)
-
-      const puntos = clients.reduce((sum: number, c: any) => sum + (c.points || 0), 0)
-      const ticketPromedio = totalClientas > 0 ? Math.round(totalIngresos / totalClientas) : 0
-      const ocupacion = Math.min(100, Math.round((appointments.length / 50) * 100))
-
       const pendientes = appointments.filter((c: any) => c.status === 'pending').length
       const confirmadas = appointments.filter((c: any) => c.status === 'confirmed').length
       const completadas = appointments.filter((c: any) => c.status === 'completed').length
       const canceladas = appointments.filter((c: any) => c.status === 'cancelled').length
 
-      const tasaOcupacion = appointments.length > 0 ? Math.round((completadas / appointments.length) * 100) : 0
-      const crecimiento = totalClientas > 0 ? Math.round((clientasNuevas / totalClientas) * 100) : 0
-
       const proximas = appointments
         .filter((c: any) => c.date && new Date(c.date) > new Date() && c.status !== 'cancelled')
         .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3)
+        .slice(0, 4)
 
       const citasProximas = proximas.map((cita: any) => {
         const cliente = clients.find((c: any) => c.id === cita.client_id)
@@ -239,12 +156,6 @@ export default function DashboardPage() {
         }
       })
 
-      const citasHoyList = citasHoy.slice(0, 3).map((cita: any) => {
-        const cliente = clients.find((c: any) => c.id === cita.client_id)
-        const servicio = services.find((s: any) => s.id === cita.service_id)
-        return { ...cita, clienteNombre: cliente?.name || 'Cliente', servicioNombre: servicio?.name || 'Servicio' }
-      })
-
       const servicioCount: Record<string, number> = {}
       appointments.forEach((c: any) => {
         if (c.service_id) servicioCount[c.service_id] = (servicioCount[c.service_id] || 0) + 1
@@ -253,16 +164,24 @@ export default function DashboardPage() {
       const serviciosTop = Object.entries(servicioCount)
         .map(([id, count]) => {
           const servicio = services.find((s: any) => String(s.id) === String(id))
-          return { nombre: servicio?.name || 'Servicio', count, price: servicio?.price || 0, duration: servicio?.duration || 0 }
+          return { nombre: servicio?.name || 'Servicio', count, price: servicio?.price || 0 }
         })
         .sort((a, b) => b.count - a.count)
-        .slice(0, 4)
+        .slice(0, 3)
 
       setStats({
-        citasHoy: citasHoyCount, citasSemana, clientas: totalClientas, clientasNuevas,
-        ingresos: totalIngresos, ingresosMes, puntos, ocupacion, ticketPromedio,
-        citasProximas, serviciosTop, citasHoyList, pendientes, confirmadas,
-        completadas, canceladas, tasaOcupacion, crecimiento,
+        citasHoy: citasHoyCount,
+        citasSemana,
+        clientas: totalClientas,
+        clientasNuevas,
+        ingresos: totalIngresos,
+        ingresosMes: 0,
+        pendientes,
+        confirmadas,
+        completadas,
+        canceladas,
+        citasProximas,
+        serviciosTop,
       })
     } catch (error) {
       console.error("Error al procesar las estadísticas del dashboard:", error)
@@ -272,331 +191,200 @@ export default function DashboardPage() {
     }
   }
 
-  // ✅ CARGAR PROMOCIONES RECIENTES
-  const cargarPromocionesRecientes = async () => {
-    if (!tenantId) {
-      console.log('❌ No hay tenantId para cargar promociones')
-      return
-    }
-
-    try {
-      console.log('🔍 Cargando promociones recientes...')
-      
-      const { data: usageData, error: usageError } = await supabase
-        .from('promotion_usage')
-        .select(`
-          *,
-          profiles:user_id (name, email)
-        `)
-        .eq('tenant_id', tenantId)
-        .eq('action', 'applied')
-        .order('used_at', { ascending: false })
-        .limit(5)
-
-      if (usageError) {
-        console.error('❌ Error cargando promociones:', usageError)
-        return
-      }
-
-      if (!usageData || usageData.length === 0) {
-        setRecentPromotions([])
-        return
-      }
-
-      const promotionIds = usageData.map(item => item.promotion_id).filter(id => id)
-      let promotionData: Record<string, any> = {}
-      
-      if (promotionIds.length > 0) {
-        const { data: promosData } = await supabase
-          .from('promotions')
-          .select('id, title, discount_percent, code')
-          .in('id', promotionIds)
-
-        if (promosData) {
-          promotionData = promosData.reduce((acc, promo) => {
-            acc[promo.id] = promo
-            return acc
-          }, {} as Record<string, any>)
-        }
-      }
-
-      const combinedData = usageData.map(item => ({
-        ...item,
-        client_name: item.profiles?.name || 'Cliente',
-        client_email: item.profiles?.email,
-        promotion: promotionData[item.promotion_id] || null
-      }))
-
-      console.log('📦 Promociones recientes:', combinedData.length)
-      setRecentPromotions(combinedData)
-    } catch (error) {
-      console.error('Error cargando promociones recientes:', error)
-    }
-  }
-
-  // ✅ CARGAR NOTIFICACIONES NO LEÍDAS
-  const cargarNotificacionesNoLeidas = async () => {
-    if (!user) return
-
-    try {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('read', false)
-
-      if (error) {
-        console.error('Error contando notificaciones:', error)
-        return
-      }
-
-      setUnreadNotifications(count || 0)
-    } catch (error) {
-      console.error('Error cargando notificaciones:', error)
-    }
-  }
-
-
-  useEffect(() => {
-    if (authorized) {
-      const interval = setInterval(() => cargarEstadisticas(), 60000)
-      return () => clearInterval(interval)
-    }
-  }, [authorized])
-
   const handleRefresh = () => {
     setRefreshing(true)
     cargarEstadisticas()
-    cargarPromocionesRecientes()
-    cargarNotificacionesNoLeidas()
-  }
-
-  const handleExportReport = () => {
-    alert('📊 Reporte generado en consola')
   }
 
   if ((!authorized && loading) || settingsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: settings?.primary_color || '#DB5B9A' }}></div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>Abriendo el Salón...</p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-gradient-to-r from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Sparkles className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              ABRIENDO EL SALÓN
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              FRESH BEAUTY STUDIO
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!authorized) return null
 
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
+  
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
 
+  // Saludo según hora
+  const hour = new Date().getHours()
+  let saludo = 'Buenos días'
+  let emoji = '🌅'
+  if (hour >= 12 && hour < 18) { saludo = 'Buenas tardes'; emoji = '☀️' }
+  else if (hour >= 18) { saludo = 'Buenas noches'; emoji = '🌙' }
+
   return (
-    <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
-
-      {/* BIENVENIDA CON NOTIFICACIONES EN TIEMPO REAL */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-              <Sparkles className="w-5 h-5 md:w-6 md:h-6 animate-spin-slow" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>✨ {settings?.business_name || 'Salón VIP'}</p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Panel Ejecutivo
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">Control absoluto de tus citas, ingresos y comunidad VIP.</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
-            <Link 
-              href="/notificaciones"
-              className="relative p-2.5 rounded-xl border transition-all hover:shadow-md bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950"
-            >
-              <Bell className="w-4 h-4" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-pink-600 text-[9px] text-white font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-stone-950 shadow-md">
-                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                </span>
-              )}
-            </Link>
-
-            <button onClick={handleRefresh} disabled={refreshing} className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{refreshing ? 'Sincronizando...' : 'Actualizar'}</span>
-              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
-            </button>
-            <button onClick={handleExportReport} className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0">
-              <Download className="w-3.5 h-3.5" />
-              <span>Reporte</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ✅ MENSAJE DE PRUEBA */}
-      {testMessage && (
-        <div className={`rounded-2xl p-4 border flex items-center gap-3 shadow-xs ${
-          testMessage.includes('✅') 
-            ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border-emerald-500/20' 
-            : testMessage.includes('❌')
-            ? 'bg-gradient-to-r from-rose-500/10 to-pink-500/5 border-rose-500/20'
-            : 'bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-amber-500/20'
-        }`}>
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-            testMessage.includes('✅') ? 'bg-emerald-500/10 text-emerald-500' :
-            testMessage.includes('❌') ? 'bg-rose-500/10 text-rose-500' :
-            'bg-amber-500/10 text-amber-500'
-          }`}>
-            {testMessage.includes('✅') ? <CheckCircle2 className="w-4 h-4" /> :
-             testMessage.includes('❌') ? <AlertCircle className="w-4 h-4" /> :
-             <Loader2 className="w-4 h-4 animate-spin" />}
-          </div>
-          <p className="text-xs text-stone-700 dark:text-stone-300 font-medium min-w-0">{testMessage}</p>
-        </div>
-      )}
-
-      {/* ✅ NOTIFICACIÓN EN TIEMPO REAL (TOAST) */}
-      {latestNotification && latestNotification.type === 'promo' && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs animate-in slide-in-from-top-4 duration-300">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-            <Gift className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">
-              {latestNotification.message}
-            </p>
-            <p className="text-[9px] text-stone-400 mt-0.5">
-              {new Date(latestNotification.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* COMPONENTES DE ESTADO DINÁMICOS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {stats.pendientes > 0 && (
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 animate-bounce"><AlertCircle className="w-4 h-4" /></div>
-            <p className="text-xs text-stone-700 dark:text-amber-300 font-medium min-w-0">
-              ¡Tienes <span className="text-amber-600 dark:text-amber-400 font-bold underline decoration-2">{stats.pendientes}</span> citas esperando tu confirmación hoy!
-            </p>
-          </div>
-        )}
-        {stats.canceladas > 0 && (
-          <div className="bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3 shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0"><XCircle className="w-4 h-4" /></div>
-            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">
-              Hay <span className="font-bold">{stats.canceladas}</span> cancelaciones procesadas en el registro general.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* MÉTRICAS COMPLETAMENTE RESPONSIVAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 pb-12 antialiased transition-colors duration-700">
+      
+      {/* ============================================================ */}
+      {/* 👑 HEADER — BIENVENIDA */}
+      {/* ============================================================ */}
+      <div className={`relative overflow-hidden rounded-2xl border p-6 md:p-8 shadow-2xl ${
+        true 
+          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/80 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
+          : 'bg-gradient-to-br from-rose-50/90 via-pink-50/80 to-amber-50/70 border-pink-200/50'
+      }`}>
         
-        {/* CARD 1: CITAS HOY */}
-        <div className="rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-all group relative overflow-hidden border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 min-w-0">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-pink-500/5 to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between gap-2">
-            <div className="p-3 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
-              <Calendar className="w-5 h-5" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
+        <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border border-white/10 bg-white/5">
+              <span className="text-lg">{emoji}</span>
+              <span className="text-[9px] uppercase tracking-[0.2em] font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-300">
+                {saludo}, {user?.email?.split('@')[0] || 'Admin'}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
             </div>
-            <div className="text-right min-w-0">
-              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 dark:text-pink-100 block truncate">{stats.citasHoy}</span>
-              <span className="text-[10px] block font-bold mt-0.5 text-stone-400 dark:text-fuchsia-400 truncate">{stats.citasSemana} esta semana</span>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">
+              <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">
+                Panel de Control
+              </span>
+              <span className="text-white/60 text-sm font-light ml-3">• {settings?.business_name || 'Fresh Beauty'}</span>
+            </h1>
           </div>
-          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Citas Agendadas</p>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className={`inline-flex items-center gap-2 text-[8px] font-black tracking-[0.2em] uppercase px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white group relative overflow-hidden`}
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+              <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'} transition-all duration-500 text-pink-400/70`} />
+              <span className="relative">{refreshing ? '...' : 'Actualizar'}</span>
+            </button>
+
+            <Link 
+              href="/admin/agenda"
+              className="group relative overflow-hidden px-5 py-2 rounded-xl font-black text-[9px] tracking-[0.2em] uppercase flex items-center gap-2 text-white border border-pink-400/20 shadow-[0_15px_40px_rgba(219,91,154,0.25)] hover:shadow-[0_20px_50px_rgba(219,91,154,0.4)]"
+              style={brandGradient}
+            >
+              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="relative">Ver Agenda</span>
+            </Link>
+          </div>
         </div>
 
-        {/* CARD 2: CLIENTAS */}
-        <div className="rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-all group relative overflow-hidden border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 min-w-0">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between gap-2">
-            <div className="p-3 rounded-xl text-white shadow-md group-hover:scale-110 transition-transform shrink-0" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }}>
-              <Users className="w-5 h-5" />
-            </div>
-            <div className="text-right min-w-0">
-              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 dark:text-pink-100 block truncate">{stats.clientas}</span>
-              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 block font-bold mt-0.5 truncate">+{stats.clientasNuevas} este mes</span>
-            </div>
-          </div>
-          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Clientas de Alta</p>
-        </div>
-
-        {/* CARD 3: INGRESOS DINÁMICOS */}
-        <div className="rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-all group relative overflow-hidden border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 min-w-0">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between gap-2">
-            <div className="p-3 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform shrink-0">
-              <DollarSign className="w-5 h-5" />
-            </div>
-            <div className="text-right min-w-0">
-              <span className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white block truncate">{settings?.currency || '€'}{stats.ingresos.toLocaleString()}</span>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-bold mt-0.5 truncate">{settings?.currency || '€'}{stats.ingresosMes.toLocaleString()} en curso</span>
-            </div>
-          </div>
-          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Caja & Facturación</p>
-        </div>
-
-        {/* CARD 4: PUNTOS VIP */}
-        <div className="rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-all group relative overflow-hidden border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 min-w-0">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-500/5 to-transparent rounded-bl-full" />
-          <div className="flex items-center justify-between gap-2">
-            <div className="p-3 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform shrink-0">
-              <Gem className="w-5 h-5" />
-            </div>
-            <div className="text-right min-w-0">
-              <span className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-white block truncate">{stats.puntos.toLocaleString()}</span>
-              <span className="text-[10px] text-amber-500 dark:text-amber-400 block font-bold mt-0.5 truncate">Fidelización Club</span>
-            </div>
-          </div>
-          <p className="text-stone-600 dark:text-stone-300 text-xs font-bold mt-3 tracking-wide">Puntos Acumulados</p>
+        <div className="absolute bottom-2 right-6 opacity-[0.04] text-[6px] font-black tracking-[0.3em] text-white select-none pointer-events-none">
+          ✦ FRESH BEAUTY STUDIO ✦
         </div>
       </div>
 
-      {/* PASTILLAS VIBRANTES DE ACCIÓN */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 p-2.5 text-center min-w-0">
-          <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider truncate">Por Confirmar</p>
-          <p className="text-base font-bold text-amber-700 dark:text-amber-400 truncate">{stats.pendientes}</p>
+      {/* ============================================================ */}
+      {/* 📊 MÉTRICAS PRINCIPALES — 3 CARDS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        {/* Card 1: Citas Hoy */}
+        <div className="group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60 shadow-lg">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Citas Hoy</p>
+              <p className="text-4xl font-black text-white mt-1">{stats.citasHoy}</p>
+              <p className="text-[10px] text-emerald-400 font-medium mt-0.5">+{stats.citasSemana} esta semana</p>
+            </div>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform duration-500">
+              <Calendar className="w-6 h-6" />
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 p-2.5 text-center min-w-0">
-          <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider truncate">Aprobadas</p>
-          <p className="text-base font-bold text-emerald-700 dark:text-amber-400 truncate">{stats.confirmadas}</p>
+
+        {/* Card 2: Pendientes */}
+        <div className="group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60 shadow-lg">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Pendientes</p>
+              <p className="text-4xl font-black text-white mt-1">{stats.pendientes}</p>
+              <p className="text-[10px] text-amber-400 font-medium mt-0.5">Requieren atención</p>
+            </div>
+            <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform duration-500">
+              <Clock className="w-6 h-6" />
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-900/30 p-2.5 text-center min-w-0">
-          <p className="text-[9px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider truncate">Listas / Éxito</p>
-          <p className="text-base font-bold text-indigo-700 dark:text-indigo-400 truncate">{stats.completadas}</p>
-        </div>
-        <div className="rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-900/30 p-2.5 text-center min-w-0">
-          <p className="text-[9px] text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider truncate">Canceladas</p>
-          <p className="text-base font-bold text-rose-700 dark:text-rose-400 truncate">{stats.canceladas}</p>
+
+        {/* Card 3: Ingresos */}
+        <div className="group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-gradient-to-br from-zinc-950/80 to-zinc-900/50 border-zinc-900/60 shadow-lg">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Ingresos</p>
+              <p className="text-4xl font-black text-white mt-1">{settings?.currency || '$'}{stats.ingresos.toLocaleString()}</p>
+              <p className="text-[10px] text-emerald-400 font-medium mt-0.5">Hoy</p>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform duration-500">
+              <DollarSign className="w-6 h-6" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL: CITAS Y TOP SERVICIOS */}
+      {/* ============================================================ */}
+      {/* 📋 PRÓXIMAS CITAS + SERVICIOS TOP */}
+      {/* ============================================================ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* BLOQUE PRÓXIMAS RESERVAS */}
-        <div className="lg:col-span-2 rounded-2xl p-4 sm:p-6 shadow-xs border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950/50">
-          <div className="flex items-center justify-between mb-5 gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <Clock className="w-4 h-4 animate-pulse shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
-              <h3 className="text-sm font-black uppercase tracking-wider text-stone-800 dark:text-pink-100 truncate">Próximos Turnos</h3>
+        
+        {/* Bloque: Próximas Citas */}
+        <div className="lg:col-span-2 rounded-2xl border p-6 transition-all duration-500 shadow-xl bg-zinc-950/60 border-zinc-900/60 shadow-black/40">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-pink-500/10">
+                <Clock className="w-4 h-4 text-pink-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black tracking-tight text-white">Próximas <span className="font-serif italic font-normal text-pink-400">Citas</span></h3>
+                <p className="text-[9px] text-zinc-400">Las próximas 4 citas</p>
+              </div>
             </div>
-            <Link href="/admin/agenda" className="text-xs font-bold flex items-center gap-1 transition-all hover:underline shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-              Ver Agenda →
+            <Link 
+              href="/admin/agenda" 
+              className="text-[9px] font-black uppercase tracking-wider text-pink-400 hover:text-pink-300 transition-colors flex items-center gap-1"
+            >
+              Ver todas <ArrowUp className="w-3 h-3 rotate-45" />
             </Link>
           </div>
 
           {stats.citasProximas.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl">
-              <Calendar className="w-8 h-8 text-pink-300 dark:text-fuchsia-800 mx-auto mb-2" />
-              <p className="text-xs text-stone-400 font-medium">No hay reservas para las próximas horas.</p>
+            <div className="text-center py-10 border border-dashed border-zinc-800 rounded-xl">
+              <Calendar className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+              <p className="text-xs text-zinc-500">No hay citas próximas</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -604,32 +392,32 @@ export default function DashboardPage() {
                 const hoy = new Date()
                 const citaDate = new Date(cita.date)
                 const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-                const esHoy = diffDias === 0
-                const esManana = diffDias === 1
-
                 let label = `En ${diffDias} d`
-                let colorClasses = 'bg-pink-50 text-pink-600 dark:bg-pink-950/30 dark:text-pink-400'
-                if (esHoy) { label = 'Hoy'; colorClasses = 'bg-rose-500 text-white' }
-                else if (esManana) { label = 'Mañ.'; colorClasses = 'bg-amber-500 text-white' }
+                let color = 'text-zinc-400'
+                if (diffDias === 0) { label = 'Hoy'; color = 'text-rose-400' }
+                else if (diffDias === 1) { label = 'Mañana'; color = 'text-amber-400' }
 
                 return (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-[#fff8fb] dark:bg-[#1a1430]/40 border border-pink-50/60 dark:border-fuchsia-950 rounded-2xl hover:border-pink-300 transition-all gap-2 min-w-0">
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-3 rounded-xl border border-zinc-900/60 bg-zinc-900/20 hover:border-pink-500/30 transition-all duration-300"
+                  >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0" style={{ backgroundImage: `linear-gradient(to bottom right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})` }}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shadow-sm bg-gradient-to-br from-pink-500 to-rose-500`}>
                         {citaDate.getDate()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-pink-100 truncate">{cita.clienteNombre}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                          <span className="text-[11px] font-medium truncate" style={{ color: settings?.primary_color || '#DB5B9A' }}>{cita.servicioNombre}</span>
-                          <span className="w-1 h-1 rounded-full bg-stone-300 shrink-0" />
-                          <span className="text-[11px] font-mono font-bold text-stone-500 dark:text-stone-400 shrink-0">{cita.time ? cita.time.slice(0,5) : '--:--'}</span>
+                        <p className="text-sm font-bold text-white truncate">{cita.clienteNombre}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-[10px] font-medium text-pink-400 truncate">{cita.servicioNombre}</span>
+                          <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                          <span className="text-[10px] font-mono text-zinc-400">{cita.time?.slice(0,5) || '--:--'}</span>
+                          <span className={`text-[8px] font-black uppercase tracking-wider ${color}`}>{label}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right flex flex-col items-end shrink-0 min-w-0">
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full truncate ${colorClasses}`}>{label}</span>
-                      <span className="text-xs font-bold text-stone-700 dark:text-pink-200 mt-1">{settings?.currency || '€'}{cita.precio?.toLocaleString() || 0}</span>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-bold text-emerald-400">{settings?.currency || '$'}{cita.precio?.toLocaleString() || 0}</span>
                     </div>
                   </div>
                 )
@@ -638,36 +426,46 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* BLOQUE SERVICIOS TOP RANKING */}
-        <div className="rounded-2xl p-4 sm:p-6 shadow-xs border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950/50 min-w-0">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-4 h-4 text-rose-500 shrink-0" />
-            <h3 className="text-sm font-black uppercase tracking-wider text-stone-800 dark:text-pink-100 truncate">Top Preferidos</h3>
+        {/* Bloque: Servicios Top */}
+        <div className="rounded-2xl border p-6 transition-all duration-500 shadow-xl bg-zinc-950/60 border-zinc-900/60 shadow-black/40">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2 rounded-xl bg-amber-500/10">
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black tracking-tight text-white">Top <span className="font-serif italic font-normal text-amber-400">Servicios</span></h3>
+              <p className="text-[9px] text-zinc-400">Los más solicitados</p>
+            </div>
           </div>
 
           {stats.serviciosTop.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-2xl">
-              <BarChart className="w-8 h-8 text-pink-300 dark:text-fuchsia-800 mx-auto mb-2" />
-              <p className="text-xs text-stone-400">Sin datos de servicios.</p>
+            <div className="text-center py-10 border border-dashed border-zinc-800 rounded-xl">
+              <BarChart className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+              <p className="text-xs text-zinc-500">Sin datos</p>
             </div>
           ) : (
             <div className="space-y-4">
               {stats.serviciosTop.map((serv, idx) => {
-                const porcentaje = stats.serviciosTop[0]?.count > 0 ? Math.round((serv.count / stats.serviciosTop[0].count) * 100) : 0
+                const maxCount = stats.serviciosTop[0]?.count || 1
+                const porcentaje = Math.round((serv.count / maxCount) * 100)
+                const colors = ['from-pink-500 to-rose-500', 'from-amber-500 to-orange-500', 'from-violet-500 to-purple-500']
 
                 return (
-                  <div key={idx} className="space-y-1.5 min-w-0">
-                    <div className="flex items-center justify-between text-xs font-semibold gap-2">
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-5 h-5 rounded-lg flex items-center justify-center text-white text-[9px] font-bold shadow-xs shrink-0" style={{ backgroundColor: idx === 0 ? (settings?.primary_color || '#DB5B9A') : '#8b5cf6' }}>
+                        <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[8px] font-black text-white bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`}>
                           {idx + 1}
-                        </div>
-                        <span className="text-stone-800 dark:text-pink-100 truncate">{serv.nombre}</span>
+                        </span>
+                        <span className="text-xs font-bold text-white truncate">{serv.nombre}</span>
                       </div>
-                      <span className="font-mono font-bold px-2 py-0.5 rounded-md text-[11px] shrink-0" style={{ color: settings?.primary_color || '#DB5B9A', backgroundColor: `${settings?.primary_color || '#DB5B9A'}10` }}>{serv.count} x</span>
+                      <span className="text-[10px] font-mono font-bold text-zinc-400">{serv.count}x</span>
                     </div>
-                    <div className="w-full bg-pink-100/30 dark:bg-fuchsia-950/30 rounded-full h-2 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${porcentaje}%`, backgroundColor: idx === 0 ? (settings?.primary_color || '#DB5B9A') : (settings?.secondary_color || '#E5A46E') }} />
+                    <div className="w-full bg-zinc-800/50 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`} 
+                        style={{ width: `${porcentaje}%` }} 
+                      />
                     </div>
                   </div>
                 )
@@ -677,147 +475,75 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ✅ PROMOCIONES APLICADAS RECIENTEMENTE */}
-      <div className="rounded-2xl p-4 sm:p-6 shadow-xs border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950/50">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Gift className="w-4 h-4 text-pink-500 shrink-0" />
-            <h3 className="text-sm font-black uppercase tracking-wider text-stone-800 dark:text-pink-100 truncate">
-              Promociones Aplicadas
-            </h3>
-            <span className="text-[10px] bg-pink-500/10 text-pink-500 px-2 py-0.5 rounded-full">
-              {recentPromotions.length}
-            </span>
+      {/* ============================================================ */}
+      {/* 🔧 ACCIONES RÁPIDAS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Link 
+          href="/admin/agenda/nueva"
+          className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-pink-500/30"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-500">
+              <PlusCircle className="w-5 h-5 text-pink-400" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-white">Nueva Cita</p>
           </div>
-          <Link 
-            href="/admin/promociones/uso"
-            className="text-[10px] text-stone-400 hover:text-pink-500 flex items-center gap-1 transition-colors shrink-0"
-          >
-            Ver todas <Eye className="w-3 h-3" />
-          </Link>
-        </div>
+        </Link>
 
-        {recentPromotions.length === 0 ? (
-          <div className="text-center py-8 border border-dashed border-pink-100 dark:border-fuchsia-950 rounded-xl">
-            <Gift className="w-8 h-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
-            <p className="text-xs text-stone-400">
-              No hay promociones aplicadas recientemente
-            </p>
+        <Link 
+          href="/admin/clientes"
+          className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-violet-500/30"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-500">
+              <Users className="w-5 h-5 text-violet-400" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-white">Clientes</p>
+          </div>
+        </Link>
 
+        <Link 
+          href="/admin/servicios"
+          className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-emerald-500/30"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-500">
+              <Scissors className="w-5 h-5 text-emerald-400" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-white">Servicios</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recentPromotions.map((item) => (
-              <div 
-                key={item.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-[#0f0c1b] border border-stone-100 dark:border-fuchsia-950 hover:border-pink-200 dark:hover:border-fuchsia-800 transition-all"
-              >
-                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-stone-900 dark:text-white truncate">
-                    {item.client_name || 'Cliente'}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                      {item.promotion?.title || 'Promoción'}
-                    </span>
-                    <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                      {item.promotion?.discount_percent || 0}% off
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[8px] text-stone-400 shrink-0">
-                  {new Date(item.used_at).toLocaleTimeString('es-ES', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </span>
-              </div>
-            ))}
+        </Link>
+
+        <Link 
+          href="/admin/staff"
+          className="group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-zinc-950/60 border-zinc-900/60 shadow-black/20 hover:border-amber-500/30"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-500">
+              <UserCheck className="w-5 h-5 text-amber-400" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-white">Staff</p>
           </div>
-        )}
+        </Link>
       </div>
 
-      {/* SUB-MÉTRICAS CON VELOCÍMETROS VISUALES */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 min-w-0">
-          <div className="p-2.5 rounded-xl text-white shadow-xs shrink-0" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}><Activity className="w-4 h-4" /></div>
-          <div className="w-full min-w-0">
-            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider truncate">Ocupación</p>
-            <div className="flex items-center justify-between gap-2 mt-0.5">
-              <span className="text-base font-bold text-stone-800 dark:text-pink-100 shrink-0">{stats.tasaOcupacion}%</span>
-              <div className="flex-1 bg-pink-100 dark:bg-fuchsia-950/60 h-1.5 rounded-full overflow-hidden">
-                <div className="h-full" style={{ width: `${stats.tasaOcupacion}%`, backgroundColor: settings?.primary_color || '#DB5B9A' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 min-w-0">
-          <div className="p-2.5 rounded-xl bg-emerald-500 text-white shadow-xs shrink-0"><PiggyBank className="w-4 h-4" /></div>
-          <div className="min-w-0">
-            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider truncate">Ticket Promedio</p>
-            <span className="text-base font-bold text-stone-800 dark:text-pink-100 mt-0.5 block truncate">{settings?.currency || '€'}{stats.ticketPromedio.toLocaleString()}</span>
-          </div>
-        </div>
-
-        <div className="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 min-w-0">
-          <div className="p-2.5 rounded-xl bg-violet-500 text-white shadow-xs shrink-0"><UserCheck className="w-4 h-4" /></div>
-          <div className="min-w-0">
-            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider truncate">Fidelización</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-base font-bold text-emerald-500">89%</span>
-              <ArrowUp className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-[#130f24] border border-pink-100/40 dark:border-fuchsia-950 min-w-0">
-          <div className="p-2.5 rounded-xl text-white shadow-xs shrink-0" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }}><Award className="w-4 h-4" /></div>
-          <div className="min-w-0">
-            <p className="text-stone-400 text-[9px] font-bold uppercase tracking-wider truncate">Crecimiento</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-base font-bold text-emerald-500">+{stats.crecimiento}%</span>
-              <ArrowUp className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SUGERENCIAS INTELIGENTES DEL SISTEMA */}
-      <div className="rounded-3xl border border-pink-100/70 dark:border-fuchsia-950/70 p-5 bg-gradient-to-r from-pink-500/5 to-amber-500/5">
-        <div className="flex items-center gap-2 mb-4">
-          <Zap className="w-4 h-4 text-amber-500 animate-bounce shrink-0" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-stone-800 dark:text-pink-100">Fresh Actions Sugeridas</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-pink-400 transition-all min-w-0">
-            <div className="w-7 h-7 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}><Target className="w-3.5 h-3.5" /></div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Potenciar Servicios</p>
-              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5 break-words">Lanza un descuento relámpago en los treatments menos pedidos este mes.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-violet-400 transition-all min-w-0">
-            <div className="w-7 h-7 bg-violet-500 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5"><Users className="w-3.5 h-3.5" /></div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Recuperar Clientas</p>
-              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5 break-words">Tienes clientas que no han agendado en 30 días. ¡Ofréceles puntos dobles!</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-white/70 dark:bg-[#16122c]/60 backdrop-blur-md rounded-xl border border-pink-50 dark:border-fuchsia-950 hover:border-amber-400 transition-all min-w-0">
-            <div className="w-7 h-7 text-white rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }}><Crown className="w-3.5 h-3.5" /></div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-stone-800 dark:text-pink-100">Club VIP Activo</p>
-              <p className="text-[11px] text-stone-500 dark:text-pink-200/60 mt-0.5 break-words">La retención está óptima en 89%. Premia a las mejores con un regalo especial.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes shine {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(100%); }
+        }
+        .animate-shine {
+          animation: shine 1.5s ease-in-out infinite;
+        }
+      `}</style>
 
     </div>
   )
