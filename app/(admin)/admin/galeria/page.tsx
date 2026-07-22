@@ -42,25 +42,21 @@ type Professional = {
   role?: string
 }
 
-// ✅ CATEGORÍAS SIMPLIFICADAS
 const categories = ['Todas', 'Uñas', 'Micropigmentación', 'Peluquería', 'Cejas']
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
   const { tenantId } = useAuth()
 
-  // Estados
   const [photos, setPhotos] = useState<Photo[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Filtros
   const [categoryFilter, setCategoryFilter] = useState('Todas')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Modales
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [showLightbox, setShowLightbox] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -68,16 +64,13 @@ export default function GaleriaAdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null)
 
-  // Mensajes
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // Archivos
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Formulario
   const [formData, setFormData] = useState({
     title: '',
     category: 'Uñas',
@@ -97,9 +90,6 @@ export default function GaleriaAdminPage() {
 
   const primaryBgStyle = { backgroundColor: primaryColor }
 
-  // ==========================================
-  // OBTENER TENANT ID
-  // ==========================================
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
     const { data: { session } } = await supabase.auth.getSession()
@@ -116,9 +106,6 @@ export default function GaleriaAdminPage() {
     return profile?.tenant_id || null
   }, [tenantId])
 
-  // ==========================================
-  // CARGAR PROFESIONALES
-  // ==========================================
   const fetchProfessionals = useCallback(async (activeTenantId: string) => {
     try {
       const { data, error } = await supabase
@@ -135,9 +122,6 @@ export default function GaleriaAdminPage() {
     }
   }, [])
 
-  // ==========================================
-  // CARGAR FOTOS
-  // ==========================================
   const fetchPhotos = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true)
@@ -156,7 +140,6 @@ export default function GaleriaAdminPage() {
 
       let allPhotos: Photo[] = []
 
-      // 1. FOTOS DE ADMIN
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
@@ -187,7 +170,6 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedAdminPhotos]
       }
 
-      // 2. FOTOS DE CLIENTES
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -217,7 +199,6 @@ export default function GaleriaAdminPage() {
         allPhotos = [...allPhotos, ...mappedClientPhotos]
       }
 
-      // Ordenar por fecha (más reciente primero)
       allPhotos.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
@@ -237,7 +218,6 @@ export default function GaleriaAdminPage() {
     fetchPhotos(true)
   }, [fetchPhotos])
 
-  // Mapa de profesionales
   const professionalMap = useMemo(() => {
     const map: Record<string, string> = {}
     professionals.forEach(p => {
@@ -246,9 +226,6 @@ export default function GaleriaAdminPage() {
     return map
   }, [professionals])
 
-  // ==========================================
-  // ESTADÍSTICAS SIMPLIFICADAS
-  // ==========================================
   const stats = useMemo(() => {
     const total = photos.length
     const adminCount = photos.filter(p => p.source === 'admin').length
@@ -257,9 +234,6 @@ export default function GaleriaAdminPage() {
     return { total, adminCount, clientCount, activeCount }
   }, [photos])
 
-  // ==========================================
-  // FILTRADO
-  // ==========================================
   const filteredPhotos = useMemo(() => {
     let result = [...photos]
 
@@ -279,9 +253,6 @@ export default function GaleriaAdminPage() {
     return result
   }, [photos, categoryFilter, searchQuery])
 
-  // ==========================================
-  // OBTENER URL DE IMAGEN
-  // ==========================================
   const getImageUrl = (photo: Photo) => {
     if (photo.source === 'admin') {
       return photo.image_url || ''
@@ -289,9 +260,6 @@ export default function GaleriaAdminPage() {
     return photo.after_image_url || photo.image_url || photo.before_image_url || ''
   }
 
-  // ==========================================
-  // SUBIR ARCHIVO
-  // ==========================================
   const uploadFile = async (file: File, tenantId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
@@ -322,9 +290,6 @@ export default function GaleriaAdminPage() {
     reader.readAsDataURL(file)
   }
 
-  // ==========================================
-  // GUARDAR FOTO
-  // ==========================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -402,9 +367,6 @@ export default function GaleriaAdminPage() {
     setEditingPhoto(null)
   }
 
-  // ==========================================
-  // ELIMINAR FOTO
-  // ==========================================
   const deletePhoto = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
     if (!confirm('¿Eliminar permanentemente este registro?')) return
@@ -422,9 +384,6 @@ export default function GaleriaAdminPage() {
     }
   }
 
-  // ==========================================
-  // TOGGLE VISIBILIDAD
-  // ==========================================
   const toggleActive = async (id: string, currentStatus: boolean, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
 
@@ -444,9 +403,6 @@ export default function GaleriaAdminPage() {
     }
   }
 
-  // ==========================================
-  // LIGHTBOX
-  // ==========================================
   const openLightbox = (photo: Photo) => {
     const index = filteredPhotos.findIndex(p => p.id === photo.id)
     setSelectedPhoto(photo)
@@ -472,9 +428,6 @@ export default function GaleriaAdminPage() {
     setSelectedPhoto(filteredPhotos[newIndex])
   }
 
-  // ==========================================
-  // LOADING
-  // ==========================================
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
@@ -508,16 +461,16 @@ export default function GaleriaAdminPage() {
     )
   }
 
-  // ==========================================
-  // RENDER PRINCIPAL
-  // ==========================================
   return (
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
 
       {/* ============================================================ */}
-      {/* HEADER — IDÉNTICO AL DASHBOARD */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
       {/* ============================================================ */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
+      <div 
+        className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl"
+        style={brandGradient}
+      >
         <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
         <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
           <div className="flex items-center gap-4 min-w-0">
@@ -697,7 +650,6 @@ export default function GaleriaAdminPage() {
                   </div>
                 )}
 
-                {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
                   <span className={`text-[7px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${
                     isClient ? 'bg-amber-500/95' : 'bg-pink-500/95'
@@ -716,7 +668,6 @@ export default function GaleriaAdminPage() {
                   )}
                 </div>
 
-                {/* Hover Overlay */}
                 {hoveredId === photo.id && (
                   <div className="absolute inset-0 bg-stone-950/70 p-3 flex flex-col justify-between text-white">
                     <div className="flex justify-end gap-1.5">
@@ -778,7 +729,7 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX SIMPLIFICADO */}
+      {/* LIGHTBOX */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
         <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
@@ -809,7 +760,6 @@ export default function GaleriaAdminPage() {
             </div>
           </div>
 
-          {/* Panel de información */}
           <div className="w-full md:w-72 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
@@ -864,7 +814,6 @@ export default function GaleriaAdminPage() {
               </div>
             </div>
 
-            {/* Acciones */}
             {selectedPhoto.source === 'admin' && (
               <div className="pt-6 border-t border-white/10 flex gap-2">
                 <button 
@@ -921,7 +870,6 @@ export default function GaleriaAdminPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Imagen */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">
                   Imagen *
@@ -941,7 +889,6 @@ export default function GaleriaAdminPage() {
                 </div>
               </div>
 
-              {/* Título y Categoría */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Título</label>
@@ -965,7 +912,6 @@ export default function GaleriaAdminPage() {
                 </div>
               </div>
 
-              {/* Profesional y Orden */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Profesional</label>
@@ -990,7 +936,6 @@ export default function GaleriaAdminPage() {
                 </div>
               </div>
 
-              {/* Descripción */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1 font-mono">Descripción</label>
                 <textarea 
@@ -1002,7 +947,6 @@ export default function GaleriaAdminPage() {
                 />
               </div>
 
-              {/* Visibilidad */}
               <div className="flex items-center gap-2 pt-1">
                 <input 
                   type="checkbox" 
@@ -1013,7 +957,6 @@ export default function GaleriaAdminPage() {
                 <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Visible en el catálogo</span>
               </div>
 
-              {/* Botones */}
               <div className="flex gap-3 pt-3 border-t dark:border-stone-800">
                 <button 
                   type="button" 
@@ -1038,9 +981,6 @@ export default function GaleriaAdminPage() {
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* STYLES GLOBALES */}
-      {/* ============================================================ */}
       <style jsx global>{`
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 8s linear infinite; }
