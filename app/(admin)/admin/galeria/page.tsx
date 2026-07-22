@@ -538,49 +538,53 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* ESTADÍSTICAS */}
-      {/* ============================================================ */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
-            <Layers className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
-            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{stats.total}</h3>
-          </div>
-        </div>
+{/* ESTADÍSTICAS — RESPONSIVAS */}
+{/* ============================================================ */}
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+  {/* Total */}
+  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className="p-1.5 sm:p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
+      <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
+      <h3 className="text-sm sm:text-base font-mono font-black text-stone-900 dark:text-pink-100">{stats.total}</h3>
+    </div>
+  </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-xl bg-pink-500/10 text-pink-500 shrink-0">
-            <Crown className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Salón</p>
-            <h3 className="text-sm font-mono font-black text-pink-500">{stats.adminCount}</h3>
-          </div>
-        </div>
+  {/* Salón */}
+  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className="p-1.5 sm:p-2 rounded-xl bg-pink-500/10 text-pink-500 shrink-0">
+      <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Salón</p>
+      <h3 className="text-sm sm:text-base font-mono font-black text-pink-500">{stats.adminCount}</h3>
+    </div>
+  </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
-            <Users className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
-            <h3 className="text-sm font-mono font-black text-amber-500">{stats.clientCount}</h3>
-          </div>
-        </div>
+  {/* Clientes */}
+  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
+      <h3 className="text-sm sm:text-base font-mono font-black text-amber-500">{stats.clientCount}</h3>
+    </div>
+  </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-            <Eye className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Visibles</p>
-            <h3 className="text-sm font-mono font-black text-emerald-500">{stats.activeCount}</h3>
-          </div>
-        </div>
-      </div>
+  {/* Visibles */}
+  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+      <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Visibles</p>
+      <h3 className="text-sm sm:text-base font-mono font-black text-emerald-500">{stats.activeCount}</h3>
+    </div>
+  </div>
+</div>
 
       {/* ============================================================ */}
       {/* FILTROS Y BÚSQUEDA */}
