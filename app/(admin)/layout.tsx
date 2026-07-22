@@ -18,14 +18,12 @@ export default function AdminLayout({
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // 🔓 BYPASS TOTAL PARA TERMUX EN DESARROLLO
-  // Desactivamos temporalmente las expulsiones automáticas al login
   useEffect(() => {
     console.log('📱 [Termux-Layout-Bypass] Estado actual:', { session: !!session, role, loading });
   }, [role, loading, session])
 
   return (
-    <div className="flex min-h-screen bg-stone-50 dark:bg-[#0a0908]">
+    <div className="flex min-h-screen bg-stone-50 dark:bg-[#0a0908] fixed inset-0 overflow-hidden">
       <AdminSidebar 
         collapsed={collapsed} 
         setCollapsed={setCollapsed} 
@@ -33,14 +31,20 @@ export default function AdminLayout({
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
         <AdminHeader 
           collapsed={collapsed} 
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        {/* 🛠️ FIJADO: Agregamos pt-20 (padding-top) para reservar el espacio exacto del header fixed */}
-        <main className="flex-1 p-4 lg:p-6 pt-20 lg:pt-20 overflow-y-auto">
+        {/* 🛠️ SOLUCIÓN PARA CONGELAR EL SCROLL */}
+        {/* Eliminamos el pt-20 de aquí para evitar que el scroll lo multiplique */}
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto h-full w-full">
+          
+          {/* 🧱 ESTA ES LA CAJA INVISIBLE DE CONTROL (Mide exactamente 80px) */}
+          {/* Actúa como un escudo rígido. Al hacer scroll, pasa de largo y no altera el layout */}
+          <div className="h-20 w-full block shrink-0 pointer-events-none" aria-hidden="true" />
+          
           {children}
         </main>
       </div>
