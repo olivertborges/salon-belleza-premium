@@ -12,7 +12,7 @@ import {
   Mail, Phone, Lock, Key, RefreshCw,
   X, Check, Eye, EyeOff, Crown,
   Sparkles, Award, Star, Clock, Calendar,
-  User, Gift, GraduationCap
+  User, Gift, AlertCircle, PlusCircle
 } from 'lucide-react'
 
 type UserProfile = {
@@ -22,29 +22,17 @@ type UserProfile = {
   full_name: string | null
   phone: string | null
   avatar_url: string | null
-  role: 'admin' | 'owner' | 'staff' | 'client' | 'student'
-  loyalty_points: number
-  level: string
-  referral_code: string | null
-  referred_by: string | null
-  preferences: any
+  role: 'admin' | 'staff' | 'client'
   is_active: boolean
   created_at: string
   updated_at: string
 }
 
+// ✅ ROLES SIMPLIFICADOS
 const ROLES = [
   { value: 'admin', label: 'Administrador', color: 'from-pink-500 to-rose-500', icon: Crown },
-  { value: 'owner', label: 'Propietario', color: 'from-amber-500 to-orange-500', icon: Award },
   { value: 'staff', label: 'Staff', color: 'from-violet-500 to-fuchsia-500', icon: UserCog },
-  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User },
-  { value: 'student', label: 'Estudiante', color: 'from-blue-500 to-cyan-500', icon: GraduationCap }
-]
-
-const LEVELS = [
-  { value: 'bronze', label: 'Bronce', color: 'from-amber-600 to-amber-400' },
-  { value: 'silver', label: 'Plata', color: 'from-gray-400 to-gray-300' },
-  { value: 'gold', label: 'Oro', color: 'from-yellow-500 to-yellow-300' }
+  { value: 'client', label: 'Cliente', color: 'from-emerald-500 to-teal-500', icon: User }
 ]
 
 const containerVariants = {
@@ -75,6 +63,7 @@ const itemVariants = {
 export default function AdminUsuariosPage() {
   const { settings } = useSettings()
   const { tenantId, user, role, loading: authLoading } = useAuth()
+  const isDark = false // Se adaptará con el tema
 
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,18 +78,23 @@ export default function AdminUsuariosPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  // ✅ FORMULARIO SIN "level"
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     full_name: '',
     phone: '',
-    role: 'staff',
-    level: 'bronze'
+    role: 'staff'
   })
 
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
+
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
+
+  const primaryBgStyle = { backgroundColor: primaryColor }
 
   // ============================================================
   // 1. CARGAR USUARIOS
@@ -114,11 +108,11 @@ export default function AdminUsuariosPage() {
 
     try {
       let query = supabase.from('profiles').select('*')
-      
+
       if (tenantId) {
         query = query.eq('tenant_id', tenantId)
       }
-      
+
       const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) {
@@ -127,7 +121,7 @@ export default function AdminUsuariosPage() {
             .from('profiles')
             .select('*')
             .order('created_at', { ascending: false })
-          
+
           if (fallbackError) throw fallbackError
           setUsers(fallbackData || [])
         } else {
@@ -136,7 +130,7 @@ export default function AdminUsuariosPage() {
       } else {
         setUsers(data || [])
       }
-      
+
       setSuccess('Usuarios cargados correctamente')
       setTimeout(() => setSuccess(null), 2000)
     } catch (err: any) {
@@ -175,7 +169,7 @@ export default function AdminUsuariosPage() {
     setError(null)
     setSuccess(null)
 
-    if (role !== 'admin' && role !== 'owner') {
+    if (role !== 'admin') {
       setError(`❌ No tienes permisos. Tu rol es: ${role || 'sin rol'}`)
       setTimeout(() => setError(null), 5000)
       return
@@ -183,7 +177,7 @@ export default function AdminUsuariosPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session) {
         setError('❌ No hay sesión activa. Por favor, inicia sesión nuevamente.')
         setTimeout(() => setError(null), 5000)
@@ -202,7 +196,6 @@ export default function AdminUsuariosPage() {
           full_name: formData.full_name,
           phone: formData.phone,
           role: formData.role,
-          level: formData.level,
           tenant_id: tenantId || null
         })
       })
@@ -215,9 +208,9 @@ export default function AdminUsuariosPage() {
 
       setSuccess(`✅ Usuario ${formData.full_name} creado como ${formData.role}`)
       setTimeout(() => setSuccess(null), 3000)
-      
+
       setShowModal(false)
-      setFormData({ email: '', password: '', full_name: '', phone: '', role: 'staff', level: 'bronze' })
+      setFormData({ email: '', password: '', full_name: '', phone: '', role: 'staff' })
       fetchUsers(false)
 
     } catch (err: any) {
@@ -241,7 +234,6 @@ export default function AdminUsuariosPage() {
         full_name: formData.full_name || null,
         phone: formData.phone || null,
         role: formData.role,
-        level: formData.level || 'bronze',
         updated_at: new Date().toISOString()
       }
 
@@ -254,7 +246,7 @@ export default function AdminUsuariosPage() {
 
       setSuccess(`✅ Usuario ${formData.full_name} actualizado`)
       setTimeout(() => setSuccess(null), 3000)
-      
+
       setShowModal(false)
       setEditingUser(null)
       fetchUsers(false)
@@ -296,7 +288,7 @@ export default function AdminUsuariosPage() {
   // ============================================================
   const deleteUser = async (user: UserProfile) => {
     if (!user.id) return
-    
+
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (currentUser?.id === user.id) {
       setError('❌ No puedes eliminar tu propio usuario')
@@ -351,34 +343,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 8. AGREGAR PUNTOS DE FIDELIDAD
-  // ============================================================
-  const addLoyaltyPoints = async (user: UserProfile, points: number) => {
-    if (!user.id) return
-    setError(null)
-    setSuccess(null)
-
-    try {
-      const newPoints = (user.loyalty_points || 0) + points
-      const { error } = await supabase
-        .from('profiles')
-        .update({ loyalty_points: newPoints })
-        .eq('id', user.id)
-
-      if (error) throw error
-
-      setSuccess(`⭐ ${points} puntos agregados a ${user.full_name}`)
-      setTimeout(() => setSuccess(null), 2000)
-      fetchUsers(false)
-    } catch (err: any) {
-      console.error('Error agregando puntos:', err)
-      setError(err.message || 'Error al agregar puntos')
-      setTimeout(() => setError(null), 3000)
-    }
-  }
-
-  // ============================================================
-  // 9. ABRIR MODALES
+  // 8. ABRIR MODALES
   // ============================================================
   const openEditModal = (user: UserProfile) => {
     setEditingUser(user)
@@ -387,8 +352,7 @@ export default function AdminUsuariosPage() {
       password: '',
       full_name: user.full_name || '',
       phone: user.phone || '',
-      role: user.role || 'client',
-      level: user.level || 'bronze'
+      role: user.role || 'client'
     })
     setShowModal(true)
   }
@@ -400,14 +364,13 @@ export default function AdminUsuariosPage() {
       password: '',
       full_name: '',
       phone: '',
-      role: 'staff',
-      level: 'bronze'
+      role: 'staff'
     })
     setShowModal(true)
   }
 
   // ============================================================
-  // 10. FILTROS
+  // 9. FILTROS
   // ============================================================
   const filteredUsers = users.filter(user => {
     const matchSearch = 
@@ -421,34 +384,52 @@ export default function AdminUsuariosPage() {
   })
 
   // ============================================================
-  // 11. ESTADÍSTICAS
+  // 10. ESTADÍSTICAS
   // ============================================================
   const totalUsuarios = users.length
-  const totalAdmins = users.filter(u => u.role === 'admin' || u.role === 'owner').length
+  const totalAdmins = users.filter(u => u.role === 'admin').length
   const totalStaff = users.filter(u => u.role === 'staff').length
-  const totalClientes = users.filter(u => u.role === 'client' || u.role === 'cliente').length
-  const totalStudents = users.filter(u => u.role === 'student').length
+  const totalClientes = users.filter(u => u.role === 'client').length
 
   // ============================================================
-  // 12. VERIFICAR PERMISOS
+  // 11. VERIFICAR PERMISOS
   // ============================================================
   if (authLoading || !mounted) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="relative">
-          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: settings?.primary_color || '#DB5B9A' }} />
-          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Shield className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              USUARIOS FRESH
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
         </div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: settings?.primary_color || '#DB5B9A' }}>
-          Cargando...
-        </p>
       </div>
     )
   }
 
-  if (role !== 'admin' && role !== 'owner') {
+  if (role !== 'admin') {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4 p-4 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4 p-4 text-center">
         <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
           <Shield className="w-8 h-8" />
         </div>
@@ -456,7 +437,7 @@ export default function AdminUsuariosPage() {
           Acceso Denegado
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400 max-w-md">
-          No tienes permisos para acceder a esta página. 
+          No tienes permisos para acceder a esta página.
           <br />
           Tu rol actual es: <span className="font-bold text-rose-500">{role || 'sin rol'}</span>
           <br />
@@ -464,8 +445,8 @@ export default function AdminUsuariosPage() {
         </p>
         <button
           onClick={() => window.location.href = '/dashboard'}
-          className="px-6 py-3 rounded-xl text-white text-sm font-bold transition-all hover:scale-105"
-          style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+          className="px-6 py-3 rounded-xl text-white text-sm font-bold transition-all hover:scale-105 shadow-md"
+          style={primaryBgStyle}
         >
           Volver al Dashboard
         </button>
@@ -474,7 +455,7 @@ export default function AdminUsuariosPage() {
   }
 
   // ============================================================
-  // 13. RENDER
+  // 12. RENDER
   // ============================================================
   return (
     <motion.div 
@@ -484,85 +465,58 @@ export default function AdminUsuariosPage() {
       className="space-y-6 p-1 max-w-4xl mx-auto"
     >
 
-      {/* HEADER */}
-      <motion.div 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
-        className="relative overflow-hidden rounded-3xl p-[2px] shadow-2xl" 
-        style={brandGradient}
+      {/* ============================================================ */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
+      {/* ============================================================ */}
+      <div 
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
       >
-        <div className="absolute inset-0 opacity-30 animate-pulse" style={brandGradient} />
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }} />
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-3xl opacity-20" style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }} />
-        
-        <div className="relative z-10 rounded-[23px] p-6 md:p-8 bg-white/95 dark:bg-[#0f0c1b]/95 backdrop-blur-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <motion.div 
-                whileHover={{ rotate: -10, scale: 1.1 }}
-                className="p-4 rounded-2xl text-white shadow-xl shrink-0" 
-                style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
-              >
-                <Shield className="w-6 h-6 md:w-7 md:h-7" />
-              </motion.div>
-              <div>
-                <motion.p 
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-[10px] uppercase tracking-[0.3em] font-bold font-mono" 
-                  style={{ color: settings?.primary_color || '#DB5B9A' }}
-                >
-                  👑 Control de Acceso
-                </motion.p>
-                <motion.h2 
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-2xl md:text-4xl font-serif font-extrabold text-stone-900 dark:text-white mt-1"
-                >
-                  <span className="bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Usuarios</span> del Sistema
-                </motion.h2>
-                <motion.p 
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-xs text-stone-500 dark:text-pink-100/60 mt-1"
-                >
-                  {totalUsuarios} usuarios • Gestiona roles y permisos
-                </motion.p>
-              </div>
-            </div>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="flex items-center gap-3 self-start md:self-auto">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => { setRefreshing(true); fetchUsers(true) }}
-                disabled={refreshing}
-                className="p-2.5 rounded-xl border bg-white/50 dark:bg-[#1a1430]/40 border-pink-100/60 dark:border-fuchsia-950 text-stone-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={openCreateModal}
-                className="px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all"
-                style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
-              >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Nuevo Usuario</span>
-                <span className="sm:hidden">+</span>
-              </motion.button>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Control de Acceso
             </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+              Usuarios del Sistema
+            </h1>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              {totalUsuarios} usuarios • Gestiona roles y permisos
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            <button 
+              onClick={() => { setRefreshing(true); fetchUsers(true) }} 
+              disabled={refreshing} 
+              className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+              title="Actualizar Usuarios"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            <button 
+              onClick={openCreateModal}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-pink-50 hover:scale-105 active:scale-95 transition-all"
+            >
+              <div className="p-1 rounded-md bg-stone-900 text-white">
+                <Plus className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span>Nuevo Usuario</span>
+            </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
+      {/* ============================================================ */}
       {/* MENSAJES */}
+      {/* ============================================================ */}
       <AnimatePresence>
         {error && (
           <motion.div 
@@ -571,10 +525,8 @@ export default function AdminUsuariosPage() {
             exit={{ opacity: 0, y: -10 }}
             className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs"
           >
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-              <X className="w-4 h-4" />
-            </div>
-            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <p className="text-xs text-stone-700 dark:text-rose-400 font-medium">{error}</p>
           </motion.div>
         )}
 
@@ -585,77 +537,69 @@ export default function AdminUsuariosPage() {
             exit={{ opacity: 0, y: -10 }}
             className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex items-center gap-3 shadow-xs"
           >
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+            <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium">{success}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* KPIS */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: `${settings?.primary_color || '#DB5B9A'}10`, color: settings?.primary_color || '#DB5B9A' }}>
-            <Users className="w-4 h-4" />
+      {/* ============================================================ */}
+      {/* KPIS — 4 columnas responsivas */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
-            <h3 className="text-sm font-mono font-black text-stone-900 dark:text-pink-100">{totalUsuarios}</h3>
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-stone-900 dark:text-pink-100">{totalUsuarios}</h3>
           </div>
         </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
-            <Crown className="w-4 h-4" />
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Admins</p>
-            <h3 className="text-sm font-mono font-black text-rose-500">{totalAdmins}</h3>
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Admins</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-rose-500">{totalAdmins}</h3>
           </div>
         </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-violet-500/10 text-violet-500 shrink-0">
-            <UserCog className="w-4 h-4" />
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-violet-500/10 text-violet-500 shrink-0">
+            <UserCog className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Staff</p>
-            <h3 className="text-sm font-mono font-black text-violet-500">{totalStaff}</h3>
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Staff</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-violet-500">{totalStaff}</h3>
           </div>
         </div>
 
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-            <User className="w-4 h-4" />
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
-            <h3 className="text-sm font-mono font-black text-emerald-500">{totalClientes}</h3>
-          </div>
-        </div>
-
-        <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
-            <GraduationCap className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Students</p>
-            <h3 className="text-sm font-mono font-black text-blue-500">{totalStudents}</h3>
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-emerald-500">{totalClientes}</h3>
           </div>
         </div>
       </div>
 
+      {/* ============================================================ */}
       {/* FILTROS */}
+      {/* ============================================================ */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-3 p-3 rounded-2xl border flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
-          <Search className="w-4 h-4 shrink-0" style={{ color: settings?.primary_color || '#DB5B9A' }} />
+        <div className="flex items-center gap-3 p-3 rounded-2xl border shadow-sm flex-1 bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+          <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
           <input 
             type="text" 
             placeholder="Buscar por nombre o email..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full min-w-0"
+            className="bg-transparent border-none outline-none text-xs text-stone-800 dark:text-pink-100 placeholder:text-stone-400 w-full"
           />
           {search && (
             <button 
@@ -671,8 +615,8 @@ export default function AdminUsuariosPage() {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="px-3 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[120px]"
-            style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+            className="px-3 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[120px]"
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
           >
             <option value="todos">Todos los roles</option>
             {ROLES.map(r => (
@@ -683,8 +627,8 @@ export default function AdminUsuariosPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-3 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[110px]"
-            style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+            className="px-3 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-xs appearance-none min-w-[110px]"
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
           >
             <option value="todos">Todos</option>
             <option value="activos">Activos</option>
@@ -693,24 +637,25 @@ export default function AdminUsuariosPage() {
         </div>
       </div>
 
+      {/* ============================================================ */}
       {/* GRID DE TARJETAS */}
+      {/* ============================================================ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AnimatePresence>
           {filteredUsers.length === 0 ? (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="col-span-full text-center py-12 border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
+              className="col-span-full text-center py-16 border border-dashed rounded-2xl bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
             >
               <Users className="w-10 h-10 mx-auto mb-3 text-stone-300 dark:text-stone-600" />
-              <p className="text-xs text-stone-400 dark:text-stone-500">No se encontraron usuarios</p>
+              <p className="text-sm text-stone-500 dark:text-stone-400">No se encontraron usuarios</p>
             </motion.div>
           ) : (
             filteredUsers.map((user, index) => {
-              const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[3]
+              const roleConfig = ROLES.find(r => r.value === user.role) || ROLES[2]
               const RoleIcon = roleConfig.icon
               const isActive = user.is_active
-              const levelConfig = LEVELS.find(l => l.value === user.level) || LEVELS[0]
 
               return (
                 <motion.div
@@ -720,18 +665,16 @@ export default function AdminUsuariosPage() {
                   animate="visible"
                   exit="exit"
                   transition={{ delay: 0.05 * index }}
-                  className="rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-4 shadow-sm hover:shadow-md transition-all"
+                  className="rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 ${
-                        user.role === 'admin' || user.role === 'owner' 
+                        user.role === 'admin' 
                           ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
                           : user.role === 'staff'
                             ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500'
-                            : user.role === 'student'
-                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
-                              : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-500'
                       }`}>
                         {user.full_name?.charAt(0).toUpperCase() || 'U'}
                       </div>
@@ -745,21 +688,13 @@ export default function AdminUsuariosPage() {
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-end gap-1">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
-                        <RoleIcon className="w-3 h-3" />
-                        {roleConfig.label}
-                      </span>
-                      <span className={`text-[8px] font-mono px-2 py-0.5 rounded-full border ${
-                        user.level === 'bronze' ? 'border-amber-600/30 text-amber-600 dark:text-amber-400' :
-                        user.level === 'silver' ? 'border-gray-400/30 text-gray-600 dark:text-gray-400' :
-                        'border-yellow-500/30 text-yellow-600 dark:text-yellow-400'
-                      }`}>
-                        ⭐ {user.level}
-                      </span>
-                    </div>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider text-white bg-gradient-to-r ${roleConfig.color}`}>
+                      <RoleIcon className="w-3 h-3" />
+                      {roleConfig.label}
+                    </span>
                   </div>
 
+                  {/* Información de contacto */}
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-2 text-stone-500 dark:text-stone-400 col-span-2">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
@@ -784,28 +719,12 @@ export default function AdminUsuariosPage() {
                         <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                         {isActive ? 'Activo' : 'Inactivo'}
                       </span>
-                      {user.loyalty_points > 0 && (
-                        <span className="text-[10px] font-mono text-amber-500 flex items-center gap-1">
-                          <Gift className="w-3 h-3" />
-                          {user.loyalty_points} pts
-                        </span>
-                      )}
                     </div>
                   </div>
 
+                  {/* Acciones */}
                   <div className="mt-3 pt-3 border-t border-pink-100/60 dark:border-fuchsia-950/50 flex items-center justify-end gap-1 flex-wrap">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => addLoyaltyPoints(user, 50)}
-                      className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
-                      title="Agregar 50 puntos"
-                    >
-                      <Gift className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={() => toggleUserStatus(user)}
                       className={`p-2 rounded-xl transition-colors ${
                         isActive 
@@ -815,34 +734,28 @@ export default function AdminUsuariosPage() {
                       title={isActive ? 'Desactivar' : 'Activar'}
                     >
                       {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    </button>
+                    <button
                       onClick={() => openEditModal(user)}
                       className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 text-stone-400 hover:text-blue-500 transition-colors"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    </button>
+                    <button
                       onClick={() => resetPassword(user.email)}
                       className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 text-stone-400 hover:text-amber-500 transition-colors"
                       title="Resetear contraseña"
                     >
                       <Key className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    </button>
+                    <button
                       onClick={() => deleteUser(user)}
                       className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 text-stone-400 hover:text-rose-500 transition-colors"
                       title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                    </button>
                   </div>
                 </motion.div>
               )
@@ -851,23 +764,15 @@ export default function AdminUsuariosPage() {
         </AnimatePresence>
       </div>
 
-      {/* MODAL */}
+      {/* ============================================================ */}
+      {/* MODAL — SIN LEVEL */}
+      {/* ============================================================ */}
       <AnimatePresence>
         {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+            <div 
+              className="relative w-full max-w-lg rounded-2xl shadow-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg rounded-3xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <button
                 onClick={() => setShowModal(false)}
@@ -877,7 +782,7 @@ export default function AdminUsuariosPage() {
               </button>
 
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}>
+                <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
                   {editingUser ? <UserCog className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
                 </div>
                 <h3 className="text-xl font-serif font-extrabold text-stone-800 dark:text-pink-100">
@@ -895,7 +800,7 @@ export default function AdminUsuariosPage() {
                     value={formData.full_name}
                     onChange={(e) => setFormData({...formData, full_name: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     placeholder="Ej: María González"
                     required
                   />
@@ -910,7 +815,7 @@ export default function AdminUsuariosPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     placeholder="nombre@ejemplo.com"
                     required
                     disabled={!!editingUser}
@@ -928,7 +833,7 @@ export default function AdminUsuariosPage() {
                         value={formData.password}
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
                         className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                        style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                         placeholder="••••••••"
                         required={!editingUser}
                       />
@@ -952,44 +857,26 @@ export default function AdminUsuariosPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm"
-                    style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     placeholder="11 2345 6789"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                      Rol *
-                    </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
-                      required
-                    >
-                      {ROLES.map(r => (
-                        <option key={r.value} value={r.value}>{r.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
-                      Nivel
-                    </label>
-                    <select
-                      value={formData.level}
-                      onChange={(e) => setFormData({...formData, level: e.target.value})}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                      style={{ '--tw-ring-color': settings?.primary_color || '#DB5B9A' } as React.CSSProperties}
-                    >
-                      {LEVELS.map(l => (
-                        <option key={l.value} value={l.value}>{l.label}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5">
+                    Rol *
+                  </label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    className="w-full px-4 py-2.5 rounded-xl border bg-white dark:bg-[#0f0c1b] border-pink-100/60 dark:border-fuchsia-950 text-stone-800 dark:text-pink-100 focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                    required
+                  >
+                    {ROLES.map(r => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -1002,18 +889,26 @@ export default function AdminUsuariosPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
-                    style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md"
+                    style={primaryBgStyle}
                   >
                     <Check className="w-4 h-4" />
                     {editingUser ? 'Actualizar' : 'Crear Usuario'}
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
+
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+      `}</style>
 
     </motion.div>
   )
