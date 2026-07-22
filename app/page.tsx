@@ -23,7 +23,7 @@ import {
   FaMapMarkerAlt,
   FaRegClock
 } from 'react-icons/fa'
-import { GiNail, GiSparkles, GiScissors, GiLipstick } from 'react-icons/gi'
+import { GiNails, GiSparkles, GiScissors, GiLipstick } from 'react-icons/gi'
 
 // ============================================================
 // COLORES
@@ -64,7 +64,7 @@ const SERVICES = [
     description: 'Limpieza profunda de cutículas con fresas de precisión y escudo de gel estructural que unifica y protege la uña natural.',
     price: 45,
     duration: 90,
-    icon: GiNail,
+    icon: GiNails,
     tag: '⭐ Más Solicitado',
     color: 'from-pink-500 to-rose-500'
   },
@@ -171,7 +171,7 @@ const Header = () => {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden overflow-hidden bg-[#0d0b0a]/95 backdrop-blur-xl border-t border-[#C9A96E]/10">
             <div className="px-4 py-6 space-y-4">
               <Link href="#servicios" className="flex items-center gap-3 px-4 py-3 rounded-xl text-stone-400 hover:text-white hover:bg-stone-900/50 transition-all" onClick={() => setIsOpen(false)}>
-                <GiNail className="w-4 h-4 text-[#C9A96E]" /> Servicios
+                <GiNails className="w-4 h-4 text-[#C9A96E]" /> Servicios
               </Link>
               <Link href="#galeria" className="flex items-center gap-3 px-4 py-3 rounded-xl text-stone-400 hover:text-white hover:bg-stone-900/50 transition-all" onClick={() => setIsOpen(false)}>
                 <FaGem className="w-4 h-4 text-[#C9A96E]" /> Galería
@@ -201,10 +201,8 @@ const HeroSection = () => {
         <div className="absolute top-[-30%] left-[-10%] w-[800px] h-[800px] rounded-full filter blur-[150px] animate-pulse" style={{ background: `${COLORS.pink}10` }} />
         <div className="absolute bottom-[-30%] right-[-10%] w-[800px] h-[800px] rounded-full filter blur-[150px] animate-pulse delay-1000" style={{ background: `${COLORS.gold}10` }} />
         
-        {/* Partículas decorativas */}
         <div className="absolute inset-0 bg-[radial-gradient(#1c1917_1px,transparent_1px)] [background-size:20px_20px] opacity-20" />
         
-        {/* Líneas decorativas animadas */}
         <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 1000 600">
           <path d="M 0 100 Q 200 50 400 120 T 800 80 T 1000 150" stroke="#C9A96E" strokeWidth="1" fill="none" className="animate-[path_8s_ease-in-out_infinite]" />
           <path d="M 0 300 Q 200 250 400 320 T 800 280 T 1000 350" stroke="#DB5B9A" strokeWidth="0.5" fill="none" className="animate-[path_10s_ease-in-out_infinite_delay-2s]" />
@@ -257,7 +255,6 @@ const HeroSection = () => {
             </Link>
           </motion.div>
 
-          {/* Stats */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
