@@ -42,7 +42,7 @@ export default function AdminLayout({
         <main className="flex-1 px-4 pb-4 lg:px-6 lg:pb-6 pt-0 overflow-y-auto h-full w-full">
           
           {/* 🧱 Ajustado a h-[60px] para que coincida con la altura exacta del Header en móviles sin empujar de más */}
-          <div className="h-[30px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
+          <div className="h-[20px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
           
           {children}
         </main>
