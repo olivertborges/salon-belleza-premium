@@ -5,8 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import AdminSidebar from '@/components/layout/AdminSidebar'
-// Importamos la barra superior global definitiva
-import HeaderTop from '@/components/layout/HeaderTop' 
+import AdminHeader from '@/components/layout/AdminHeader'
 
 export default function AdminLayout({
   children,
@@ -20,6 +19,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // 🔓 BYPASS TOTAL PARA TERMUX EN DESARROLLO
+  // Desactivamos temporalmente las expulsiones automáticas al login
   useEffect(() => {
     console.log('📱 [Termux-Layout-Bypass] Estado actual:', { session: !!session, role, loading });
   }, [role, loading, session])
@@ -34,10 +34,12 @@ export default function AdminLayout({
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Reemplazamos AdminHeader por HeaderTop y le conectamos el estado del sidebar */}
-        <HeaderTop setIsSidebarOpen={setSidebarOpen} />
+        <AdminHeader 
+          collapsed={collapsed} 
+          onMenuClick={() => setSidebarOpen(true)} 
+        />
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           {children}
         </main>
       </div>
