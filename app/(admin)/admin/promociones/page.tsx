@@ -1,4 +1,3 @@
-// app/(admin)/promociones/page.tsx
 // @ts-nocheck
 'use client'
 
@@ -31,7 +30,8 @@ import {
   Loader2,
   Percent,
   Copy,
-  Calendar
+  Calendar,
+  PlusCircle
 } from 'lucide-react'
 
 interface Promocion {
@@ -41,10 +41,9 @@ interface Promocion {
   description: string
   image_url: string | null
   discount_percent: number
-  discount_amount: number | null
   code: string | null
   valid_until: string
-  category: 'flash' | 'premium' | 'seasonal' | 'welcome' | 'referral'
+  category: 'flash' | 'welcome' | 'referral' | 'special'
   style: 'volante' | 'tarjeta' | 'flyer'
   is_active: boolean
   featured: boolean
@@ -52,6 +51,21 @@ interface Promocion {
   uses_count: number
   uses_limit: number | null
 }
+
+// ✅ CATEGORÍAS FINALES
+const categories = [
+  { value: 'flash', label: '⚡ Flash', color: 'from-red-500 to-red-600' },
+  { value: 'welcome', label: '🎁 Welcome', color: 'from-emerald-400 to-emerald-600' },
+  { value: 'referral', label: '🔗 Referral', color: 'from-blue-400 to-blue-600' },
+  { value: 'special', label: '⭐ Special', color: 'from-purple-400 to-purple-600' }
+]
+
+// ✅ STYLES
+const styles = [
+  { value: 'volante', label: '📄 Volante' },
+  { value: 'tarjeta', label: '💳 Tarjeta' },
+  { value: 'flyer', label: '📋 Flyer' }
+]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -84,6 +98,7 @@ export default function AdminPromocionesPage() {
   const { settings } = useSettings()
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
 
   const [promociones, setPromociones] = useState<Promocion[]>([])
   const [filteredPromociones, setFilteredPromociones] = useState<Promocion[]>([])
@@ -98,8 +113,10 @@ export default function AdminPromocionesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
+
+  const primaryBgStyle = { backgroundColor: primaryColor }
 
   useEffect(() => {
     loadPromociones()
@@ -226,40 +243,60 @@ export default function AdminPromocionesPage() {
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'flash': return <Flame className="w-4 h-4" />
-      case 'premium': return <Crown className="w-4 h-4" />
       case 'welcome': return <Gift className="w-4 h-4" />
-      case 'seasonal': return <Sparkles className="w-4 h-4" />
-      default: return <Tag className="w-4 h-4" />
+      case 'referral': return <Users className="w-4 h-4" />
+      default: return <Star className="w-4 h-4" />
     }
   }
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'flash': return 'Flash Sale'
-      case 'premium': return 'Premium'
-      case 'welcome': return 'Bienvenida'
-      case 'seasonal': return 'Temporada'
-      default: return 'Especial'
+      case 'flash': return 'Flash'
+      case 'welcome': return 'Welcome'
+      case 'referral': return 'Referral'
+      default: return 'Special'
     }
   }
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'flash': return 'from-red-500 to-red-600'
-      case 'premium': return 'from-amber-400 to-amber-600'
-      case 'welcome': return 'from-emerald-400 to-emerald-600'
-      case 'seasonal': return 'from-purple-400 to-purple-600'
-      default: return `from-[${primaryColor}] to-[${settings?.secondary_color || '#E5A46E'}]`
-    }
+    const found = categories.find(c => c.value === category)
+    return found?.color || 'from-purple-400 to-purple-600'
+  }
+
+  const getStyleLabel = (style: string) => {
+    const found = styles.find(s => s.value === style)
+    return found?.label || style
   }
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4">
-        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: primaryColor }} />
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Cargando Promociones...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
+        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
+        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
+        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
+            <Gift className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <div className="space-y-1.5 text-center">
+            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
+              CARGANDO
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+              PROMOCIONES FRESH
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span 
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -267,63 +304,58 @@ export default function AdminPromocionesPage() {
   return (
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
 
-      {/* HEADER */}
-      <div className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl" style={brandGradient}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={{ backgroundColor: primaryColor }}>
-              <Gift className="w-5 h-5 md:w-6 md:h-6" />
+      {/* ============================================================ */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
+      {/* ============================================================ */}
+      <div 
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
+      >
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Gestión de Promociones
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: primaryColor }}>
-                ✨ {settings?.business_name || 'Fresh Nails Studio'}
-              </p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Gestión de Promociones
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                {filteredPromociones.length} promociones encontradas
-              </p>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+              Promociones Fresh Nails
+            </h1>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              Crea y gestiona ofertas, descuentos y códigos de referido para tus clientes.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
-            {/* ✅ BOTÓN DE USOS - NUEVO */}
-            <Link 
-              href="/admin/promociones/uso"
-              className="px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100/60 dark:border-purple-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: '#8B5CF6' }}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Usos</span>
-              <span className="sm:inline">📊</span>
-            </Link>
-
+          <div className="flex items-center gap-3 self-start md:self-center shrink-0">
             <button 
               onClick={() => { setRefreshing(true); loadPromociones() }} 
               disabled={refreshing} 
-              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: primaryColor }}
+              className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+              title="Actualizar Promociones"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Actualizar</span>
-              <span className="sm:hidden">⟳</span>
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+
             <Link 
               href="/admin/promociones/crear"
-              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ backgroundColor: primaryColor }}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-pink-50 hover:scale-105 active:scale-95 transition-all"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Nueva</span>
-              <span className="sm:inline">+</span>
+              <div className="p-1 rounded-md bg-stone-900 text-white">
+                <Plus className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span>Nueva Promoción</span>
             </Link>
           </div>
         </div>
       </div>
 
+      {/* ============================================================ */}
       {/* MENSAJES */}
+      {/* ============================================================ */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
@@ -337,8 +369,55 @@ export default function AdminPromocionesPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
+      {/* KPIS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
+            <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-stone-900 dark:text-pink-100">{promociones.length}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Activas</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-emerald-500">{promociones.filter(p => p.is_active).length}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Destacadas</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-amber-500">{promociones.filter(p => p.featured).length}</h3>
+          </div>
+        </div>
+
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-500 shrink-0">
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Usos</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-purple-500">{promociones.reduce((sum, p) => sum + (p.uses_count || 0), 0)}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================ */}
       {/* FILTROS */}
-      <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+      {/* ============================================================ */}
+      <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
         <div className="flex-1 flex items-center gap-3 min-w-0">
           <Search className="w-4 h-4 shrink-0" style={{ color: primaryColor }} />
           <input 
@@ -354,19 +433,18 @@ export default function AdminPromocionesPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none`}
+            className="px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none"
           >
             <option value="all">Todas</option>
-            <option value="flash">Flash</option>
-            <option value="premium">Premium</option>
-            <option value="seasonal">Temporada</option>
-            <option value="welcome">Bienvenida</option>
+            {categories.map(cat => (
+              <option key={cat.value} value={cat.value}>{cat.label}</option>
+            ))}
           </select>
 
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className={`px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none`}
+            className="px-3 py-2 rounded-xl text-xs border bg-white dark:bg-[#0f0c1b] text-stone-800 dark:text-pink-100 border-pink-100/60 dark:border-fuchsia-950 flex-1 sm:flex-none"
           >
             <option value="all">Todos</option>
             <option value="active">Activas</option>
@@ -375,27 +453,9 @@ export default function AdminPromocionesPage() {
         </div>
       </div>
 
-      {/* KPIS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
-          <p className="text-2xl font-bold text-stone-900 dark:text-white">{promociones.length}</p>
-          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Total</p>
-        </div>
-        <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
-          <p className="text-2xl font-bold text-emerald-500">{promociones.filter(p => p.is_active).length}</p>
-          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Activas</p>
-        </div>
-        <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
-          <p className="text-2xl font-bold text-amber-500">{promociones.filter(p => p.featured).length}</p>
-          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Destacadas</p>
-        </div>
-        <div className="rounded-xl p-3 border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 text-center">
-          <p className="text-2xl font-bold text-purple-500">{promociones.reduce((sum, p) => sum + (p.uses_count || 0), 0)}</p>
-          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Usos</p>
-        </div>
-      </div>
-
+      {/* ============================================================ */}
       {/* TARJETAS DE PROMOCIONES */}
+      {/* ============================================================ */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -409,7 +469,7 @@ export default function AdminPromocionesPage() {
             <Link 
               href="/admin/promociones/crear"
               className="inline-block mt-4 px-4 py-2 rounded-xl text-white text-xs font-bold hover:scale-105 transition-all"
-              style={{ backgroundColor: primaryColor }}
+              style={primaryBgStyle}
             >
               Crear primera promoción
             </Link>
@@ -419,13 +479,13 @@ export default function AdminPromocionesPage() {
             <motion.div
               key={promo.id}
               variants={itemVariants}
-              className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
+              className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
                 isDark 
                   ? 'bg-[#130f24] border-fuchsia-950 hover:border-fuchsia-800' 
-                  : 'bg-white border-pink-100/60 hover:border-pink-300 hover:shadow-lg'
+                  : 'bg-white border-pink-100/60 hover:border-pink-300'
               }`}
             >
-              {/* Imagen */}
+              {/* Imagen o placeholder */}
               {promo.image_url ? (
                 <div className="relative aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800">
                   <img 
@@ -441,7 +501,7 @@ export default function AdminPromocionesPage() {
                   )}
                 </div>
               ) : (
-                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900">
+                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200 dark:from-stone-800 dark:to-stone-900 relative">
                   <Percent className="w-12 h-12 text-stone-300 dark:text-stone-600" />
                   {promo.discount_percent > 0 && (
                     <div className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm text-white text-lg font-bold border border-amber-400/30">
@@ -462,6 +522,9 @@ export default function AdminPromocionesPage() {
                     <Star className="w-2.5 h-2.5 fill-current" /> Destacada
                   </span>
                 )}
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest bg-stone-800/80 text-white/90 shadow-sm">
+                  {getStyleLabel(promo.style)}
+                </span>
               </div>
 
               {/* Contenido */}
@@ -541,6 +604,15 @@ export default function AdminPromocionesPage() {
           ))
         )}
       </motion.div>
+
+      {/* ============================================================ */}
+      {/* STYLES GLOBALES */}
+      {/* ============================================================ */}
+      <style jsx global>{`
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+      `}</style>
+
     </div>
   )
 }
