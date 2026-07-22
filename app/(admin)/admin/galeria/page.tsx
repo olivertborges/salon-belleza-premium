@@ -14,7 +14,7 @@ import {
   Check, Eye, EyeOff, User,
   Layers, Search, RefreshCw,
   Info, CheckCircle2, AlertCircle,
-  Sparkles, Crown, Star
+  Sparkles, Crown, Star, Plus
 } from 'lucide-react'
 
 type Photo = {
@@ -465,50 +465,52 @@ export default function GaleriaAdminPage() {
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
 
       {/* ============================================================ */}
-      {/* CABECERA PRINCIPAL — IDÉNTICA AL DASHBOARD */}
+      {/* CABECERA PRINCIPAL — IDÉNTICA A LA DE AGENDA */}
       {/* ============================================================ */}
       <div 
-        className="relative overflow-hidden rounded-3xl p-[1px] shadow-xl"
-        style={brandGradient}
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
+        }}
       >
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        <div className="relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0f0c1b]">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0" style={primaryBgStyle}>
-              <Camera className="w-5 h-5 md:w-6 md:h-6" />
+        {/* Efecto de Luces y Brillos de Fondo */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          {/* Textos Principales */}
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Portafolio del Salón
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-widest font-bold font-mono truncate" style={{ color: primaryColor }}>
-                ✨ {settings?.business_name || 'Salón VIP'}
-              </p>
-              <h2 className="text-xl md:text-2xl font-serif font-extrabold text-stone-900 dark:text-white mt-0.5 truncate">
-                Galería Fresh Nails
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-pink-100/60 mt-0.5 truncate">
-                Portafolio de trabajos y arte del salón
-              </p>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
+              Galería Fresh Nails
+            </h1>
+            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+              Administra el portafolio comercial del salón, organiza tus trabajos y destaca el arte de tu equipo.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+          {/* Acciones y Botones */}
+          <div className="flex items-center gap-3 self-start md:self-center shrink-0">
             <button 
               onClick={() => fetchPhotos(false)} 
               disabled={refreshing} 
-              className="px-3 py-2 rounded-xl bg-pink-50 dark:bg-fuchsia-950/40 border border-pink-100/60 dark:border-fuchsia-900/40 hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={{ color: primaryColor }}
+              className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+              title="Actualizar Galería"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
-              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+
             <button 
               onClick={() => { resetForm(); setShowModal(true); }}
-              className="px-3 py-2 rounded-xl text-white hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0"
-              style={primaryBgStyle}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-pink-50 hover:scale-105 active:scale-95 transition-all"
             >
-              <UploadCloud className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Subir Foto</span>
-              <span className="sm:hidden">+</span>
+              <div className="p-1 rounded-md bg-stone-900 text-white">
+                <Plus className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span>Nueva Foto</span>
             </button>
           </div>
         </div>
@@ -536,7 +538,7 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* ESTADÍSTICAS SIMPLIFICADAS */}
+      {/* ESTADÍSTICAS */}
       {/* ============================================================ */}
       <div className="grid grid-cols-4 gap-3">
         <div className="rounded-2xl p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-3 min-w-0">
@@ -729,42 +731,70 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX */}
+      {/* LIGHTBOX CORREGIDO — Vertical y Horizontal se ven bien */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
-        <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
-          <div className="relative flex-1 flex items-center justify-center p-4 h-[65vh] md:h-full" onClick={(e) => e.stopPropagation()}>
-            <button onClick={closeLightbox} className="absolute top-6 right-6 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white z-50 md:hidden">
+        <div 
+          className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" 
+          onClick={closeLightbox}
+        >
+          {/* Contenedor de la imagen - ocupa todo el espacio disponible */}
+          <div 
+            className="relative flex-1 flex items-center justify-center p-4 h-[60vh] md:h-full min-h-[300px]" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botón cerrar (móvil) */}
+            <button 
+              onClick={closeLightbox} 
+              className="absolute top-4 right-4 p-2.5 rounded-xl bg-black/50 hover:bg-black/70 text-white z-50 md:hidden backdrop-blur-sm border border-white/10"
+            >
               <X className="w-5 h-5" />
             </button>
 
+            {/* Navegación */}
             {filteredPhotos.length > 1 && (
               <>
-                <button onClick={() => navigateLightbox('prev')} className="absolute left-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40">
+                <button 
+                  onClick={() => navigateLightbox('prev')} 
+                  className="absolute left-3 p-3 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
+                >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
-                <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all z-40">
+                <button 
+                  onClick={() => navigateLightbox('next')} 
+                  className="absolute right-3 p-3 rounded-xl bg-black/40 hover:bg-black/60 text-white transition-all z-40 backdrop-blur-sm border border-white/10"
+                >
                   <ChevronRight className="w-6 h-6" />
                 </button>
               </>
             )}
 
+            {/* Contador */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-[10px] tracking-[0.2em] font-mono z-40 bg-black/50 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
+              {lightboxIndex + 1} / {filteredPhotos.length}
+            </div>
+
+            {/* Imagen - con object-contain para que se ajuste sin recortar */}
             <img 
               src={getImageUrl(selectedPhoto)} 
               alt={selectedPhoto.title || ''} 
-              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+              className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-xl shadow-2xl"
+              style={{ maxHeight: '85vh' }}
             />
-
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 text-[10px] tracking-[0.2em] font-mono z-50 bg-black/40 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
-              {lightboxIndex + 1} / {filteredPhotos.length}
-            </div>
           </div>
 
-          <div className="w-full md:w-72 bg-stone-900 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
+          {/* Panel de información - se mantiene igual */}
+          <div 
+            className="w-full md:w-72 bg-stone-900/95 md:h-full overflow-y-auto p-6 flex flex-col justify-between text-stone-200 border-t md:border-t-0 md:border-l border-white/10" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-stone-400">Detalle</span>
-                <button onClick={closeLightbox} className="hidden md:block p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white">
+                <button 
+                  onClick={closeLightbox} 
+                  className="hidden md:block p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
