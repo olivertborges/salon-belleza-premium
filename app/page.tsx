@@ -152,8 +152,8 @@ const Header = () => {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#servicios" className="text-sm text-stone-400 hover:text-white transition-colors">Servicios</Link>
-            <Link href="#galeria" className="text-sm text-stone-400 hover:text-white transition-colors">Galería</Link>
+            <Link href="/servicios" className="text-sm text-stone-400 hover:text-white transition-colors">Servicios</Link>
+            <Link href="/galeria" className="text-sm text-stone-400 hover:text-white transition-colors">Galería</Link>
             <Link href="#testimonios" className="text-sm text-stone-400 hover:text-white transition-colors">Testimonios</Link>
             <Link href="/agenda" className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] hover:opacity-90 transition-all shadow-lg shadow-[#DB5B9A]/20">
               Agendar Cita
