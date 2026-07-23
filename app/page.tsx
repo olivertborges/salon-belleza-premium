@@ -2,7 +2,6 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from 'framer-motion'
@@ -28,10 +27,11 @@ import {
   FaRegSun,
   FaCrown,
   FaRegStar,
-  FaSprayCan,
-  FaFeatherAlt
+  FaEye,
+  FaHeart,
+  FaClock
 } from 'react-icons/fa'
-import { GiNails, GiScissors, GiLipstick, GiFlowerEmblem, GiRose } from 'react-icons/gi'
+import { GiNails, GiScissors, GiLipstick, GiFlowerStar, GiSparkles } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
 // ============================================================
@@ -84,12 +84,27 @@ interface GalleryImage {
   category?: string
 }
 
-interface Testimonial {
-  id: string
-  client_name: string
-  comment: string
-  rating: number
-  avatar_url?: string
+// ============================================================
+// ICONOS Y COLORES POR CATEGORÍA
+// ============================================================
+const CATEGORY_ICONS: Record<string, any> = {
+  'Uñas': GiNails,
+  'Micropigmentación': GiSparkles,
+  'Peluquería': GiScissors,
+  'Cejas': FaEye,
+  'Estética': GiFlowerStar,
+  'Depilación': FaHeart,
+  'default': FaGem
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Uñas': 'from-pink-500 to-rose-500',
+  'Micropigmentación': 'from-amber-500 to-orange-500',
+  'Peluquería': 'from-emerald-500 to-teal-500',
+  'Cejas': 'from-violet-500 to-purple-500',
+  'Estética': 'from-rose-500 to-pink-500',
+  'Depilación': 'from-fuchsia-500 to-pink-500',
+  'default': 'from-pink-500 to-rose-500'
 }
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -110,6 +125,70 @@ const GALLERY_FALLBACK = [
   'https://images.unsplash.com/photo-1560869713-7d0a2943087e?w=600&h=800&fit=crop',
   'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=800&fit=crop'
 ]
+
+// ============================================================
+// FUNCIÓN PARA OBTENER TENANT_ID
+// ============================================================
+const getTenantId = async (): Promise<string | null> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user?.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
+    }
+    if (session?.user?.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    if (session?.user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', session.user.id)
+        .maybeSingle() as any
+      
+      if (profile?.tenant_id) {
+        return profile.tenant_id
+      }
+    }
+
+    if (session?.user?.id) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('tenant_id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle() as any
+      
+      if (client?.tenant_id) {
+        return client.tenant_id
+      }
+    }
+
+    const { data: firstAppointment } = await supabase
+      .from('appointments')
+      .select('tenant_id')
+      .limit(1)
+      .maybeSingle() as any
+    
+    if (firstAppointment?.tenant_id) {
+      return firstAppointment.tenant_id
+    }
+
+    const { data: firstService } = await supabase
+      .from('services')
+      .select('tenant_id')
+      .limit(1)
+      .maybeSingle() as any
+    
+    if (firstService?.tenant_id) {
+      return firstService.tenant_id
+    }
+
+    return null
+  } catch (error) {
+    console.error('Error obteniendo tenant_id:', error)
+    return null
+  }
+}
 
 // ============================================================
 // HEADER
@@ -544,9 +623,20 @@ const EsenciaSection = () => {
 const ServicesSection = ({ services }: { services: Service[] }) => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.1 })
-  const [hoveredServiceId, setHoveredServiceId] = useState<string | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
-  if (services.length === 0) return null
+  if (services.length === 0) {
+    return (
+      <section id="servicios" className="py-32 bg-[#FFF8F5]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <p className="text-[#5C4A3E] font-light">No hay servicios disponibles</p>
+        </div>
+      </section>
+    )
+  }
+
+  // Tomar solo los primeros 4 para la landing
+  const displayServices = services.slice(0, 4)
 
   return (
     <section id="servicios" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
@@ -577,9 +667,11 @@ const ServicesSection = ({ services }: { services: Service[] }) => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.slice(0, 4).map((service, idx) => {
+          {displayServices.map((service, idx) => {
+            const Icon = CATEGORY_ICONS[service.category] || CATEGORY_ICONS.default
+            const color = CATEGORY_COLORS[service.category] || CATEGORY_COLORS.default
             const imageUrl = service.image_url || CATEGORY_IMAGES[service.category] || CATEGORY_IMAGES.default
-            const isHovered = hoveredServiceId === service.id
+            const isHovered = hoveredId === service.id
 
             return (
               <motion.div
@@ -587,8 +679,8 @@ const ServicesSection = ({ services }: { services: Service[] }) => {
                 initial={{ opacity: 0, y: 40 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
                 transition={{ delay: idx * 0.1 }}
-                onMouseEnter={() => setHoveredServiceId(service.id)}
-                onMouseLeave={() => setHoveredServiceId(null)}
+                onMouseEnter={() => setHoveredId(service.id)}
+                onMouseLeave={() => setHoveredId(null)}
                 className="group relative bg-white border border-[#F0E4DA] hover:border-[#D4AF37] rounded-2xl overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
               >
                 <div className={`absolute inset-0 transition-all duration-700 ${
@@ -606,7 +698,7 @@ const ServicesSection = ({ services }: { services: Service[] }) => {
                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${
                     isHovered ? 'bg-[#D4AF37] text-white scale-110' : 'bg-[#FFF8F5] text-[#D4AF37]'
                   }`}>
-                    <GiNails className="text-2xl" />
+                    <Icon className="text-2xl" />
                   </div>
                   
                   <h3 className={`text-xl font-serif mt-6 transition-colors duration-500 ${
@@ -626,7 +718,8 @@ const ServicesSection = ({ services }: { services: Service[] }) => {
                       }`}>
                         ${service.price}
                       </span>
-                      <span className="text-xs text-[#5C4A3E] ml-2">
+                      <span className="text-xs text-[#5C4A3E] ml-2 flex items-center gap-1">
+                        <FaClock className="text-[10px]" />
                         {service.duration}min
                       </span>
                     </div>
@@ -659,13 +752,20 @@ const ServicesSection = ({ services }: { services: Service[] }) => {
 }
 
 // ============================================================
-// GALERÍA - CON DATOS DE LA DB
+// GALERÍA
 // ============================================================
-const GallerySection = ({ images }: { images: GalleryImage[] }) => {
+const GallerySection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.1 })
 
-  const displayImages = images.length > 0 ? images : GALLERY_FALLBACK
+  const GALLERY_IMAGES = [
+    'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&h=800&fit=crop',
+    'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&h=800&fit=crop',
+    'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&h=800&fit=crop',
+    'https://images.unsplash.com/photo-1585885970325-81cba4494c27?w=600&h=800&fit=crop',
+    'https://images.unsplash.com/photo-1560869713-7d0a2943087e?w=600&h=800&fit=crop',
+    'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=800&fit=crop'
+  ]
 
   return (
     <section id="galeria" ref={ref} className="py-32 bg-white relative overflow-hidden">
@@ -704,33 +804,22 @@ const GallerySection = ({ images }: { images: GalleryImage[] }) => {
           transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
           className="flex gap-4 w-max"
         >
-          {[...displayImages, ...displayImages].map((img, idx) => {
-            const imageUrl = typeof img === 'string' ? img : img.image_url
-            const title = typeof img === 'string' ? 'Creación' : img.title || 'Creación exclusiva'
-            const clientName = typeof img === 'string' ? 'Fresh Nails' : img.client_name || 'Fresh Nails'
-
-            return (
-              <div key={idx} className="w-72 md:w-96 flex-shrink-0 group">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-xl">
-                  <img 
-                    src={imageUrl} 
-                    alt={title}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                    <p className="text-white text-sm font-light tracking-wider">
-                      {title}
-                    </p>
-                    <p className="text-white/50 text-xs font-light mt-1">
-                      {clientName}
-                    </p>
-                  </div>
+          {[...GALLERY_IMAGES, ...GALLERY_IMAGES].map((img, idx) => (
+            <div key={idx} className="w-72 md:w-96 flex-shrink-0 group">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-xl">
+                <img 
+                  src={img} 
+                  alt={`Creación ${idx + 1}`}
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                  <p className="text-white text-sm font-light tracking-wider">✨ Creación exclusiva</p>
                 </div>
               </div>
-            )
-          })}
+            </div>
+          ))}
         </motion.div>
       </div>
 
@@ -1033,53 +1122,24 @@ const Footer = () => (
 // ============================================================
 export default function Home() {
   const [services, setServices] = useState<Service[]>([])
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
+    const loadServices = async () => {
       try {
-        let tenantId: string | null = null
+        setLoading(true)
         
-        // Intentar obtener tenant_id de la sesión
-        const { data: { session } } = await supabase.auth.getSession()
-        tenantId = session?.user?.user_metadata?.tenant_id || 
-                    session?.user?.app_metadata?.tenant_id || null
-
-        // Si no hay tenant_id, buscar en appointments
-        if (!tenantId) {
-          const { data: firstAppointment, error } = await supabase
-            .from('appointments')
-            .select('tenant_id')
-            .limit(1)
-            .maybeSingle()
-          
-          if (!error && firstAppointment) {
-            tenantId = firstAppointment.tenant_id
-          }
-        }
-
-        // Si aún no hay tenant_id, buscar en profiles
-        if (!tenantId && session?.user?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('tenant_id')
-            .eq('id', session.user.id)
-            .maybeSingle()
-          
-          if (profile) {
-            tenantId = profile.tenant_id
-          }
-        }
+        const tenantId = await getTenantId()
+        console.log('🔍 Tenant ID encontrado:', tenantId)
 
         if (!tenantId) {
+          console.warn('⚠️ No se encontró tenant_id')
+          setServices([])
           setLoading(false)
           return
         }
 
-        // Cargar servicios
-        const { data: servicesData } = await supabase
+        const { data, error } = await supabase
           .from('services')
           .select('*')
           .eq('tenant_id', tenantId)
@@ -1087,68 +1147,22 @@ export default function Home() {
           .order('category', { ascending: true })
           .order('name', { ascending: true })
 
-        if (servicesData) setServices(servicesData)
-
-        // Cargar galería
-        let allImages: GalleryImage[] = []
-
-        const { data: adminPhotos } = await supabase
-          .from('gallery')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(8)
-
-        if (adminPhotos) {
-          const mapped = adminPhotos.map((p: any) => ({
-            ...p,
-            source: 'admin' as const,
-            client_name: p.client_name || 'Fresh Nails Studio',
-            category: p.category || 'Exclusivo'
-          }))
-          allImages = [...allImages, ...mapped]
+        if (error) {
+          console.error('❌ Error cargando servicios:', error)
+          setServices([])
+        } else {
+          console.log(`✅ ${data?.length || 0} servicios cargados`)
+          setServices(data || [])
         }
-
-        const { data: clientPhotos } = await supabase
-          .from('client_gallery')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true)
-          .eq('is_public', true)
-          .order('created_at', { ascending: false })
-          .limit(6)
-
-        if (clientPhotos) {
-          const mapped = clientPhotos.map((p: any) => ({
-            id: p.id,
-            image_url: p.after_image_url || p.image_url || p.before_image_url || '',
-            title: p.title || 'Aporte de Cliente',
-            description: p.description || '',
-            is_active: p.is_active !== undefined ? p.is_active : true,
-            is_public: p.is_public !== undefined ? p.is_public : true,
-            created_at: p.created_at,
-            source: 'client' as const,
-            client_name: p.client_name || 'Cliente',
-            category: p.category || 'Exclusivo'
-          }))
-          allImages = [...allImages, ...mapped]
-        }
-
-        allImages.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
-
-        setGalleryImages(allImages.slice(0, 6))
-
       } catch (error) {
-        console.error('Error cargando datos:', error)
+        console.error('❌ Error en loadServices:', error)
+        setServices([])
       } finally {
         setLoading(false)
       }
     }
 
-    loadData()
+    loadServices()
   }, [])
 
   if (loading) {
@@ -1168,7 +1182,7 @@ export default function Home() {
       <HeroSection />
       <EsenciaSection />
       <ServicesSection services={services} />
-      <GallerySection images={galleryImages} />
+      <GallerySection />
       <TestimonialsSection />
       <CtaSection />
       <Footer />
