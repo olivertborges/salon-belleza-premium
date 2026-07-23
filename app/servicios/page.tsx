@@ -3,19 +3,13 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useTheme } from '@/contexts/ThemeContext'
-import { useAuth } from '@/contexts/AuthContext'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Scissors, Sparkles, Star, Heart, 
-  Clock, User, ChevronRight, Calendar, 
-  Crown, ArrowRight, Gem,
-  Wind, Droplets, Flower2, 
-  Waves, Sparkle, Leaf, Eye, Brush, Palette,
-  StarHalf, MessageCircle, ThumbsUp, Send, X,
-  AlertCircle, CheckCircle2, Loader2
+  Sparkles, Star, Clock, ArrowRight, 
+  MessageCircle, X, AlertCircle, CheckCircle2, Loader2,
+  Eye, Gem, Crown, Scissors, Heart, Flower2, Droplets, Wind
 } from 'lucide-react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface Servicio {
   id: string
@@ -35,33 +29,65 @@ interface Review {
   tenant_id: string
   client_id: string
   service_id: string
-  professional_id: string
   rating: number
   comment: string
   images: string[]
   is_approved: boolean
   created_at: string
   client_name?: string
-  client_avatar?: string
 }
 
-export default function ServiciosPage() {
-  const { theme } = useTheme()
-  const { user, tenantId } = useAuth()
-  const isDark = theme === 'dark'
+// ✅ ICONOS POR CATEGORÍA
+const CATEGORY_ICONS: Record<string, any> = {
+  'Uñas': Scissors,
+  'Micropigmentación': Eye,
+  'Peluquería': Scissors,
+  'Cejas': Eye,
+  'Estética': Flower2,
+  'Depilación': Heart,
+  'default': Sparkles
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Uñas': 'from-pink-500 to-rose-500',
+  'Micropigmentación': 'from-amber-500 to-orange-500',
+  'Peluquería': 'from-emerald-500 to-teal-500',
+  'Cejas': 'from-violet-500 to-purple-500',
+  'Estética': 'from-rose-500 to-pink-500',
+  'Depilación': 'from-fuchsia-500 to-pink-500',
+  'default': 'from-pink-500 to-rose-500'
+}
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
+  'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
+  'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
+  'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
+  'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
+  'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
+  'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
+}
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.1 }
+  }
+}
+
+export default function ServiciosPublicPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [reviews, setReviews] = useState<Record<string, Review[]>>({})
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('todos')
   const [categoriasDisponibles, setCategoriasDisponibles] = useState<string[]>([])
-  const [selectedService, setSelectedService] = useState<Servicio | null>(null)
-  const [showReviewModal, setShowReviewModal] = useState(false)
-  const [rating, setRating] = useState(0)
-  const [hoverRating, setHoverRating] = useState(0)
-  const [comment, setComment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   const primaryColor = '#DB5B9A'
 
@@ -72,10 +98,34 @@ export default function ServiciosPage() {
   const cargarServicios = async () => {
     try {
       setLoading(true)
+
+      // ✅ OBTENER TENANT_ID (público)
+      let tenantId = null
+      const { data: { session } } = await supabase.auth.getSession()
+      tenantId = session?.user?.user_metadata?.tenant_id || 
+                  session?.user?.app_metadata?.tenant_id || null
+
+      if (!tenantId) {
+        const { data: firstAppointment } = await supabase
+          .from('appointments')
+          .select('tenant_id')
+          .limit(1)
+          .maybeSingle()
+        tenantId = firstAppointment?.tenant_id || null
+      }
+
+      if (!tenantId) {
+        setLoading(false)
+        return
+      }
+
+      // ✅ CARGAR SERVICIOS
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
+        .order('category', { ascending: true })
         .order('name', { ascending: true })
 
       if (error) throw error
@@ -84,7 +134,8 @@ export default function ServiciosPage() {
       const categorias = [...new Set(data.map(s => s.category).filter(Boolean))] as string[]
       setCategoriasDisponibles(categorias)
 
-      await cargarReviews(data || [])
+      // ✅ CARGAR REVIEWS
+      await cargarReviews(data || [], tenantId)
     } catch (error) {
       console.error('Error cargando servicios:', error)
     } finally {
@@ -92,12 +143,7 @@ export default function ServiciosPage() {
     }
   }
 
-  const cargarReviews = async (serviciosList: Servicio[]) => {
-    if (!tenantId) {
-      console.log('No hay tenantId, no se cargan reviews')
-      return
-    }
-
+  const cargarReviews = async (serviciosList: Servicio[], tenantId: string) => {
     try {
       const reviewsMap: Record<string, Review[]> = {}
 
@@ -112,6 +158,7 @@ export default function ServiciosPage() {
           .eq('tenant_id', tenantId)
           .eq('is_approved', true)
           .order('created_at', { ascending: false })
+          .limit(5)
 
         if (!error && data) {
           reviewsMap[servicio.id] = data.map((r: any) => ({
@@ -127,80 +174,6 @@ export default function ServiciosPage() {
     }
   }
 
-  const handleSubmitReview = async () => {
-    if (!user) {
-      setErrorMessage('Debes iniciar sesión para calificar')
-      setTimeout(() => setErrorMessage(null), 3000)
-      return
-    }
-
-    if (!tenantId) {
-      setErrorMessage('No hay tenant disponible')
-      setTimeout(() => setErrorMessage(null), 3000)
-      return
-    }
-
-    if (rating === 0) {
-      setErrorMessage('Selecciona una calificación')
-      setTimeout(() => setErrorMessage(null), 3000)
-      return
-    }
-
-    if (!comment.trim()) {
-      setErrorMessage('Escribe un comentario')
-      setTimeout(() => setErrorMessage(null), 3000)
-      return
-    }
-
-    setSubmitting(true)
-    setErrorMessage(null)
-
-    try {
-      const { data, error } = await supabase
-        .from('review')
-        .insert({
-          tenant_id: tenantId,
-          client_id: user.id,
-          service_id: selectedService!.id,
-          professional_id: null,
-          rating: rating,
-          comment: comment.trim(),
-          images: [],
-          is_approved: true,
-          created_at: new Date().toISOString()
-        })
-        .select()
-
-      if (error) throw error
-
-      if (data) {
-        const newReview: Review = {
-          ...data[0],
-          client_name: user.email?.split('@')[0] || 'Cliente'
-        }
-        setReviews(prev => ({
-          ...prev,
-          [selectedService!.id]: [newReview, ...(prev[selectedService!.id] || [])]
-        }))
-      }
-
-      setSuccessMessage('✅ ¡Gracias por tu calificación!')
-      setTimeout(() => setSuccessMessage(null), 3000)
-
-      setShowReviewModal(false)
-      setRating(0)
-      setComment('')
-      setSelectedService(null)
-
-    } catch (error: any) {
-      console.error('Error enviando review:', error)
-      setErrorMessage('Error al enviar la calificación')
-      setTimeout(() => setErrorMessage(null), 3000)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const getAverageRating = (serviceId: string) => {
     const serviceReviews = reviews[serviceId] || []
     if (serviceReviews.length === 0) return 0
@@ -212,16 +185,9 @@ export default function ServiciosPage() {
     return reviews[serviceId]?.length || 0
   }
 
-  // ============================================================
-  // ✅ FUNCIÓN RENDER STARS CORREGIDA
-  // ============================================================
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
-    const sizes = {
-      sm: 'w-3 h-3',
-      md: 'w-4 h-4',
-      lg: 'w-5 h-5'
-    }
-    const className = sizes[size] || sizes.md
+  const renderStars = (rating: number, size: 'sm' | 'md' = 'sm') => {
+    const sizes = { sm: 'w-3 h-3', md: 'w-4 h-4' }
+    const className = sizes[size] || sizes.sm
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
     const emptyStars = 5 - Math.ceil(rating)
@@ -232,10 +198,10 @@ export default function ServiciosPage() {
           <Star key={`full-${i}`} className={`${className} fill-yellow-400 text-yellow-400`} />
         ))}
         {hasHalfStar && (
-          <StarHalf className={`${className} fill-yellow-400 text-yellow-400`} />
+          <Star className={`${className} fill-yellow-400 text-yellow-400`} />
         )}
         {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} className={`${className} text-gray-300 dark:text-gray-600`} />
+          <Star key={`empty-${i}`} className={`${className} text-stone-300 dark:text-stone-600`} />
         ))}
       </div>
     )
@@ -245,295 +211,297 @@ export default function ServiciosPage() {
     ? servicios
     : servicios.filter(s => s.category === selectedCategory)
 
-  // Loading
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-4">
-        <div className="relative">
-          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: primaryColor }} />
-          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: primaryColor }} />
+      <div className="min-h-screen bg-[#0d0b0a] text-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-2 border-[#C9A96E]/20 border-t-[#C9A96E] animate-spin" />
+            <Sparkles className="w-6 h-6 text-[#C9A96E] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <p className="text-xs text-stone-400 tracking-[0.3em] uppercase animate-pulse font-light">Cargando servicios...</p>
+          <div className="flex gap-2">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]/40 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
         </div>
-        <p className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: primaryColor }}>
-          Cargando servicios...
-        </p>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0a0908] text-white' : 'bg-[#fcf9f7] text-stone-800'}`}>
+    <div className="min-h-screen bg-[#0d0b0a] text-white pt-28 pb-20 overflow-hidden">
+      {/* Fondo decorativo */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[150px] bg-pink-500/5" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[150px] bg-amber-500/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(#1c1917_1px,transparent_1px)] [background-size:20px_20px] opacity-10" />
+      </div>
 
-      {/* HERO HEADER */}
-      <div className="relative overflow-hidden px-4 pt-12 pb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-amber-500/5" />
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-30" style={{ backgroundColor: primaryColor }} />
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        {/* ============================================================ */}
+        {/* HEADER */}
+        {/* ============================================================ */}
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="text-center mb-12"
+        >
+          <motion.span 
+            variants={fadeInUp} 
+            className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#C9A96E] border border-[#C9A96E]/20 px-5 py-2 rounded-full inline-block backdrop-blur-sm bg-[#C9A96E]/5"
+          >
+            ✦ DESCRUBRE NUESTROS SERVICIOS ✦
+          </motion.span>
+          <motion.h1 
+            variants={fadeInUp} 
+            className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight mt-6 leading-[1.05]"
+          >
+            Tratamientos{' '}
+            <span className="font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#DB5B9A] via-[#C9A96E] to-[#E5A46E] bg-[length:300%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+              de Belleza
+            </span>
+          </motion.h1>
+          <motion.p 
+            variants={fadeInUp} 
+            className="text-stone-400 mt-4 max-w-2xl mx-auto text-sm leading-relaxed"
+          >
+            Conoce todos los servicios que tenemos para ti en Fresh Beauty Studio. 
+            Cada tratamiento está diseñado para realzar tu belleza natural.
+          </motion.p>
+        </motion.div>
 
-        <div className="relative max-w-5xl mx-auto text-center">
-          <motion.div
+        {/* ============================================================ */}
+        {/* CATEGORÍAS */}
+        {/* ============================================================ */}
+        {categoriasDisponibles.length > 0 && (
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="flex flex-wrap justify-center gap-2 mb-12"
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-pink-500/20 bg-pink-500/5 text-pink-500 text-[10px] font-mono uppercase tracking-widest font-bold">
-              <Sparkles className="w-3 h-3" />
-              Fresh Nails Studio
-            </span>
-            <h1 className="text-3xl md:text-5xl font-serif font-bold mt-4 leading-tight">
-              Nuestros{' '}
-              <span className="bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 bg-clip-text text-transparent">
-                Servicios
-              </span>
-            </h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-3 max-w-xl mx-auto">
-              Descubre nuestra selección de tratamientos premium diseñados para realzar tu belleza natural
-            </p>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* CATEGORÍAS */}
-      <div className="max-w-5xl mx-auto px-4 py-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button
-            onClick={() => setSelectedCategory('todos')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-              selectedCategory === 'todos'
-                ? 'text-white shadow-lg'
-                : 'border border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-pink-100'
-            }`}
-            style={selectedCategory === 'todos' ? { backgroundColor: primaryColor } : {}}
-          >
-            Todos
-          </button>
-          {categoriasDisponibles.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                selectedCategory === cat
-                  ? 'text-white shadow-lg'
-                  : 'border border-pink-100/60 dark:border-fuchsia-950 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-pink-100'
+              onClick={() => setSelectedCategory('todos')}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                selectedCategory === 'todos'
+                  ? 'text-white shadow-lg scale-105'
+                  : 'text-stone-400 hover:text-white border border-stone-800 hover:border-[#C9A96E]/30'
               }`}
-              style={selectedCategory === cat ? { backgroundColor: primaryColor } : {}}
+              style={selectedCategory === 'todos' ? {
+                background: 'linear-gradient(135deg, #DB5B9A, #C9A96E)',
+                boxShadow: '0 4px 20px rgba(219, 91, 154, 0.3)'
+              } : {}}
             >
-              {cat}
+              Todos
             </button>
-          ))}
-        </div>
-      </div>
+            {categoriasDisponibles.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                  selectedCategory === cat
+                    ? 'text-white shadow-lg scale-105'
+                    : 'text-stone-400 hover:text-white border border-stone-800 hover:border-[#C9A96E]/30'
+                }`}
+                style={selectedCategory === cat ? {
+                  background: 'linear-gradient(135deg, #DB5B9A, #C9A96E)',
+                  boxShadow: '0 4px 20px rgba(219, 91, 154, 0.3)'
+                } : {}}
+              >
+                {cat}
+              </button>
+            ))}
+          </motion.div>
+        )}
 
-      {/* GRID DE SERVICIOS */}
-      <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* ============================================================ */}
+        {/* GRID DE SERVICIOS */}
+        {/* ============================================================ */}
         {filteredServices.length === 0 ? (
           <div className="text-center py-20">
-            <Sparkles className="w-12 h-12 mx-auto text-stone-300 dark:text-stone-600 mb-3" />
-            <p className="text-sm text-stone-400 dark:text-stone-500">No hay servicios disponibles en esta categoría</p>
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-stone-900/50 border border-stone-800 flex items-center justify-center mb-4">
+              <Sparkles className="w-8 h-8 text-stone-600" />
+            </div>
+            <p className="text-stone-400 text-sm">No hay servicios disponibles en esta categoría.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {filteredServices.map((servicio, index) => {
+              const Icon = CATEGORY_ICONS[servicio.category] || CATEGORY_ICONS.default
+              const color = CATEGORY_COLORS[servicio.category] || CATEGORY_COLORS.default
+              const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
               const avgRating = getAverageRating(servicio.id)
               const ratingCount = getRatingCount(servicio.id)
+              const isHovered = hoveredId === servicio.id
 
               return (
                 <motion.div
                   key={servicio.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`group rounded-2xl border p-5 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 ${
-                    isDark 
-                      ? 'bg-[#141211] border-stone-800 hover:border-pink-500/30' 
-                      : 'bg-white border-stone-200/60 hover:border-pink-200'
-                  }`}
+                  variants={fadeInUp}
+                  onMouseEnter={() => setHoveredId(servicio.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  className="group relative bg-gradient-to-b from-[#1a1715] to-[#141211] border border-stone-800/50 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-3 hover:border-[#C9A96E]/30 hover:shadow-2xl hover:shadow-[#C9A96E]/5"
                 >
-                  {/* Badge */}
-                  {servicio.badge && (
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider bg-gradient-to-r from-pink-500 to-rose-500 text-white mb-3">
-                      {servicio.badge}
-                    </span>
-                  )}
+                  {/* ========================================================== */}
+                  {/* IMAGEN */}
+                  {/* ========================================================== */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-900">
+                    <img 
+                      src={imageUrl} 
+                      alt={servicio.name}
+                      className="w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-transparent to-transparent opacity-60" />
 
-                  {/* Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-lg font-bold text-stone-800 dark:text-white group-hover:text-pink-500 transition-colors">
-                      {servicio.name}
-                    </h3>
-                    <span className="text-xs font-mono font-bold text-stone-400 dark:text-stone-500">
-                      {servicio.duration}min
-                    </span>
-                  </div>
+                    {/* Badge animado */}
+                    {servicio.badge && (
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, duration: 0.4, type: "spring", stiffness: 300 }}
+                        className="absolute top-4 right-4 z-10 text-[8px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full text-white shadow-lg"
+                        style={{
+                          background: 'linear-gradient(135deg, #DB5B9A, #C9A96E)',
+                          boxShadow: '0 4px 15px rgba(219, 91, 154, 0.3)'
+                        }}
+                      >
+                        {servicio.badge}
+                      </motion.span>
+                    )}
 
-                  {/* Descripción */}
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 line-clamp-2">
-                    {servicio.description || 'Tratamiento de belleza premium'}
-                  </p>
-
-                  {/* Rating */}
-                  {ratingCount > 0 && (
-                    <div className="flex items-center gap-2 mt-3">
-                      {renderStars(avgRating, 'sm')}
-                      <span className="text-[10px] text-stone-400 dark:text-stone-500">
-                        ({ratingCount})
+                    {/* Categoría */}
+                    <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/90 flex items-center gap-1.5">
+                        <Icon className="w-3 h-3 text-[#C9A96E]" />
+                        {servicio.category || 'General'}
                       </span>
                     </div>
-                  )}
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100 dark:border-stone-800">
-                    <span className="text-lg font-bold text-pink-500">
-                      ${servicio.price.toLocaleString()}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedService(servicio)
-                          setRating(0)
-                          setComment('')
-                          setShowReviewModal(true)
-                        }}
-                        className="p-1.5 rounded-xl hover:bg-pink-50 dark:hover:bg-pink-950/20 text-stone-400 hover:text-pink-500 transition-colors"
-                        title="Calificar servicio"
+                    {/* Precio flotante */}
+                    <motion.div 
+                      animate={{ 
+                        scale: isHovered ? 1.1 : 1,
+                        y: isHovered ? -4 : 0
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className={`absolute bottom-4 right-4 z-10 font-serif italic text-white text-xl px-4 py-2 rounded-xl shadow-lg shadow-black/40 bg-gradient-to-br ${color}`}
+                    >
+                      ${servicio.price}
+                    </motion.div>
+
+                    {/* Duración */}
+                    <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 text-[10px] text-white/70 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/5">
+                      <Clock className="w-3 h-3 text-[#C9A96E]" />
+                      {servicio.duration} min
+                    </div>
+                  </div>
+
+                  {/* ========================================================== */}
+                  {/* CONTENIDO */}
+                  {/* ========================================================== */}
+                  <div className="p-5 flex-1 flex flex-col">
+                    <h3 className="text-lg font-medium text-white group-hover:text-[#DB5B9A] transition-colors duration-300 line-clamp-1">
+                      {servicio.name}
+                    </h3>
+                    <p className="text-sm text-stone-400 font-light mt-2 leading-relaxed line-clamp-2 flex-1">
+                      {servicio.description || 'Descubre este tratamiento exclusivo en Fresh Beauty Studio.'}
+                    </p>
+
+                    {/* Rating */}
+                    {ratingCount > 0 && (
+                      <div className="flex items-center gap-2 mt-3">
+                        {renderStars(avgRating, 'sm')}
+                        <span className="text-[10px] text-stone-400">
+                          ({ratingCount} {ratingCount === 1 ? 'reseña' : 'reseñas'})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="mt-4 pt-4 border-t border-stone-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {servicio.icon && (
+                          <span className="text-xs text-stone-500">
+                            {servicio.icon}
+                          </span>
+                        )}
+                      </div>
+                      <Link 
+                        href="/agenda" 
+                        className="inline-flex items-center gap-2 text-xs font-bold text-[#DB5B9A] hover:text-[#C9A96E] transition-colors group/link"
                       >
-                        <MessageCircle className="w-4 h-4" />
-                      </button>
-                      <Link
-                        href={`/servicios/${servicio.id}`}
-                        className="p-1.5 rounded-xl hover:bg-pink-50 dark:hover:bg-pink-950/20 text-stone-400 hover:text-pink-500 transition-colors"
-                      >
-                        <ArrowRight className="w-4 h-4" />
+                        Agendar
+                        <ArrowRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform duration-300" />
                       </Link>
                     </div>
                   </div>
+
+                  {/* Línea de brillo inferior */}
+                  <motion.div 
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: isHovered ? 1 : 0 }}
+                    transition={{ duration: 0.5 }}
+                    className={`h-[2px] bg-gradient-to-r ${color} origin-left`}
+                  />
                 </motion.div>
               )
             })}
-          </div>
-        )}
-      </div>
-
-      {/* MODAL DE CALIFICACIÓN */}
-      <AnimatePresence>
-        {showReviewModal && selectedService && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowReviewModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md rounded-3xl border bg-white dark:bg-[#141211] border-pink-100/60 dark:border-fuchsia-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <button
-                onClick={() => setShowReviewModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-pink-50 dark:hover:bg-fuchsia-950/40 transition-colors text-stone-400 hover:text-stone-700 dark:hover:text-pink-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 rounded-xl text-white shadow-md" style={{ backgroundColor: primaryColor }}>
-                  <Star className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-serif font-bold text-stone-800 dark:text-white">
-                    Calificar {selectedService.name}
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Comparte tu experiencia</p>
-                </div>
-              </div>
-
-              {/* Estrellas */}
-              <div className="flex items-center gap-1 justify-center py-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setRating(star)}
-                    className="transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={`w-10 h-10 ${
-                        star <= (hoverRating || rating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300 dark:text-gray-600'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-center text-xs text-stone-400 dark:text-stone-500 mb-4">
-                {rating === 1 && '⭐ Muy malo'}
-                {rating === 2 && '⭐⭐ Malo'}
-                {rating === 3 && '⭐⭐⭐ Regular'}
-                {rating === 4 && '⭐⭐⭐⭐ Bueno'}
-                {rating === 5 && '⭐⭐⭐⭐⭐ Excelente'}
-                {rating === 0 && 'Selecciona una calificación'}
-              </p>
-
-              {/* Comentario */}
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Cuéntanos tu experiencia con este servicio..."
-                className={`w-full px-4 py-3 rounded-xl border resize-none h-24 text-sm focus:outline-none focus:ring-2 transition-all ${
-                  isDark
-                    ? 'bg-[#0f0c1b] border-fuchsia-950 text-white placeholder:text-stone-500'
-                    : 'bg-white border-pink-100 text-stone-800 placeholder:text-stone-400'
-                }`}
-                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-              />
-
-              {/* Mensajes */}
-              {errorMessage && (
-                <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  {errorMessage}
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  {successMessage}
-                </div>
-              )}
-
-              {/* Botones */}
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => setShowReviewModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border hover:bg-pink-50 dark:hover:bg-fuchsia-950/30 transition-all text-xs font-bold uppercase tracking-widest border-pink-100/60 dark:border-fuchsia-950 text-stone-600 dark:text-stone-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  {submitting ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
-            </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
 
+        {/* ============================================================ */}
+        {/* CTA FINAL */}
+        {/* ============================================================ */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+          className="text-center mt-16"
+        >
+          <div className="relative overflow-hidden rounded-3xl p-10 text-center" style={{ background: 'linear-gradient(135deg, rgba(219,91,154,0.15), rgba(201,169,110,0.1))' }}>
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-[100px] bg-[#DB5B9A]/10" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-[100px] bg-[#C9A96E]/10" />
+            
+            <div className="relative z-10">
+              <h2 className="text-2xl sm:text-3xl font-light text-white">
+                ¿Lista para <span className="font-serif italic text-[#DB5B9A]">brillar</span>?
+              </h2>
+              <p className="text-stone-400 mt-2 text-sm">
+                Reserva tu cita y descubre la experiencia Fresh Nails.
+              </p>
+              <Link 
+                href="/agenda" 
+                className="inline-flex items-center gap-3 px-8 py-4 mt-6 rounded-xl text-white font-bold text-sm uppercase tracking-wider bg-gradient-to-r from-[#DB5B9A] to-[#C9A96E] hover:opacity-90 transition-all shadow-lg shadow-[#DB5B9A]/20 group"
+              >
+                <Sparkles className="w-4 h-4" />
+                AGENDAR CITA
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <p className="text-xs text-stone-500 mt-3">
+                ¿Ya tienes cuenta? <Link href="/login" className="text-[#C9A96E] hover:underline">Inicia sesión</Link>
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <style jsx global>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }
