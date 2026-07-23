@@ -93,7 +93,6 @@ export default function AuthMobilDefinitivo() {
   useEffect(() => {
     setMounted(true)
 
-    // Obtener redirect de la URL
     const searchParams = new URLSearchParams(window.location.search);
     const redirect = searchParams.get('redirect');
     if (redirect) {
@@ -118,12 +117,10 @@ export default function AuthMobilDefinitivo() {
       targetPath = '/dashboard'
     }
 
-    // Usar el redirect de la URL si existe
     const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
       ? redirectPath 
       : targetPath
 
-    // ✅ Redirigir con router.replace para evitar problemas de historial
     router.replace(finalPath)
   }, [user, role, authLoading, mounted, redirectPath, router, isRedirecting])
 
@@ -144,11 +141,12 @@ export default function AuthMobilDefinitivo() {
       // ✅ OBTENER EL ROL DESPUÉS DEL LOGIN
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
+        // ✅ CASTEO EXPLÍCITO PARA EVITAR ERROR DE TIPO
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single()
+          .single() as any
         
         const userRole = profile?.role || 'client'
         let targetPath = '/portal'
@@ -160,7 +158,6 @@ export default function AuthMobilDefinitivo() {
           ? redirectPath 
           : targetPath
         
-        // ✅ REDIRIGIR INMEDIATAMENTE DESPUÉS DEL LOGIN
         setIsRedirecting(true)
         router.replace(finalPath)
       }
@@ -198,11 +195,9 @@ export default function AuthMobilDefinitivo() {
 
       setSuccess('✅ ¡Registro exitoso!')
       
-      // ✅ Iniciar sesión automáticamente después del registro
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
       
-      // ✅ Redirigir después del registro
       const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
         ? redirectPath 
         : '/portal'
