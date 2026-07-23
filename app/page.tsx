@@ -1039,18 +1039,37 @@ export default function Home() {
     const loadData = async () => {
       setLoading(true)
       try {
-        let tenantId = null
+        let tenantId: string | null = null
+        
+        // Intentar obtener tenant_id de la sesión
         const { data: { session } } = await supabase.auth.getSession()
         tenantId = session?.user?.user_metadata?.tenant_id || 
                     session?.user?.app_metadata?.tenant_id || null
 
+        // Si no hay tenant_id, buscar en appointments
         if (!tenantId) {
-          const { data: firstAppointment } = await supabase
+          const { data: firstAppointment, error } = await supabase
             .from('appointments')
             .select('tenant_id')
             .limit(1)
             .maybeSingle()
-          tenantId = firstAppointment?.tenant_id || null
+          
+          if (!error && firstAppointment) {
+            tenantId = firstAppointment.tenant_id
+          }
+        }
+
+        // Si aún no hay tenant_id, buscar en profiles
+        if (!tenantId && session?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', session.user.id)
+            .maybeSingle()
+          
+          if (profile) {
+            tenantId = profile.tenant_id
+          }
         }
 
         if (!tenantId) {
