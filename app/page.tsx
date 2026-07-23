@@ -24,10 +24,11 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaRegSun,
-  FaDiamond,
   FaCrown,
   FaRegStar,
-  FaSparkle
+  FaSparkle,
+  FaSprayCan,
+  FaFeatherAlt
 } from 'react-icons/fa'
 import { GiNails, GiScissors, GiLipstick, GiFlowerEmblem, GiRose } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
@@ -51,7 +52,6 @@ const COLORS = {
   textMuted: '#A89588',
   border: '#F0E4DA',
   goldBorder: '#D4AF37',
-  gradient1: 'from-[#D4AF37] via-[#E879A0] to-[#D4AF37]',
 }
 
 // ============================================================
@@ -157,7 +157,7 @@ const Header = () => {
               className="relative"
             >
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-xl shadow-[#D4AF37]/30">
-                <FaDiamond className="w-5 h-5 text-white" />
+                <FaGem className="w-5 h-5 text-white" />
               </div>
               <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
             </motion.div>
@@ -238,7 +238,7 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO - IMPACTANTE CON EFECTO JOYA
+// HERO - IMPACTANTE
 // ============================================================
 const HeroSection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -259,25 +259,15 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[#FFF8F5]">
-      {/* Fondo espectacular */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#FFF8F5] via-[#FFFCF8] to-[#F5EDE0]" />
-        
-        {/* Orbes de luz premium */}
         <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#D4AF37]/20 animate-pulse-slow" />
         <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#E879A0]/15 animate-pulse-slow-delay" />
-        
-        {/* Patrón de lujo */}
         <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:30px_30px] opacity-10" />
-        
-        {/* Líneas doradas decorativas */}
-        <div className="absolute top-1/2 left-0 w-px h-96 bg-gradient-to-b from-transparent via-[#D4AF37]/30 to-transparent" />
-        <div className="absolute top-1/2 right-0 w-px h-96 bg-gradient-to-b from-transparent via-[#D4AF37]/30 to-transparent" />
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
-          {/* Columna izquierda */}
           <motion.div
             initial={{ opacity: 0, x: -60 }}
             animate={{ opacity: 1, x: 0 }}
@@ -288,7 +278,6 @@ const HeroSection = () => {
               animate={{ opacity: 1, filter: 'blur(0px)' }}
               transition={{ duration: 1.5, delay: 0.3 }}
             >
-              {/* Badge premium */}
               <div className="inline-flex items-center gap-3 bg-white/60 backdrop-blur-sm border border-[#D4AF37]/20 px-5 py-2 rounded-full mb-8 shadow-lg">
                 <span className="flex h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
                 <span className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light">
@@ -309,7 +298,7 @@ const HeroSection = () => {
                     transition={{ duration: 3, repeat: Infinity }}
                     className="absolute -top-6 -right-8 text-[#D4AF37]"
                   >
-                    <FaDiamond className="text-lg" />
+                    <FaGem className="text-lg" />
                   </motion.div>
                 </span>
               </h1>
@@ -347,7 +336,6 @@ const HeroSection = () => {
               </Link>
             </motion.div>
 
-            {/* Stats de lujo */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -369,7 +357,6 @@ const HeroSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Columna derecha - Imagen interactiva */}
           <motion.div
             ref={containerRef}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -381,11 +368,9 @@ const HeroSection = () => {
             }}
           >
             <div className="relative aspect-square max-w-md mx-auto">
-              {/* Marco de lujo */}
               <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-[#D4AF37]/20 via-[#E879A0]/10 to-[#D4AF37]/20 animate-spin-slow" />
               <div className="absolute -inset-8 rounded-3xl bg-gradient-to-br from-[#D4AF37]/10 to-[#E879A0]/10 animate-spin-slow-reverse" />
               
-              {/* Imagen principal */}
               <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-[#D4AF37]/20 border-4 border-white/50">
                 <img 
                   src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=600&h=600&fit=crop&crop=center"
@@ -395,7 +380,6 @@ const HeroSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/20 to-transparent" />
               </div>
 
-              {/* Elementos flotantes de lujo */}
               <motion.div 
                 animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -466,7 +450,7 @@ const HeroSection = () => {
 }
 
 // ============================================================
-// SECCIÓN ESENCIA - CON PARALLAX DE LUJO
+// SECCIÓN ESENCIA
 // ============================================================
 const EsenciaSection = () => {
   const ref = useRef(null)
@@ -526,7 +510,6 @@ const EsenciaSection = () => {
             </div>
           </motion.div>
 
-          {/* Galería con parallax */}
           <div className="relative h-[500px] lg:h-[600px]">
             <motion.div
               style={{ y: y1 }}
@@ -618,7 +601,6 @@ const ServicesSection = () => {
                 onMouseLeave={() => setHoveredIndex(null)}
                 className="group relative bg-white border border-[#F0E4DA] hover:border-[#D4AF37] rounded-2xl overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
               >
-                {/* Imagen de fondo en hover */}
                 <div className={`absolute inset-0 transition-all duration-700 ${
                   isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
                 }`}>
@@ -709,7 +691,6 @@ const GallerySection = () => {
         </motion.div>
       </div>
 
-      {/* Carrusel horizontal continuo */}
       <div className="relative">
         <motion.div
           animate={{ x: ['0%', '-50%'] }}
@@ -748,7 +729,7 @@ const GallerySection = () => {
 }
 
 // ============================================================
-// TESTIMONIOS - SLIDER ELEGANTE
+// TESTIMONIOS
 // ============================================================
 const TestimonialsSection = () => {
   const ref = useRef(null)
@@ -850,7 +831,7 @@ const TestimonialsSection = () => {
 }
 
 // ============================================================
-// CTA FINAL - IMPACTANTE
+// CTA FINAL
 // ============================================================
 const CtaSection = () => {
   const ref = useRef(null)
@@ -875,7 +856,7 @@ const CtaSection = () => {
             className="inline-block mb-6"
           >
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/30">
-              <FaDiamond className="text-3xl text-white" />
+              <FaGem className="text-3xl text-white" />
             </div>
           </motion.div>
           
@@ -914,7 +895,7 @@ const CtaSection = () => {
 }
 
 // ============================================================
-// FOOTER - ELEGANTE
+// FOOTER
 // ============================================================
 const Footer = () => (
   <footer className="bg-white border-t border-[#F0E4DA] py-16">
@@ -923,7 +904,7 @@ const Footer = () => (
         <div>
           <Link href="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30">
-              <FaDiamond className="w-5 h-5 text-white" />
+              <FaGem className="w-5 h-5 text-white" />
             </div>
             <div>
               <span className="text-[#1A0E0A] font-serif text-xl tracking-wider">
