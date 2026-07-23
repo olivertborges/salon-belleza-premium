@@ -7,7 +7,6 @@ import { motion, AnimatePresence, useInView, useScroll, useTransform } from 'fra
 import { 
   FaArrowRight, 
   FaQuoteLeft,
-  FaClock,
   FaInstagram,
   FaWhatsapp,
   FaStar,
@@ -20,35 +19,39 @@ import {
   FaRegHeart,
   FaPalette,
   FaHandSparkles,
-  FaRegSmile,
   FaAward,
   FaLeaf,
   FaChevronLeft,
   FaChevronRight,
-  FaFeatherAlt,
-  FaRegSun
+  FaRegSun,
+  FaDiamond,
+  FaCrown,
+  FaRegStar,
+  FaSparkle
 } from 'react-icons/fa'
-import { GiNails, GiScissors, GiLipstick, GiFlowerEmblem } from 'react-icons/gi'
+import { GiNails, GiScissors, GiLipstick, GiFlowerEmblem, GiRose } from 'react-icons/gi'
+import { HiOutlineSparkles } from 'react-icons/hi'
 
 // ============================================================
-// PALETA DE LUZ Y ELEGANCIA
+// PALETA DE LUJO - ELEGANCIA SUPREMA
 // ============================================================
 const COLORS = {
-  gold: '#C9A96E',
-  goldLight: '#F0E3C8',
-  goldGlow: 'rgba(201, 169, 110, 0.15)',
-  rose: '#E8B4C8',
-  roseLight: '#F5E0E8',
-  roseDark: '#D498B0',
-  blush: '#FDF6F0',
-  cream: '#FCF8F3',
+  gold: '#D4AF37',
+  goldLight: '#F4E4BC',
+  goldGlow: 'rgba(212, 175, 55, 0.2)',
+  rose: '#E879A0',
+  roseLight: '#F5D4E0',
+  roseGlow: 'rgba(232, 121, 160, 0.15)',
+  blush: '#FFF8F5',
+  cream: '#FFFCF8',
   white: '#FFFFFF',
-  lightBg: '#FBF7F2',
-  darkText: '#2D1B13',
-  textSoft: '#6B5A4E',
+  lightBg: '#FFF9F6',
+  darkText: '#1A0E0A',
+  textSoft: '#5C4A3E',
   textMuted: '#A89588',
-  border: '#E8DDD5',
-  goldBorder: '#C9A96E',
+  border: '#F0E4DA',
+  goldBorder: '#D4AF37',
+  gradient1: 'from-[#D4AF37] via-[#E879A0] to-[#D4AF37]',
 }
 
 // ============================================================
@@ -57,43 +60,39 @@ const COLORS = {
 const SERVICES = [
   { 
     name: 'Manicura Rusa',
-    description: 'Técnica de precisión con fresas de diamante para un acabado impecable y duradero.',
+    description: 'Precisión absoluta con fresas de diamante para un acabado impecable que dura semanas.',
     price: 45,
     duration: 90,
     icon: GiNails,
-    tag: 'Premium',
-    color: '#C9A96E',
-    bgColor: '#F5EDE0'
+    tag: '⭐ Premium',
+    image: 'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=400&h=400&fit=crop'
   },
   { 
     name: 'Extensiones Soft Gel',
-    description: 'Tips ultraligeros con flexibilidad y duración de hasta 4 semanas.',
+    description: 'Tips ultraligeros de alta resistencia que se adaptan perfectamente a tu uña natural.',
     price: 65,
     duration: 120,
     icon: FaHandSparkles,
-    tag: 'Top ventas',
-    color: '#E8B4C8',
-    bgColor: '#F5E0E8'
+    tag: '🔥 Top',
+    image: 'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=400&h=400&fit=crop'
   },
   { 
     name: 'Nail Art de Autor',
-    description: 'Diseños exclusivos con pan de oro, holografía y pedrería fina.',
+    description: 'Obras de arte en miniatura con pan de oro, holografía y pedrería de alta joyería.',
     price: 55,
     duration: 105,
     icon: FaPalette,
-    tag: 'Edición limitada',
-    color: '#D498B0',
-    bgColor: '#F0E0E8'
+    tag: '✨ Exclusivo',
+    image: 'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=400&h=400&fit=crop'
   },
   { 
     name: 'Peluquería & Styling',
-    description: 'Cortes de autor, colorimetría avanzada y peinados de alta costura.',
+    description: 'Cortes de autor y colorimetría avanzada con productos orgánicos de lujo.',
     price: 50,
     duration: 90,
     icon: GiScissors,
-    tag: 'Vanguardia',
-    color: '#C9A96E',
-    bgColor: '#F5EDE0'
+    tag: '✂️ Vanguardia',
+    image: 'https://images.unsplash.com/photo-1560869713-7d0a2943087e?w=400&h=400&fit=crop'
   }
 ]
 
@@ -110,7 +109,7 @@ const TESTIMONIALS = [
   { 
     name: 'Valeria Martínez',
     role: 'Clienta desde 2021',
-    text: 'La manicura rusa es una obra de arte. La precisión y el cuidado son excepcionales. Mis uñas nunca habían estado tan perfectas.',
+    text: 'La manicura rusa es una obra de arte. La precisión y el cuidado son excepcionales.',
     rating: 5,
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop'
   },
@@ -127,25 +126,11 @@ const TESTIMONIALS = [
     text: 'Llevo 3 años viniendo y nunca me decepcionan. La duración de las extensiones es increíble.',
     rating: 5,
     image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop'
-  },
-  { 
-    name: 'Lucía Fernández',
-    role: 'Clienta desde 2023',
-    text: 'El ambiente es relajante y el resultado es espectacular. Realmente entienden lo que quieres.',
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'
-  },
-  { 
-    name: 'Mía Torres',
-    role: 'Clienta desde 2021',
-    text: 'La atención personalizada y la calidad de los productos hacen la diferencia. 100% recomendado.',
-    rating: 5,
-    image: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&h=200&fit=crop'
   }
 ]
 
 // ============================================================
-// HEADER - TRANSPARENTE CON GLASSMORPHISM LUMINOSO
+// HEADER - ESPECTACULAR CON EFECTO JOYA
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -160,50 +145,60 @@ const Header = () => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
       scrolled 
-        ? 'bg-white/90 backdrop-blur-2xl border-b border-[#C9A96E]/10 shadow-sm' 
+        ? 'bg-white/95 backdrop-blur-2xl border-b border-[#D4AF37]/20 shadow-2xl' 
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20 lg:h-24">
           <Link href="/" className="flex items-center gap-3 group">
             <motion.div 
-              whileHover={{ rotate: 180, scale: 1.1 }}
-              transition={{ duration: 0.6 }}
+              whileHover={{ rotate: 360, scale: 1.1 }}
+              transition={{ duration: 0.8 }}
               className="relative"
             >
-              <div className="w-10 h-10 rounded-full bg-[#C9A96E]/10 border border-[#C9A96E]/30 flex items-center justify-center group-hover:bg-[#C9A96E]/20 transition-all">
-                <FaGem className="w-4 h-4 text-[#C9A96E]" />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-xl shadow-[#D4AF37]/30">
+                <FaDiamond className="w-5 h-5 text-white" />
               </div>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
             </motion.div>
-            <span className="text-[#2D1B13] font-serif text-xl tracking-wider">
-              FRESH<span className="text-[#C9A96E]">.</span>
-            </span>
+            <div>
+              <span className="text-[#1A0E0A] font-serif text-2xl tracking-wider group-hover:text-[#D4AF37] transition-colors duration-300">
+                Salon Fresh
+              </span>
+              <span className="block text-[10px] tracking-[0.3em] text-[#D4AF37] font-light uppercase -mt-1">
+                Nails & Beauty
+              </span>
+            </div>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-10">
-            {['Esencia', 'Servicios', 'Testimonios'].map((item) => (
+            {['Esencia', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
               <Link 
                 key={item}
                 href={`#${item.toLowerCase()}`}
-                className="text-sm text-[#6B5A4E] hover:text-[#C9A96E] transition-all duration-300 relative group"
+                className="text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all duration-300 relative group font-light tracking-wide"
               >
                 {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#C9A96E] transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
             <Link 
               href="/agenda"
-              className="px-7 py-3 text-xs font-light tracking-[0.2em] uppercase text-white bg-[#C9A96E] hover:bg-[#B8955A] transition-all duration-500 rounded-full shadow-lg shadow-[#C9A96E]/20 hover:shadow-xl hover:shadow-[#C9A96E]/30"
+              className="px-8 py-3.5 text-xs font-light tracking-[0.2em] uppercase text-white bg-gradient-to-r from-[#D4AF37] to-[#E879A0] hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full relative overflow-hidden group"
             >
-              Reservar
+              <span className="relative z-10 flex items-center gap-2">
+                <FaCalendarCheck className="text-xs" />
+                Reservar Cita
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#E879A0] to-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </Link>
           </nav>
 
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden w-11 h-11 flex items-center justify-center border border-[#E8DDD5] rounded-full hover:border-[#C9A96E]/40 transition-all"
+            className="lg:hidden w-12 h-12 flex items-center justify-center border border-[#F0E4DA] rounded-full hover:border-[#D4AF37]/40 transition-all hover:shadow-lg"
           >
-            {isOpen ? <FaTimes className="text-[#2D1B13]" /> : <FaBars className="text-[#2D1B13]" />}
+            {isOpen ? <FaTimes className="text-[#1A0E0A]" /> : <FaBars className="text-[#1A0E0A]" />}
           </button>
         </div>
       </div>
@@ -214,14 +209,14 @@ const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white/95 backdrop-blur-2xl border-t border-[#E8DDD5]"
+            className="lg:hidden bg-white/95 backdrop-blur-2xl border-t border-[#F0E4DA]"
           >
-            <div className="px-6 py-8 space-y-5">
-              {['Esencia', 'Servicios', 'Testimonios'].map((item) => (
+            <div className="px-6 py-8 space-y-4">
+              {['Esencia', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
                 <Link
                   key={item}
                   href={`#${item.toLowerCase()}`}
-                  className="block text-sm text-[#6B5A4E] hover:text-[#C9A96E] transition-all font-light"
+                  className="block text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all font-light tracking-wide"
                   onClick={() => setIsOpen(false)}
                 >
                   {item}
@@ -229,7 +224,7 @@ const Header = () => {
               ))}
               <Link 
                 href="/agenda"
-                className="block w-full text-center px-6 py-4 text-xs font-light tracking-[0.2em] uppercase text-white bg-[#C9A96E] hover:bg-[#B8955A] transition-all rounded-full"
+                className="block w-full text-center px-6 py-4 text-xs font-light tracking-[0.2em] uppercase text-white bg-gradient-to-r from-[#D4AF37] to-[#E879A0] transition-all rounded-full"
                 onClick={() => setIsOpen(false)}
               >
                 Reservar Cita
@@ -243,18 +238,18 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO - LUMINOSO CON VIDEO Y EFECTO MAGNÉTICO
+// HERO - IMPACTANTE CON EFECTO JOYA
 // ============================================================
 const HeroSection = () => {
-  const buttonRef = useRef<HTMLAnchorElement>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!buttonRef.current) return
-      const rect = buttonRef.current.getBoundingClientRect()
-      const x = (e.clientX - rect.left - rect.width / 2) * 0.3
-      const y = (e.clientY - rect.top - rect.height / 2) * 0.3
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const x = (e.clientX - rect.left - rect.width / 2) / 20
+      const y = (e.clientY - rect.top - rect.height / 2) / 20
       setMousePosition({ x, y })
     }
 
@@ -263,21 +258,29 @@ const HeroSection = () => {
   }, [])
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#FBF7F2]">
-      {/* Fondo luminoso */}
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#FFF8F5]">
+      {/* Fondo espectacular */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FDF6F0] via-[#FCF8F3] to-[#F5EDE0]" />
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#F0E3C8]/40" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#F5E0E8]/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FFF8F5] via-[#FFFCF8] to-[#F5EDE0]" />
         
-        <div className="absolute inset-0 bg-[radial-gradient(#C9A96E_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10" />
+        {/* Orbes de luz premium */}
+        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#D4AF37]/20 animate-pulse-slow" />
+        <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#E879A0]/15 animate-pulse-slow-delay" />
+        
+        {/* Patrón de lujo */}
+        <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:30px_30px] opacity-10" />
+        
+        {/* Líneas doradas decorativas */}
+        <div className="absolute top-1/2 left-0 w-px h-96 bg-gradient-to-b from-transparent via-[#D4AF37]/30 to-transparent" />
+        <div className="absolute top-1/2 right-0 w-px h-96 bg-gradient-to-b from-transparent via-[#D4AF37]/30 to-transparent" />
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+          {/* Columna izquierda */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -60 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             <motion.div
@@ -285,138 +288,185 @@ const HeroSection = () => {
               animate={{ opacity: 1, filter: 'blur(0px)' }}
               transition={{ duration: 1.5, delay: 0.3 }}
             >
-              <span className="inline-block text-[10px] tracking-[0.4em] uppercase text-[#C9A96E] font-light border border-[#C9A96E]/20 px-5 py-2 rounded-full bg-white/50 backdrop-blur-sm mb-8">
-                ✦ Atelier de Belleza ✦
-              </span>
+              {/* Badge premium */}
+              <div className="inline-flex items-center gap-3 bg-white/60 backdrop-blur-sm border border-[#D4AF37]/20 px-5 py-2 rounded-full mb-8 shadow-lg">
+                <span className="flex h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
+                <span className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light">
+                  ✦ Atelier de Lujo ✦
+                </span>
+                <span className="flex h-2 w-2 rounded-full bg-[#E879A0] animate-pulse delay-300" />
+              </div>
 
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-[#2D1B13] leading-[1.05] tracking-tight">
-                Belleza que
+              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-[#1A0E0A] leading-[1.05] tracking-tight">
+                Donde la belleza
                 <br />
-                <span className="italic text-[#C9A96E]">trasciende</span>
+                <span className="relative inline-block">
+                  <span className="italic bg-gradient-to-r from-[#D4AF37] via-[#E879A0] to-[#D4AF37] bg-clip-text text-transparent bg-[length:300%_auto] animate-gradient">
+                    se convierte en arte
+                  </span>
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="absolute -top-6 -right-8 text-[#D4AF37]"
+                  >
+                    <FaDiamond className="text-lg" />
+                  </motion.div>
+                </span>
               </h1>
 
-              <p className="text-[#6B5A4E] text-base md:text-lg font-light max-w-xl mt-6 leading-relaxed">
-                Un santuario donde el arte y el cuidado personal se fusionan 
-                para crear experiencias inolvidables.
+              <p className="text-[#5C4A3E] text-lg font-light max-w-xl mt-6 leading-relaxed">
+                Un santuario de elegancia donde cada detalle está pensado para realzar 
+                tu belleza natural con técnicas de vanguardia y materiales de lujo.
               </p>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8 }}
               className="flex flex-wrap gap-4 mt-10"
             >
-              <Link
-                ref={buttonRef}
+              <Link 
                 href="/agenda"
-                className="relative group px-10 py-4 bg-[#C9A96E] text-white text-xs font-light tracking-[0.2em] uppercase hover:bg-[#B8955A] transition-all duration-500 rounded-full shadow-xl shadow-[#C9A96E]/25 hover:shadow-2xl hover:shadow-[#C9A96E]/40"
-                style={{
-                  transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
-                  transition: 'transform 0.1s ease-out'
-                }}
+                className="group relative px-10 py-4 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white text-xs font-light tracking-[0.2em] uppercase hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-3">
                   <FaCalendarCheck />
                   Reservar Cita
-                  <FaArrowRight className="text-xs group-hover:translate-x-1 transition-transform" />
+                  <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform duration-300" />
                 </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#E879A0] to-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               </Link>
 
               <Link
                 href="#esencia"
-                className="px-10 py-4 border border-[#E8DDD5] text-[#6B5A4E] text-xs font-light tracking-[0.2em] uppercase hover:border-[#C9A96E] hover:text-[#C9A96E] transition-all duration-500 rounded-full flex items-center gap-3 bg-white/50 backdrop-blur-sm"
+                className="px-10 py-4 border-2 border-[#D4AF37]/30 text-[#5C4A3E] text-xs font-light tracking-[0.2em] uppercase hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all duration-500 rounded-full flex items-center gap-3 bg-white/50 backdrop-blur-sm"
               >
-                <FaLeaf className="text-[#C9A96E]" />
-                Descubrir más
+                <FaLeaf className="text-[#D4AF37]" />
+                Descubrir
               </Link>
             </motion.div>
 
+            {/* Stats de lujo */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="flex items-center gap-12 mt-16 pt-8 border-t border-[#E8DDD5]"
+              className="flex items-center gap-16 mt-16 pt-8 border-t border-[#F0E4DA]"
             >
-              <div>
-                <p className="text-3xl font-serif text-[#C9A96E]">5+</p>
-                <p className="text-[10px] text-[#6B5A4E] uppercase tracking-widest mt-1">Años de arte</p>
+              <div className="group">
+                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">5+</p>
+                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Años de Excelencia</p>
               </div>
-              <div>
-                <p className="text-3xl font-serif text-[#C9A96E]">3K+</p>
-                <p className="text-[10px] text-[#6B5A4E] uppercase tracking-widest mt-1">Almas transformadas</p>
+              <div className="group">
+                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">3K+</p>
+                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Clientas Satisfechas</p>
               </div>
-              <div>
-                <p className="text-3xl font-serif text-[#C9A96E]">4.9★</p>
-                <p className="text-[10px] text-[#6B5A4E] uppercase tracking-widest mt-1">Excelencia</p>
+              <div className="group">
+                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">4.9★</p>
+                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Valoración Premium</p>
               </div>
             </motion.div>
           </motion.div>
 
+          {/* Columna derecha - Imagen interactiva */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            ref={containerRef}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.3 }}
             className="relative"
+            style={{
+              transform: `perspective(1000px) rotateY(${mousePosition.x}deg) rotateX(${-mousePosition.y}deg)`
+            }}
           >
-            <div className="aspect-square max-w-md mx-auto relative">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#F5EDE0] to-[#FDF6F0] border border-[#C9A96E]/10 shadow-2xl" />
+            <div className="relative aspect-square max-w-md mx-auto">
+              {/* Marco de lujo */}
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-[#D4AF37]/20 via-[#E879A0]/10 to-[#D4AF37]/20 animate-spin-slow" />
+              <div className="absolute -inset-8 rounded-3xl bg-gradient-to-br from-[#D4AF37]/10 to-[#E879A0]/10 animate-spin-slow-reverse" />
               
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-8 right-8 w-16 h-16 rounded-full bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center backdrop-blur-sm"
-              >
-                <FaHandSparkles className="text-2xl text-[#C9A96E]" />
-              </motion.div>
-              
-              <motion.div 
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-12 left-8 w-12 h-12 rounded-full bg-[#E8B4C8]/10 border border-[#E8B4C8]/20 flex items-center justify-center backdrop-blur-sm"
-              >
-                <GiNails className="text-xl text-[#E8B4C8]" />
-              </motion.div>
-
-              <motion.div 
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute top-1/3 right-12 w-10 h-10 rounded-full bg-[#C9A96E]/20 flex items-center justify-center backdrop-blur-sm"
-              >
-                <FaStar className="text-sm text-[#C9A96E]" />
-              </motion.div>
-
-              <div className="absolute inset-6 rounded-2xl overflow-hidden shadow-2xl">
+              {/* Imagen principal */}
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-[#D4AF37]/20 border-4 border-white/50">
                 <img 
                   src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=600&h=600&fit=crop&crop=center"
                   alt="Belleza"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/20 to-transparent" />
               </div>
 
-              <div className="absolute -inset-4 rounded-3xl border border-[#C9A96E]/10" />
-              <div className="absolute -inset-8 rounded-3xl border border-[#C9A96E]/5" />
+              {/* Elementos flotantes de lujo */}
+              <motion.div 
+                animate={{ y: [0, -15, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/30"
+              >
+                <FaCrown className="text-3xl text-white" />
+              </motion.div>
+              
+              <motion.div 
+                animate={{ y: [0, 15, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white shadow-2xl flex items-center justify-center border-2 border-[#D4AF37]/30"
+              >
+                <GiNails className="text-2xl text-[#D4AF37]" />
+              </motion.div>
+
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute top-1/2 -right-8 w-12 h-12 rounded-full bg-[#E879A0]/10 backdrop-blur-sm border border-[#E879A0]/30 flex items-center justify-center"
+              >
+                <HiOutlineSparkles className="text-xl text-[#E879A0]" />
+              </motion.div>
+
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
+                className="absolute bottom-1/3 -left-6 w-10 h-10 rounded-full bg-[#D4AF37]/10 backdrop-blur-sm border border-[#D4AF37]/30 flex items-center justify-center"
+              >
+                <FaRegStar className="text-sm text-[#D4AF37]" />
+              </motion.div>
             </div>
           </motion.div>
         </div>
       </div>
 
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-      >
-        <div className="w-6 h-10 rounded-full border border-[#E8DDD5] flex justify-center p-1.5 bg-white/50 backdrop-blur-sm">
-          <div className="w-0.5 h-2 bg-[#C9A96E] rounded-full animate-scroll" />
-        </div>
-      </motion.div>
+      <style jsx>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 4s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse 6s ease-in-out infinite;
+        }
+        .animate-pulse-slow-delay {
+          animation: pulse 6s ease-in-out infinite 2s;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        .animate-spin-slow {
+          animation: spin 20s linear infinite;
+        }
+        .animate-spin-slow-reverse {
+          animation: spin 25s linear infinite reverse;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </section>
   )
 }
 
 // ============================================================
-// SECCIÓN ESENCIA - LUMINOSA CON PARALLAX
+// SECCIÓN ESENCIA - CON PARALLAX DE LUJO
 // ============================================================
 const EsenciaSection = () => {
   const ref = useRef(null)
@@ -433,8 +483,8 @@ const EsenciaSection = () => {
   return (
     <section id="esencia" ref={ref} className="py-32 bg-white relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FDF6F0] via-white to-[#FBF7F2]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#F0E3C8]/20" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/10" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
@@ -444,32 +494,39 @@ const EsenciaSection = () => {
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 80 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <span className="text-[10px] tracking-[0.4em] uppercase text-[#C9A96E] font-light">
-              Nuestra Esencia
-            </span>
-            <h2 className="font-serif text-4xl md:text-5xl text-[#2D1B13] mt-4 leading-tight">
+            <div className="inline-block mb-6">
+              <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50">
+                Nuestra Esencia
+              </span>
+            </div>
+            
+            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-4 leading-tight">
               Donde el arte
               <br />
-              <span className="italic text-[#C9A96E]">encuentra su hogar</span>
+              <span className="italic bg-gradient-to-r from-[#D4AF37] to-[#E879A0] bg-clip-text text-transparent">
+                encuentra su hogar
+              </span>
             </h2>
-            <p className="text-[#6B5A4E] font-light leading-relaxed mt-6">
-              Creamos un espacio donde cada detalle está pensado para elevar tu experiencia. 
-              Desde la selección de materiales hasta la técnica, cada paso es un acto de amor 
-              por la belleza auténtica.
+            
+            <p className="text-[#5C4A3E] font-light leading-relaxed mt-6 text-lg">
+              En Salon Fresh Nails, cada detalle está cuidadosamente diseñado para ofrecerte 
+              una experiencia de belleza única. Nuestra pasión por la excelencia se refleja 
+              en cada servicio, desde la técnica hasta la atención personalizada.
             </p>
 
-            <div className="grid grid-cols-2 gap-6 mt-8">
-              <div className="bg-[#FBF7F2] border border-[#E8DDD5] p-5 rounded-2xl hover:border-[#C9A96E] transition-all">
-                <FaAward className="text-[#C9A96E] text-xl mb-2" />
-                <p className="text-sm text-[#2D1B13] font-light">Excelencia artística</p>
+            <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className="bg-[#FFF8F5] border border-[#F0E4DA] p-5 rounded-2xl hover:border-[#D4AF37] transition-all group">
+                <FaAward className="text-[#D4AF37] text-2xl mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm text-[#1A0E0A] font-light">Excelencia Artística</p>
               </div>
-              <div className="bg-[#FBF7F2] border border-[#E8DDD5] p-5 rounded-2xl hover:border-[#C9A96E] transition-all">
-                <FaRegHeart className="text-[#E8B4C8] text-xl mb-2" />
-                <p className="text-sm text-[#2D1B13] font-light">Cuidado personalizado</p>
+              <div className="bg-[#FFF8F5] border border-[#F0E4DA] p-5 rounded-2xl hover:border-[#E879A0] transition-all group">
+                <FaRegHeart className="text-[#E879A0] text-2xl mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm text-[#1A0E0A] font-light">Cuidado Personalizado</p>
               </div>
             </div>
           </motion.div>
 
+          {/* Galería con parallax */}
           <div className="relative h-[500px] lg:h-[600px]">
             <motion.div
               style={{ y: y1 }}
@@ -495,7 +552,7 @@ const EsenciaSection = () => {
 
             <motion.div
               style={{ y: y3 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-60 rounded-[40%_70%_50%_60%] overflow-hidden shadow-2xl border-4 border-white"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-60 rounded-[40%_70%_50%_60%] overflow-hidden shadow-2xl border-4 border-[#D4AF37]/30"
             >
               <img 
                 src={GALLERY_IMAGES[2]} 
@@ -503,9 +560,6 @@ const EsenciaSection = () => {
                 className="w-full h-full object-cover"
               />
             </motion.div>
-
-            <div className="absolute -inset-10 rounded-full border border-[#C9A96E]/10 animate-spin-slow" />
-            <div className="absolute -inset-20 rounded-full border border-[#C9A96E]/5 animate-spin-slow-reverse" />
           </div>
         </div>
       </div>
@@ -514,7 +568,7 @@ const EsenciaSection = () => {
 }
 
 // ============================================================
-// SERVICIOS - TARJETAS LUMINOSAS
+// SERVICIOS - TARJETAS CON EFECTO WOW
 // ============================================================
 const ServicesSection = () => {
   const ref = useRef(null)
@@ -522,10 +576,8 @@ const ServicesSection = () => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   return (
-    <section id="servicios" ref={ref} className="py-32 bg-[#FBF7F2] relative">
-      <div className="absolute inset-0">
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#F5E0E8]/30" />
-      </div>
+    <section id="servicios" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-5" />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <motion.div
@@ -539,19 +591,19 @@ const ServicesSection = () => {
         >
           <motion.span 
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#C9A96E] font-light"
+            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
           >
-            Servicios
+            ✦ Servicios de Lujo ✦
           </motion.span>
           <motion.h2 
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#2D1B13] mt-4"
+            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
           >
-            Nuestro <span className="italic text-[#C9A96E]">arte</span>
+            Experiencias que <span className="italic text-[#D4AF37]">transforman</span>
           </motion.h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {SERVICES.map((service, idx) => {
             const Icon = service.icon
             const isHovered = hoveredIndex === idx
@@ -559,49 +611,52 @@ const ServicesSection = () => {
             return (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 40 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
                 transition={{ delay: idx * 0.1 }}
                 onMouseEnter={() => setHoveredIndex(idx)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className="group relative bg-white border border-[#E8DDD5] hover:border-[#C9A96E] rounded-2xl p-8 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C9A96E]/10 cursor-pointer"
+                className="group relative bg-white border border-[#F0E4DA] hover:border-[#D4AF37] rounded-2xl overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
               >
-                <div className={`absolute inset-0 rounded-2xl transition-opacity duration-500 pointer-events-none ${
-                  isHovered ? 'opacity-100' : 'opacity-0'
-                }`} style={{ boxShadow: 'inset 0 0 80px rgba(201, 169, 110, 0.05)' }} />
+                {/* Imagen de fondo en hover */}
+                <div className={`absolute inset-0 transition-all duration-700 ${
+                  isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
+                }`}>
+                  <img 
+                    src={service.image} 
+                    alt={service.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+                </div>
 
-                <div className="relative z-10">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-500 ${
-                    isHovered ? 'bg-[#C9A96E]/10 scale-110' : 'bg-[#FBF7F2]'
+                <div className="relative z-10 p-8">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                    isHovered ? 'bg-[#D4AF37] text-white scale-110' : 'bg-[#FFF8F5] text-[#D4AF37]'
                   }`}>
-                    <Icon className={`text-2xl transition-all duration-500 ${
-                      isHovered ? 'text-[#C9A96E]' : 'text-[#6B5A4E]'
-                    }`} />
+                    <Icon className="text-2xl" />
                   </div>
                   
-                  <h3 className={`text-xl font-light mt-6 transition-all duration-500 ${
-                    isHovered ? 'text-[#C9A96E]' : 'text-[#2D1B13]'
+                  <h3 className={`text-xl font-serif mt-6 transition-colors duration-500 ${
+                    isHovered ? 'text-[#D4AF37]' : 'text-[#1A0E0A]'
                   }`}>
                     {service.name}
                   </h3>
                   
-                  <p className="text-sm text-[#6B5A4E] font-light mt-3 leading-relaxed">
+                  <p className="text-[#5C4A3E] text-sm font-light mt-3 leading-relaxed">
                     {service.description}
                   </p>
 
-                  <div className="flex items-center justify-between pt-6 mt-6 border-t border-[#E8DDD5]">
+                  <div className="flex items-center justify-between mt-6 pt-6 border-t border-[#F0E4DA]">
                     <div>
-                      <span className={`text-xl font-serif transition-all duration-500 ${
-                        isHovered ? 'text-[#C9A96E]' : 'text-[#2D1B13]'
+                      <span className={`text-2xl font-serif transition-colors duration-500 ${
+                        isHovered ? 'text-[#D4AF37]' : 'text-[#1A0E0A]'
                       }`}>
                         ${service.price}
                       </span>
-                      <span className="text-xs text-[#6B5A4E] ml-3">
-                        {service.duration}min
-                      </span>
                     </div>
-                    <span className={`text-[10px] font-light tracking-wider uppercase px-3 py-1 rounded-full transition-all duration-500 ${
-                      isHovered ? 'bg-[#C9A96E] text-white' : 'bg-[#FBF7F2] text-[#6B5A4E]'
+                    <span className={`text-[10px] font-light tracking-wider uppercase px-4 py-1.5 rounded-full transition-all duration-500 ${
+                      isHovered ? 'bg-[#D4AF37] text-white' : 'bg-[#FFF8F5] text-[#5C4A3E]'
                     }`}>
                       {service.tag}
                     </span>
@@ -617,50 +672,16 @@ const ServicesSection = () => {
 }
 
 // ============================================================
-// TESTIMONIOS - SLIDER LUMINOSO
+// GALERÍA - CARRUSEL ESPECTACULAR
 // ============================================================
-const TestimonialsSection = () => {
+const GallerySection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.1 })
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [dragStartX, setDragStartX] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)
-  }
-
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
-    setDragStartX(clientX)
-    setIsDragging(true)
-  }
-
-  const handleDragEnd = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging) return
-    setIsDragging(false)
-    const clientX = 'changedTouches' in e ? e.changedTouches[0].clientX : e.clientX
-    const diff = dragStartX - clientX
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) nextSlide()
-      else prevSlide()
-    }
-  }
-
-  useEffect(() => {
-    const timer = setInterval(nextSlide, 6000)
-    return () => clearInterval(timer)
-  }, [])
 
   return (
-    <section id="testimonios" ref={ref} className="py-32 bg-white relative overflow-hidden">
+    <section id="galeria" ref={ref} className="py-32 bg-white relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FDF6F0] via-white to-[#FBF7F2]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#F0E3C8]/15" />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FFF8F5] via-white to-[#FFF8F5]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
@@ -675,99 +696,150 @@ const TestimonialsSection = () => {
         >
           <motion.span 
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#C9A96E] font-light"
+            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
           >
-            Testimonios
+            ✦ Galería ✦
           </motion.span>
           <motion.h2 
             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#2D1B13] mt-4"
+            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
           >
-            Lo que <span className="italic text-[#C9A96E]">dicen</span>
+            Nuestras <span className="italic text-[#D4AF37]">creaciones</span>
+          </motion.h2>
+        </motion.div>
+      </div>
+
+      {/* Carrusel horizontal continuo */}
+      <div className="relative">
+        <motion.div
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+          className="flex gap-4 w-max"
+        >
+          {[...GALLERY_IMAGES, ...GALLERY_IMAGES].map((img, idx) => (
+            <div key={idx} className="w-72 md:w-96 flex-shrink-0 group">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-xl">
+                <img 
+                  src={img} 
+                  alt={`Creación ${idx + 1}`}
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                  <p className="text-white text-sm font-light tracking-wider">✨ Creación exclusiva</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-12 text-center">
+        <Link 
+          href="/galeria"
+          className="inline-flex items-center gap-3 text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all group font-light tracking-wider"
+        >
+          Ver toda la galería
+          <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// TESTIMONIOS - SLIDER ELEGANTE
+// ============================================================
+const TestimonialsSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS.length)
+    }, 6000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <section id="testimonios" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
+      <div className="absolute inset-0">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/10" />
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 lg:px-8 relative z-10">
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
+          }}
+          className="text-center mb-16"
+        >
+          <motion.span 
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
+          >
+            ✦ Testimonios ✦
+          </motion.span>
+          <motion.h2 
+            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
+          >
+            Lo que <span className="italic text-[#D4AF37]">dicen</span>
           </motion.h2>
         </motion.div>
 
-        <div className="relative">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ delay: 0.3 }}
-            className="overflow-hidden"
-            onMouseDown={handleDragStart}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            onTouchStart={handleDragStart}
-            onTouchEnd={handleDragEnd}
-          >
-            <motion.div
-              animate={{ x: `-${currentIndex * 100}%` }}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="flex cursor-grab active:cursor-grabbing"
-            >
-              {TESTIMONIALS.map((testimonial, idx) => (
-                <div
-                  key={idx}
-                  className="min-w-full px-4"
-                >
-                  <div className="max-w-3xl mx-auto bg-white border border-[#E8DDD5] rounded-2xl p-8 md:p-12 shadow-xl hover:shadow-2xl transition-all">
-                    <div className="flex items-center gap-6 mb-6">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C9A96E]/30">
-                        <img 
-                          src={testimonial.image} 
-                          alt={testimonial.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h4 className="text-[#2D1B13] font-light text-lg">
-                          {testimonial.name}
-                        </h4>
-                        <p className="text-[#6B5A4E] text-sm">
-                          {testimonial.role}
-                        </p>
-                      </div>
-                    </div>
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="bg-white border border-[#F0E4DA] rounded-3xl p-12 shadow-2xl hover:shadow-3xl transition-all"
+        >
+          <div className="flex items-center gap-6 mb-8">
+            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-[#D4AF37]/30 shadow-xl">
+              <img 
+                src={TESTIMONIALS[currentIndex].image} 
+                alt={TESTIMONIALS[currentIndex].name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h4 className="text-xl font-serif text-[#1A0E0A]">
+                {TESTIMONIALS[currentIndex].name}
+              </h4>
+              <p className="text-[#5C4A3E] text-sm font-light">
+                {TESTIMONIALS[currentIndex].role}
+              </p>
+            </div>
+          </div>
 
-                    <FaQuoteLeft className="text-[#C9A96E]/20 text-3xl mb-4" />
-                    
-                    <p className="text-[#2D1B13] font-light leading-relaxed text-lg">
-                      "{testimonial.text}"
-                    </p>
+          <FaQuoteLeft className="text-[#D4AF37]/20 text-4xl mb-4" />
+          
+          <p className="text-[#1A0E0A] font-light leading-relaxed text-lg">
+            "{TESTIMONIALS[currentIndex].text}"
+          </p>
 
-                    <div className="flex items-center gap-1 mt-6">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <FaStar key={i} className="text-[#C9A96E] text-sm" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
+          <div className="flex items-center gap-1 mt-6">
+            {[...Array(TESTIMONIALS[currentIndex].rating)].map((_, i) => (
+              <FaStar key={i} className="text-[#D4AF37] text-lg" />
+            ))}
+          </div>
+        </motion.div>
 
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-[#E8DDD5] hover:border-[#C9A96E] text-[#6B5A4E] hover:text-[#C9A96E] transition-all flex items-center justify-center bg-white shadow-lg hover:shadow-xl"
-          >
-            <FaChevronLeft className="text-sm" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-[#E8DDD5] hover:border-[#C9A96E] text-[#6B5A4E] hover:text-[#C9A96E] transition-all flex items-center justify-center bg-white shadow-lg hover:shadow-xl"
-          >
-            <FaChevronRight className="text-sm" />
-          </button>
-        </div>
-
-        <div className="flex justify-center gap-2 mt-8">
+        <div className="flex justify-center gap-3 mt-8">
           {TESTIMONIALS.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`h-0.5 rounded-full transition-all duration-500 ${
+              className={`h-1 rounded-full transition-all duration-500 ${
                 idx === currentIndex 
-                  ? 'w-10 bg-[#C9A96E]' 
-                  : 'w-6 bg-[#E8DDD5] hover:bg-[#C9A96E]/50'
+                  ? 'w-12 bg-gradient-to-r from-[#D4AF37] to-[#E879A0]' 
+                  : 'w-4 bg-[#F0E4DA] hover:bg-[#D4AF37]/50'
               }`}
             />
           ))}
@@ -778,57 +850,61 @@ const TestimonialsSection = () => {
 }
 
 // ============================================================
-// CTA FINAL
+// CTA FINAL - IMPACTANTE
 // ============================================================
 const CtaSection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.2 })
 
   return (
-    <section ref={ref} className="py-28 bg-[#FBF7F2] relative overflow-hidden">
+    <section ref={ref} className="py-28 bg-gradient-to-br from-[#FFF8F5] to-[#F5EDE0] relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#F0E3C8]/30" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#F5E0E8]/20" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 relative z-10">
+      <div className="max-w-4xl mx-auto px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           className="text-center"
         >
-          <div className="inline-block mb-6">
-            <div className="w-16 h-16 rounded-full bg-[#C9A96E]/10 flex items-center justify-center mx-auto">
-              <FaRegHeart className="text-3xl text-[#C9A96E]" />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="inline-block mb-6"
+          >
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/30">
+              <FaDiamond className="text-3xl text-white" />
             </div>
-          </div>
+          </motion.div>
           
-          <h2 className="font-serif text-4xl md:text-5xl text-[#2D1B13]">
-            ¿Lista para <span className="italic text-[#C9A96E]">brillar</span>?
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A]">
+            ¿Lista para <span className="italic text-[#D4AF37]">brillar</span>?
           </h2>
           
-          <p className="text-[#6B5A4E] font-light mt-4 max-w-md mx-auto">
-            Reserva tu cita y descubre una experiencia de belleza única.
+          <p className="text-[#5C4A3E] font-light mt-4 max-w-md mx-auto text-lg">
+            Descubre una experiencia de belleza única en Salon Fresh Nails.
           </p>
 
           <Link 
             href="/agenda"
-            className="inline-flex items-center gap-4 px-12 py-5 mt-8 bg-[#C9A96E] text-white hover:bg-[#B8955A] transition-all duration-500 rounded-full text-xs font-light tracking-[0.2em] uppercase shadow-xl shadow-[#C9A96E]/25 hover:shadow-2xl hover:shadow-[#C9A96E]/40 group"
+            className="inline-flex items-center gap-4 px-12 py-5 mt-10 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full text-xs font-light tracking-[0.2em] uppercase group"
           >
             <FaCalendarCheck />
             Agendar Cita
             <FaArrowRight className="group-hover:translate-x-2 transition-transform" />
           </Link>
 
-          <div className="flex flex-wrap justify-center gap-8 mt-8 text-[10px] text-[#6B5A4E]">
+          <div className="flex flex-wrap justify-center gap-8 mt-8 text-xs text-[#5C4A3E] font-light">
             <span className="flex items-center gap-2">
-              <FaStar className="text-[#C9A96E] text-[8px]" /> Sin costo de reserva
+              <FaStar className="text-[#D4AF37] text-[8px]" /> Sin costo de reserva
             </span>
             <span className="flex items-center gap-2">
-              <FaStar className="text-[#C9A96E] text-[8px]" /> Confirmación inmediata
+              <FaStar className="text-[#D4AF37] text-[8px]" /> Confirmación inmediata
             </span>
             <span className="flex items-center gap-2">
-              <FaStar className="text-[#C9A96E] text-[8px]" /> Flexibilidad total
+              <FaStar className="text-[#D4AF37] text-[8px]" /> Flexibilidad total
             </span>
           </div>
         </motion.div>
@@ -838,85 +914,91 @@ const CtaSection = () => {
 }
 
 // ============================================================
-// FOOTER
+// FOOTER - ELEGANTE
 // ============================================================
 const Footer = () => (
-  <footer className="bg-white border-t border-[#E8DDD5] py-16">
+  <footer className="bg-white border-t border-[#F0E4DA] py-16">
     <div className="max-w-7xl mx-auto px-6 lg:px-8">
       <div className="grid md:grid-cols-4 gap-12">
         <div>
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#C9A96E]/10 border border-[#C9A96E]/30 flex items-center justify-center">
-              <FaGem className="w-4 h-4 text-[#C9A96E]" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30">
+              <FaDiamond className="w-5 h-5 text-white" />
             </div>
-            <span className="text-[#2D1B13] font-serif text-lg tracking-wider">
-              FRESH<span className="text-[#C9A96E]">.</span>
-            </span>
+            <div>
+              <span className="text-[#1A0E0A] font-serif text-xl tracking-wider">
+                Salon Fresh
+              </span>
+              <span className="block text-[8px] tracking-[0.3em] text-[#D4AF37] font-light uppercase">
+                Nails & Beauty
+              </span>
+            </div>
           </Link>
-          <p className="text-[#6B5A4E] text-xs font-light mt-4 leading-relaxed max-w-xs">
-            Redefiniendo el cuidado y la estética con arte y pasión.
+          <p className="text-[#5C4A3E] text-xs font-light mt-4 leading-relaxed max-w-xs">
+            Redefiniendo el cuidado y la estética con arte, pasión y excelencia.
           </p>
-          <div className="flex gap-3 mt-6">
-            <a href="#" className="text-[#6B5A4E] hover:text-[#C9A96E] transition-all">
-              <FaInstagram className="text-lg" />
+          <div className="flex gap-4 mt-6">
+            <a href="#" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all hover:scale-110">
+              <FaInstagram className="text-xl" />
             </a>
-            <a href="#" className="text-[#6B5A4E] hover:text-[#C9A96E] transition-all">
-              <FaWhatsapp className="text-lg" />
+            <a href="#" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all hover:scale-110">
+              <FaWhatsapp className="text-xl" />
             </a>
           </div>
         </div>
 
         <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#6B5A4E] font-light">
+          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
             Horarios
           </h4>
-          <ul className="mt-4 space-y-3 text-sm text-[#2D1B13] font-light">
-            <li className="flex justify-between">
-              <span className="text-[#6B5A4E]">Lun a Vie</span>
+          <ul className="mt-4 space-y-3 text-sm text-[#1A0E0A] font-light">
+            <li className="flex justify-between border-b border-[#F0E4DA] pb-2">
+              <span className="text-[#5C4A3E]">Lun a Vie</span>
               <span>09:00 - 20:00</span>
             </li>
-            <li className="flex justify-between">
-              <span className="text-[#6B5A4E]">Sábados</span>
+            <li className="flex justify-between border-b border-[#F0E4DA] pb-2">
+              <span className="text-[#5C4A3E]">Sábados</span>
               <span>09:00 - 18:00</span>
             </li>
             <li className="flex justify-between">
-              <span className="text-[#6B5A4E]">Domingos</span>
-              <span className="text-[#C9A96E]">Cerrado</span>
+              <span className="text-[#5C4A3E]">Domingos</span>
+              <span className="text-[#D4AF37]">Cerrado</span>
             </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#6B5A4E] font-light">
+          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
             Enlaces
           </h4>
           <ul className="mt-4 space-y-3 text-sm">
-            <li><Link href="#esencia" className="text-[#6B5A4E] hover:text-[#C9A96E] transition-all">Esencia</Link></li>
-            <li><Link href="#servicios" className="text-[#6B5A4E] hover:text-[#C9A96E] transition-all">Servicios</Link></li>
-            <li><Link href="#testimonios" className="text-[#6B5A4E] hover:text-[#C9A96E] transition-all">Testimonios</Link></li>
+            <li><Link href="#esencia" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Esencia</Link></li>
+            <li><Link href="#servicios" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Servicios</Link></li>
+            <li><Link href="#galeria" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Galería</Link></li>
+            <li><Link href="#testimonios" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Testimonios</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#6B5A4E] font-light">
+          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
             Contacto
           </h4>
-          <ul className="mt-4 space-y-3 text-sm text-[#6B5A4E]">
+          <ul className="mt-4 space-y-3 text-sm text-[#5C4A3E]">
             <li className="flex items-center gap-3">
-              <FaPhoneAlt className="text-[#C9A96E] text-xs" />
-              <span className="text-[#2D1B13]">099 123 456</span>
+              <FaPhoneAlt className="text-[#D4AF37] text-xs" />
+              <span className="text-[#1A0E0A]">099 123 456</span>
             </li>
             <li className="flex items-center gap-3">
-              <FaMapMarkerAlt className="text-[#C9A96E] text-xs" />
-              <span className="text-[#2D1B13]">Montevideo, Uruguay</span>
+              <FaMapMarkerAlt className="text-[#D4AF37] text-xs" />
+              <span className="text-[#1A0E0A]">Montevideo, Uruguay</span>
             </li>
           </ul>
         </div>
       </div>
 
-      <div className="mt-12 pt-8 border-t border-[#E8DDD5] text-center text-[10px] text-[#6B5A4E] font-light">
-        © 2026 Fresh Beauty Studio. Todos los derechos reservados.
-        <span className="hidden sm:inline ml-2">✦ Hecho con arte en Uruguay</span>
+      <div className="mt-12 pt-8 border-t border-[#F0E4DA] text-center text-[10px] text-[#5C4A3E] font-light">
+        © 2026 Salon Fresh Nails. Todos los derechos reservados.
+        <span className="hidden sm:inline ml-2">✦ Hecho con pasión en Uruguay</span>
       </div>
     </div>
   </footer>
@@ -927,34 +1009,15 @@ const Footer = () => (
 // ============================================================
 export default function Home() {
   return (
-    <main className="bg-white text-[#2D1B13] min-h-screen overflow-x-hidden">
+    <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden">
       <Header />
       <HeroSection />
       <EsenciaSection />
       <ServicesSection />
+      <GallerySection />
       <TestimonialsSection />
       <CtaSection />
       <Footer />
-
-      <style jsx>{`
-        @keyframes scroll {
-          0%, 100% { transform: translateY(0); opacity: 1; }
-          50% { transform: translateY(8px); opacity: 0; }
-        }
-        .animate-scroll {
-          animation: scroll 2s ease-in-out infinite;
-        }
-        .animate-spin-slow {
-          animation: spin 20s linear infinite;
-        }
-        .animate-spin-slow-reverse {
-          animation: spin 25s linear infinite reverse;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </main>
   )
 }
