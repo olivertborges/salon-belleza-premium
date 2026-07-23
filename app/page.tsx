@@ -464,6 +464,213 @@ const EsenciaSection = () => {
   )
 }
 
+
+// ============================================================
+// SERVICIOS DESTACADOS - CATEGORÍAS
+// ============================================================
+const ServicesCategoriesSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
+
+  const categories = [
+    {
+      id: 'manicura',
+      name: 'Manicura',
+      description: 'Manicura rusa, esmaltado semipermanente, diseño de uñas y cuidado profesional.',
+      icon: GiNails,
+      color: '#D4AF37',
+      bgColor: 'from-[#D4AF37]/20 to-[#D4AF37]/5',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&h=400&fit=crop',
+      tag: '⭐ Premium'
+    },
+    {
+      id: 'micropigmentacion',
+      name: 'Micropigmentación',
+      description: 'Labios, cejas y ojos con técnicas avanzadas para resultados naturales y duraderos.',
+      icon: FaEye,
+      color: '#E879A0',
+      bgColor: 'from-[#E879A0]/20 to-[#E879A0]/5',
+      image: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=400&h=400&fit=crop',
+      tag: '✨ Tendencia'
+    },
+    {
+      id: 'peluqueria',
+      name: 'Peluquería',
+      description: 'Cortes de autor, colorimetría avanzada, tratamientos capilares y peinados de alta costura.',
+      icon: GiScissors,
+      color: '#2D9CDB',
+      bgColor: 'from-[#2D9CDB]/20 to-[#2D9CDB]/5',
+      image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=400&h=400&fit=crop',
+      tag: '✂️ Vanguardia'
+    },
+    {
+      id: 'pestanas',
+      name: 'Pestañas',
+      description: 'Extensiones de pestañas, lifting, tintado y tratamientos para una mirada impactante.',
+      icon: HiOutlineSparkles,
+      color: '#9B5DE5',
+      bgColor: 'from-[#9B5DE5]/20 to-[#9B5DE5]/5',
+      image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400&h=400&fit=crop',
+      tag: '👁️ Impacto'
+    },
+    {
+      id: 'cejas',
+      name: 'Cejas',
+      description: 'Diseño de cejas, microblading, depilación con hilo y técnicas de realce natural.',
+      icon: FaRegStar,
+      color: '#F2994A',
+      bgColor: 'from-[#F2994A]/20 to-[#F2994A]/5',
+      image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=400&h=400&fit=crop',
+      tag: '🌟 Natural'
+    },
+    {
+      id: 'labios',
+      name: 'Labios',
+      description: 'Micropigmentación de labios, hidratación profunda y tratamientos de volumen natural.',
+      icon: GiLipstick,
+      color: '#E879A0',
+      bgColor: 'from-[#E879A0]/20 to-[#E879A0]/5',
+      image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&h=400&fit=crop',
+      tag: '💋 Glamour'
+    }
+  ]
+
+  return (
+    <section ref={ref} className="py-32 bg-white relative overflow-hidden">
+      {/* Fondo decorativo */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FFF8F5] via-white to-[#FFF8F5]" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/5" />
+        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/5" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+        {/* Encabezado */}
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
+          }}
+          className="text-center mb-16"
+        >
+          <motion.span 
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+            className="inline-block text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-6 py-2 rounded-full bg-white/50 backdrop-blur-sm"
+          >
+            ✦ Nuestros Servicios ✦
+          </motion.span>
+          <motion.h2 
+            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
+          >
+            Especialidades que <span className="italic text-[#D4AF37]">transforman</span>
+          </motion.h2>
+          <motion.p 
+            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+            className="text-[#5C4A3E] font-light mt-4 max-w-2xl mx-auto"
+          >
+            Descubre nuestra amplia gama de servicios profesionales, diseñados para realzar 
+            tu belleza natural con técnicas de vanguardia.
+          </motion.p>
+        </motion.div>
+
+        {/* Grid de categorías */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categories.map((category, idx) => {
+            const Icon = category.icon
+            return (
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, y: 40 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+                transition={{ delay: idx * 0.08, duration: 0.6 }}
+                className="group relative"
+              >
+                {/* Tarjeta principal */}
+                <div className="relative bg-white border border-[#F0E4DA] rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10 hover:border-[#D4AF37]/30 hover:-translate-y-2">
+                  
+                  {/* Imagen de fondo */}
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={category.image} 
+                      alt={category.name}
+                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/80 via-[#1A0E0A]/30 to-transparent" />
+                    
+                    {/* Tag */}
+                    <div className="absolute top-4 right-4">
+                      <span className="text-[8px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full text-white shadow-lg" style={{
+                        background: `linear-gradient(135deg, ${category.color}, ${category.color}dd)`,
+                        boxShadow: `0 4px 15px ${category.color}40`
+                      }}>
+                        {category.tag}
+                      </span>
+                    </div>
+
+                    {/* Icono flotante */}
+                    <div className="absolute bottom-4 left-4">
+                      <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                        <Icon className="text-2xl text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contenido */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-serif text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300">
+                      {category.name}
+                    </h3>
+                    <p className="text-[#5C4A3E] text-sm font-light mt-2 leading-relaxed">
+                      {category.description}
+                    </p>
+                    
+                    {/* Línea decorativa */}
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="h-0.5 flex-1 bg-gradient-to-r from-[#D4AF37] to-transparent" />
+                      <Link 
+                        href="/servicios"
+                        className="text-xs text-[#D4AF37] hover:text-[#E879A0] transition-colors font-light tracking-wider uppercase flex items-center gap-1 group/link"
+                      >
+                        Ver más
+                        <FaArrowRight className="text-[10px] group-hover/link:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Efecto de brillo en hover */}
+                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="absolute -inset-full top-0 left-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent transform skew-x-12 group-hover:translate-x-full transition-transform duration-1000" />
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* CTA final */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ delay: 0.6 }}
+          className="text-center mt-16"
+        >
+          <Link 
+            href="/servicios"
+            className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full text-xs font-light tracking-[0.2em] uppercase group"
+          >
+            <FaGem className="text-xs" />
+            Explorar todos los servicios
+            <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 // ============================================================
 // SERVICIOS - CON DATOS DE LA DB
 // ============================================================
