@@ -5,20 +5,21 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { 
-  FaClock, FaStar, FaArrowRight, FaSparkles, 
-  FaScissors, FaEye, FaHeart
+  FaClock, FaStar, FaArrowRight, FaHeart, FaEye, FaGem
 } from 'react-icons/fa'
-import { GiNails, GiSparkles, GiLipstick, GiFlowerStar } from 'react-icons/gi'
+import { 
+  GiNails, GiSparkles, GiLipstick, GiFlowerStar, GiScissors
+} from 'react-icons/gi'
 
-// ✅ ICONOS POR CATEGORÍA
+// ✅ ICONOS POR CATEGORÍA - CORREGIDOS
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
-  'Peluquería': FaScissors,
+  'Peluquería': GiScissors,
   'Cejas': FaEye,
   'Estética': GiFlowerStar,
   'Depilación': FaHeart,
-  'default': FaSparkles
+  'default': FaGem
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -60,10 +61,9 @@ export default function ServiciosPublicPage() {
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
-  // ✅ OBTENER TENANT_ID - VERSIÓN SIMPLIFICADA
+  // ✅ OBTENER TENANT_ID
   const getTenantId = async (): Promise<string | null> => {
     try {
-      // 1. Intentar obtener de la sesión
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user?.user_metadata?.tenant_id) {
         return session.user.user_metadata.tenant_id
@@ -72,7 +72,6 @@ export default function ServiciosPublicPage() {
         return session.user.app_metadata.tenant_id
       }
 
-      // 2. Buscar en profiles
       if (session?.user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -85,7 +84,6 @@ export default function ServiciosPublicPage() {
         }
       }
 
-      // 3. Buscar en clients
       if (session?.user?.id) {
         const { data: client } = await supabase
           .from('clients')
@@ -98,7 +96,6 @@ export default function ServiciosPublicPage() {
         }
       }
 
-      // 4. Buscar el primer tenant disponible en appointments
       const { data: firstAppointment } = await supabase
         .from('appointments')
         .select('tenant_id')
@@ -109,7 +106,6 @@ export default function ServiciosPublicPage() {
         return firstAppointment.tenant_id
       }
 
-      // 5. Buscar en services directamente
       const { data: firstService } = await supabase
         .from('services')
         .select('tenant_id')
@@ -182,7 +178,7 @@ export default function ServiciosPublicPage() {
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
             <div className="w-16 h-16 rounded-full border-2 border-[#C9A96E]/20 border-t-[#C9A96E] animate-spin" />
-            <FaSparkles className="w-6 h-6 text-[#C9A96E] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+            <FaGem className="w-6 h-6 text-[#C9A96E] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
           </div>
           <p className="text-xs text-stone-400 tracking-[0.3em] uppercase animate-pulse font-light">Cargando servicios...</p>
           <div className="flex gap-2">
@@ -266,10 +262,9 @@ export default function ServiciosPublicPage() {
         {filteredServicios.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-stone-900/50 border border-stone-800 flex items-center justify-center mb-4">
-              <FaSparkles className="w-8 h-8 text-stone-600" />
+              <FaGem className="w-8 h-8 text-stone-600" />
             </div>
             <p className="text-stone-400 text-sm">No hay servicios disponibles.</p>
-            <p className="text-stone-500 text-xs mt-2">Tenant ID: {servicios.length}</p>
           </div>
         ) : (
           <motion.div 
