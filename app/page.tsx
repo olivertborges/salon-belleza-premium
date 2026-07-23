@@ -22,9 +22,11 @@ import {
   FaSprayCan,
   FaPalette,
   FaHandSparkles,
-  FaFeather,
+  FaFeatherAlt,
   FaCrown,
-  FaSparkles
+  FaSparkle,
+  FaRegStar,
+  FaLeaf
 } from 'react-icons/fa'
 import { GiNails, GiLipstick, GiScissors, GiFlowerEmblem } from 'react-icons/gi'
 
@@ -322,7 +324,7 @@ const HeroSection = () => {
                 animate={{ ...float, transition: { delay: 3, duration: 4.5 } }}
                 className="absolute top-1/3 right-8 w-8 h-8 rounded-full bg-[#C9A87C]/20 flex items-center justify-center"
               >
-                <FaSparkles className="text-xs text-[#C9A87C]" />
+                <FaSparkle className="text-xs text-[#C9A87C]" />
               </motion.div>
 
               {/* Círculo interior con imagen */}
