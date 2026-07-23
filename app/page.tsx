@@ -25,7 +25,6 @@ import {
   FaLeaf,
   FaChevronLeft,
   FaChevronRight,
-  FaSparkles,
   FaFeatherAlt,
   FaRegSun
 } from 'react-icons/fa'
@@ -271,13 +270,11 @@ const HeroSection = () => {
         <div className="absolute top-0 right-0 w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#F0E3C8]/40" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#F5E0E8]/30" />
         
-        {/* Decoración sutil */}
         <div className="absolute inset-0 bg-[radial-gradient(#C9A96E_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10" />
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
-          {/* Columna izquierda - Texto */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -356,7 +353,6 @@ const HeroSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Columna derecha - Imagen */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -366,7 +362,6 @@ const HeroSection = () => {
             <div className="aspect-square max-w-md mx-auto relative">
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#F5EDE0] to-[#FDF6F0] border border-[#C9A96E]/10 shadow-2xl" />
               
-              {/* Elementos decorativos flotantes */}
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -388,10 +383,9 @@ const HeroSection = () => {
                 transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
                 className="absolute top-1/3 right-12 w-10 h-10 rounded-full bg-[#C9A96E]/20 flex items-center justify-center backdrop-blur-sm"
               >
-                <FaSparkles className="text-sm text-[#C9A96E]" />
+                <FaStar className="text-sm text-[#C9A96E]" />
               </motion.div>
 
-              {/* Imagen principal */}
               <div className="absolute inset-6 rounded-2xl overflow-hidden shadow-2xl">
                 <img 
                   src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=600&h=600&fit=crop&crop=center"
@@ -401,7 +395,6 @@ const HeroSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent" />
               </div>
 
-              {/* Anillos decorativos */}
               <div className="absolute -inset-4 rounded-3xl border border-[#C9A96E]/10" />
               <div className="absolute -inset-8 rounded-3xl border border-[#C9A96E]/5" />
             </div>
@@ -409,7 +402,6 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
       <motion.div
         animate={{ y: [0, 8, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
@@ -447,7 +439,6 @@ const EsenciaSection = () => {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Texto */}
           <motion.div
             initial={{ opacity: 0, y: 80 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 80 }}
@@ -479,7 +470,6 @@ const EsenciaSection = () => {
             </div>
           </motion.div>
 
-          {/* Galería con formas orgánicas */}
           <div className="relative h-[500px] lg:h-[600px]">
             <motion.div
               style={{ y: y1 }}
@@ -514,7 +504,6 @@ const EsenciaSection = () => {
               />
             </motion.div>
 
-            {/* Círculos decorativos */}
             <div className="absolute -inset-10 rounded-full border border-[#C9A96E]/10 animate-spin-slow" />
             <div className="absolute -inset-20 rounded-full border border-[#C9A96E]/5 animate-spin-slow-reverse" />
           </div>
@@ -577,7 +566,6 @@ const ServicesSection = () => {
                 onMouseLeave={() => setHoveredIndex(null)}
                 className="group relative bg-white border border-[#E8DDD5] hover:border-[#C9A96E] rounded-2xl p-8 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C9A96E]/10 cursor-pointer"
               >
-                {/* Glow effect */}
                 <div className={`absolute inset-0 rounded-2xl transition-opacity duration-500 pointer-events-none ${
                   isHovered ? 'opacity-100' : 'opacity-0'
                 }`} style={{ boxShadow: 'inset 0 0 80px rgba(201, 169, 110, 0.05)' }} />
@@ -757,7 +745,6 @@ const TestimonialsSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Navigation buttons */}
           <button
             onClick={prevSlide}
             className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-[#E8DDD5] hover:border-[#C9A96E] text-[#6B5A4E] hover:text-[#C9A96E] transition-all flex items-center justify-center bg-white shadow-lg hover:shadow-xl"
