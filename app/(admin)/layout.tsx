@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import AdminHeader from '@/components/layout/AdminHeader'
 
@@ -12,19 +12,55 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { role, loading, session } = useAuth()
+  const { role, loading, session, user } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
-  // 🔓 BYPASS TOTAL PARA TERMUX EN DESARROLLO
+  // ✅ PROTEGER RUTAS DE ADMIN
   useEffect(() => {
-    console.log('📱 [Termux-Layout-Bypass] Estado actual:', { session: !!session, role, loading });
-  }, [role, loading, session])
+    // Si está cargando, esperar
+    if (loading) return
+
+    // Si no hay usuario, redirigir al login
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
+      setIsAuthorized(false)
+      return
+    }
+
+    // Si el usuario no es admin, staff o owner, redirigir al portal
+    if (role !== 'admin' && role !== 'staff' && role !== 'owner') {
+      router.push('/portal')
+      setIsAuthorized(false)
+      return
+    }
+
+    // Si todo está bien, autorizar
+    setIsAuthorized(true)
+  }, [user, role, loading, router, pathname])
+
+  // ✅ Mostrar loader mientras carga o verifica permisos
+  if (loading || isAuthorized === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#0a0908]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-[#C9A96E]/20 border-t-[#C9A96E] rounded-full animate-spin" />
+          <p className="text-xs text-stone-400 animate-pulse">Verificando acceso...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ Si no está autorizado, no renderizar nada (la redirección ya se activó)
+  if (!isAuthorized) {
+    return null
+  }
 
   return (
-    /* 🛠️ CAMBIO AQUÍ: Cambiamos fixed inset-0 por h-screen y eliminamos overflow-hidden general */
     <div className="flex h-screen w-full bg-stone-50 dark:bg-[#0a0908] overflow-hidden">
       <AdminSidebar 
         collapsed={collapsed} 
@@ -33,20 +69,14 @@ export default function AdminLayout({
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Aseguramos que este contenedor ocupe el 100% de la altura disponible */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
         <AdminHeader 
           collapsed={collapsed} 
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        {/* 🛠️ CAMBIO AQUÍ: Añadimos pb-20 (padding bottom) para garantizar que al final del scroll 
-            haya un espacio de seguridad y ninguna tarjeta quede tapada en el móvil */}
         <main className="flex-1 px-4 pb-20 lg:px-6 lg:pb-24 pt-0 overflow-y-auto w-full">
-          
-          {/* Tu caja invisible calibrada (usa la altura que te haya quedado bien, ej: h-[45px] o h-[50px]) */}
           <div className="h-[20px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
-          
           {children}
         </main>
       </div>
