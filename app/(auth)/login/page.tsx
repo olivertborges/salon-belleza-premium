@@ -83,6 +83,7 @@ export default function AuthMobilDefinitivo() {
   const [showPassword, setShowPassword] = useState(false)
   const [redirectPath, setRedirectPath] = useState('/portal')
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [loginSuccess, setLoginSuccess] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -105,10 +106,11 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ SOLO REDIRIGIR CUANDO EL USUARIO ESTÁ COMPLETAMENTE AUTENTICADO
+  // ✅ REDIRECCIÓN CUANDO EL USUARIO ESTÁ AUTENTICADO EN EL CONTEXTO
   useEffect(() => {
-    if (!mounted || authLoading || isRedirecting) return
+    if (!mounted || authLoading) return
     if (!user || !role) return
+    if (isRedirecting) return
 
     setIsRedirecting(true)
 
@@ -137,33 +139,15 @@ export default function AuthMobilDefinitivo() {
       if (signInError) throw signInError
       
       setSuccess('¡Ingreso correcto!')
+      setLoginSuccess(true)
       
-      // ✅ OBTENER EL ROL DESPUÉS DEL LOGIN
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        // ✅ CASTEO EXPLÍCITO PARA EVITAR ERROR DE TIPO
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single() as any
-        
-        const userRole = profile?.role || 'client'
-        let targetPath = '/portal'
-        if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
-          targetPath = '/dashboard'
-        }
-        
-        const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
-          ? redirectPath 
-          : targetPath
-        
-        setIsRedirecting(true)
-        router.replace(finalPath)
-      }
+      // ✅ NO REDIRIGIR AQUÍ - DEJAR QUE EL useEffect LO HAGA
+      // Solo esperamos a que el contexto se actualice
+      
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
+      setLoginSuccess(false)
     }
   }
 
@@ -195,18 +179,17 @@ export default function AuthMobilDefinitivo() {
 
       setSuccess('✅ ¡Registro exitoso!')
       
+      // ✅ Iniciar sesión después del registro
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
       
-      const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
-        ? redirectPath 
-        : '/portal'
+      setLoginSuccess(true)
+      // ✅ NO REDIRIGIR AQUÍ - DEJAR QUE EL useEffect LO HAGA
       
-      setIsRedirecting(true)
-      router.replace(finalPath)
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
       setLoading(false)
+      setLoginSuccess(false)
     }
   }
 
@@ -230,7 +213,7 @@ export default function AuthMobilDefinitivo() {
     }
   }
 
-  // ✅ MOSTRAR UN ESTADO DE REDIRECCIÓN
+  // ✅ MOSTRAR ESTADO DE CARGA DURANTE REDIRECCIÓN
   if (isRedirecting) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
