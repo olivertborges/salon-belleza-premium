@@ -25,10 +25,7 @@ import {
   FaChevronRight,
   FaRegSun,
   FaCrown,
-  FaRegStar,
-  FaSparkle,
-  FaSprayCan,
-  FaFeatherAlt
+  FaRegStar
 } from 'react-icons/fa'
 import { GiNails, GiScissors, GiLipstick, GiFlowerEmblem, GiRose } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
@@ -415,36 +412,6 @@ const HeroSection = () => {
           </motion.div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          animation: gradient 4s ease-in-out infinite;
-        }
-        .animate-pulse-slow {
-          animation: pulse 6s ease-in-out infinite;
-        }
-        .animate-pulse-slow-delay {
-          animation: pulse 6s ease-in-out infinite 2s;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-        .animate-spin-slow {
-          animation: spin 20s linear infinite;
-        }
-        .animate-spin-slow-reverse {
-          animation: spin 25s linear infinite reverse;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </section>
   )
 }
@@ -999,6 +966,36 @@ export default function Home() {
       <TestimonialsSection />
       <CtaSection />
       <Footer />
+
+      <style jsx>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 4s ease-in-out infinite;
+        }
+        .animate-pulse-slow {
+          animation: pulse 6s ease-in-out infinite;
+        }
+        .animate-pulse-slow-delay {
+          animation: pulse 6s ease-in-out infinite 2s;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        .animate-spin-slow {
+          animation: spin 20s linear infinite;
+        }
+        .animate-spin-slow-reverse {
+          animation: spin 25s linear infinite reverse;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </main>
   )
 }
