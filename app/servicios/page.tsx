@@ -11,7 +11,7 @@ import {
   GiNails, GiSparkles, GiLipstick, GiFlowerStar, GiScissors
 } from 'react-icons/gi'
 
-// ✅ ICONOS POR CATEGORÍA - CORREGIDOS
+// ✅ ICONOS POR CATEGORÍA
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
@@ -61,9 +61,10 @@ export default function ServiciosPublicPage() {
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
-  // ✅ OBTENER TENANT_ID
+  // ✅ OBTENER TENANT_ID - CON CASTEO EXPLÍCITO
   const getTenantId = async (): Promise<string | null> => {
     try {
+      // 1. Intentar obtener de la sesión
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user?.user_metadata?.tenant_id) {
         return session.user.user_metadata.tenant_id
@@ -72,45 +73,49 @@ export default function ServiciosPublicPage() {
         return session.user.app_metadata.tenant_id
       }
 
+      // 2. Buscar en profiles - CON CASTEO
       if (session?.user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('tenant_id')
           .eq('id', session.user.id)
-          .maybeSingle()
+          .maybeSingle() as any  // ✅ CASTEO EXPLÍCITO
         
         if (profile?.tenant_id) {
           return profile.tenant_id
         }
       }
 
+      // 3. Buscar en clients - CON CASTEO
       if (session?.user?.id) {
         const { data: client } = await supabase
           .from('clients')
           .select('tenant_id')
           .eq('auth_user_id', session.user.id)
-          .maybeSingle()
+          .maybeSingle() as any  // ✅ CASTEO EXPLÍCITO
         
         if (client?.tenant_id) {
           return client.tenant_id
         }
       }
 
+      // 4. Buscar en appointments
       const { data: firstAppointment } = await supabase
         .from('appointments')
         .select('tenant_id')
         .limit(1)
-        .maybeSingle()
+        .maybeSingle() as any  // ✅ CASTEO EXPLÍCITO
       
       if (firstAppointment?.tenant_id) {
         return firstAppointment.tenant_id
       }
 
+      // 5. Buscar en services
       const { data: firstService } = await supabase
         .from('services')
         .select('tenant_id')
         .limit(1)
-        .maybeSingle()
+        .maybeSingle() as any  // ✅ CASTEO EXPLÍCITO
       
       if (firstService?.tenant_id) {
         return firstService.tenant_id
