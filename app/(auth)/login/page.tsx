@@ -81,6 +81,7 @@ export default function AuthMobilDefinitivo() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [redirectPath, setRedirectPath] = useState('/portal')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -91,14 +92,20 @@ export default function AuthMobilDefinitivo() {
   useEffect(() => {
     setMounted(true)
 
+    // Obtener redirect de la URL
     const searchParams = new URLSearchParams(window.location.search);
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectPath(redirect)
+    }
+
     const ref = searchParams.get('ref');
     if (ref) {
       setReferralCode(ref)
     }
   }, [])
 
-  // ✅ REDIRECCIÓN MEJORADA CON WINDOW.LOCATION PARA ROMPER BUCLES
+  // ✅ REDIRECCIÓN SIMPLIFICADA - SIN WINDOW.LOCATION
   useEffect(() => {
     if (!mounted || authLoading) return
     if (!user || !role) return
@@ -108,10 +115,16 @@ export default function AuthMobilDefinitivo() {
       targetPath = '/dashboard'
     }
 
-    if (window.location.pathname === targetPath) return
+    // Usar el redirect de la URL si existe
+    const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+      ? redirectPath 
+      : targetPath
 
-    window.location.replace(targetPath)
-  }, [user, role, authLoading, mounted])
+    // ✅ Usar router.push en lugar de window.location.replace
+    if (window.location.pathname !== finalPath) {
+      router.push(finalPath)
+    }
+  }, [user, role, authLoading, mounted, redirectPath, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,6 +138,8 @@ export default function AuthMobilDefinitivo() {
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
       setSuccess('¡Ingreso correcto!')
+      
+      // ✅ No redirigir aquí, el useEffect lo hará
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
@@ -158,6 +173,8 @@ export default function AuthMobilDefinitivo() {
       }
 
       setSuccess('✅ ¡Registro exitoso!')
+      
+      // ✅ Iniciar sesión automáticamente después del registro
       await signIn(email, password)
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
