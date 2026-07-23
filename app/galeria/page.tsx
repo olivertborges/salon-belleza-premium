@@ -44,30 +44,60 @@ export default function GaleriaPublicPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // ============================================================
+  // ✅ FUNCIÓN CORREGIDA PARA OBTENER TENANT_ID
+  // ============================================================
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
+
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return null
-    if (session.user.user_metadata?.tenant_id) return session.user.user_metadata.tenant_id
-    if (session.user.app_metadata?.tenant_id) return session.user.app_metadata.tenant_id
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', session.user.id)
-      .maybeSingle()
-    if (profile?.tenant_id) return profile.tenant_id
+    // Verificar user_metadata
+    if (session.user.user_metadata?.tenant_id) {
+      return session.user.user_metadata.tenant_id
+    }
 
-    const { data: client } = await supabase
-      .from('clients')
-      .select('tenant_id')
-      .eq('auth_user_id', session.user.id)
-      .maybeSingle()
-    if (client?.tenant_id) return client.tenant_id
+    if (session.user.app_metadata?.tenant_id) {
+      return session.user.app_metadata.tenant_id
+    }
+
+    // Buscar en profiles
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (!profileError && profile && profile.tenant_id) {
+        return profile.tenant_id
+      }
+    } catch (e) {
+      // Ignorar error
+    }
+
+    // Buscar en clients
+    try {
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('tenant_id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle()
+
+      if (!clientError && client && client.tenant_id) {
+        return client.tenant_id
+      }
+    } catch (e) {
+      // Ignorar error
+    }
 
     return null
   }, [tenantId])
 
+  // ============================================================
+  // CARGAR GALERÍA
+  // ============================================================
   const loadGallery = useCallback(async () => {
     setLoading(true)
     try {
@@ -141,7 +171,9 @@ export default function GaleriaPublicPage() {
     loadGallery()
   }, [loadGallery])
 
-  // Filtros
+  // ============================================================
+  // FILTROS
+  // ============================================================
   const categories = ['all', 'Uñas', 'Micropigmentación', 'Peluquería', 'Cejas', 'Estética']
   
   const filteredImages = useMemo(() => {
@@ -149,10 +181,12 @@ export default function GaleriaPublicPage() {
     return images.filter(img => img.category === filter)
   }, [images, filter])
 
-  // Likes (solo si está logueado)
+  // ============================================================
+  // LIKES
+  // ============================================================
   const handleLike = useCallback((id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    if (!user) return // ✅ Solo si está logueado
+    if (!user) return
     setLikedImages(prev => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -166,7 +200,9 @@ export default function GaleriaPublicPage() {
     })
   }, [user])
 
-  // Lightbox
+  // ============================================================
+  // LIGHTBOX
+  // ============================================================
   const openLightbox = useCallback((img: GalleryImage) => {
     if (isModalOpen) return
     setIsModalOpen(true)
@@ -198,6 +234,9 @@ export default function GaleriaPublicPage() {
     return () => window.removeEventListener('keydown', handleEsc)
   }, [isModalOpen, closeLightbox])
 
+  // ============================================================
+  // LOADING
+  // ============================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0d0b0a] text-white flex items-center justify-center">
@@ -217,6 +256,9 @@ export default function GaleriaPublicPage() {
     )
   }
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className={`min-h-screen transition-colors duration-700 ${
       isDark ? 'bg-[#0d0b0a] text-white' : 'bg-[#FAF8F5] text-neutral-900'
