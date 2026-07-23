@@ -8,7 +8,6 @@ import {
   FaArrowRight, 
   FaQuoteLeft,
   FaClock,
-  FaAward,
   FaInstagram,
   FaWhatsapp,
   FaStar,
@@ -19,36 +18,30 @@ import {
   FaPhoneAlt,
   FaMapMarkerAlt,
   FaRegHeart,
-  FaSprayCan,
   FaPalette,
-  FaHandSparkles,
-  FaFeatherAlt,
-  FaCrown,
-  FaSparkle,
-  FaRegStar,
-  FaLeaf
+  FaHandSparkles
 } from 'react-icons/fa'
-import { GiNails, GiLipstick, GiScissors, GiFlowerEmblem } from 'react-icons/gi'
+import { GiNails, GiScissors } from 'react-icons/gi'
 
 // ============================================================
-// PALETA COMPLETAMENTE NUEVA - VIBE LUXE MINIMAL
+// PALETA - VIBE LUXE MINIMAL
 // ============================================================
 const COLORS = {
-  primary: '#F5E6D3',      // Beige cálido
-  secondary: '#2D1B13',    // Café oscuro profundo
-  accent: '#B8865A',       // Bronce elegante
-  accentLight: '#D4A88C',  // Rosa pálido
-  gold: '#C9A87C',         // Oro suave
-  dark: '#1A120E',         // Negro cálido
-  surface: '#261D18',      // Superficie oscura
-  card: '#1F1611',         // Tarjeta
-  text: '#E8DDD5',         // Texto claro
-  textMuted: '#A89588',    // Texto secundario
-  border: '#3A2C24',       // Borde
+  primary: '#F5E6D3',
+  secondary: '#2D1B13',
+  accent: '#B8865A',
+  accentLight: '#D4A88C',
+  gold: '#C9A87C',
+  dark: '#1A120E',
+  surface: '#261D18',
+  card: '#1F1611',
+  text: '#E8DDD5',
+  textMuted: '#A89588',
+  border: '#3A2C24',
 }
 
 // ============================================================
-// ANIMACIONES PERSONALIZADAS
+// ANIMACIONES
 // ============================================================
 const slideIn = {
   hidden: { opacity: 0, x: -80 },
@@ -60,18 +53,13 @@ const fadeIn = {
   visible: { opacity: 1, transition: { duration: 0.6 } }
 }
 
-const scaleUp = {
-  hidden: { opacity: 0, scale: 0.85 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
-}
-
 const float = {
   y: [0, -8, 0],
   transition: { duration: 5, repeat: Infinity, ease: "easeInOut" }
 }
 
 // ============================================================
-// DATOS - MISMA ESTRUCTURA, NUEVA PRESENTACIÓN
+// DATOS
 // ============================================================
 const SERVICES = [
   { 
@@ -128,7 +116,7 @@ const TESTIMONIALS = [
 ]
 
 // ============================================================
-// HEADER - MINIMALISTA ELEGANTE
+// HEADER
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -219,33 +207,23 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO - DISEÑO EDITORIAL
+// HERO
 // ============================================================
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen bg-[#1A120E] flex items-center overflow-hidden">
-      {/* Fondo con textura orgánica */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#2D1B13_0%,_transparent_70%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_#B8865A_0%,_transparent_50%)] opacity-10" />
-        
-        {/* Líneas decorativas */}
         <div className="absolute top-1/3 right-0 w-px h-64 bg-gradient-to-b from-[#B8865A]/0 via-[#B8865A]/30 to-[#B8865A]/0" />
         <div className="absolute bottom-1/4 left-1/4 w-px h-32 bg-gradient-to-b from-[#B8865A]/0 via-[#B8865A]/20 to-[#B8865A]/0" />
-        
-        {/* Círculo decorativo */}
         <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full border border-[#B8865A]/10" />
         <div className="absolute -top-40 -left-40 w-[400px] h-[400px] rounded-full border border-[#B8865A]/5" />
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid md:grid-cols-2 gap-12 items-center min-h-[80vh]">
-          {/* Columna izquierda - Texto */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={slideIn}
-          >
+          <motion.div initial="hidden" animate="visible" variants={slideIn}>
             <div className="inline-block mb-8">
               <span className="text-[10px] tracking-[0.3em] uppercase text-[#B8865A] font-light border border-[#B8865A]/20 px-4 py-2 rounded-full">
                 Estudio de Belleza
@@ -281,7 +259,6 @@ const HeroSection = () => {
               </Link>
             </div>
 
-            {/* Stats minimalistas */}
             <div className="flex gap-12 mt-12 pt-8 border-t border-[#3A2C24]">
               <div>
                 <p className="text-2xl font-serif text-[#B8865A]">5+</p>
@@ -294,7 +271,6 @@ const HeroSection = () => {
             </div>
           </motion.div>
 
-          {/* Columna derecha - Imagen abstracta */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -302,10 +278,8 @@ const HeroSection = () => {
             className="relative"
           >
             <div className="aspect-square max-w-md mx-auto relative">
-              {/* Círculo principal */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#2D1B13] to-[#1A120E] border border-[#B8865A]/20" />
               
-              {/* Elementos decorativos flotantes */}
               <motion.div 
                 animate={float}
                 className="absolute top-1/4 left-1/4 w-16 h-16 rounded-full bg-[#B8865A]/10 border border-[#B8865A]/30 flex items-center justify-center"
@@ -324,10 +298,9 @@ const HeroSection = () => {
                 animate={{ ...float, transition: { delay: 3, duration: 4.5 } }}
                 className="absolute top-1/3 right-8 w-8 h-8 rounded-full bg-[#C9A87C]/20 flex items-center justify-center"
               >
-                <FaSparkle className="text-xs text-[#C9A87C]" />
+                <FaStar className="text-xs text-[#C9A87C]" />
               </motion.div>
 
-              {/* Círculo interior con imagen */}
               <div className="absolute inset-8 rounded-full overflow-hidden border border-[#B8865A]/30">
                 <img 
                   src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=600&h=600&fit=crop&crop=center"
@@ -337,7 +310,6 @@ const HeroSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A120E]/60 to-transparent" />
               </div>
 
-              {/* Anillo decorativo */}
               <div className="absolute -inset-4 rounded-full border border-[#B8865A]/5" />
               <div className="absolute -inset-8 rounded-full border border-[#B8865A]/5" />
             </div>
@@ -349,7 +321,7 @@ const HeroSection = () => {
 }
 
 // ============================================================
-// SERVICIOS - DISEÑO CON TARJETAS VERTICALES
+// SERVICIOS
 // ============================================================
 const ServicesSection = () => {
   const ref = useRef(null)
@@ -421,7 +393,7 @@ const ServicesSection = () => {
 }
 
 // ============================================================
-// GALERÍA - DISEÑO MARQUEE
+// GALERÍA
 // ============================================================
 const GallerySection = () => {
   const ref = useRef(null)
@@ -445,7 +417,6 @@ const GallerySection = () => {
         </motion.div>
       </div>
 
-      {/* Carrusel horizontal continuo */}
       <div className="relative">
         <motion.div
           animate={{ x: ['0%', '-50%'] }}
@@ -481,7 +452,7 @@ const GallerySection = () => {
 }
 
 // ============================================================
-// TESTIMONIALS - DISEÑO CON FONDO TEXTURADO
+// TESTIMONIALS
 // ============================================================
 const TestimonialsSection = () => {
   const ref = useRef(null)
@@ -559,7 +530,7 @@ const TestimonialsSection = () => {
 }
 
 // ============================================================
-// CTA - DISEÑO SOBRIO ELEGANTE
+// CTA
 // ============================================================
 const CtaSection = () => {
   const ref = useRef(null)
@@ -606,7 +577,7 @@ const CtaSection = () => {
 }
 
 // ============================================================
-// FOOTER - MINIMALISTA
+// FOOTER
 // ============================================================
 const Footer = () => (
   <footer className="bg-[#1A120E] border-t border-[#3A2C24] py-16">
