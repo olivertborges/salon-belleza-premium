@@ -1,15 +1,13 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // ✅ Crear una respuesta que pueda modificar las cookies
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
-  // ✅ Crear el cliente de Supabase con manejo correcto de cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +16,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value)
             response.cookies.set(name, value, options)
@@ -28,32 +26,30 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // ✅ REFRESCAR LA SESIÓN - Esto es CRUCIAL para que el middleware detecte al usuario
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  // ✅ USAR getUser() EN LUGAR DE getSession() - MÁS CONFIABLE
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  // ✅ LOG PARA DEPURACIÓN (opcional)
+  // console.log('Middleware - User:', user?.email, 'Error:', userError?.message)
 
   const { pathname } = request.nextUrl
 
-  // ✅ RUTAS PÚBLICAS (siempre accesibles)
+  // ✅ RUTAS PÚBLICAS
   const publicRoutes = ['/', '/servicios', '/galeria', '/login', '/register', '/auth/callback', '/auth/reset-password']
-
-  // ✅ RUTAS PROTEGIDAS
   const protectedRoutes = ['/agenda', '/portal', '/mis-citas', '/perfil']
-
-  // ✅ RUTAS DE ADMIN
   const adminRoutes = ['/admin']
 
-  // 🔥 1. SI ESTÁ EN /login O /register → DEJAR PASAR SIEMPRE
+  // ✅ SI ESTÁ EN /login O /register → DEJAR PASAR SIEMPRE
   if (pathname === '/login' || pathname === '/register') {
     return response
   }
 
-  // 🔥 2. SI ES RUTA PÚBLICA → DEJAR PASAR
+  // ✅ SI ES RUTA PÚBLICA → DEJAR PASAR
   if (publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     return response
   }
 
-  // 🔥 3. SI EL USUARIO ESTÁ LOGUEADO → DEJAR PASAR
+  // ✅ SI EL USUARIO ESTÁ LOGUEADO → DEJAR PASAR
   if (user) {
     // Verificar admin solo para /admin
     if (pathname.startsWith('/admin')) {
@@ -70,14 +66,14 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // 🔥 4. NO HAY USUARIO Y LA RUTA ES PROTEGIDA → REDIRIGIR A LOGIN
+  // ✅ NO HAY USUARIO Y LA RUTA ES PROTEGIDA → REDIRIGIR A LOGIN
   if (protectedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     const url = new URL('/login', request.url)
     url.searchParams.set('redirect', pathname)
     return NextResponse.redirect(url)
   }
 
-  // 🔥 5. NO HAY USUARIO Y LA RUTA ES DE ADMIN → REDIRIGIR A LOGIN
+  // ✅ NO HAY USUARIO Y LA RUTA ES DE ADMIN → REDIRIGIR A LOGIN
   if (adminRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     const url = new URL('/login', request.url)
     url.searchParams.set('redirect', pathname)
