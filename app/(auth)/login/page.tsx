@@ -82,6 +82,7 @@ export default function AuthMobilDefinitivo() {
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [redirectPath, setRedirectPath] = useState('/portal')
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -105,10 +106,12 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ✅ REDIRECCIÓN SIMPLIFICADA - SIN WINDOW.LOCATION
+  // ✅ SOLO REDIRIGIR CUANDO EL USUARIO ESTÁ COMPLETAMENTE AUTENTICADO
   useEffect(() => {
-    if (!mounted || authLoading) return
+    if (!mounted || authLoading || isRedirecting) return
     if (!user || !role) return
+
+    setIsRedirecting(true)
 
     let targetPath = '/portal'
     if (role === 'admin' || role === 'staff' || role === 'owner') {
@@ -120,15 +123,13 @@ export default function AuthMobilDefinitivo() {
       ? redirectPath 
       : targetPath
 
-    // ✅ Usar router.push en lugar de window.location.replace
-    if (window.location.pathname !== finalPath) {
-      router.push(finalPath)
-    }
-  }, [user, role, authLoading, mounted, redirectPath, router])
+    // ✅ Redirigir con router.replace para evitar problemas de historial
+    router.replace(finalPath)
+  }, [user, role, authLoading, mounted, redirectPath, router, isRedirecting])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    if (loading || isRedirecting) return
 
     setLoading(true)
     setError('')
@@ -137,9 +138,32 @@ export default function AuthMobilDefinitivo() {
     try {
       const { error: signInError } = await signIn(email, password)
       if (signInError) throw signInError
+      
       setSuccess('¡Ingreso correcto!')
       
-      // ✅ No redirigir aquí, el useEffect lo hará
+      // ✅ OBTENER EL ROL DESPUÉS DEL LOGIN
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+        
+        const userRole = profile?.role || 'client'
+        let targetPath = '/portal'
+        if (userRole === 'admin' || userRole === 'staff' || userRole === 'owner') {
+          targetPath = '/dashboard'
+        }
+        
+        const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+          ? redirectPath 
+          : targetPath
+        
+        // ✅ REDIRIGIR INMEDIATAMENTE DESPUÉS DEL LOGIN
+        setIsRedirecting(true)
+        router.replace(finalPath)
+      }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado.')
       setLoading(false)
@@ -148,7 +172,7 @@ export default function AuthMobilDefinitivo() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    if (loading || isRedirecting) return
 
     setLoading(true)
     setError('')
@@ -175,7 +199,16 @@ export default function AuthMobilDefinitivo() {
       setSuccess('✅ ¡Registro exitoso!')
       
       // ✅ Iniciar sesión automáticamente después del registro
-      await signIn(email, password)
+      const { error: signInError } = await signIn(email, password)
+      if (signInError) throw signInError
+      
+      // ✅ Redirigir después del registro
+      const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+        ? redirectPath 
+        : '/portal'
+      
+      setIsRedirecting(true)
+      router.replace(finalPath)
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
       setLoading(false)
@@ -200,6 +233,21 @@ export default function AuthMobilDefinitivo() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // ✅ MOSTRAR UN ESTADO DE REDIRECCIÓN
+  if (isRedirecting) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0908]">
+        <div className="relative">
+          <div className="w-12 h-12 border-3 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#DB5B9A' }} />
+          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#DB5B9A' }} />
+        </div>
+        <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-pink-500 mt-4">
+          Redirigiendo...
+        </p>
+      </div>
+    )
   }
 
   if (!mounted) {
@@ -442,7 +490,7 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isRedirecting}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)' }}
                 >
@@ -564,7 +612,7 @@ export default function AuthMobilDefinitivo() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isRedirecting}
                   className="w-full relative overflow-hidden group py-4 rounded-2xl text-white text-xs font-mono uppercase tracking-[0.25em] font-bold transition-all duration-300 shadow-lg shadow-pink-500/25 active:scale-[0.98] disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg, #f59e0b, #ec4899)' }}
                 >
