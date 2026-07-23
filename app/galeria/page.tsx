@@ -45,7 +45,7 @@ export default function GaleriaPublicPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // ============================================================
-  // ✅ FUNCIÓN CORREGIDA PARA OBTENER TENANT_ID
+  // ✅ FUNCIÓN CORREGIDA CON CASTEO EXPLÍCITO
   // ============================================================
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
@@ -62,34 +62,26 @@ export default function GaleriaPublicPage() {
       return session.user.app_metadata.tenant_id
     }
 
-    // Buscar en profiles
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', session.user.id)
-        .maybeSingle()
+    // ✅ Buscar en profiles con casteo explícito
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', session.user.id)
+      .maybeSingle() as any
 
-      if (!profileError && profile && profile.tenant_id) {
-        return profile.tenant_id
-      }
-    } catch (e) {
-      // Ignorar error
+    if (profile?.tenant_id) {
+      return profile.tenant_id
     }
 
-    // Buscar en clients
-    try {
-      const { data: client, error: clientError } = await supabase
-        .from('clients')
-        .select('tenant_id')
-        .eq('auth_user_id', session.user.id)
-        .maybeSingle()
+    // ✅ Buscar en clients con casteo explícito
+    const { data: client } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .eq('auth_user_id', session.user.id)
+      .maybeSingle() as any
 
-      if (!clientError && client && client.tenant_id) {
-        return client.tenant_id
-      }
-    } catch (e) {
-      // Ignorar error
+    if (client?.tenant_id) {
+      return client.tenant_id
     }
 
     return null
