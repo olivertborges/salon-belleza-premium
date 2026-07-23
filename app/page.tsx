@@ -587,7 +587,7 @@ const ServicesSection = ({ services }: { services: any[] }) => {
 }
 
 // ============================================================
-// GALERÍA - CON DATOS DE LA DB
+// GALERÍA - REDISEÑADA
 // ============================================================
 const GallerySection = ({ images }: { images: any[] }) => {
   const ref = useRef(null)
@@ -605,9 +605,12 @@ const GallerySection = ({ images }: { images: any[] }) => {
       ]
 
   return (
-    <section id="galeria" ref={ref} className="py-32 bg-white relative overflow-hidden">
+    <section id="galeria" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
+      {/* Fondo decorativo */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FFF8F5] via-white to-[#FFF8F5]" />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white via-[#FFF8F5] to-white" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#D4AF37]/5" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full filter blur-[150px] bg-[#E879A0]/5" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
@@ -622,7 +625,7 @@ const GallerySection = ({ images }: { images: any[] }) => {
         >
           <motion.span 
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
+            className="inline-block text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-6 py-2 rounded-full bg-white/50 backdrop-blur-sm"
           >
             ✦ Galería ✦
           </motion.span>
@@ -632,14 +635,25 @@ const GallerySection = ({ images }: { images: any[] }) => {
           >
             Nuestras <span className="italic text-[#D4AF37]">creaciones</span>
           </motion.h2>
+          <motion.p 
+            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+            className="text-[#5C4A3E] font-light mt-4 max-w-md mx-auto"
+          >
+            Cada diseño es una obra de arte única, creada con pasión y dedicación.
+          </motion.p>
         </motion.div>
       </div>
 
+      {/* Carrusel con efecto de luz */}
       <div className="relative">
+        {/* Efecto de desvanecimiento en los bordes */}
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#FFF8F5] to-transparent z-20 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#FFF8F5] to-transparent z-20 pointer-events-none" />
+
         <motion.div
           animate={{ x: ['0%', '-50%'] }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          className="flex gap-4 w-max"
+          transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+          className="flex gap-5 w-max"
         >
           {[...displayImages, ...displayImages].map((img, idx) => {
             const imageUrl = typeof img === 'string' ? img : img.image_url
@@ -647,18 +661,38 @@ const GallerySection = ({ images }: { images: any[] }) => {
             const clientName = typeof img === 'string' ? 'Fresh Nails' : img.client_name || 'Fresh Nails'
 
             return (
-              <div key={idx} className="w-72 md:w-96 flex-shrink-0 group">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-xl">
+              <div key={idx} className="w-72 md:w-80 flex-shrink-0 group">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl shadow-[#D4AF37]/10">
+                  {/* Imagen */}
                   <img 
                     src={imageUrl} 
                     alt={title}
                     className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  {/* Overlay con gradiente premium */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/80 via-[#1A0E0A]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  {/* Marco dorado en hover */}
+                  <div className="absolute inset-2 rounded-xl border-2 border-[#D4AF37]/0 group-hover:border-[#D4AF37]/50 transition-all duration-500" />
+                  
+                  {/* Contenido inferior */}
                   <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                    <p className="text-white text-sm font-light tracking-wider">{title}</p>
-                    <p className="text-white/50 text-xs font-light mt-1">{clientName}</p>
+                    <p className="text-white text-lg font-serif font-light tracking-wide">
+                      {title}
+                    </p>
+                    <p className="text-[#D4AF37] text-xs font-light tracking-wider uppercase mt-1">
+                      {clientName}
+                    </p>
+                    <div className="w-12 h-0.5 bg-[#D4AF37] mt-3" />
+                  </div>
+
+                  {/* Badge de luz */}
+                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="w-8 h-8 rounded-full bg-[#D4AF37]/20 backdrop-blur-sm border border-[#D4AF37]/30 flex items-center justify-center">
+                      <FaGem className="text-[#D4AF37] text-xs" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -667,14 +701,24 @@ const GallerySection = ({ images }: { images: any[] }) => {
         </motion.div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-12 text-center">
-        <Link 
-          href="/galeria"
-          className="inline-flex items-center gap-3 text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all group font-light tracking-wider"
+      {/* Botón Ver más */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-16 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ delay: 0.4 }}
         >
-          Ver toda la galería
-          <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
-        </Link>
+          <Link 
+            href="/galeria"
+            className="inline-flex items-center gap-3 px-8 py-4 border-2 border-[#D4AF37]/30 text-[#5C4A3E] hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all duration-500 rounded-full group font-light tracking-wider text-sm bg-white/50 backdrop-blur-sm hover:shadow-xl hover:shadow-[#D4AF37]/10"
+          >
+            <span>Ver toda la galería</span>
+            <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform duration-300" />
+            <span className="w-6 h-6 rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] text-[10px]">
+              {displayImages.length}+
+            </span>
+          </Link>
+        </motion.div>
       </div>
     </section>
   )
@@ -871,91 +915,138 @@ const CtaSection = () => {
 }
 
 // ============================================================
-// FOOTER
+// FOOTER - REDISEÑADO
 // ============================================================
 const Footer = () => (
-  <footer className="bg-white border-t border-[#F0E4DA] py-16">
-    <div className="max-w-7xl mx-auto px-6 lg:px-8">
-      <div className="grid md:grid-cols-4 gap-12">
-        <div>
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-lg shadow-[#D4AF37]/30">
-              <FaGem className="w-5 h-5 text-white" />
+  <footer className="bg-[#1A0E0A] text-white/70 border-t border-[#D4AF37]/10">
+    {/* Parte superior con ondas decorativas */}
+    <div className="relative">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
+      
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          
+          {/* Columna 1 - Marca */}
+          <div>
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 group-hover:shadow-[#D4AF37]/40 transition-all duration-500">
+                <FaGem className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="text-white font-serif text-xl tracking-wider group-hover:text-[#D4AF37] transition-colors duration-300">
+                  Salon Fresh
+                </span>
+                <span className="block text-[8px] tracking-[0.3em] text-[#D4AF37] font-light uppercase">
+                  Nails & Beauty
+                </span>
+              </div>
+            </Link>
+            
+            <p className="text-white/50 text-sm font-light mt-6 leading-relaxed max-w-xs">
+              Redefiniendo el cuidado y la estética con arte, pasión y excelencia. 
+              Un espacio donde la belleza se convierte en experiencia.
+            </p>
+            
+            <div className="flex gap-4 mt-6">
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center justify-center text-white/40 hover:text-[#D4AF37] transition-all duration-300 hover:scale-110"
+              >
+                <FaInstagram className="text-sm" />
+              </a>
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center justify-center text-white/40 hover:text-[#D4AF37] transition-all duration-300 hover:scale-110"
+              >
+                <FaWhatsapp className="text-sm" />
+              </a>
             </div>
-            <div>
-              <span className="text-[#1A0E0A] font-serif text-xl tracking-wider">
-                Salon Fresh
-              </span>
-              <span className="block text-[8px] tracking-[0.3em] text-[#D4AF37] font-light uppercase">
-                Nails & Beauty
-              </span>
-            </div>
-          </Link>
-          <p className="text-[#5C4A3E] text-xs font-light mt-4 leading-relaxed max-w-xs">
-            Redefiniendo el cuidado y la estética con arte, pasión y excelencia.
-          </p>
-          <div className="flex gap-4 mt-6">
-            <a href="#" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all hover:scale-110">
-              <FaInstagram className="text-xl" />
-            </a>
-            <a href="#" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all hover:scale-110">
-              <FaWhatsapp className="text-xl" />
-            </a>
+          </div>
+
+          {/* Columna 2 - Horarios */}
+          <div>
+            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
+              Horarios de Atención
+            </h4>
+            <ul className="space-y-4 text-sm">
+              <li className="flex justify-between items-center border-b border-white/5 pb-3">
+                <span className="text-white/50 font-light">Lunes a Viernes</span>
+                <span className="text-white font-light">09:00 - 20:00</span>
+              </li>
+              <li className="flex justify-between items-center border-b border-white/5 pb-3">
+                <span className="text-white/50 font-light">Sábados</span>
+                <span className="text-white font-light">09:00 - 18:00</span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span className="text-white/50 font-light">Domingos</span>
+                <span className="text-[#D4AF37] font-light">Cerrado</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Columna 3 - Enlaces Rápidos */}
+          <div>
+            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
+              Enlaces Rápidos
+            </h4>
+            <ul className="space-y-3">
+              {['Esencia', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+                <li key={item}>
+                  <Link 
+                    href={`#${item.toLowerCase()}`}
+                    className="text-white/50 hover:text-[#D4AF37] transition-all duration-300 text-sm font-light flex items-center gap-2 group"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]/30 group-hover:bg-[#D4AF37] transition-all duration-300" />
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Columna 4 - Contacto */}
+          <div>
+            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
+              Contacto
+            </h4>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-4 group">
+                <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#D4AF37]/20 transition-all duration-300">
+                  <FaPhoneAlt className="text-[#D4AF37] text-xs" />
+                </div>
+                <div>
+                  <p className="text-white/40 text-[10px] font-light uppercase tracking-wider">Teléfono</p>
+                  <p className="text-white text-sm font-light">099 123 456</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-4 group">
+                <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#D4AF37]/20 transition-all duration-300">
+                  <FaMapMarkerAlt className="text-[#D4AF37] text-xs" />
+                </div>
+                <div>
+                  <p className="text-white/40 text-[10px] font-light uppercase tracking-wider">Dirección</p>
+                  <p className="text-white text-sm font-light">Montevideo, Uruguay</p>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
-            Horarios
-          </h4>
-          <ul className="mt-4 space-y-3 text-sm text-[#1A0E0A] font-light">
-            <li className="flex justify-between border-b border-[#F0E4DA] pb-2">
-              <span className="text-[#5C4A3E]">Lun a Vie</span>
-              <span>09:00 - 20:00</span>
-            </li>
-            <li className="flex justify-between border-b border-[#F0E4DA] pb-2">
-              <span className="text-[#5C4A3E]">Sábados</span>
-              <span>09:00 - 18:00</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-[#5C4A3E]">Domingos</span>
-              <span className="text-[#D4AF37]">Cerrado</span>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
-            Enlaces
-          </h4>
-          <ul className="mt-4 space-y-3 text-sm">
-            <li><Link href="#esencia" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Esencia</Link></li>
-            <li><Link href="#servicios" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Servicios</Link></li>
-            <li><Link href="#galeria" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Galería</Link></li>
-            <li><Link href="#testimonios" className="text-[#5C4A3E] hover:text-[#D4AF37] transition-all">Testimonios</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-[10px] tracking-[0.2em] uppercase text-[#D4AF37] font-light">
-            Contacto
-          </h4>
-          <ul className="mt-4 space-y-3 text-sm text-[#5C4A3E]">
-            <li className="flex items-center gap-3">
-              <FaPhoneAlt className="text-[#D4AF37] text-xs" />
-              <span className="text-[#1A0E0A]">099 123 456</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <FaMapMarkerAlt className="text-[#D4AF37] text-xs" />
-              <span className="text-[#1A0E0A]">Montevideo, Uruguay</span>
-            </li>
-          </ul>
-        </div>
       </div>
+    </div>
 
-      <div className="mt-12 pt-8 border-t border-[#F0E4DA] text-center text-[10px] text-[#5C4A3E] font-light">
-        © 2026 Salon Fresh Nails. Todos los derechos reservados.
-        <span className="hidden sm:inline ml-2">✦ Hecho con pasión en Uruguay</span>
+    {/* Parte inferior - Copyright */}
+    <div className="border-t border-white/5">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-white/30 text-[10px] font-light tracking-wider">
+            © 2026 Salon Fresh Nails. Todos los derechos reservados.
+          </p>
+          <div className="flex items-center gap-6 text-[10px] text-white/20 font-light">
+            <span>✦ Hecho con pasión en Uruguay</span>
+            <span className="hidden sm:inline">|</span>
+            <span className="hidden sm:inline">Términos y Condiciones</span>
+          </div>
+        </div>
       </div>
     </div>
   </footer>
