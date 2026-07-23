@@ -53,7 +53,6 @@ export default function GaleriaPublicPage() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) return null
 
-    // Verificar user_metadata
     if (session.user.user_metadata?.tenant_id) {
       return session.user.user_metadata.tenant_id
     }
@@ -62,7 +61,6 @@ export default function GaleriaPublicPage() {
       return session.user.app_metadata.tenant_id
     }
 
-    // ✅ Buscar en profiles con casteo explícito
     const { data: profile } = await supabase
       .from('profiles')
       .select('tenant_id')
@@ -73,7 +71,6 @@ export default function GaleriaPublicPage() {
       return profile.tenant_id
     }
 
-    // ✅ Buscar en clients con casteo explícito
     const { data: client } = await supabase
       .from('clients')
       .select('tenant_id')
@@ -120,7 +117,7 @@ export default function GaleriaPublicPage() {
         allImages = [...allImages, ...mapped]
       }
 
-      // 2. Fotos de Clientes (públicas)
+      // 2. Fotos de Clientes (públicas) - ✅ CON client_id
       const { data: clientPhotos } = await supabase
         .from('client_gallery')
         .select('*')
@@ -132,6 +129,7 @@ export default function GaleriaPublicPage() {
       if (clientPhotos) {
         const mapped = clientPhotos.map((p: any) => ({
           id: p.id,
+          client_id: p.client_id || null,           // ✅ AGREGADO
           tenant_id: p.tenant_id,
           image_url: p.after_image_url || p.image_url || p.before_image_url || '',
           title: p.title || 'Aporte de Cliente',
