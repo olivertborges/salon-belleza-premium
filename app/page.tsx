@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa'
 import { 
   GiNails, GiScissors, GiLipstick, GiFlowerStar, GiSparkles, 
-  GiEyelashes, GiEyebrow
+  GiFeather, GiEyelashes // GiEyelashes SÍ existe, GiEyebrow NO
 } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
@@ -39,18 +39,18 @@ const COLORS = {
 }
 
 // ============================================================
-// CONSTANTES PARA CATEGORÍAS
+// CONSTANTES PARA CATEGORÍAS - CON ICONOS QUE SÍ EXISTEN
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
   'Peluquería': GiScissors,
-  'Cejas': GiEyebrow,
+  'Cejas': FaRegStar,
   'Estética': GiFlowerStar,
   'Depilación': FaHeart,
   'Pestañas': GiEyelashes,
   'Labios': GiLipstick,
-  'Microblading': GiSparkles,
+  'Microblading': GiFeather,
   'default': FaGem
 }
 
@@ -66,6 +66,11 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'Microblading': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
+
+// ============================================================
+// EL RESTO DEL CÓDIGO PERMANECE IGUAL
+// ============================================================
+// ... (Header, Hero, Esencia, CategoriesSection, ServicesSection, GallerySection, TestimonialsSection, CtaSection, Footer, StatsSection, Main)
 
 // ============================================================
 // HEADER
