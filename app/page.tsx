@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa'
 import { 
   GiNails, GiScissors, GiLipstick, GiFlowerStar, GiSparkles, 
-  GiEyelashes, GiEyebrow, GiLipstick
+  GiEyelashes, GiEyebrow
 } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
