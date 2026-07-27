@@ -9,7 +9,8 @@ import {
   FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
   FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
   FaPalette, FaHandSparkles, FaAward, FaLeaf, FaChevronLeft, FaChevronRight,
-  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle
+  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
+  FaSprayCan, FaMagic, FaFeatherAlt
 } from 'react-icons/fa'
 import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
@@ -36,14 +37,14 @@ const COLORS = {
 }
 
 // ============================================================
-// CONSTANTES
+// CONSTANTES PARA CATEGORÍAS - TODOS LOS ICONOS EXISTEN
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
   'Peluquería': GiScissors,
   'Cejas': FaRegStar,
-  'Estética': FaMagic,
+  'Estética': GiSparkles,
   'Depilación': FaHeart,
   'Pestañas': FaEye,
   'Labios': GiLipstick,
@@ -65,7 +66,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 }
 
 // ============================================================
-// HEADER (funcional)
+// HEADER
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -94,6 +95,7 @@ const Header = () => {
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-xl shadow-[#D4AF37]/30">
                 <FaGem className="w-5 h-5 text-white" />
               </div>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
             </motion.div>
             <div>
               <span className="text-[#1A0E0A] font-serif text-2xl tracking-wider group-hover:text-[#D4AF37] transition-colors duration-300">
@@ -171,7 +173,7 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO (funcional)
+// HERO
 // ============================================================
 const HeroSection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -366,7 +368,7 @@ const HeroSection = () => {
 }
 
 // ============================================================
-// ESENCIA (funcional)
+// ESENCIA
 // ============================================================
 const EsenciaSection = () => {
   const ref = useRef(null)
