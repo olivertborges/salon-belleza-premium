@@ -9,12 +9,10 @@ import {
   FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
   FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
   FaPalette, FaHandSparkles, FaAward, FaLeaf, FaChevronLeft, FaChevronRight,
-  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle
+  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
+  FaSprayCan, FaFeather, FaMagic
 } from 'react-icons/fa'
-import { 
-  GiNails, GiScissors, GiLipstick, GiFlowerStar, GiSparkles, 
-  GiFeather, GiEyelashes // GiEyelashes SÍ existe, GiEyebrow NO
-} from 'react-icons/gi'
+import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
 // ============================================================
@@ -39,18 +37,18 @@ const COLORS = {
 }
 
 // ============================================================
-// CONSTANTES PARA CATEGORÍAS - CON ICONOS QUE SÍ EXISTEN
+// CONSTANTES PARA CATEGORÍAS - SOLO ICONOS QUE EXISTEN
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
   'Peluquería': GiScissors,
   'Cejas': FaRegStar,
-  'Estética': GiFlowerStar,
+  'Estética': FaMagic,
   'Depilación': FaHeart,
-  'Pestañas': GiEyelashes,
+  'Pestañas': FaEye,
   'Labios': GiLipstick,
-  'Microblading': GiFeather,
+  'Microblading': FaFeather,
   'default': FaGem
 }
 
