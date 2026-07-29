@@ -416,102 +416,104 @@ export default function PeluqueriaPage() {
         )}
 
         {/* ============================================================ */}
-{/* HERO SECTION — CON SYLVANA COMO IMAGEN PRINCIPAL */}
+{/* HERO SECTION — SYLVANA COMO PROTAGONISTA */}
 {/* ============================================================ */}
-<div className={`relative overflow-hidden rounded-2xl min-h-[440px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
+<div className={`relative overflow-hidden rounded-2xl min-h-[440px] md:min-h-[500px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
   isDark 
     ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
     : 'border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
 }`}>
-  {/* Fondo con FOTO DE SYLVANA como imagen principal */}
+  {/* Fondo con FOTO DE SYLVANA - menos overlay para que se vea más */}
   <div className="absolute inset-0">
     <img 
       src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png"
       alt="Sylvana - Peluquería y Depilación"
       className="w-full h-full object-cover object-top"
     />
-    {/* Overlay oscuro para legibilidad del texto */}
-    <div className={`absolute inset-0 ${
-      isDark 
-        ? 'bg-gradient-to-r from-[#1E120C]/90 via-[#1E120C]/60 to-[#1E120C]/30' 
-        : 'bg-gradient-to-r from-[#1A0E0A]/85 via-[#1A0E0A]/50 to-transparent'
-    }`} />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+    {/* Overlay más suave - solo en la parte inferior y lateral izquierda */}
+    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
   </div>
 
-  {/* Efectos de luz ambiental */}
-  <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
-  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
+  {/* Efectos de luz ambiental - más sutiles */}
+  <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
 
-  <div className="relative z-10 p-8 md:p-14 max-w-4xl w-full">
+  <div className="relative z-10 p-6 md:p-12 max-w-3xl w-full">
     <div className="text-white">
-      <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border mb-6 ${
+      
+      {/* Badge pequeño y discreto */}
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-sm border mb-4 ${
         isDark 
           ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
           : 'bg-white/10 border-white/20'
       }`}>
-        <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
-        <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+        <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+        <span className={`text-[7px] uppercase tracking-[0.2em] font-black ${
           isDark ? 'text-[#D4AF37]' : 'text-white/90'
         }`}>
-          {settings?.business_name || 'Fresh Nails Studio'} • <span className="font-bold">Peluquería & Depilación</span>
+          {settings?.business_name || 'Fresh Nails Studio'}
         </span>
       </div>
 
-      <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
-        <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
-          Arte
-        </span>{' '}
-        Capilar
+      {/* Título más compacto */}
+      <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+        <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-white">
+          Sylvana
+        </span>
+        <span className="block text-white/90 text-2xl md:text-3xl lg:text-4xl font-light mt-1">
+          Peluquería & Depilación
+        </span>
       </h1>
-      <p className="text-sm md:text-base text-white/80 mt-4 max-w-lg font-medium tracking-wide">
-        Transformamos tu estilo con cortes, tratamientos y depilación de vanguardia, diseñados para realzar tu esencia.
+      
+      <p className="text-sm md:text-base text-white/70 mt-3 max-w-md font-light tracking-wide">
+        Especialista en transformación capilar y depilación de alta precisión.
       </p>
 
-      <div className="flex flex-wrap gap-3 mt-8">
+      {/* Botones más discretos */}
+      <div className="flex flex-wrap gap-3 mt-6">
         <Link 
           href="/agenda" 
-          className={`group relative overflow-hidden px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-3 transition-all duration-500 hover:-translate-y-0.5 active:scale-[0.97] ${
+          className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] ${
             isDark 
               ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
               : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
           }`}
         >
-          <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
-          <span>Reservar con Sylvana</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Reservar</span>
         </Link>
 
         <button 
           onClick={() => setActiveTab('galeria')} 
-          className={`px-6 py-3.5 rounded-xl border text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
+          className={`px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
             isDark 
               ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
               : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
           }`}
         >
-          <Camera className="w-4 h-4" /> 
+          <Camera className="w-3.5 h-3.5" /> 
           <span>Galería</span>
         </button>
       </div>
 
-      {/* Micro estadísticas */}
-      <div className="flex gap-6 mt-8 pt-6 border-t border-white/10">
+      {/* Micro estadísticas - más pequeñas y discretas */}
+      <div className="flex gap-4 mt-6 pt-4 border-t border-white/10">
         <div>
-          <p className="text-2xl font-black text-[#D4AF37]">{servicios.length}</p>
-          <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Servicios</p>
+          <p className="text-lg font-black text-[#D4AF37]">{servicios.length}</p>
+          <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Servicios</p>
         </div>
         <div className="w-px bg-white/10" />
         <div>
-          <p className="text-2xl font-black text-[#D4AF37]">{galleryImages.length}</p>
-          <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Trabajos</p>
+          <p className="text-lg font-black text-[#D4AF37]">{galleryImages.length}</p>
+          <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Trabajos</p>
         </div>
         <div className="w-px bg-white/10" />
         <div>
-          <p className="text-2xl font-black text-[#D4AF37]">{Object.values(reviews).flat().length}</p>
-          <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Reseñas</p>
+          <p className="text-lg font-black text-[#D4AF37]">{Object.values(reviews).flat().length}</p>
+          <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Reseñas</p>
         </div>
       </div>
+
     </div>
   </div>
 </div>
