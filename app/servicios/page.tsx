@@ -6,508 +6,261 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaClock, FaArrowRight, FaHeart, FaEye, FaGem,
-  FaBars, FaTimes, FaRegStar
+  FaClock, FaArrowLeft, FaSearch, FaChevronRight, FaRegHeart, FaGem 
 } from 'react-icons/fa'
-import { 
-  GiNails, GiSparkles, GiScissors
-} from 'react-icons/gi'
+import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
+import { FaRegStar, FaEye, FaHeart, FaSprayCan } from 'react-icons/fa'
 
-// ✅ ICONOS POR CATEGORÍA
+// Mapeo de iconos idéntico a tu Home
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
-  'Microblading': GiSparkles,
   'Peluquería': GiScissors,
   'Cejas': FaRegStar,
   'Estética': GiSparkles,
   'Depilación': FaHeart,
   'Pestañas': FaEye,
+  'Labios': GiLipstick,
+  'Microblading': FaSprayCan,
   'default': FaGem
 }
 
-// ✅ IMÁGENES DE RESPALDO ASEGURADAS
-const CATEGORY_IMAGES: Record<string, string> = {
-  'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
-  'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
-  'Microblading': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
-  'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
-  'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
-  'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
-  'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=400&fit=crop',
-  'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
-}
-
-// ✅ ASIGNACIÓN INTELIGENTE DE PROFESIONALES (ANY / SIL)
-const getProfesionalPorServicio = (category: string) => {
-  const cat = category?.toLowerCase() || ''
-  
-  // Any: Uñas, Microblading, Micropigmentación, Cejas, Pestañas
-  if (
-    cat.includes('uña') || 
-    cat.includes('micro') || 
-    cat.includes('ceja') || 
-    cat.includes('pestaña') || 
-    cat.includes('blading') || 
-    cat.includes('pigment')
-  ) {
-    return {
-      nombre: 'Any',
-      rol: 'Nail & Derm Master',
-      foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png'
-    }
-  }
-  
-  // Sil: Peluquería, Depilación, Cortes, Color, Estética Corporal/Facial
-  if (
-    cat.includes('pelu') || 
-    cat.includes('depil') || 
-    cat.includes('corte') || 
-    cat.includes('color') || 
-    cat.includes('este')
-  ) {
-    return {
-      nombre: 'Sil',
-      rol: 'Hair & Body Expert',
-      foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png'
-    }
-  }
-  
-  return {
-    nombre: 'Especialista Fresh',
-    rol: 'Stylist Atelier',
-    foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png'
-  }
-}
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-}
-
-// ============================================================
-// COMPONENTE: HEADER NAVEGACIÓN
-// ============================================================
-const Header = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled 
-        ? 'bg-[#FFFCF8]/90 backdrop-blur-md border-b border-[#D4AF37]/10 shadow-sm py-4' 
-        : 'bg-[#FFFCF8]/60 backdrop-blur-sm border-b border-[#D4AF37]/5 py-5'
-    }`}>
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
-        <Link href="/" className="flex flex-col tracking-widest group">
-          <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
-            SALON FRESH
-          </span>
-          <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-            NAILS & BEAUTY ATELIER
-          </span>
-        </Link>
-
-        <nav className="hidden lg:flex items-center gap-10">
-          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
-            <Link 
-              key={item} 
-              href={`/#${item.toLowerCase()}`} 
-              className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-all font-medium"
-            >
-              {item}
-            </Link>
-          ))}
-          <Link 
-            href="/agenda" 
-            className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all rounded-none"
-          >
-            Reservar Cita
-          </Link>
-        </nav>
-
-        <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden text-[#1A0E0A] hover:text-[#D4AF37] p-2">
-          {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: -10 }} 
-            className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl"
-          >
-            <div className="flex flex-col gap-4">
-              {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
-                <Link 
-                  key={item} 
-                  href={`/#${item.toLowerCase()}`} 
-                  className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37]" 
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item}
-                </Link>
-              ))}
-              <Link 
-                href="/agenda" 
-                className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2" 
-                onClick={() => setIsOpen(false)}
-              >
-                Reservar Cita
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
-  )
-}
-
-// ============================================================
-// COMPONENTE PRINCIPAL: PÁGINA PÚBLICA DE SERVICIOS
-// ============================================================
-export default function ServiciosPublicPage() {
-  const [servicios, setServicios] = useState<any[]>([])
+export default function ServiciosPage() {
+  const [services, setServices] = useState<any[]>([])
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState('Todos')
-  const [activeService, setActiveService] = useState<any | null>(null)
 
-  // ✅ OBTENER TENANT_ID CON RESPALDOS MÚLTIPLES
-  const getTenantId = async (): Promise<string | null> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user?.user_metadata?.tenant_id) return session.user.user_metadata.tenant_id
-      if (session?.user?.app_metadata?.tenant_id) return session.user.app_metadata.tenant_id
-
-      if (session?.user?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('tenant_id')
-          .eq('id', session.user.id)
-          .maybeSingle() as any
-        if (profile?.tenant_id) return profile.tenant_id
-      }
-
-      const { data: firstService } = await supabase
-        .from('services')
-        .select('tenant_id')
-        .limit(1)
-        .maybeSingle() as any
-      if (firstService?.tenant_id) return firstService.tenant_id
-
-      return null
-    } catch (error) {
-      return null
-    }
-  }
-
-  // ✅ SOLICITUD TOTAL DE DATOS A SUPABASE (SIN FILTRO IS_ACTIVE RESTRICTIVO)
   useEffect(() => {
-    const fetchServicios = async () => {
+    const fetchAllServices = async () => {
       try {
         setLoading(true)
-        const tenantId = await getTenantId()
+        
+        // 1. Obtención óptima del Tenant ID (Tu misma lógica de la Home unificada)
+        let tenantId = null
+        const { data: { session } } = await supabase.auth.getSession()
 
-        if (!tenantId) {
-          setServicios([])
-          setLoading(false)
-          return
+        if (session?.user?.user_metadata?.tenant_id) {
+          tenantId = session.user.user_metadata.tenant_id
+        } else if (session?.user?.app_metadata?.tenant_id) {
+          tenantId = session.user.app_metadata.tenant_id
         }
 
-        // 🛠️ CORRECCIÓN CLAVE: Quitamos la restricción estricta .eq('is_active', true) 
-        // para asegurar que jale las uñas, cejas y micropigmentación sin importar su flag inicial.
-        const { data, error } = await supabase
+        if (!tenantId && session?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', session.user.id)
+            .maybeSingle()
+          if (profile?.tenant_id) tenantId = profile.tenant_id
+        }
+
+        if (!tenantId) {
+          const { data: firstService } = await supabase
+            .from('services')
+            .select('tenant_id')
+            .limit(1)
+            .maybeSingle()
+          if (firstService?.tenant_id) tenantId = firstService.tenant_id
+        }
+
+        if (!tenantId) return
+
+        // 2. Consulta completa a la base de datos
+        const { data: servicesData } = await supabase
           .from('services')
           .select('*')
           .eq('tenant_id', tenantId)
+          .eq('is_active', true)
           .order('category', { ascending: true })
           .order('name', { ascending: true })
 
-        if (error) {
-          console.error('Error cargando servicios:', error)
-          setServicios([])
-        } else {
-          setServicios(data || [])
+        if (servicesData) {
+          setServices(servicesData)
+          
+          // Extraer categorías únicas dinámicamente para los filtros
+          const uniqueCategories = Array.from(
+            new Set(servicesData.map((s: any) => s.category).filter(Boolean))
+          ) as string[]
+          setCategories(uniqueCategories)
         }
       } catch (error) {
-        setServicios([])
+        console.error('Error cargando catálogo de servicios:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchServicios()
+    fetchAllServices()
   }, [])
 
-  // ✅ PROCESAMIENTO DE CATEGORÍAS
-  const allCategories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
-  
-  const filteredServicios = selectedCategory === 'Todos'
-    ? servicios
-    : servicios.filter(s => s.category === selectedCategory)
-
-  const activeCategoriesList = selectedCategory === 'Todos'
-    ? Array.from(new Set(servicios.map(s => s.category).filter(Boolean)))
-    : [selectedCategory]
+  // Filtrado lógico por buscador y categoría seleccionada
+  const filteredServices = services.filter((service) => {
+    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory
+    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (service.description && service.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    return matchesCategory && matchesSearch
+  })
 
   if (loading) {
     return (
       <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
-          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Abriendo catálogo...</p>
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Abriendo la carta de tratamientos</p>
         </div>
       </main>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased relative selection:bg-[#D4AF37]/20">
-      <Header />
-
-      {/* TEXTURAS AMBIENTALES DE FONDO */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 left-[-10%] w-[50vw] h-[50vw] bg-[#D4AF37]/5 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 opacity-40 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
+    <main className="bg-[#FFFCEF]/30 text-[#1A0E0A] min-h-screen antialiased selection:bg-[#D4AF37]/20 pt-28 pb-24">
+      
+      {/* HEADER DE NAVEGACIÓN RETROCESO */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-12">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.3em] uppercase text-[#5C4A3E] hover:text-[#D4AF37] transition-colors group"
+        >
+          <FaArrowLeft className="text-[9px] translate-x-0 group-hover:-translate-x-1 transition-transform" /> Volver al Atelier
+        </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-40 pb-32 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
         
         {/* ENCABEZADO TIPO REVISTA */}
-        <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
-          <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">VISUAL ATELIER MENU</span>
-          <h1 className="font-serif text-4xl sm:text-6xl font-light tracking-tight text-[#1A0E0A] leading-tight">
-            Nuestro Menú de <span className="italic font-normal text-[#D4AF37]">Tratamientos</span>
-          </h1>
-          <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-4" />
-          <p className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto leading-relaxed">
-            Explora las disciplinas haciendo clic sobre cada fotografía para descubrir su valor, tiempos e ingeniería artística asignada.
-          </p>
+        <div className="grid lg:grid-cols-12 gap-8 items-end border-b border-[#F0E4DA] pb-12 mb-16">
+          <div className="lg:col-span-8 space-y-4">
+            <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">MENU COMPLETO DE DISCIPLINAS</p>
+            <h1 className="font-serif text-5xl md:text-7xl text-[#1A0E0A] font-light leading-none">
+              El Catálogo <br /><span className="italic font-normal text-[#D4AF37]">de Especialidades</span>
+            </h1>
+          </div>
+          <div className="lg:col-span-4">
+            {/* BUSCADOR ELEGANTE */}
+            <div className="relative flex items-center border-b border-[#1A0E0A]/30 focus-within:border-[#D4AF37] transition-colors py-2">
+              <FaSearch className="text-[#A89588] text-xs mr-3" />
+              <input 
+                type="text"
+                placeholder="Buscar tratamiento..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-sm font-light w-full outline-none placeholder-[#A89588]/60 text-[#1A0E0A]"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* SELECTOR DE FILTROS FLUIDOS */}
-        {allCategories.length > 1 && (
-          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-24 border-b border-[#F0E4DA] pb-6 max-w-4xl mx-auto">
-            {allCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-xs uppercase tracking-[0.2em] font-medium transition-all duration-300 pb-2 relative ${
-                  selectedCategory === cat ? 'text-[#D4AF37]' : 'text-[#A89588] hover:text-[#1A0E0A]'
-                }`}
-              >
-                {cat}
-                {selectedCategory === cat && (
-                  <motion.div 
-                    layoutId="activeFilterLine"
-                    className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* FILTROS DE CATEGORÍA DINÁMICOS */}
+        <div className="flex flex-wrap gap-2 mb-16 pb-4 border-b border-[#F0E4DA]/40 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-5 py-2.5 text-[10px] font-semibold tracking-widest uppercase transition-all border ${
+              selectedCategory === 'all'
+                ? 'bg-[#1A0E0A] text-white border-[#1A0E0A]'
+                : 'bg-white text-[#5C4A3E] border-[#F0E4DA] hover:border-[#D4AF37]'
+            }`}
+          >
+            Todos ({services.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-5 py-2.5 text-[10px] font-semibold tracking-widest uppercase transition-all border ${
+                selectedCategory === cat
+                  ? 'bg-[#1A0E0A] text-white border-[#1A0E0A]'
+                  : 'bg-white text-[#5C4A3E] border-[#F0E4DA] hover:border-[#D4AF37]'
+              }`}
+            >
+              {cat} ({services.filter(s => s.category === cat).length})
+            </button>
+          ))}
+        </div>
 
-        {/* ESTRUCTURA DINÁMICA DE LA GALERÍA FOTOGRÁFICA */}
-        {filteredServicios.length === 0 ? (
-          <div className="text-center py-24 bg-white border border-[#F0E4DA]">
-            <FaGem className="w-6 h-6 text-[#A89588]/40 mx-auto mb-4" />
-            <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No hay obras dermoestéticas cargadas en este segmento.</p>
-          </div>
-        ) : (
-          <div className="space-y-24">
-            {activeCategoriesList.map((categoryName) => {
-              const servicesInCategory = filteredServicios.filter(s => s.category === categoryName)
-              
-              if (servicesInCategory.length === 0) return null
+        {/* GRILLA DE SERVICIOS CON ANIMACIONES SUAVES */}
+        <motion.div 
+          layout
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredServices.map((service) => {
+              const Icon = CATEGORY_ICONS[service.category] || CATEGORY_ICONS.default
 
               return (
-                <div key={categoryName} className="space-y-8">
-                  {/* Divisor Visual de Categorías */}
-                  <div className="flex items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
-                    <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">
-                      {categoryName}
-                    </h2>
-                    <span className="w-full h-[1px] bg-[#F0E4DA]" />
-                    <span className="text-[9px] text-[#A89588] tracking-widest font-light uppercase whitespace-nowrap">
-                      {servicesInCategory.length} {servicesInCategory.length === 1 ? 'Ritual' : 'Rituales'}
-                    </span>
+                <motion.div
+                  key={service.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4 }}
+                  className="bg-white border border-[#F0E4DA] p-8 flex flex-col justify-between hover:border-[#D4AF37] hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div className="text-[#D4AF37] text-xl p-3 bg-[#FFF8F5] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors duration-500">
+                        <Icon />
+                      </div>
+                      <span className="text-[9px] font-bold tracking-widest uppercase text-[#5C4A3E]/70 bg-[#FFF9F6] border border-[#F0E4DA]/60 px-3 py-1">
+                        {service.category || 'Atelier'}
+                      </span>
+                    </div>
+
+                    <h3 className="font-serif text-2xl text-[#1A0E0A] mt-6 group-hover:text-[#D4AF37] transition-colors duration-300 min-h-[64px] flex items-center font-light tracking-wide">
+                      {service.name}
+                    </h3>
+
+                    <p className="text-xs text-[#5C4A3E] font-light leading-relaxed mt-4 line-clamp-4">
+                      {service.description || 'Tratamiento exclusivo diseñado a medida bajo los más altos estándares internacionales del atelier.'}
+                    </p>
                   </div>
 
-                  {/* Grid de Fotografías Puras Interactivas */}
-                  <motion.div 
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.02 }}
-                    variants={staggerContainer}
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  >
-                    {servicesInCategory.map((servicio) => {
-                      const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
+                  <div className="pt-6 mt-8 border-t border-[#F0E4DA] flex items-end justify-between">
+                    <div>
+                      <p className="text-[9px] tracking-wider text-[#A89588] uppercase font-medium">Inversión Premium</p>
+                      <p className="font-serif text-3xl text-[#1A0E0A] mt-0.5">${service.price}</p>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-3">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#5C4A3E]/80 font-light">
+                        <FaClock className="text-[10px] text-[#D4AF37]" />
+                        <span>{service.duration} min</span>
+                      </div>
                       
-                      return (
-                        <motion.div
-                          key={servicio.id}
-                          variants={fadeInUp}
-                          onClick={() => setActiveService(servicio)}
-                          className="relative aspect-[4/3] overflow-hidden bg-[#FFF9F6] border border-[#F0E4DA] group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500"
-                        >
-                          <img 
-                            src={imageUrl} 
-                            alt={servicio.name}
-                            className="w-full h-full object-cover filter grayscale-[25%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/90 via-[#1A0E0A]/10 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-300" />
-                          
-                          <div className="absolute bottom-0 left-0 right-0 p-5 text-white flex justify-between items-end z-10">
-                            <div className="max-w-[75%] space-y-0.5">
-                              <span className="text-[8px] tracking-[0.2em] uppercase text-[#D4AF37] font-semibold block">
-                                ✦ {servicio.category}
-                              </span>
-                              <h3 className="font-serif text-lg leading-tight font-light tracking-wide truncate">
-                                {servicio.name}
-                              </h3>
-                            </div>
-                            <span className="text-[9px] tracking-widest uppercase font-bold border border-white/25 bg-white/10 backdrop-blur-md px-3 py-1.5 whitespace-nowrap group-hover:bg-[#D4AF37] group-hover:border-[#D4AF37] transition-all duration-300">
-                              Ver Ficha
-                            </span>
-                          </div>
-                        </motion.div>
-                      )
-                    })}
-                  </motion.div>
-                </div>
+                      <Link 
+                        href={`/agenda?service=${service.id}`}
+                        className="inline-flex items-center gap-1 text-[9px] font-bold tracking-[0.2em] uppercase text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors"
+                      >
+                        Reservar <FaChevronRight className="text-[7px]" />
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
               )
             })}
-          </div>
-        )}
-      </div>
+          </AnimatePresence>
+        </motion.div>
 
-      {/* ============================================================
-          MODAL INTERACTIVO DE DETALLES EXCLUSIVO (POPUP FLOTANTE)
-         ============================================================ */}
-      <AnimatePresence>
-        {activeService && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setActiveService(null)}
-              className="fixed inset-0 bg-[#1A0E0A]/70 backdrop-blur-md"
-            />
-
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 15 }}
-              transition={{ type: 'spring', duration: 0.4 }}
-              className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-3xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible"
+        {/* CONTROL DE ESTADO VACÍO */}
+        {filteredServices.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-20 border border-dashed border-[#F0E4DA] bg-white mt-8"
+          >
+            <p className="text-sm font-serif text-[#5C4A3E] italic">No encontramos tratamientos que coincidan con tu criterio.</p>
+            <button 
+              onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
+              className="mt-4 text-[10px] font-bold tracking-widest uppercase text-[#D4AF37] border-b border-[#D4AF37] pb-0.5"
             >
-              <button 
-                onClick={() => setActiveService(null)}
-                className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full text-[#1A0E0A] hover:text-[#D4AF37] transition-colors shadow-sm focus:outline-none"
-              >
-                <FaTimes className="text-xs" />
-              </button>
-
-              {/* Lado A: Fotografía */}
-              <div className="md:col-span-5 relative h-60 md:h-auto min-h-[280px] bg-[#FFF9F6]">
-                <img 
-                  src={activeService.image_url || CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} 
-                  alt={activeService.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-[#1A0E0A]/5" />
-              </div>
-
-              {/* Lado B: Ficha Informativa Completa */}
-              <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-                <div className="space-y-3">
-                  <span className="text-[9px] tracking-[0.3em] font-bold uppercase text-[#D4AF37] block">
-                    {activeService.category}
-                  </span>
-                  <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide leading-tight">
-                    {activeService.name}
-                  </h2>
-                  <div className="w-10 h-[1px] bg-[#D4AF37] my-3" />
-                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed">
-                    {activeService.description || 'Este tratamiento exclusivo fusiona metodologías avanzadas de vanguardia con activos selectos de nuestro atelier para esculpir, refinar y embellecer bajo un diagnóstico totalmente personalizado.'}
-                  </p>
-                </div>
-
-                {/* Métricas: Valores y Tiempos */}
-                <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-4">
-                  <div>
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Inversión</span>
-                    <span className="font-serif text-3xl text-[#1A0E0A] font-medium">${activeService.price}</span>
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Duración Estimada</span>
-                    <span className="text-xs font-semibold text-[#1A0E0A] flex items-center gap-1.5 mt-1">
-                      <FaClock className="text-[#D4AF37] text-[10px]" /> {activeService.duration} minutos
-                    </span>
-                  </div>
-                </div>
-
-                {/* Profesional Asignada */}
-                <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-3 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border border-[#D4AF37]/30 bg-white flex-shrink-0">
-                    <img 
-                      src={getProfesionalPorServicio(activeService.category).foto} 
-                      alt={getProfesionalPorServicio(activeService.category).nombre}
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="text-[8px] tracking-widest uppercase text-[#D4AF37] block font-bold">Artista Especializada</span>
-                    <span className="font-serif text-sm text-[#1A0E0A] font-normal block">
-                      {getProfesionalPorServicio(activeService.category).nombre}
-                    </span>
-                    <span className="text-[9px] text-[#A89588] block font-light">
-                      {getProfesionalPorServicio(activeService.category).rol}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Enlace Directo a Agenda */}
-                <div className="pt-2">
-                  <Link 
-                    href="/agenda"
-                    className="w-full block text-center bg-[#1A0E0A] hover:bg-[#D4AF37] text-white py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300"
-                  >
-                    Agendar este Tratamiento
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+              Restablecer filtros
+            </button>
+          </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* FOOTER */}
-      <footer className="bg-[#150B08] text-white/40 border-t border-white/5 text-xs font-light relative z-10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] tracking-wider uppercase">
-          <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
-          <Link href="/" className="hover:text-[#D4AF37] transition-colors">← Volver al Atelier Principal</Link>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </main>
   )
 }
