@@ -6,12 +6,9 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaClock, FaArrowRight, FaHeart, FaEye, FaGem,
+  FaClock, FaHeart, FaEye, FaGem,
   FaBars, FaTimes, FaRegStar, FaInstagram, FaWhatsapp, FaMapMarkerAlt
 } from 'react-icons/fa'
-import { 
-  GiNails, GiSparkles, GiScissors
-} from 'react-icons/gi'
 
 // ✅ IMÁGENES DE RESPALDO ASEGURADAS POR CATEGORÍA
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -244,7 +241,7 @@ export default function LandingPage() {
             Creamos detalles que cautivan a simple vista
           </h2>
           <p className="text-xs sm:text-sm text-[#5C4A3E] font-light leading-relaxed">
-            En Salon Fresh no creemos en tratamientos genéricos. Diseñamos experiencias personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
+            En Salon Fresh no creo en tratamientos genéricos. Diseñamos experiencias personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
           </p>
           <div className="grid grid-cols-3 gap-4 pt-4 text-center">
             <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
@@ -420,7 +417,7 @@ export default function LandingPage() {
             </div>
             <div className="flex gap-4 pt-2">
               <a href="#" className="p-3 bg-white border border-[#F0E4DA] text-[#1A0E0A] hover:text-[#D4AF37] rounded-full transition-colors"><FaInstagram /></a>
-              <a href="#" className="p-3 bg-white border border-[#F0E4DA] text-[#1A0E0A] hover:text-[#D4AF37] rounded-full transition-colors"><FaWhitespace || <FaWhatsapp /> }</a>
+              <a href="#" className="p-3 bg-white border border-[#F0E4DA] text-[#1A0E0A] hover:text-[#D4AF37] rounded-full transition-colors"><FaWhatsapp /></a>
             </div>
           </div>
           <div className="h-72 w-full border border-[#D4AF37]/20 bg-white shadow-xl flex items-center justify-center text-center p-8">
