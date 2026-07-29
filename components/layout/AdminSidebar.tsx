@@ -52,6 +52,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const pathname = usePathname()
 
   const [mounted, setMounted] = useState(false)
+  const [userName, setUserName] = useState('Admin')
   const isDark = theme === 'dark'
 
   const brandGradient = {
@@ -60,7 +61,17 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+
+    // Obtener el nombre del usuario desde user_metadata o email
+    if (user) {
+      const name = user.user_metadata?.full_name || 
+                   user.user_metadata?.name || 
+                   user.user_metadata?.first_name ||
+                   user.email?.split('@')[0] || 
+                   'Admin'
+      setUserName(name)
+    }
+  }, [user])
 
   if (!mounted) return null
 
@@ -149,7 +160,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           )}
         </div>
 
-        {/* PERFIL - FIJO */}
+        {/* PERFIL - CON NOMBRE DE USUARIO */}
         {!collapsed && (
           <div className="px-3 pt-3 shrink-0">
             <div className={`p-2.5 rounded-2xl flex items-center gap-3 border ${
@@ -161,13 +172,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                 className="w-7 h-7 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
                 style={brandGradient}
               >
-                {user?.email?.charAt(0).toUpperCase() || 'A'}
+                {userName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-[11px] font-semibold truncate ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                 }`}>
-                  {user?.email || 'Admin'}
+                  {userName}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse" />
