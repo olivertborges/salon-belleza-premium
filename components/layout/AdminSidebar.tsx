@@ -9,8 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, Sliders, UsersRound, Crown,
-  Sun, Moon, ChevronLeft, ChevronRight, Power, X,
-  Menu, Gem, Heart, Star, Zap, Award, Palette, Gift
+  ChevronLeft, ChevronRight, Power, X,
+  Palette, Gift
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -49,12 +49,11 @@ const sidebarVariants = {
 export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
   const { settings } = useSettings()
   const { user, role, signOut } = useAuth() 
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
 
   const [mounted, setMounted] = useState(false)
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const isDark = theme === 'dark'
 
   const brandGradient = {
@@ -121,7 +120,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* CABECERA - FIJA */}
+        {/* CABECERA */}
         {/* ============================================================ */}
         <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 relative z-10 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
@@ -163,7 +162,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* PERFIL - FIJO */}
+        {/* PERFIL */}
         {/* ============================================================ */}
         {!collapsed && (
           <div className="px-3 pt-4 shrink-0 relative z-10">
@@ -248,54 +247,29 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* CONTROLES INFERIORES - SIEMPRE FIJOS */}
+        {/* CERRAR SESIÓN - SIEMPRE VISIBLE */}
         {/* ============================================================ */}
         <div className={`p-3 border-t shrink-0 relative z-10 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]/95' : 'border-[#F0E4DA] bg-[#FFF9F6]/95'
         }`}>
-          <div className="space-y-1">
-            <button 
-              onClick={toggleTheme} 
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                collapsed ? 'justify-center' : ''
-              } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
-            >
-              {isDark ? 
-                <Sun className="w-4 h-4 text-[#D4AF37]" /> : 
-                <Moon className="w-4 h-4 text-[#D4AF37]" />
-              }
-              {!collapsed && (
-                <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>
-                  {isDark ? 'Modo Claro' : 'Modo Oscuro'}
-                </span>
-              )}
-            </button>
-
-            <button 
-              onClick={handleLogoutClick} 
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
-                collapsed ? 'justify-center' : ''
-              } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
-            >
-              <Power className={`w-4 h-4 transition-colors ${
+          <button 
+            onClick={handleLogoutClick} 
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+              collapsed ? 'justify-center' : ''
+            } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
+          >
+            <Power className={`w-4 h-4 transition-colors ${
+              isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
+            }`} />
+            {!collapsed && (
+              <span className={`transition-colors ${
                 isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
-              }`} />
-              {!collapsed && (
-                <span className={`transition-colors ${
-                  isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
-                }`}>
-                  Cerrar sesión
-                </span>
-              )}
-            </button>
-          </div>
+              }`}>
+                Cerrar sesión
+              </span>
+            )}
+          </button>
         </div>
-
-        {/* BORDE DECORATIVO INFERIOR */}
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-[2px]"
-          style={brandGradient}
-        />
       </motion.aside>
 
       {/* BOTÓN FLOTANTE PARA COLLAPSE */}
