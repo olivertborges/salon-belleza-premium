@@ -103,7 +103,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         initial="open"
         animate={collapsed ? "collapsed" : "open"}
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col overflow-hidden shadow-2xl
+          fixed lg:sticky top-0 left-0 z-50 h-[100dvh] flex flex-col overflow-hidden shadow-2xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isDark 
             ? 'bg-[#1E120C] border-r border-[#3D281E]' 
@@ -111,9 +111,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           }
         `}
       >
-        {/* ============================================================ */}
         {/* CABECERA - FIJA */}
-        {/* ============================================================ */}
         <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
@@ -151,31 +149,29 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           )}
         </div>
 
-        {/* ============================================================ */}
         {/* PERFIL - FIJO */}
-        {/* ============================================================ */}
         {!collapsed && (
-          <div className="px-3 pt-4 shrink-0">
-            <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+          <div className="px-3 pt-3 shrink-0">
+            <div className={`p-2.5 rounded-2xl flex items-center gap-3 border ${
               isDark 
                 ? 'bg-[#2A1B14] border-[#3D281E]' 
                 : 'bg-white border-[#F0E4DA]'
             }`}>
               <div 
-                className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
+                className="w-7 h-7 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
                 style={brandGradient}
               >
                 {user?.email?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs font-semibold truncate ${
+                <p className={`text-[11px] font-semibold truncate ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                 }`}>
                   {user?.email || 'Admin'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse" />
-                  <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${
+                  <span className={`text-[8px] font-mono tracking-wider font-bold uppercase ${
                     isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
                   }`}>
                     Activa
@@ -186,10 +182,8 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* NAVEGACIÓN - SCROLLABLE (min-h-0 vital para permitir scroll en flex) */}
-        {/* ============================================================ */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 custom-scrollbar">
+        {/* NAVEGACIÓN - SCROLLABLE */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1">
           <nav className="space-y-1">
             {ALL_MENU_ITEMS.map((item) => {
               const Icon = item.icon
@@ -200,7 +194,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   key={item.id}
                   onClick={() => handleNavigation(item.path)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group
+                    w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative group
                     ${collapsed ? 'justify-center px-0' : ''}
                     ${isActive 
                       ? 'text-[#1A0E0A] shadow-lg shadow-[#D4AF37]/20' 
@@ -226,15 +220,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           </nav>
         </div>
 
-        {/* ============================================================ */}
         {/* CERRAR SESIÓN - FIJO ABAJO */}
-        {/* ============================================================ */}
         <div className={`p-3 border-t shrink-0 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
         }`}>
           <button 
             onClick={handleLogoutClick} 
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-medium transition-all group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
               collapsed ? 'justify-center' : ''
             } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
           >
@@ -252,7 +244,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
       </motion.aside>
 
-      {/* BOTÓN FLOTANTE PARA COLLAPSE */}
+      {/* BOTÓN FLOTANTE PARA COLLAPSE (PC) */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="hidden lg:flex fixed top-5 border rounded-full p-1.5 transition-all z-50 shadow-lg backdrop-blur-sm"
