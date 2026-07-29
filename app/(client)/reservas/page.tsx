@@ -16,7 +16,8 @@ import {
   XCircle,
   HelpCircle,
   Sparkle,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -51,6 +52,23 @@ interface Appointment {
   services: Service | null
   staff?: Staff | null
 }
+
+// ============================================================
+// COMPONENTE DE CARGA (CON TEMA)
+// ============================================================
+const ReservasLoadingSpinner = ({ isDark }: { isDark: boolean }) => (
+  <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative w-16 h-16">
+        <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+        <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
+      </div>
+      <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+        Cargando tus rituales...
+      </p>
+    </div>
+  </div>
+)
 
 export default function MisReservasPage() {
   const { user } = useAuth()
@@ -200,104 +218,113 @@ export default function MisReservasPage() {
   }, [user])
 
   const renderBadge = (status: string) => {
-    const base = "inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300"
+    const base = `inline-flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border transition-all duration-300`
+    
     switch (status) {
       case 'confirmed':
         return (
-          <span className={`${base} bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-emerald-500/5`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Confirmado
+          <span className={`${base} ${
+            isDark 
+              ? 'bg-[#3D281E]/60 border-[#D4AF37]/40 text-[#D4AF37]' 
+              : 'bg-[#FFF9F6] border-[#D4AF37]/40 text-[#D4AF37]'
+          }`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" /> 
+            Confirmado
           </span>
         )
       case 'pending':
         return (
-          <span className={`${base} bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-amber-500/5`}>
-            <Clock className="w-2.5 h-2.5 text-amber-500 animate-spin [animation-duration:3s]" /> Pendiente
+          <span className={`${base} ${
+            isDark 
+              ? 'bg-[#3D281E]/60 border-[#D4AF37]/20 text-[#A89588]' 
+              : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E]'
+          }`}>
+            <Clock className="w-2.5 h-2.5 animate-spin [animation-duration:3s]" /> 
+            Pendiente
           </span>
         )
       case 'cancelled':
         return (
-          <span className={`${base} bg-gradient-to-r from-rose-500/10 to-rose-600/5 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-rose-500/5`}>
-            <XCircle className="w-2.5 h-2.5 text-rose-500" /> Cancelado
+          <span className={`${base} ${
+            isDark 
+              ? 'bg-[#3D281E]/60 border-rose-500/30 text-rose-400' 
+              : 'bg-[#FFF9F6] border-rose-200 text-rose-600'
+          }`}>
+            <XCircle className="w-2.5 h-2.5" /> 
+            Cancelado
           </span>
         )
       default:
         return (
-          <span className={`${base} bg-gradient-to-r from-stone-100 to-stone-200/50 text-stone-600 border-stone-200/60 dark:from-zinc-900 dark:to-zinc-900/50 dark:text-zinc-400 dark:border-zinc-800/60`}>
-            <HelpCircle className="w-2.5 h-2.5" /> Finalizado
+          <span className={`${base} ${
+            isDark 
+              ? 'bg-[#3D281E]/40 border-[#3D281E] text-[#A89588]' 
+              : 'bg-[#F0E4DA]/40 border-[#F0E4DA] text-[#5C4A3E]'
+          }`}>
+            <HelpCircle className="w-2.5 h-2.5" /> 
+            Finalizado
           </span>
         )
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
-        <div className="absolute w-64 h-64 bg-gradient-to-r from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
-            <Sparkles className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-          </div>
-          <div className="space-y-1.5 text-center">
-            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
-              CARGANDO
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-              TUS RITUALES
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+    return <ReservasLoadingSpinner isDark={isDark} />
   }
 
   return (
-    <div className={`min-h-screen antialiased selection:bg-pink-500/10 pb-24 transition-colors duration-700 ${
-      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-zinc-100' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-900'
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
-      <div className="max-w-5xl mx-auto px-4 space-y-8">
+      {/* Fondo texturizado */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-        {/* HERO BANNER */}
-        <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl mt-6 transition-all duration-500 ${
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 space-y-8 relative z-10">
+
+        {/* ============================================================ */}
+        {/* HERO BANNER EDITORIAL */}
+        {/* ============================================================ */}
+        <div className={`border p-7 sm:p-10 rounded-2xl transition-all duration-300 ${
           isDark 
-            ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
-            : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
         }`}>
-          <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
-          
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="space-y-3">
-              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
-                isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/20 border-white/30'
+              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full border ${
+                isDark ? 'border-[#D4AF37]/20 bg-[#3D281E]/40' : 'border-[#D4AF37]/20 bg-[#FFF9F6]'
               }`}>
-                <Sparkle className="w-3.5 h-3.5 text-pink-400 animate-[spin_4s_linear_infinite]" />
-                <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${isDark ? 'text-pink-300' : 'text-white'}`}>
-                  ✦ Atelier Digital Experience ✦
+                <Sparkle className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className={`text-[8px] font-bold tracking-[0.25em] uppercase ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  ✦ Atelier Digital ✦
                 </span>
               </div>
 
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.1] text-white">
+              <h2 className={`font-serif text-3xl sm:text-4xl font-light tracking-tight leading-[1.1] ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
                 {nombreCliente ? (
                   <>
                     Rituales de{' '}
-                    <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">
+                    <span className="font-serif italic font-light text-[#D4AF37]">
                       {nombreCliente.split(' ')[0]}
                     </span>
                   </>
                 ) : (
                   'Mis Reservas'
                 )}{' '}
-                <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-rose-300 to-amber-200">
-                  VIP
-                </span>
+                <span className="font-serif italic font-light text-[#D4AF37]">VIP</span>
               </h2>
 
-              <p className={`text-xs font-medium tracking-wide max-w-xl ${isDark ? 'text-zinc-400' : 'text-pink-100/90'}`}>
+              <p className={`text-xs font-light max-w-xl ${
+                isDark ? 'text-[#FFF9F6]/60' : 'text-[#5C4A3E]'
+              }`}>
                 {user?.email ? (
                   <>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2" />
-                    Historial y estatus activo de tu cuenta: <span className="font-bold text-white/90">{user.email}</span>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse mr-2" />
+                    Historial y estatus activo de tu cuenta: <span className={`font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{user.email}</span>
                   </>
                 ) : (
                   'Conectado de forma temporal'
@@ -307,7 +334,11 @@ export default function MisReservasPage() {
 
             <Link
               href="/client/booking"
-              className="w-full sm:w-auto px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-3 shadow-2xl group relative overflow-hidden transform active:scale-[0.97] hover:-translate-y-0.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50"
+              className={`w-full sm:w-auto px-6 py-4 rounded-xl text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300 flex items-center justify-center gap-3 shadow-md hover:shadow-lg group active:scale-[0.97] hover:-translate-y-0.5 ${
+                isDark 
+                  ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                  : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+              }`}
             >
               <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
               <span className="relative">Agendar Ritual</span>
@@ -316,36 +347,52 @@ export default function MisReservasPage() {
           </div>
         </div>
 
+        {/* ============================================================ */}
         {/* NOTIFICACIÓN DE ERROR */}
+        {/* ============================================================ */}
         {error && (
-          <div className={`flex items-start gap-4 border p-5 rounded-2xl backdrop-blur-md transition-all duration-500 shadow-lg ${
+          <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
             isDark 
-              ? 'bg-gradient-to-r from-amber-500/10 to-amber-600/5 border-amber-500/20 text-amber-400' 
-              : 'bg-gradient-to-r from-amber-50/80 to-amber-100/40 border-amber-200/60 text-amber-800'
+              ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' 
+              : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
           }`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'}`}>
-              <AlertCircle className="w-5 h-5 text-amber-500" />
+            <div className={`p-2 rounded-xl shrink-0 ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+            }`}>
+              <AlertCircle className="w-5 h-5 text-[#D4AF37]" />
             </div>
             <div className="space-y-0.5">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] font-mono">Verificación de Cuenta</p>
-              <p className="text-sm font-medium">{error}</p>
+              <p className={`text-[9px] font-bold tracking-[0.2em] uppercase ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Verificación de Cuenta
+              </p>
+              <p className="text-sm font-light">{error}</p>
             </div>
           </div>
         )}
 
+        {/* ============================================================ */}
         {/* LISTADO DE CITAS */}
+        {/* ============================================================ */}
         <div className="mt-4">
           {!error && citas.length === 0 ? (
-            <div className={`border border-dashed rounded-[2.5rem] p-16 text-center backdrop-blur-sm transition-all duration-500 ${
-              isDark ? 'border-zinc-800/60 bg-zinc-900/10' : 'border-pink-200/60 bg-white/50 shadow-inner'
+            <div className={`border border-dashed rounded-2xl p-16 text-center transition-all duration-300 ${
+              isDark ? 'border-[#3D281E] bg-[#2A1B14]/40' : 'border-[#F0E4DA] bg-white'
             }`}>
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 ${isDark ? 'bg-zinc-800/50' : 'bg-pink-100/50'}`}>
-                <Calendar className={`w-9 h-9 ${isDark ? 'text-zinc-700' : 'text-pink-300'}`} />
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 ${
+                isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+              }`}>
+                <Calendar className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
               </div>
-              <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-zinc-300' : 'text-stone-700'}`}>
+              <h3 className={`font-serif text-2xl font-light ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
                 No registras tratamientos próximos
               </h3>
-              <p className={`text-sm mt-2 max-w-sm mx-auto font-medium tracking-wide ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
+              <p className={`text-sm font-light mt-2 max-w-sm mx-auto ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
                 Diseña tu próxima experiencia haciendo clic en el botón superior de reservas VIP.
               </p>
             </div>
@@ -357,45 +404,52 @@ export default function MisReservasPage() {
                 return (
                   <div 
                     key={cita.id} 
-                    className={`group relative rounded-2xl border p-5 transition-all duration-500 transform hover:-translate-y-1.5 flex flex-col justify-between min-h-[180px] overflow-hidden ${
+                    className={`group relative rounded-2xl border p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between min-h-[180px] overflow-hidden ${
                       isDark 
-                        ? 'bg-gradient-to-br from-zinc-900/40 via-zinc-900/20 to-zinc-900/40 border-zinc-900/60 hover:border-pink-500/30 hover:shadow-2xl' 
-                        : 'bg-gradient-to-br from-white via-stone-50/60 to-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl'
+                        ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                        : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
                     }`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
+                    {/* Banda lateral indicadora */}
                     <div className={`absolute left-0 inset-y-0 w-1 rounded-r-full transition-all duration-500 ${
                       cita.status === 'confirmed' 
-                        ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                        ? 'bg-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.3)]' 
                         : cita.status === 'pending'
-                        ? 'bg-gradient-to-b from-amber-500 to-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                        : 'bg-gradient-to-b from-rose-500 to-rose-600'
+                        ? 'bg-[#A89588] shadow-[0_0_15px_rgba(168,149,136,0.2)]'
+                        : 'bg-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
                     }`} />
 
                     <div className="flex justify-between items-start gap-4 z-10 pl-3">
                       <div className="space-y-2 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[7px] font-black font-mono uppercase tracking-[0.2em] ${isDark ? 'text-pink-400' : 'text-pink-500'}`}>
+                          <span className={`text-[7px] font-bold font-mono uppercase tracking-[0.2em] ${
+                            isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+                          }`}>
                             Tratamiento Adquirido
                           </span>
-                          <div className="w-1 h-1 rounded-full bg-pink-400/30" />
-                          <span className={`text-[7px] font-black font-mono uppercase tracking-[0.2em] ${isDark ? 'text-zinc-500' : 'text-stone-400'}`}>
+                          <div className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+                          <span className={`text-[7px] font-mono uppercase tracking-[0.2em] ${
+                            isDark ? 'text-[#A89588]' : 'text-[#A89588]'
+                          }`}>
                             #{cita.id.slice(0, 6)}
                           </span>
                         </div>
 
-                        <h4 className={`font-black text-base tracking-tight transition-colors duration-300 ${
-                          isDark ? 'text-zinc-200 group-hover:text-pink-400' : 'text-stone-800 group-hover:text-pink-600'
+                        <h4 className={`font-serif text-lg font-light tracking-wide transition-colors duration-300 ${
+                          isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                         }`}>
                           {cita.services?.name || 'Servicio Especial Boutique'}
                         </h4>
 
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 border ${
-                          isDark ? 'bg-zinc-950/60 border-zinc-800/80 text-zinc-400' : 'bg-stone-50 border-stone-200/60 text-stone-500'
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all duration-300 border ${
+                          isDark 
+                            ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588]' 
+                            : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E]'
                         }`}>
-                          <User className="w-3 h-3 text-pink-400" />
+                          <User className="w-3 h-3 text-[#D4AF37]" />
                           <span>Estilista:</span>
-                          <span className={`font-black ${isDark ? 'text-zinc-300' : 'text-stone-700'}`}>
+                          <span className={`font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                             {cita.staff?.name || 'Por asignar'}
                           </span>
                         </div>
@@ -406,24 +460,28 @@ export default function MisReservasPage() {
                       </div>
                     </div>
 
-                    <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-4 pl-3 z-10 ${
-                      isDark ? 'border-zinc-800/60' : 'border-stone-200/60'
+                    <div className={`flex items-center justify-between border-t border-dashed mt-5 pt-4 pl-3 ${
+                      isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                     }`}>
                       <div className="flex items-center gap-2 text-xs font-medium">
-                        <div className={`p-1.5 rounded-lg ${isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'}`}>
-                          <Calendar className="w-3 h-3 text-pink-400" />
+                        <div className={`p-1.5 rounded-lg ${
+                          isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+                        }`}>
+                          <Calendar className="w-3 h-3 text-[#D4AF37]" />
                         </div>
-                        <span className={`capitalize font-bold ${isDark ? 'text-zinc-300' : 'text-stone-700'}`}>
+                        <span className={`capitalize font-serif text-sm font-light ${
+                          isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                        }`}>
                           {fechaLinda}
                         </span>
                       </div>
 
-                      <div className={`flex items-center gap-2 font-mono text-[10px] font-black px-3.5 py-1.5 rounded-xl shadow-sm tracking-widest ${
+                      <div className={`flex items-center gap-2 font-mono text-[10px] font-bold px-3.5 py-1.5 rounded-xl tracking-widest ${
                         isDark 
-                          ? 'bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/20 text-pink-400' 
-                          : 'bg-gradient-to-r from-stone-950 to-stone-800 text-white'
+                          ? 'bg-[#3D281E] text-[#D4AF37] border border-[#D4AF37]/30' 
+                          : 'bg-[#FFF9F6] text-[#D4AF37] border border-[#D4AF37]/30'
                       }`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
                         {cita.time.slice(0, 5)} HS
                       </div>
                     </div>
@@ -434,34 +492,62 @@ export default function MisReservasPage() {
           )}
         </div>
 
-        {/* METRICAS INFERIORES */}
+        {/* ============================================================ */}
+        {/* MÉTRICAS INFERIORES */}
+        {/* ============================================================ */}
         {!error && citas.length > 0 && (
-          <div className={`pt-6 border-t transition-all duration-500 ${isDark ? 'border-zinc-900/60' : 'border-stone-200/40'}`}>
-            <div className={`rounded-2xl p-6 border shadow-lg flex flex-wrap items-center justify-around gap-4 ${
-              isDark ? 'bg-zinc-900/30 border-zinc-900/60' : 'bg-white/60 border-stone-200/40 backdrop-blur-sm'
+          <div className={`pt-6 border-t ${
+            isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+          }`}>
+            <div className={`border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-wrap items-center justify-around gap-4 ${
+              isDark 
+                ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
             }`}>
               <div className="text-center">
-                <p className="text-[8px] font-black font-mono uppercase tracking-[0.2em] text-zinc-500">Total Reservas</p>
-                <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-stone-800'}`}>{citas.length}</p>
+                <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Total Reservas
+                </p>
+                <p className={`font-serif text-3xl font-light ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {citas.length}
+                </p>
               </div>
-              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className={`w-px h-10 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
               <div className="text-center">
-                <p className="text-[8px] font-black font-mono uppercase tracking-[0.2em] text-zinc-500">Confirmadas</p>
-                <p className={`text-2xl font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Confirmadas
+                </p>
+                <p className="font-serif text-3xl font-light text-[#D4AF37]">
                   {citas.filter(c => c.status === 'confirmed').length}
                 </p>
               </div>
-              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className={`w-px h-10 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
               <div className="text-center">
-                <p className="text-[8px] font-black font-mono uppercase tracking-[0.2em] text-zinc-500">Pendientes</p>
-                <p className={`text-2xl font-black ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Pendientes
+                </p>
+                <p className={`font-serif text-3xl font-light ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
                   {citas.filter(c => c.status === 'pending').length}
                 </p>
               </div>
-              <div className="w-px h-10 bg-zinc-800/30" />
+              <div className={`w-px h-10 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
               <div className="text-center">
-                <p className="text-[8px] font-black font-mono uppercase tracking-[0.2em] text-zinc-500">Canceladas</p>
-                <p className={`text-2xl font-black ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
+                <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Canceladas
+                </p>
+                <p className="font-serif text-3xl font-light text-rose-500">
                   {citas.filter(c => c.status === 'cancelled').length}
                 </p>
               </div>
