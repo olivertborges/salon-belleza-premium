@@ -20,7 +20,7 @@ import {
   Calendar, User, Sparkles, ChevronRight, 
   CheckCircle2, ChevronLeft, Phone, Mail, FileText,
   Scissors, Heart, ArrowRight, Check, X, Crown, Star,
-  AlertCircle, ShieldCheck, Clock, Info
+  AlertCircle, ShieldCheck, Clock, Info, Search, ChevronDown, Plus, Trash2
 } from 'lucide-react'
 
 // ============================================================
@@ -74,7 +74,6 @@ const FALLBACK_STAFF: Staff[] = [
 ]
 
 const CATEGORIES = [
-  { id: 'all', label: 'Todos los Servicios', icon: Sparkles },
   { id: 'nails', label: 'Uñas & Manicura', icon: Heart },
   { id: 'micropigmentation', label: 'Micropigmentación', icon: Crown },
   { id: 'hair', label: 'Peluquería & Color', icon: Scissors },
@@ -106,15 +105,17 @@ function AgendaContent() {
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // Selecciones
+  // Selecciones (Modificado para Carrito Múltiple)
   const [selectedProfessional, setSelectedProfessional] = useState<Staff | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedServices, setSelectedServices] = useState<Service[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+  
   const [selectedDate, setSelectedDate] = useState<string>(() => format(new Date(), 'yyyy-MM-dd'))
   const [selectedTime, setSelectedTime] = useState('')
   const [currentMonth, setCurrentMonth] = useState(() => new Date())
 
-  // Modales y UI extras originales
+  // Modales y UI extras
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [avatarErrors, setAvatarErrors] = useState<Record<string, boolean>>({})
 
@@ -123,7 +124,7 @@ function AgendaContent() {
     name: '', phone: '', email: '', notes: '' 
   })
 
-  // Autofill si el usuario está logueado
+  // Autofill
   useEffect(() => {
     if (user) {
       setClientData(prev => ({
@@ -134,7 +135,7 @@ function AgendaContent() {
     }
   }, [user])
 
-  // Fetch Horarios base organizados
+  // Fetch Horarios base
   const fetchWorkingHours = useCallback(async () => {
     try {
       const { data, error: fetchErr } = await supabase
@@ -183,7 +184,7 @@ function AgendaContent() {
         }
       } catch (err) {
         setError('No pudimos cargar la agenda correctamente. Por favor, refresca la página.')
-      } finally {
+      } finaly {
         if (isMounted) setLoading(false)
       }
     }
@@ -192,7 +193,7 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [fetchWorkingHours, urlProfessionalId])
 
-  // Carga de citas optimizada (Dependencia corregida a ID primitivo)
+  // Carga de citas optimizada
   const professionalId = selectedProfessional?.id
   useEffect(() => {
     if (!professionalId) return
@@ -229,16 +230,57 @@ function AgendaContent() {
     return 'others'
   }, [])
 
-  // Memorización de servicios filtrados
-  const professionalServices = useMemo(() => {
-    if (selectedProfessional?.services && selectedProfessional.services.length > 0) {
-      return selectedProfessional.services
-    }
-    if (selectedCategory === 'all') return services
-    return services.filter(s => getServiceCategory(s.category) === selectedCategory)
-  }, [selectedProfessional, services, selectedCategory, getServiceCategory])
+  // Totales del carrito
+  const totalDuration = useMemo(() => {
+    return selectedServices.reduce((sum, s) => sum + s.duration, 0)
+  }, [selectedServices])
 
-  // Verificación de disponibilidad de alto rendimiento (Optimizado)
+  const totalPrice = useMemo(() => {
+    return selectedServices.reduce((sum, s) => sum + Number(s.price), 0)
+  }, [selectedServices])
+
+  // Filtrado de servicios con motor de búsqueda e indexación por categorías
+  const servicesByCategory = useMemo(() => {
+    const baseServices = selectedProfessional?.services && selectedProfessional.services.length > 0
+      ? selectedProfessional.services
+      : services
+
+    const filtered = baseServices.filter(s => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      return s.name.toLowerCase().includes(query) || (s.description && s.description.toLowerCase().includes(query))
+    })
+
+    const groups: Record<string, Service[]> = { nails: [], micropigmentation: [], hair: [], others: [] }
+    filtered.forEach(s => {
+      const cat = getServiceCategory(s.category)
+      if (groups[cat]) groups[cat].push(s)
+      else groups['others'].push(s)
+    })
+
+    return groups
+  }, [selectedProfessional, services, searchQuery, getServiceCategory])
+
+  // Auto-expandir categorías si hay una búsqueda activa
+  useEffect(() => {
+    if (searchQuery) {
+      setExpandedCategories({ nails: true, micropigmentation: true, hair: true, others: true })
+    }
+  }, [searchQuery])
+
+  const toggleCategory = (catId: string) => {
+    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
+  }
+
+  const toggleServiceSelection = (service: Service) => {
+    setSelectedServices(prev => {
+      const exists = prev.some(s => s.id === service.id)
+      if (exists) return prev.filter(s => s.id !== service.id)
+      return [...prev, service]
+    })
+  }
+
+  // Verificación de disponibilidad acumulada de alto rendimiento
   const checkAvailability = useCallback((time: string) => {
     const today = format(new Date(), 'yyyy-MM-dd')
     if (selectedDate === today) {
@@ -247,7 +289,8 @@ function AgendaContent() {
     }
 
     const [h2, m2] = time.split(':').map(Number)
-    const checkMinutes = h2 * 60 + m2
+    const checkStartMinutes = h2 * 60 + m2
+    const checkEndMinutes = checkStartMinutes + totalDuration
 
     for (const app of appointments) {
       if (!app.time) continue
@@ -258,7 +301,8 @@ function AgendaContent() {
       const startMinutes = h1 * 60 + m1
       const endMinutes = startMinutes + duration
 
-      if (checkMinutes >= startMinutes && checkMinutes < endMinutes) {
+      // Valida solapamiento de rangos completos
+      if (checkStartMinutes < endMinutes && checkEndMinutes > startMinutes) {
         return { 
           available: false, 
           reason: app.status === 'blocked' ? 'bloqueado' : 'ocupado' 
@@ -267,7 +311,7 @@ function AgendaContent() {
     }
 
     return { available: true, reason: '' }
-  }, [appointments, selectedDate])
+  }, [appointments, selectedDate, totalDuration])
 
   const daysInMonth = useMemo(() => eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -282,7 +326,7 @@ function AgendaContent() {
   const morningTimes = useMemo(() => availableTimes.filter(t => t < '14:00'), [availableTimes])
   const afternoonTimes = useMemo(() => availableTimes.filter(t => t >= '14:00'), [availableTimes])
 
-  // Manejo de guardado y reservas
+  // Envío del registro de turnos múltiples
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!clientData.name || !clientData.phone) {
@@ -337,24 +381,27 @@ function AgendaContent() {
 
       if (!clientId) throw new Error('Identificación del cliente errónea')
 
+      // Insertar el bloque de servicios seleccionados (Citas agrupadas en el mismo slot temporal)
+      const appointmentsToInsert = selectedServices.map(service => ({
+        client_id: clientId,
+        professional_id: selectedProfessional?.id,
+        service_id: service.id,
+        date: selectedDate,
+        time: selectedTime,
+        status: 'pending',
+        total_price: Number(service.price || 0),
+        notes: clientData.notes.trim() || null,
+        tenant_id: tenantId
+      }))
+
       const { error: appointmentError } = await supabase
         .from('appointments')
-        .insert([{
-          client_id: clientId,
-          professional_id: selectedProfessional?.id,
-          service_id: selectedService?.id,
-          date: selectedDate,
-          time: selectedTime,
-          status: 'pending',
-          total_price: Number(selectedService?.price || 0),
-          notes: clientData.notes.trim() || null,
-          tenant_id: tenantId
-        }])
+        .insert(appointmentsToInsert)
 
       if (appointmentError) throw appointmentError
 
       // Gestión de Puntos
-      const POINTS = 50
+      const POINTS = 50 * selectedServices.length
       const { data: wallet } = await supabase
         .from('loyalty_wallets')
         .select('glow_points')
@@ -392,7 +439,6 @@ function AgendaContent() {
     }
   }
 
-  // Render original de Skeletons y estados de Carga
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
@@ -410,10 +456,10 @@ function AgendaContent() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-zinc-950 text-stone-100' : 'bg-stone-50 text-stone-800'}`}>
+    <div className={`min-h-screen pb-32 transition-colors duration-500 ${isDark ? 'bg-zinc-950 text-stone-100' : 'bg-stone-50 text-stone-800'}`}>
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         
-        {/* TOP BANNER ORIGINAL */}
+        {/* TOP BANNER */}
         <div className={`p-8 rounded-3xl border transition-all duration-300 relative overflow-hidden ${
           isDark ? 'bg-gradient-to-br from-zinc-900 via-zinc-950 to-stone-900 border-zinc-800/80 shadow-2xl' : 'bg-white border-rose-100/70 shadow-xl shadow-rose-100/20'
         }`}>
@@ -429,16 +475,9 @@ function AgendaContent() {
                 Reserva tu cita <span className="italic font-normal text-rose-500">Exclusiva</span>
               </h1>
               <p className="text-sm text-stone-400 max-w-xl font-light">
-                Selecciona a tu profesional de confianza y personaliza tus tratamientos en un entorno diseñado para tu bienestar.
+                Selecciona tu especialista de confianza y combina todos tus tratamientos favoritos en un mismo turno.
               </p>
             </div>
-            {user && (
-              <Link href="/reservas" className={`px-6 py-3 rounded-xl text-xs font-semibold tracking-wider transition-all duration-300 flex items-center gap-2 border ${
-                isDark ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800' : 'bg-white border-stone-200 hover:border-rose-300 shadow-sm'
-              }`}>
-                <Calendar className="w-4 h-4 text-rose-500" /> Gestionar Mis Citas <ChevronRight className="w-4 h-4 opacity-50" />
-              </Link>
-            )}
           </div>
         </div>
 
@@ -450,7 +489,7 @@ function AgendaContent() {
             {[1, 2, 3, 4].map((num) => {
               const isActive = step === num
               const isCompleted = step > num
-              const labels = ['Especialista', 'Tratamiento', 'Agenda & Hora', 'Tus Datos']
+              const labels = ['Especialista', 'Tratamientos', 'Agenda & Hora', 'Tus Datos']
               return (
                 <div key={num} className="flex items-center gap-3 flex-shrink-0">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
@@ -468,13 +507,12 @@ function AgendaContent() {
           </div>
         )}
 
-        {/* CONTENEDOR DE PASOS DINÁMICOS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             
             <AnimatePresence mode="wait">
               
-              {/* PASO 1: SELECCIÓN DE PROFESIONAL (COMPLETO) */}
+              {/* PASO 1: SELECCIÓN DE PROFESIONAL */}
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-4">
                   <h2 className="text-xl font-serif font-light tracking-wide flex items-center gap-2">
@@ -526,81 +564,155 @@ function AgendaContent() {
                 </motion.div>
               )}
 
-              {/* PASO 2: SELECCIÓN DE TRATAMIENTO (COMPLETO) */}
+              {/* PASO 2: ESTRUCTURA DE ACORDEÓN FLEXIBLE CON MÚLTIPLE SELECCIÓN Y BUSCADOR RESPONSIVE */}
               {step === 2 && selectedProfessional && (
                 <motion.div key="step2" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-2 border-b">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 pb-2 border-b">
                     <div>
-                      <h2 className="text-xl font-serif font-light flex items-center gap-2">
-                        <Scissors className="w-5 h-5 text-rose-500" /> Elegir Tratamiento
+                      <h2 className="text-xl font-serif font-light flex items-center gap-2 text-stone-800">
+                        <Scissors className="w-5 h-5 text-rose-500" /> Catálogo de Tratamientos
                       </h2>
-                      <p className="text-xs text-stone-400">Mostrando catálogo disponible con {selectedProfessional.name}</p>
+                      <p className="text-xs text-stone-400">Selecciona uno o varios servicios ofrecidos por {selectedProfessional.name}</p>
                     </div>
-                    <button onClick={() => { setStep(1); setSelectedService(null); }} className="text-xs font-semibold text-rose-500 flex items-center gap-1 self-start sm:self-auto hover:underline">
+                    <button onClick={() => { setStep(1); setSelectedServices([]); }} className="text-xs font-semibold text-rose-500 flex items-center gap-1 self-start sm:self-auto hover:underline">
                       <X className="w-3.5 h-3.5"/> Cambiar Especialista
                     </button>
                   </div>
 
-                  {/* Filtro de Categorías */}
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                    {CATEGORIES.map(cat => {
-                      const Icon = cat.icon
-                      const isSelected = selectedCategory === cat.id
-                      return (
-                        <button 
-                          key={cat.id} 
-                          onClick={() => setSelectedCategory(cat.id)}
-                          className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 flex-shrink-0 transition-all ${
-                            isSelected ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'bg-white border text-stone-600 hover:bg-stone-50'
-                          }`}
-                        >
-                          <Icon className="w-3.5 h-3.5" /> {cat.label}
-                        </button>
-                      )
-                    })}
+                  {/* BUSCADOR RESPONSIVE INTELIGENTE */}
+                  <div className="relative w-full">
+                    <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input 
+                      type="text" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar tratamiento (ej: Manicura, Microblading...)" 
+                      className="w-full bg-white border border-stone-200 text-stone-800 text-sm pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400/50 focus:border-rose-400 transition-all shadow-sm"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
-                  {/* Listado de Servicios */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {professionalServices.map(service => (
-                      <div 
-                        key={service.id} 
-                        onClick={() => { setSelectedService(service); setStep(3); }}
-                        className={`p-5 rounded-2xl border bg-white text-left cursor-pointer transition-all duration-300 flex flex-col justify-between hover:border-rose-400 hover:shadow-lg group relative`}
-                      >
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-start gap-4">
-                            <h4 className="font-semibold text-sm tracking-wide text-stone-800 group-hover:text-rose-500 transition-colors">{service.name}</h4>
-                            <span className="text-rose-500 font-serif font-bold text-base">${Number(service.price).toLocaleString()}</span>
-                          </div>
-                          <p className="text-xs text-stone-400 font-light leading-relaxed line-clamp-2">{service.description || 'Sin descripción disponible.'}</p>
+                  {/* ACORDEONES RESPONSIVE POR CATEGORÍA */}
+                  <div className="space-y-3">
+                    {CATEGORIES.map(cat => {
+                      const Icon = cat.icon
+                      const categoryServices = servicesByCategory[cat.id] || []
+                      const isExpanded = !!expandedCategories[cat.id]
+                      
+                      // Contar cuántos de esta categoría están en el carrito
+                      const selectedInCat = categoryServices.filter(s => selectedServices.some(sel => sel.id === s.id)).length
+
+                      if (categoryServices.length === 0 && searchQuery) return null
+
+                      return (
+                        <div key={cat.id} className="bg-white border border-stone-100 rounded-2xl overflow-hidden shadow-sm transition-all">
+                          {/* Encabezado del Acordeón */}
+                          <button 
+                            onClick={() => toggleCategory(cat.id)}
+                            className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-stone-50/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-xl ${selectedInCat > 0 ? 'bg-rose-500 text-white shadow-md' : 'bg-stone-50 text-stone-500'}`}>
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold text-stone-800 tracking-wide">{cat.label}</h3>
+                                <p className="text-[11px] text-stone-400 font-light">{categoryServices.length} opciones disponibles</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {selectedInCat > 0 && (
+                                <span className="px-2 py-0.5 bg-rose-50 text-rose-500 text-[10px] font-bold rounded-full">
+                                  {selectedInCat} elegido{selectedInCat > 1 ? 's' : ''}
+                                </span>
+                              )}
+                              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-rose-500' : ''}`} />
+                            </div>
+                          </button>
+
+                          {/* Cuerpo del Acordeón con Grid Flexible (Sin Scroll Horizontal) */}
+                          <AnimatePresence initial={false}>
+                            {isExpanded && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }} 
+                                animate={{ height: 'auto', opacity: 1 }} 
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                              >
+                                <div className="px-5 pb-5 pt-1 border-t border-stone-50 bg-stone-50/30 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {categoryServices.map(service => {
+                                    const isSelected = selectedServices.some(s => s.id === service.id)
+                                    return (
+                                      <div 
+                                        key={service.id} 
+                                        onClick={() => toggleServiceSelection(service)}
+                                        className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-200 flex flex-col justify-between relative group ${
+                                          isSelected 
+                                            ? 'bg-rose-50/40 border-rose-400 shadow-sm ring-1 ring-rose-400/30' 
+                                            : 'bg-white border-stone-200 hover:border-stone-300 hover:shadow-md'
+                                        }`}
+                                      >
+                                        <div className="space-y-1.5 pr-8">
+                                          <div className="flex flex-wrap justify-between items-start gap-1">
+                                            <h4 className={`font-semibold text-xs tracking-wide transition-colors ${isSelected ? 'text-rose-600 font-bold' : 'text-stone-800'}`}>
+                                              {service.name}
+                                            </h4>
+                                          </div>
+                                          <p className="text-[11px] text-stone-400 font-light leading-relaxed line-clamp-2">
+                                            {service.description || 'Sin descripción disponible.'}
+                                          </p>
+                                        </div>
+
+                                        <div className="flex justify-between items-center pt-3 mt-3 border-t border-stone-100/70 text-[11px] font-medium">
+                                          <span className="flex items-center gap-1 text-stone-400">
+                                            <Clock className="w-3.5 h-3.5 text-stone-300"/> {service.duration} min
+                                          </span>
+                                          <span className="text-rose-500 font-serif font-bold text-sm">
+                                            ${Number(service.price).toLocaleString()}
+                                          </span>
+                                        </div>
+
+                                        {/* Botón de Acción Circular Superior Derecho */}
+                                        <div className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                          isSelected ? 'bg-rose-500 text-white scale-110' : 'bg-stone-50 text-stone-400 border border-stone-200 group-hover:bg-rose-50 group-hover:text-rose-500'
+                                        }`}>
+                                          {isSelected ? <Check className="w-3 h-3 stroke-[3]" /> : <Plus className="w-3 h-3" />}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                        <div className="flex justify-between items-center pt-4 mt-4 border-t border-stone-100 text-xs text-stone-400 font-medium">
-                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-rose-400"/> {service.duration} minutos</span>
-                          <span className="text-rose-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">Reservar <ChevronRight className="w-3 h-3"/></span>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </motion.div>
               )}
 
-              {/* PASO 3: CALENDARIO Y AGENDA DE HORAS (COMPLETO) */}
-              {step === 3 && selectedService && selectedProfessional && (
+              {/* PASO 3: CALENDARIO Y AGENDA DE HORAS */}
+              {step === 3 && selectedServices.length > 0 && selectedProfessional && (
                 <motion.div key="step3" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
                   <div className="flex justify-between items-center pb-2 border-b">
                     <div>
-                      <h2 className="text-xl font-serif font-light flex items-center gap-2">
+                      <h2 className="text-xl font-serif font-light flex items-center gap-2 text-stone-800">
                         <Calendar className="w-5 h-5 text-rose-500" /> Agenda tu Turno
                       </h2>
                     </div>
                     <button onClick={() => { setStep(2); setSelectedTime(''); }} className="text-xs font-semibold text-rose-500 flex items-center gap-1 hover:underline">
-                      <X className="w-3.5 h-3.5"/> Cambiar Servicio
+                      <X className="w-3.5 h-3.5"/> Cambiar Servicios
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                    {/* Calendario (3 columnas) */}
+                    {/* Calendario */}
                     <div className="md:col-span-3 p-5 bg-white rounded-2xl border space-y-4 shadow-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold uppercase tracking-wider text-stone-700">{format(currentMonth, 'MMMM yyyy', { locale: es })}</span>
@@ -635,12 +747,11 @@ function AgendaContent() {
                       </div>
                     </div>
 
-                    {/* Selector de Horas (2 columnas) */}
+                    {/* Selector de Horas */}
                     <div className="md:col-span-2 space-y-4">
                       <div className="p-5 bg-white rounded-2xl border shadow-sm max-h-[380px] overflow-y-auto space-y-4">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400">Horarios para el {format(parseISO(selectedDate), 'dd/MM')}</h4>
                         
-                        {/* Mañana */}
                         <div className="space-y-2">
                           <span className="text-[10px] text-stone-400 font-bold tracking-wider block">Mañana</span>
                           <div className="grid grid-cols-2 gap-2">
@@ -663,7 +774,6 @@ function AgendaContent() {
                           </div>
                         </div>
 
-                        {/* Tarde */}
                         <div className="space-y-2">
                           <span className="text-[10px] text-stone-400 font-bold tracking-wider block">Tarde</span>
                           <div className="grid grid-cols-2 gap-2">
@@ -697,11 +807,11 @@ function AgendaContent() {
                 </motion.div>
               )}
 
-              {/* PASO 4: FORMULARIO CLIENTE COMPLETO */}
-              {step === 4 && selectedService && selectedProfessional && (
+              {/* PASO 4: FORMULARIO CLIENTE */}
+              {step === 4 && selectedServices.length > 0 && selectedProfessional && (
                 <motion.div key="step4" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="p-6 bg-white rounded-2xl border space-y-6 shadow-sm">
                   <div className="flex justify-between items-center pb-2 border-b">
-                    <h3 className="text-xl font-serif font-light flex items-center gap-2">
+                    <h3 className="text-xl font-serif font-light flex items-center gap-2 text-stone-800">
                       <FileText className="w-5 h-5 text-rose-500" /> Información de Contacto
                     </h3>
                     <button onClick={() => setStep(3)} className="text-xs font-semibold text-rose-500 hover:underline">Volver a la Agenda</button>
@@ -713,14 +823,14 @@ function AgendaContent() {
                         <label className="text-xs font-semibold text-stone-500 block mb-1.5">Nombre y Apellido *</label>
                         <div className="relative">
                           <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input type="text" required value={clientData.name} onChange={e => setClientData({...clientData, name: e.target.value})} className="w-full border border-stone-200 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="Escribe tu nombre completo" />
+                          <input type="text" required value={clientData.name} onChange={e => setClientData({...clientData, name: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="Escribe tu nombre completo" />
                         </div>
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-stone-500 block mb-1.5">WhatsApp de Contacto *</label>
                         <div className="relative">
                           <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input type="tel" required value={clientData.phone} onChange={e => setClientData({...clientData, phone: e.target.value})} className="w-full border border-stone-200 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="Ej: 099123456" />
+                          <input type="tel" required value={clientData.phone} onChange={e => setClientData({...clientData, phone: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="Ej: 099123456" />
                         </div>
                       </div>
                     </div>
@@ -729,13 +839,13 @@ function AgendaContent() {
                       <label className="text-xs font-semibold text-stone-500 block mb-1.5">Correo Electrónico (Opcional)</label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input type="email" value={clientData.email} onChange={e => setClientData({...clientData, email: e.target.value})} className="w-full border border-stone-200 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="tu@correo.com" />
+                        <input type="email" value={clientData.email} onChange={e => setClientData({...clientData, email: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-rose-400" placeholder="tu@correo.com" />
                       </div>
                     </div>
 
                     <div>
                       <label className="text-xs font-semibold text-stone-500 block mb-1.5">Notas Especiales o Preferencias</label>
-                      <textarea value={clientData.notes} onChange={e => setClientData({...clientData, notes: e.target.value})} className="w-full border border-stone-200 p-4 rounded-xl text-sm resize-none focus:outline-rose-400" rows={3} placeholder="Si tienes alguna alergia, preferencia de color o indicación, escríbela aquí..." />
+                      <textarea value={clientData.notes} onChange={e => setClientData({...clientData, notes: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 p-4 rounded-xl text-sm resize-none focus:outline-rose-400" rows={3} placeholder="Si tienes alguna alergia, preferencia de color o indicación, escríbela aquí..." />
                     </div>
 
                     <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/60 flex gap-3 text-xs text-amber-700">
@@ -750,8 +860,8 @@ function AgendaContent() {
                 </motion.div>
               )}
 
-              {/* PASO 5: EXCELENCIA / PANTALLA DE ÉXITO ORIGINAL */}
-              {step === 5 && selectedService && selectedProfessional && (
+              {/* PASO 5: PANTALLA DE ÉXITO */}
+              {step === 5 && selectedServices.length > 0 && selectedProfessional && (
                 <motion.div key="step5" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 bg-white rounded-3xl border border-stone-200 text-center space-y-6 shadow-xl max-w-xl mx-auto">
                   <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-bounce" />
@@ -766,9 +876,14 @@ function AgendaContent() {
                       <span className="text-stone-400">Especialista:</span>
                       <span className="font-semibold text-stone-800">{selectedProfessional.name}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-stone-400">Tratamiento:</span>
-                      <span className="font-semibold text-stone-800">{selectedService.name}</span>
+                    <div className="flex flex-col gap-1 border-y border-stone-200/55 py-2">
+                      <span className="text-stone-400 mb-0.5">Tratamientos:</span>
+                      {selectedServices.map(s => (
+                        <div key={s.id} className="flex justify-between pl-2 font-medium text-stone-700">
+                          <span>• {s.name}</span>
+                          <span>${Number(s.price).toLocaleString()}</span>
+                        </div>
+                      ))}
                     </div>
                     <div className="flex justify-between">
                       <span className="text-stone-400">Día y Hora:</span>
@@ -778,10 +893,10 @@ function AgendaContent() {
 
                   <div className="p-4 bg-rose-50/50 rounded-xl flex items-center gap-3 text-left text-xs text-rose-700 border border-rose-100/50">
                     <ShieldCheck className="w-5 h-5 flex-shrink-0 text-rose-500" />
-                    <p>¡Ganaste <strong>50 Glow Points</strong>! Se acreditaron en tu billetera virtual de lealtad.</p>
+                    <p>¡Ganaste <strong>{50 * selectedServices.length} Glow Points</strong> por tu reserva combinada!</p>
                   </div>
 
-                  <button onClick={() => { setStep(1); setSelectedService(null); setSelectedTime(''); }} className="w-full py-3 bg-stone-900 text-white font-medium rounded-xl hover:bg-stone-800 transition-all text-xs tracking-widest uppercase">
+                  <button onClick={() => { setStep(1); setSelectedServices([]); setSelectedTime(''); }} className="w-full py-3 bg-stone-900 text-white font-medium rounded-xl hover:bg-stone-800 transition-all text-xs tracking-widest uppercase">
                     Volver a la Cartelera Principal
                   </button>
                 </motion.div>
@@ -790,7 +905,7 @@ function AgendaContent() {
             </AnimatePresence>
           </div>
 
-          {/* SIDEBAR DERECHO: DETALLE EN TIEMPO REAL (COMPLETO) */}
+          {/* SIDEBAR DERECHO: RESUMEN RESPONSIVE */}
           {step > 1 && step < 5 && (
             <div className="p-6 bg-white rounded-2xl border border-stone-200 h-fit space-y-5 lg:sticky lg:top-8 shadow-sm">
               <div className="flex justify-between items-center pb-2 border-b">
@@ -813,11 +928,20 @@ function AgendaContent() {
                   </div>
                 )}
 
-                {selectedService && (
-                  <div className="pt-3 border-t border-stone-100">
-                    <p className="text-stone-400 text-[10px] uppercase font-bold tracking-wider">Tratamiento</p>
-                    <p className="font-semibold text-stone-800 text-xs">{selectedService.name}</p>
-                    <p className="text-[11px] text-stone-400 font-light mt-0.5">{selectedService.duration} min de sesión</p>
+                {selectedServices.length > 0 && (
+                  <div className="pt-3 border-t border-stone-100 space-y-2">
+                    <p className="text-stone-400 text-[10px] uppercase font-bold tracking-wider">Tratamientos Seleccionados</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1">
+                      {selectedServices.map(s => (
+                        <div key={s.id} className="flex justify-between items-center bg-stone-50 p-2 rounded-lg text-xs">
+                          <span className="font-medium text-stone-700 truncate max-w-[150px]">{s.name}</span>
+                          <button onClick={() => toggleServiceSelection(s)} className="text-stone-400 hover:text-rose-500 ml-2">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-stone-400 font-light mt-0.5">Duración combinada: {totalDuration} min</p>
                   </div>
                 )}
 
@@ -830,10 +954,10 @@ function AgendaContent() {
                 )}
               </div>
 
-              {selectedService && (
+              {selectedServices.length > 0 && (
                 <div className="pt-4 border-t border-stone-100 flex justify-between items-center font-bold text-stone-800">
-                  <span className="text-xs uppercase tracking-wider text-stone-400">Importe Neto:</span>
-                  <span className="text-rose-500 font-serif text-xl">${Number(selectedService.price).toLocaleString()}</span>
+                  <span className="text-xs uppercase tracking-wider text-stone-400">Total Estimado:</span>
+                  <span className="text-rose-500 font-serif text-xl">${totalPrice.toLocaleString()}</span>
                 </div>
               )}
             </div>
@@ -842,9 +966,35 @@ function AgendaContent() {
         </div>
       </div>
 
-      {/* MODAL ORIGINAL DE CONFIRMACIÓN PASO A PASO */}
+      {/* STICKY BOTTOM BAR ORIGINAL PARA SELECCIÓN MÚLTIPLE EN MÓVILES */}
+      {step === 2 && selectedServices.length > 0 && (
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }} 
+          exit={{ y: 100, opacity: 0 }} 
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200/80 p-4 shadow-xl shadow-stone-900/10 backdrop-blur-md"
+        >
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+            <div className="text-left">
+              <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Carrito ({selectedServices.length})</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-bold text-rose-500 font-serif">${totalPrice.toLocaleString()}</span>
+                <span className="text-xs text-stone-400 font-medium">· {totalDuration} min</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setStep(3)} 
+              className="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold tracking-wider rounded-xl shadow-md shadow-rose-500/20 flex items-center gap-1.5 transition-all"
+            >
+              Continuar a la Agenda <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN */}
       <AnimatePresence>
-        {showSummaryModal && selectedService && selectedProfessional && (
+        {showSummaryModal && selectedServices.length > 0 && selectedProfessional && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl p-6 max-w-md w-full border border-stone-200 shadow-2xl space-y-6">
               <div className="flex justify-between items-center pb-2 border-b">
@@ -852,11 +1002,26 @@ function AgendaContent() {
                 <button onClick={() => setShowSummaryModal(false)} className="p-1 rounded-full hover:bg-stone-100"><X className="w-4 h-4 text-stone-400"/></button>
               </div>
 
-              <div className="space-y-3 text-xs bg-stone-50 p-4 rounded-xl border">
+              <div className="space-y-3 text-xs bg-stone-50 p-4 rounded-xl border max-h-60 overflow-y-auto">
                 <div className="flex justify-between"><span className="text-stone-400">Cliente:</span><span className="font-semibold text-stone-800">{clientData.name}</span></div>
                 <div className="flex justify-between"><span className="text-stone-400">Teléfono:</span><span className="font-semibold text-stone-800">{clientData.phone}</span></div>
                 <div className="flex justify-between"><span className="text-stone-400">Profesional:</span><span className="font-semibold text-stone-800">{selectedProfessional.name}</span></div>
-                <div className="flex justify-between"><span className="text-stone-400">Servicio:</span><span className="font-semibold text-stone-800">{selectedService.name}</span></div>
+                
+                <div className="border-t border-stone-200/60 pt-2 space-y-1">
+                  <span className="text-stone-400 block font-bold">Servicios a reservar:</span>
+                  {selectedServices.map(s => (
+                    <div key={s.id} className="flex justify-between pl-2 text-stone-700">
+                      <span>• {s.name} ({s.duration} min)</span>
+                      <span className="font-semibold">${Number(s.price).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-stone-200/60 pt-2 flex justify-between">
+                  <span className="text-stone-400 font-bold">Total Acumulado:</span>
+                  <span className="font-bold text-rose-500">${totalPrice.toLocaleString()} ({totalDuration} min)</span>
+                </div>
+                
                 <div className="flex justify-between"><span className="text-stone-400">Fecha/Hora:</span><span className="font-semibold text-rose-500">{selectedDate} a las {selectedTime} hs</span></div>
               </div>
 
