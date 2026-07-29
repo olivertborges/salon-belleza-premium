@@ -30,8 +30,8 @@ interface Service {
   price: number
   duration: number
   category: string
+  subcategory?: string
   is_active: boolean
-  staff_id?: string
 }
 
 interface Staff {
@@ -61,14 +61,15 @@ interface ClientData {
 }
 
 const FALLBACK_STAFF: Staff[] = [
-  { id: '1', name: 'Laura Gómez', specialty: 'Manicura & Nail Art', is_active: true, rating: 4.9, reviews_count: 124, biography: 'Especialista en diseños a mano alzada y extensiones esculpidas.' },
-  { id: '2', name: 'María Fernández', specialty: 'Micropigmentación & Cejas', is_active: true, rating: 4.8, reviews_count: 98, biography: 'Experta en Microblading y sombreado de efecto polvo.' },
-  { id: '3', name: 'Ana Martínez', specialty: 'Peluquería & Colorimetría', is_active: true, rating: 4.7, reviews_count: 86, biography: 'Especialista en cambios de look globales y balayage.' },
+  { id: '1', name: 'Laura Gómez', specialty: 'Uñas & Manicuría', is_active: true, rating: 4.9, reviews_count: 124 },
+  { id: '2', name: 'María Fernández', specialty: 'Micropigmentación (Cejas & Labios)', is_active: true, rating: 4.8, reviews_count: 98 },
+  { id: '3', name: 'Ana Martínez', specialty: 'Peluquería & Estilismo', is_active: true, rating: 4.7, reviews_count: 86 },
 ]
 
+// Categorías visuales mapeadas con los iconos correspondientes
 const CATEGORIES = [
-  { id: 'nails', label: 'Uñas & Manicura', icon: Heart },
-  { id: 'micropigmentation', label: 'Micropigmentación', icon: Crown },
+  { id: 'nails', label: 'Uñas & Manicuría', icon: Heart },
+  { id: 'micropigmentation', label: 'Micropigmentación & Mirada', icon: Crown },
   { id: 'hair', label: 'Peluquería & Color', icon: Scissors },
   { id: 'others', label: 'Otros Tratamientos', icon: Star },
 ]
@@ -210,59 +211,52 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [selectedDate, selectedProfessional])
 
-  // Clasificador de categorías por palabras clave mejorado (evita conflictos de tildes)
-  const getServiceCategory = useCallback((category: string): string => {
-    if (!category) return 'others'
-    const normalized = category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+  // Clasificador interno basado puramente en las categorías reales de tu base de datos
+  const getServiceCategory = useCallback((catName: string): string => {
+    if (!catName) return 'others'
+    const norm = catName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
     
-    if (normalized.includes('una') || normalized.includes('nail') || normalized.includes('manicur') || normalized.includes('pedicur') || normalized.includes('esmalte')) return 'nails'
-    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja') || normalized.includes('brow')) return 'micropigmentation'
-    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello') || normalized.includes('hair') || normalized.includes('corte') || normalized.includes('color')) return 'hair'
+    if (norm === 'unas' || norm === 'manicuría' || norm.includes('manicur')) return 'nails'
+    if (norm === 'cejas' || norm === 'pestanas' || norm === 'labios' || norm.includes('micro')) return 'micropigmentation'
+    if (norm === 'corte' || norm === 'color' || norm.includes('pelu')) return 'hair'
     
     return 'others'
   }, [])
 
   // ============================================================
-  // FILTRADO ROBUSTO Y FLEXIBLE DE SERVICIOS POR PROFESIONAL
+  // FILTRADO DE SERVICIOS ADAPTADO A TUS DATOS REALES
   // ============================================================
   const servicesByCategory = useMemo(() => {
     if (!selectedProfessional) return { nails: [], micropigmentation: [], hair: [], others: [] }
 
     const profSpecialty = selectedProfessional.specialty?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-    const profId = selectedProfessional.id
 
-    // Paso A: Filtrar por vinculación directa o por la especialidad escrita textualmente
+    // Evaluamos el perfil de la profesional según palabras clave en su especialidad
+    const isNailsStaff = profSpecialty.includes('una') || profSpecialty.includes('manicur')
+    const isMicroStaff = profSpecialty.includes('micro') || profSpecialty.includes('ceja') || profSpecialty.includes('pestana') || profSpecialty.includes('labio') || profSpecialty.includes('mirada')
+    const isHairStaff = profSpecialty.includes('corte') || profSpecialty.includes('color') || profSpecialty.includes('pelu') || profSpecialty.includes('estil')
+
     let baseServices = services.filter(service => {
-      if (service.staff_id && service.staff_id !== profId) {
-        return false
-      }
-
       const sCat = service.category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-      const sName = service.name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-
-      const isNailsProf = profSpecialty.includes('una') || profSpecialty.includes('nail') || profSpecialty.includes('manicur') || profSpecialty.includes('pedicur')
-      const isMicroProf = profSpecialty.includes('micro') || profSpecialty.includes('ceja') || profSpecialty.includes('pigment') || profSpecialty.includes('brow')
-      const isHairProf = profSpecialty.includes('pelo') || profSpecialty.includes('pelu') || profSpecialty.includes('color') || profSpecialty.includes('hair') || profSpecialty.includes('estilista')
-
-      if (isNailsProf) {
-        return sCat.includes('una') || sCat.includes('nail') || sCat.includes('manicur') || sCat.includes('pedicur') || sName.includes('una') || sName.includes('manicura') || sName.includes('esmalte')
+      
+      if (isNailsStaff) {
+        return sCat === 'unas' || sCat === 'manicuría' || sCat.includes('manicur')
       }
-      if (isMicroProf) {
-        return sCat.includes('micro') || sCat.includes('ceja') || sCat.includes('pigment') || sCat.includes('brow') || sName.includes('micro') || sName.includes('cejas')
+      if (isMicroStaff) {
+        return sCat === 'cejas' || sCat === 'pestanas' || sCat === 'labios' || sCat.includes('micro')
       }
-      if (isHairProf) {
-        return sCat.includes('pelo') || sCat.includes('pelu') || sCat.includes('color') || sCat.includes('hair') || sName.includes('corte') || sName.includes('peinado')
+      if (isHairStaff) {
+        return sCat === 'corte' || sCat === 'color' || sCat.includes('pelu')
       }
-
       return true
     })
 
-    // FALLBACK DE SEGURIDAD: Si el filtro por texto fue muy estricto y la dejó sin servicios, le asignamos todos los activos del salón para que el cliente pueda elegir
+    // Fallback de seguridad: Si por alguna razón el filtro la deja vacía, permitimos ver todos los servicios activos
     if (baseServices.length === 0) {
-      baseServices = services.filter(service => !service.staff_id || service.staff_id === profId)
+      baseServices = services
     }
 
-    // Paso B: Aplicar la query del buscador si existe
+    // Filtro por la barra de búsqueda si el cliente escribe algo
     const filtered = baseServices.filter(s => {
       if (!searchQuery) return true
       const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -271,11 +265,11 @@ function AgendaContent() {
       return nameNorm.includes(query) || descNorm.includes(query)
     })
 
-    // Paso C: Organizar en los contenedores visuales definitivos
+    // Agrupar en los contenedores correspondientes para la interfaz de usuario
     const groups: Record<string, Service[]> = { nails: [], micropigmentation: [], hair: [], others: [] }
     filtered.forEach(s => {
-      const cat = getServiceCategory(s.category)
-      if (groups[cat]) groups[cat].push(s)
+      const catId = getServiceCategory(s.category)
+      if (groups[catId]) groups[catId].push(s)
       else groups['others'].push(s)
     })
 
@@ -411,22 +405,25 @@ function AgendaContent() {
         
         {/* ENCABEZADO */}
         <div className={`p-8 rounded-3xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'}`}>
-          <span className="text-[10px] font-bold tracking-widest text-rose-500 uppercase block mb-1">✦ Salón Exclusivo</span>
-          <h1 className="text-3xl font-serif font-light">Reserva tu Turno</h1>
-          <p className="text-xs text-stone-400 mt-1">El catálogo se adaptará de forma automática al profesional que selecciones.</p>
+          <span className="text-[10px] font-bold tracking-widest text-rose-500 uppercase block mb-1">✦ Panel de Reservas</span>
+          <h1 className="text-3xl font-serif font-light">Gestionar Turno</h1>
+          <p className="text-xs text-stone-400 mt-1">Los servicios se filtran inteligentemente de acuerdo a la especialidad del profesional asignado.</p>
         </div>
 
-        {/* PASOS DE PROGRESO TOTALMENTE ADAPTATIVOS SIN SCROLL */}
+        {/* CONTENEDOR DE PASOS: GRID FLUIDO SIN SCROLL HORIZONTAL */}
         {step < 5 && (
-          <div className={`p-3 rounded-2xl border ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white shadow-sm'}`}>
-            <div className="grid grid-cols-4 gap-1 sm:gap-4 w-full justify-items-center">
+          <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white shadow-sm'}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full justify-items-stretch">
               {[1, 2, 3, 4].map((num) => (
-                <div key={num} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center sm:text-left">
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${step === num ? 'bg-rose-500 text-white' : step > num ? 'bg-emerald-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
-                    {step > num ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : num}
+                <div 
+                  key={num} 
+                  className={`flex items-center gap-2 p-2 rounded-xl transition-all ${step === num ? 'bg-rose-50 border border-rose-200' : ''}`}
+                >
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors flex-shrink-0 ${step === num ? 'bg-rose-500 text-white' : step > num ? 'bg-emerald-500 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                    {step > num ? <Check className="w-3 h-3" /> : num}
                   </div>
-                  <span className={`text-[9px] sm:text-xs tracking-tight transition-all ${step === num ? 'font-bold text-rose-500' : 'text-stone-400'}`}>
-                    {['Perfil', 'Servicios', 'Horario', 'Datos'][num - 1]}
+                  <span className={`text-xs tracking-tight transition-all font-medium ${step === num ? 'font-bold text-rose-600' : 'text-stone-500'}`}>
+                    {['1. Perfil', '2. Servicios', '3. Horario', '4. Confirmar'][num - 1]}
                   </span>
                 </div>
               ))}
@@ -437,14 +434,14 @@ function AgendaContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             
-            {/* ERROR */}
+            {/* ALERTAS */}
             {error && (
               <div className="p-4 bg-rose-50 text-rose-600 rounded-xl text-xs font-medium flex items-center gap-2">
                 <X className="w-4 h-4 cursor-pointer" onClick={() => setError(null)} /> {error}
               </div>
             )}
 
-            {/* PASO 1: SELECCIÓN DE PROFESIONAL */}
+            {/* PASO 1: LISTADO DE PROFESIONALES */}
             {step === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {staff.map((prof) => (
@@ -461,7 +458,7 @@ function AgendaContent() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-sm text-stone-800">{prof.name}</h3>
-                        <p className="text-[11px] text-rose-500 font-medium">{prof.specialty || 'Estilista Especialista'}</p>
+                        <p className="text-[11px] text-rose-500 font-medium">{prof.specialty || 'Especialista del Salón'}</p>
                         <div className="flex items-center gap-1 text-[10px] text-amber-500 mt-0.5">
                           <Star className="w-3 h-3 fill-current"/> <span>{prof.rating || '4.9'}</span>
                         </div>
@@ -472,30 +469,30 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* PASO 2: SERVICIOS FILTRADOS */}
+            {/* PASO 2: SERVICIOS ASOCIADOS */}
             {step === 2 && selectedProfessional && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b">
                   <div>
-                    <h2 className="text-base font-bold text-stone-800">Servicios de {selectedProfessional.name}</h2>
-                    <p className="text-[11px] text-stone-400">Mostrando solo los tratamientos correspondientes a su especialidad.</p>
+                    <h2 className="text-base font-bold text-stone-800">Servicios Disponibles</h2>
+                    <p className="text-[11px] text-stone-400">Tratamientos asignados al perfil de {selectedProfessional.name}.</p>
                   </div>
-                  <button onClick={() => { setStep(1); setSelectedServices([]); }} className="text-xs text-rose-500 font-medium hover:underline">Cambiar Especialista</button>
+                  <button onClick={() => { setStep(1); setSelectedServices([]); }} className="text-xs text-rose-500 font-medium hover:underline">Cambiar de Profesional</button>
                 </div>
 
-                {/* BUSCADOR */}
+                {/* BARRA DE BÚSQUEDA */}
                 <div className="relative">
                   <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input 
                     type="text" 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Buscar tratamiento..." 
+                    placeholder="Filtrar un servicio específico..." 
                     className="w-full bg-white border border-stone-200 text-stone-800 text-xs pl-10 pr-4 py-2.5 rounded-xl focus:outline-rose-400"
                   />
                 </div>
 
-                {/* ACORDEONES */}
+                {/* DESPLEGABLES DE CATEGORÍAS */}
                 <div className="space-y-2">
                   {CATEGORIES.map(cat => {
                     const categoryServices = servicesByCategory[cat.id] || []
@@ -507,9 +504,12 @@ function AgendaContent() {
                         <button 
                           type="button" 
                           onClick={() => toggleCategory(cat.id)}
-                          className="w-full px-4 py-3 bg-stone-50/50 flex justify-between items-center text-xs font-semibold text-stone-700"
+                          className="w-full px-4 py-3 bg-stone-50/70 flex justify-between items-center text-xs font-semibold text-stone-700"
                         >
-                          <span>{cat.label} ({categoryServices.length})</span>
+                          <span className="flex items-center gap-2">
+                            <cat.icon className="w-3.5 h-3.5 text-rose-400" />
+                            {cat.label} ({categoryServices.length})
+                          </span>
                           <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${isExpanded ? 'rotate-180 text-rose-500' : ''}`} />
                         </button>
 
@@ -521,11 +521,11 @@ function AgendaContent() {
                                 <div 
                                   key={service.id}
                                   onClick={() => toggleServiceSelection(service)}
-                                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between relative ${isSelected ? 'bg-rose-50/40 border-rose-400' : 'bg-white border-stone-200 hover:border-stone-300'}`}
+                                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between relative ${isSelected ? 'bg-rose-50/40 border-rose-400 shadow-xs' : 'bg-white border-stone-200 hover:border-stone-300'}`}
                                 >
                                   <div className="pr-6">
                                     <h4 className={`text-xs font-semibold ${isSelected ? 'text-rose-600' : 'text-stone-800'}`}>{service.name}</h4>
-                                    <p className="text-[10px] text-stone-400 line-clamp-2 mt-0.5 font-light">{service.description || 'Tratamiento premium.'}</p>
+                                    <p className="text-[10px] text-stone-400 line-clamp-2 mt-0.5 font-light">{service.description || 'Tratamiento exclusivo realizado por profesionales.'}</p>
                                   </div>
                                   <div className="flex justify-between items-center mt-3 pt-2 border-t border-stone-50 text-[10px] font-medium text-stone-500">
                                     <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-stone-300"/> {service.duration} min</span>
@@ -546,11 +546,11 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* PASO 3: CALENDARIO */}
+            {/* PASO 3: CONTROL DE HORARIOS */}
             {step === 3 && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b">
-                  <h2 className="text-sm font-bold text-stone-800">Selecciona Fecha y Hora</h2>
+                  <h2 className="text-sm font-bold text-stone-800">Selección de Agenda</h2>
                   <button onClick={() => setStep(2)} className="text-xs text-rose-500 font-medium hover:underline">Volver a Servicios</button>
                 </div>
 
@@ -587,7 +587,7 @@ function AgendaContent() {
                   </div>
 
                   <div className="md:col-span-2 p-4 bg-white border rounded-2xl shadow-sm max-h-[300px] overflow-y-auto space-y-3">
-                    <span className="text-[10px] font-bold text-stone-400 block uppercase">Turnos Libres</span>
+                    <span className="text-[10px] font-bold text-stone-400 block uppercase">Módulos Horarios</span>
                     <div className="grid grid-cols-2 gap-1.5">
                       {availableTimes.map(t => {
                         const { available } = checkAvailability(t)
@@ -609,71 +609,71 @@ function AgendaContent() {
 
                 {selectedTime && (
                   <button onClick={() => setStep(4)} className="w-full py-3 bg-rose-500 text-white font-semibold rounded-xl text-xs uppercase tracking-wider shadow-md hover:bg-rose-600 transition-all">
-                    Continuar al Registro
+                    Avanzar al Formulario
                   </button>
                 )}
               </div>
             )}
 
-            {/* PASO 4: REGISTRO DE CLIENTE */}
+            {/* PASO 4: FORMULARIO DEL CLIENTE */}
             {step === 4 && (
               <div className="p-6 bg-white border rounded-2xl shadow-sm space-y-4 text-left">
-                <h3 className="text-base font-bold text-stone-800 border-b pb-2">Datos de la Reserva</h3>
+                <h3 className="text-base font-bold text-stone-800 border-b pb-2">Información del Cliente</h3>
                 <form onSubmit={e => { e.preventDefault(); setShowSummaryModal(true); }} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[11px] font-bold text-stone-400 block mb-1">Nombre Completo *</label>
+                      <label className="text-[11px] font-bold text-stone-400 block mb-1">Nombre y Apellido *</label>
                       <input type="text" required value={clientData.name} onChange={e => setClientData({...clientData, name: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs focus:outline-rose-400" placeholder="Tu nombre" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-stone-400 block mb-1">WhatsApp *</label>
+                      <label className="text-[11px] font-bold text-stone-400 block mb-1">WhatsApp de contacto *</label>
                       <input type="tel" required value={clientData.phone} onChange={e => setClientData({...clientData, phone: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs focus:outline-rose-400" placeholder="Ej: 099123456" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-stone-400 block mb-1">Notas Adicionales</label>
-                    <textarea value={clientData.notes} onChange={e => setClientData({...clientData, notes: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 p-3 rounded-xl text-xs focus:outline-rose-400 resize-none" rows={3} placeholder="Detalles o preferencias..." />
+                    <label className="text-[11px] font-bold text-stone-400 block mb-1">Anotaciones Especiales</label>
+                    <textarea value={clientData.notes} onChange={e => setClientData({...clientData, notes: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 p-3 rounded-xl text-xs focus:outline-rose-400 Richmond-resize-none" rows={3} placeholder="Alguna indicación importante..." />
                   </div>
                   <button type="submit" className="w-full py-3 bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-rose-600">
-                    Ver Resumen del Turno
+                    Proceder al Resumen
                   </button>
                 </form>
               </div>
             )}
 
-            {/* PASO 5: ÉXITO */}
+            {/* PASO 5: PANTALLA DE ÉXITO FINAL */}
             {step === 5 && (
               <div className="p-8 bg-white border rounded-3xl text-center shadow-lg space-y-4 max-w-md mx-auto">
                 <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-500 border border-emerald-100">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-serif text-stone-800">¡Cita Confirmada con Éxito!</h2>
-                <p className="text-xs text-stone-400">Tu espacio preferencial ha quedado registrado de manera exitosa.</p>
+                <h2 className="text-xl font-serif text-stone-800">¡Reserva Registrada!</h2>
+                <p className="text-xs text-stone-400">Los detalles de tu turno han quedado agendados correctamente.</p>
                 <div className="p-4 bg-stone-50 rounded-xl text-left text-xs space-y-2 text-stone-700">
-                  <div><strong>Especialista:</strong> {selectedProfessional?.name}</div>
+                  <div><strong>Profesional Asignado:</strong> {selectedProfessional?.name}</div>
                   <div><strong>Fecha y Hora:</strong> {selectedDate} a las {selectedTime} hs</div>
                   <div className="border-t pt-2">
-                    <strong>Tratamientos:</strong>
-                    {selectedServices.map(s => <div key={s.id} className="text-stone-500 pl-2">• {s.name}</div>)}
+                    <strong>Servicios Solicitados:</strong>
+                    {selectedServices.map(s => <div key={s.id} className="text-stone-500 pl-2">• {s.name} ({s.category})</div>)}
                   </div>
                 </div>
                 <button onClick={() => { setStep(1); setSelectedServices([]); setSelectedTime(''); }} className="w-full py-2.5 bg-stone-900 text-white text-xs font-bold rounded-xl uppercase tracking-wider hover:bg-stone-800">
-                  Regresar a la Cartelera
+                  Agendar un Nuevo Turno
                 </button>
               </div>
             )}
 
           </div>
 
-          {/* COLUMNA DERECHA: RESUMEN LATERAL */}
+          {/* COLUMNA LATERAL DE TOTALES */}
           {step > 1 && step < 5 && (
             <div className="p-5 bg-white border rounded-2xl shadow-sm text-left space-y-4 lg:sticky lg:top-4">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block border-b pb-1">Resumen</span>
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block border-b pb-1">Desglose</span>
               
               {selectedProfessional && (
                 <div className="text-xs">
-                  <span className="text-stone-400 block text-[10px] font-bold uppercase">Especialista</span>
-                  <span className="font-semibold text-stone-800">{selectedProfessional.name} ({selectedProfessional.specialty})</span>
+                  <span className="text-stone-400 block text-[10px] font-bold uppercase">Profesional</span>
+                  <span className="font-semibold text-stone-800">{selectedProfessional.name}</span>
                 </div>
               )}
 
@@ -698,7 +698,7 @@ function AgendaContent() {
 
               {selectedServices.length > 0 && (
                 <div className="pt-3 border-t border-stone-100 flex justify-between items-center font-bold text-stone-800">
-                  <span className="text-[10px] text-stone-400 uppercase">Total:</span>
+                  <span className="text-[10px] text-stone-400 uppercase">Monto Total:</span>
                   <span className="text-rose-500 font-serif text-lg">${totalPrice.toLocaleString()}</span>
                 </div>
               )}
@@ -708,11 +708,11 @@ function AgendaContent() {
         </div>
       </div>
 
-      {/* FOOTER FLOTANTE MÓVIL */}
+      {/* FOOTER FLOTANTE PARA MÓVILES */}
       {step === 2 && selectedServices.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t p-4 shadow-xl flex items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t p-4 shadow-xl flex items-center justify-between lg:hidden">
           <div className="text-left">
-            <span className="text-[9px] text-stone-400 font-bold uppercase block">Monto Total</span>
+            <span className="text-[9px] text-stone-400 font-bold uppercase block">Total</span>
             <span className="text-base font-bold text-rose-500 font-serif">${totalPrice.toLocaleString()}</span>
           </div>
           <button onClick={() => setStep(3)} className="px-5 py-2.5 bg-rose-500 text-white font-bold text-xs rounded-xl shadow-md uppercase tracking-wider hover:bg-rose-600 flex items-center gap-1">
@@ -721,22 +721,22 @@ function AgendaContent() {
         </div>
       )}
 
-      {/* MODAL DE CONFIRMACIÓN */}
+      {/* VENTANA MODAL DE CONFIRMACIÓN */}
       {showSummaryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 text-left">
-            <h3 className="font-serif text-base text-stone-800 border-b pb-2">Confirmar Cita</h3>
+            <h3 className="font-serif text-base text-stone-800 border-b pb-2">Verificar Datos</h3>
             <div className="text-xs space-y-2 bg-stone-50 p-3 rounded-xl border text-stone-700">
               <div><strong>Cliente:</strong> {clientData.name}</div>
               <div><strong>WhatsApp:</strong> {clientData.phone}</div>
-              <div><strong>Especialista:</strong> {selectedProfessional?.name}</div>
+              <div><strong>Profesional:</strong> {selectedProfessional?.name}</div>
               <div><strong>Fecha/Hora:</strong> {selectedDate} a las {selectedTime} hs</div>
               <div className="border-t pt-2">
-                <strong>Total Acumulado:</strong> <span className="text-rose-500 font-bold">${totalPrice.toLocaleString()}</span>
+                <strong>Importe Total:</strong> <span className="text-rose-500 font-bold">${totalPrice.toLocaleString()}</span>
               </div>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setShowSummaryModal(false)} className="flex-1 py-2 border rounded-xl text-xs font-semibold hover:bg-stone-50">Editar</button>
+              <button type="button" onClick={() => setShowSummaryModal(false)} className="flex-1 py-2 border rounded-xl text-xs font-semibold hover:bg-stone-50">Corregir</button>
               <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 py-2 bg-emerald-500 text-white font-bold rounded-xl text-xs disabled:opacity-50">
                 {submitting ? 'Guardando...' : 'Confirmar'}
               </button>
