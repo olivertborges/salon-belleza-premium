@@ -46,6 +46,20 @@ interface Reward {
   discount_percentage: number
 }
 
+const VIPLoadingSpinner = ({ isDark }: { isDark: boolean }) => (
+  <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative w-16 h-16">
+        <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+        <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
+      </div>
+      <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+        Cargando Club VIP Elite...
+      </p>
+    </div>
+  </div>
+)
+
 export default function VIPClubPage() {
   const { user, tenantId } = useAuth()
   const { theme } = useTheme()
@@ -184,626 +198,547 @@ export default function VIPClubPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
-        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
-        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
-            <Crown className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-          </div>
-          <div className="space-y-1.5 text-center">
-            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
-              CARGANDO
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-              CLUB VIP ELITE
-            </p>
-          </div>
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <span 
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+    return <VIPLoadingSpinner isDark={isDark} />
   }
 
   return (
-    <div className={`w-full max-w-5xl mx-auto p-4 md:p-6 pb-16 antialiased selection:bg-pink-500/20 min-h-[60vh] space-y-8 transition-colors duration-700 overflow-x-hidden ${
-      isDark ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-stone-200' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50/30 text-stone-800'
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
+      {/* Fondo texturizado */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      {/* Efectos de fondo */}
-      <div className="absolute top-[-5%] left-1/3 w-[400px] h-[400px] rounded-full blur-[160px] pointer-events-none bg-pink-500/[0.03]" />
-      <div className="absolute bottom-[-5%] right-1/3 w-[300px] h-[300px] rounded-full blur-[140px] pointer-events-none bg-amber-500/[0.02]" />
+      <div className="max-w-5xl mx-auto px-4 space-y-8 relative z-10">
 
-      {/* ============================================================ */}
-      {/* HEADER — PRESTIGE EDITION */}
-      {/* ============================================================ */}
-      <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl transition-all duration-500 ${
-        isDark 
-          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-black border-zinc-900/60 shadow-[0_20px_60px_rgba(0,0,0,0.6)]' 
-          : 'bg-gradient-to-br from-stone-900 via-stone-950 to-rose-950 border-stone-800/50 shadow-[0_20px_60px_rgba(219,91,154,0.12)]'
-      }`}>
-        {/* Efectos de luz ambiental */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
-        <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+        {/* ============================================================ */}
+        {/* HEADER — PRESTIGE EDITION */}
+        {/* ============================================================ */}
+        <div className={`relative overflow-hidden rounded-2xl border p-7 md:p-10 shadow-lg transition-all duration-300 mt-4 ${
+          isDark 
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+        }`}>
+          <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
+          <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
 
-        {/* Rejilla decorativa */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_center,_transparent_0%,_white_100%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="space-y-3">
-            <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
-              isDark ? 'bg-pink-500/10 border-pink-500/20' : 'bg-white/20 border-white/30'
-            }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
-                isDark ? 'text-pink-300' : 'text-white'
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border ${
+                isDark ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' : 'bg-[#D4AF37]/10 border-[#D4AF37]/20'
               }`}>
-                👑 Club VIP Elite
-              </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+                  isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+                }`}>
+                  👑 Club VIP Elite
+                </span>
+              </div>
+
+              <h2 className={`text-3xl md:text-5xl font-black tracking-tight leading-[1.1] ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
+                Tu Pasaporte de{' '}
+                <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#D4AF37] bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+                  Beneficios
+                </span>
+              </h2>
+              <p className={`text-xs font-light tracking-wide ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Descubre tus premios disponibles y las metas de los siguientes rangos exclusivos.
+              </p>
             </div>
 
-            <h2 className={`text-3xl md:text-5xl font-black tracking-tight leading-[1.1] ${
-              isDark ? 'text-white' : 'text-white'
-            }`}>
-              Tu Pasaporte de{' '}
-              <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-amber-200 to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
-                Beneficios
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={`px-4 py-2.5 rounded-xl border text-[9px] font-mono font-black uppercase tracking-[0.15em] flex items-center gap-2 shadow-lg ${
+                isDark 
+                  ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588]' 
+                  : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E]'
+              }`}>
+                <Gem className={`w-3.5 h-3.5 ${
+                  activeTab === 'glow' ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+                }`} />
+                {activeTab === 'glow' ? 'Glow' : 'Hair'} Points
               </span>
-            </h2>
-            <p className={`text-xs font-medium tracking-wide ${
-              isDark ? 'text-stone-400' : 'text-pink-100/90'
+            </div>
+          </div>
+
+          <div className="absolute bottom-5 right-8 opacity-10 text-[#D4AF37] text-[10px] font-black tracking-[0.3em] select-none pointer-events-none">
+            ✦ VIP ✦
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* SELECTOR DE SUB-SISTEMAS */}
+        {/* ============================================================ */}
+        <div className={`flex rounded-2xl p-1.5 shadow-lg max-w-md border ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+        }`}>
+          <button 
+            onClick={() => { setActiveTab('glow'); setGeneratedCode(null); }} 
+            className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-[0.15em] transition-all duration-500 flex items-center justify-center gap-2.5 ${
+              activeTab === 'glow' 
+                ? isDark 
+                  ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                  : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
+                : isDark 
+                  ? 'text-[#A89588] hover:text-[#FFF9F6]' 
+                  : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> Estética & Glow
+          </button>
+          <button 
+            onClick={() => { setActiveTab('hair'); setGeneratedCode(null); }} 
+            className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-[0.15em] transition-all duration-500 flex items-center justify-center gap-2.5 ${
+              activeTab === 'hair' 
+                ? isDark 
+                  ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                  : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
+                : isDark 
+                  ? 'text-[#A89588] hover:text-[#FFF9F6]' 
+                  : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
+            }`}
+          >
+            <Scissors className="w-4 h-4" /> Peluquería Crew
+          </button>
+        </div>
+
+        {/* ============================================================ */}
+        {/* TARJETA DE BALANCE VIP */}
+        {/* ============================================================ */}
+        <div className={`relative overflow-hidden rounded-2xl border p-7 md:p-10 shadow-lg transition-all duration-300 hover:shadow-xl ${
+          isDark 
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+        }`}>
+          <div className={`absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none transition-all duration-1000 ${
+            isDark ? 'bg-[#D4AF37]/5' : 'bg-[#D4AF37]/5'
+          }`} />
+
+          <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+            <div className="space-y-2">
+              <span className={`text-[9px] uppercase font-mono font-black tracking-[0.2em] block ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Puntaje Disponible
+              </span>
+              <div className="flex items-baseline gap-3">
+                <span className={`font-serif text-6xl md:text-7xl font-light tracking-tight text-[#D4AF37]`}>
+                  {currentPoints}
+                </span>
+                <span className={`text-xs font-mono font-black uppercase tracking-[0.15em] ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Puntos
+                </span>
+              </div>
+            </div>
+
+            <div className={`flex items-center gap-4 border p-4 rounded-2xl shadow-sm ${
+              isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
             }`}>
-              Descubre tus premios disponibles y las metas de los siguientes rangos exclusivos.
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-sm ${
+                isDark ? 'bg-[#3D281E] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+              }`}>
+                {currentInfo.current?.emoji || '🥉'}
+              </div>
+              <div>
+                <p className={`text-[8px] font-mono uppercase tracking-[0.25em] ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Tu Rango VIP
+                </p>
+                <p className={`font-serif text-lg font-light ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {currentLevelName}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-2">
+            <div className={`w-full h-2.5 rounded-full overflow-hidden p-[2px] shadow-inner ${
+              isDark ? 'bg-[#1E120C] border border-[#3D281E]' : 'bg-[#FFF9F6] border border-[#F0E4DA]'
+            }`}>
+              <div 
+                className="h-full rounded-full transition-all duration-1000 ease-out bg-[#D4AF37]" 
+                style={{ width: `${Math.min(currentInfo.progress, 100)}%` }} 
+              />
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-mono">
+              {currentInfo.next ? (
+                <>
+                  <span className={`flex items-center gap-1.5 ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    <TrendingUp className="w-3 h-3 text-[#D4AF37]" /> 
+                    Progreso de Nivel
+                  </span>
+                  <span className={`font-medium ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Faltan <strong className="font-black text-[#D4AF37]">{currentInfo.needed} pts</strong> para {currentInfo.next.name}
+                  </span>
+                </>
+              ) : (
+                <span className="font-black flex items-center gap-2 w-full justify-center py-1 uppercase tracking-wider text-[#D4AF37]">
+                  <Award className="w-4 h-4" /> ¡Nivel máximo alcanzado!
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* ESCALAFÓN DEL CLUB */}
+        {/* ============================================================ */}
+        {currentLevels.length > 0 && (
+          <div className={`border rounded-2xl p-5 space-y-4 shadow-sm transition-all duration-300 ${
+            isDark ? 'bg-[#2A1B14]/40 border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          }`}>
+            <p className={`text-[8px] uppercase font-mono font-black tracking-[0.3em] px-1 ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>
+              Escalafón del Club Exclusive
             </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={`px-4 py-2.5 rounded-xl border text-[9px] font-mono font-black uppercase tracking-[0.15em] flex items-center gap-2 backdrop-blur-md shadow-lg ${
-              isDark ? 'bg-stone-900/80 border-stone-800/80 text-stone-400' : 'bg-white/90 border-pink-100/80 text-stone-800 shadow-pink-200/20'
-            }`}>
-              <Gem className={`w-3.5 h-3.5 ${
-                activeTab === 'glow' ? 'text-pink-400' : 'text-violet-400'
-              }`} />
-              {activeTab === 'glow' ? 'Glow' : 'Hair'} Points
-            </span>
-          </div>
-        </div>
-
-        {/* Decoración esquina */}
-        <div className="absolute bottom-5 right-8 opacity-10 text-white text-[10px] font-black tracking-[0.3em] select-none pointer-events-none">
-          ✦ VIP ✦
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* SELECTOR DE SUB-SISTEMAS — REDISEÑADO */}
-      {/* ============================================================ */}
-      <div className={`flex border rounded-2xl p-1.5 shadow-xl max-w-md ${
-        isDark ? 'bg-stone-900/40 border-stone-900/60' : 'bg-stone-100/80 border-stone-200/60'
-      }`}>
-        <button 
-          onClick={() => { setActiveTab('glow'); setGeneratedCode(null); }} 
-          className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-[0.15em] transition-all duration-500 flex items-center justify-center gap-2.5 ${
-            activeTab === 'glow' 
-              ? isDark 
-                ? 'bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400 border border-pink-500/30 shadow-lg scale-[1.02]' 
-                : 'bg-white text-pink-600 border border-pink-200 shadow-md'
-              : isDark 
-                ? 'text-stone-500 hover:text-stone-200' 
-                : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" /> Estética & Glow
-        </button>
-        <button 
-          onClick={() => { setActiveTab('hair'); setGeneratedCode(null); }} 
-          className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-[0.15em] transition-all duration-500 flex items-center justify-center gap-2.5 ${
-            activeTab === 'hair' 
-              ? isDark 
-                ? 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-400 border border-violet-500/30 shadow-lg scale-[1.02]' 
-                : 'bg-white text-violet-600 border border-violet-200 shadow-md'
-              : isDark 
-                ? 'text-stone-500 hover:text-stone-200' 
-                : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <Scissors className="w-4 h-4" /> Peluquería Crew
-        </button>
-      </div>
-
-      {/* ============================================================ */}
-      {/* TARJETA DE BALANCE VIP — REDISEÑADA */}
-      {/* ============================================================ */}
-      <div className={`relative overflow-hidden rounded-[2.5rem] border p-7 md:p-10 shadow-2xl transition-all duration-500 hover:shadow-3xl ${
-        isDark 
-          ? 'bg-gradient-to-br from-stone-900/60 via-stone-900/30 to-stone-950/60 border-stone-900/60 shadow-black/40' 
-          : 'bg-gradient-to-br from-white via-stone-50/80 to-white border-stone-200/50 shadow-stone-300/30'
-      }`}>
-        {/* Efecto de fondo */}
-        <div className={`absolute -top-32 -right-32 w-80 h-80 rounded-full blur-[100px] pointer-events-none transition-all duration-1000 ${
-          activeTab === 'glow' 
-            ? 'bg-pink-500/5' 
-            : 'bg-violet-500/5'
-        }`} />
-
-        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-          <div className="space-y-2">
-            <span className={`text-[9px] uppercase font-mono font-black tracking-[0.2em] block ${
-              isDark ? 'text-stone-500' : 'text-stone-400'
-            }`}>
-              Puntaje Disponible
-            </span>
-            <div className="flex items-baseline gap-3">
-              <span className={`text-6xl md:text-7xl font-black tracking-tight ${
-                activeTab === 'glow'
-                  ? isDark ? 'text-pink-400' : 'text-pink-600'
-                  : isDark ? 'text-violet-400' : 'text-violet-600'
-              }`}>
-                {currentPoints}
-              </span>
-              <span className={`text-xs font-mono font-black uppercase tracking-[0.15em] ${
-                activeTab === 'glow' 
-                  ? isDark ? 'text-pink-500/60' : 'text-pink-400'
-                  : isDark ? 'text-violet-500/60' : 'text-violet-400'
-              }`}>
-                Puntos
-              </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {currentLevels.map((lvl) => {
+                const isCurrent = lvl.name.toLowerCase() === currentLevelName.toLowerCase()
+                const isPassed = currentPoints >= lvl.min_points
+                return (
+                  <div 
+                    key={lvl.id} 
+                    className={`p-4 rounded-xl border text-center transition-all duration-500 ${
+                      isCurrent 
+                        ? `bg-[#D4AF37]/10 border-[#D4AF37]/40 shadow-[0_4px_15px_rgba(212,175,55,0.15)] scale-[1.02]`
+                        : isPassed 
+                          ? isDark ? 'bg-[#2A1B14] border-[#3D281E] opacity-75' : 'bg-white border-[#F0E4DA] opacity-75'
+                          : 'opacity-40 border-transparent bg-stone-500/[0.02]'
+                    }`}
+                  >
+                    <span className="text-2xl block mb-1">{lvl.emoji}</span>
+                    <p className={`text-xs font-black tracking-tight ${
+                      isCurrent ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    }`}>{lvl.name}</p>
+                    <p className={`text-[8px] font-mono mt-0.5 ${
+                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    }`}>{lvl.min_points} pts</p>
+                    {isCurrent && (
+                      <div className="w-1.5 h-1.5 rounded-full mx-auto mt-1.5 animate-pulse bg-[#D4AF37]" />
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
+        )}
 
-          {/* Badge de nivel */}
-          <div className={`flex items-center gap-4 border p-4 rounded-2xl shadow-lg ${
-            isDark ? 'bg-stone-950/60 border-stone-800/60' : 'bg-stone-50 border-stone-200/60'
-          }`}>
-            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-sm ${
-              isDark ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200'
+        {/* ============================================================ */}
+        {/* CATÁLOGO DE PREMIOS */}
+        {/* ============================================================ */}
+        <div className="space-y-5 pt-2">
+          <div className="flex items-center gap-3 px-1">
+            <div className={`p-2 rounded-xl ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
             }`}>
-              {currentInfo.current?.emoji || '🥉'}
+              <Gift className="w-4 h-4 text-[#D4AF37]" />
             </div>
-            <div>
-              <p className={`text-[8px] font-mono uppercase tracking-[0.25em] ${
-                isDark ? 'text-stone-500' : 'text-stone-400'
-              }`}>
-                Tu Rango VIP
-              </p>
-              <p className={`text-lg font-black tracking-tight ${
-                isDark ? 'text-white' : 'text-stone-900'
-              }`}>
-                {currentLevelName}
-              </p>
-            </div>
+            <h3 className={`text-[9px] uppercase font-mono font-black tracking-[0.25em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>
+              Catálogo de Premios
+            </h3>
           </div>
-        </div>
 
-        {/* Barra de progreso */}
-        <div className="mt-6 space-y-2">
-          <div className={`w-full h-2.5 rounded-full overflow-hidden p-[2px] shadow-inner ${
-            isDark ? 'bg-stone-950/80 border border-stone-900/60' : 'bg-stone-100 border border-stone-200/60'
-          }`}>
-            <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                activeTab === 'glow' 
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-500' 
-                  : 'bg-gradient-to-r from-violet-500 to-purple-500'
-              }`} 
-              style={{ width: `${Math.min(currentInfo.progress, 100)}%` }} 
-            />
-          </div>
-          <div className="flex justify-between items-center text-[10px] font-mono">
-            {currentInfo.next ? (
-              <>
-                <span className={`flex items-center gap-1.5 ${
-                  isDark ? 'text-stone-500' : 'text-stone-400'
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {currentRewards.length === 0 ? (
+              <div className={`col-span-full p-12 text-center border border-dashed rounded-2xl transition-all duration-300 ${
+                isDark ? 'border-[#3D281E] bg-[#2A1B14]/40' : 'border-[#F0E4DA] bg-white'
+              }`}>
+                <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${
+                  isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <TrendingUp className={`w-3 h-3 ${
-                    activeTab === 'glow' ? 'text-pink-400' : 'text-violet-400'
-                  }`} /> 
-                  Progreso de Nivel
-                </span>
-                <span className={`font-medium ${
-                  isDark ? 'text-stone-300' : 'text-stone-700'
-                }`}>
-                  Faltan <strong className={`font-black ${
-                    activeTab === 'glow' ? 'text-pink-500' : 'text-violet-500'
-                  }`}>{currentInfo.needed} pts</strong> para {currentInfo.next.name}
-                </span>
-              </>
+                  <Gift className={`w-8 h-8 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
+                </div>
+                <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>No hay premios disponibles</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Vuelve pronto para descubrir nuevas recompensas</p>
+              </div>
             ) : (
-              <span className={`font-black flex items-center gap-2 w-full justify-center py-1 uppercase tracking-wider ${
-                activeTab === 'glow' ? 'text-pink-500' : 'text-violet-500'
-              }`}>
-                <Award className="w-4 h-4" /> ¡Nivel máximo alcanzado!
-              </span>
+              currentRewards.map((r, index) => {
+                const lockedByTier = isTierLocked(r.tier, currentLevels, currentLevelName)
+                const canAfford = currentPoints >= r.points_required && !lockedByTier
+
+                return (
+                  <motion.div 
+                    key={r.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.4 }}
+                    className={`group relative p-5 rounded-2xl border transition-all duration-500 flex flex-col justify-between gap-4 hover:-translate-y-1 ${
+                      lockedByTier 
+                        ? isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] opacity-50' : 'bg-white/50 border-[#F0E4DA] opacity-50'
+                        : canAfford 
+                          ? isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+                          : isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] opacity-75' : 'bg-white/50 border-[#F0E4DA] opacity-75'
+                    }`}
+                  >
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-[#D4AF37]/[0.03] to-[#E8D5A0]/[0.01] rounded-2xl" />
+
+                    {lockedByTier && (
+                      <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[7px] font-mono font-black border shadow-sm z-10 ${
+                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E]'
+                      }`}>
+                        <Lock className="w-2.5 h-2.5 text-[#D4AF37]" /> Rango {r.tier}
+                      </div>
+                    )}
+
+                    <div className="space-y-2 relative z-10">
+                      <div className="flex justify-between items-start gap-2">
+                        <p className={`font-serif text-sm font-light tracking-wide transition-colors ${
+                          lockedByTier 
+                            ? 'text-[#A89588] line-through'
+                            : isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'
+                        }`}>
+                          {r.name}
+                        </p>
+                        {!lockedByTier && r.discount_percentage > 0 && (
+                          <span className={`text-[8px] font-mono font-black px-2.5 py-1 rounded-full border shadow-sm shrink-0 ${
+                            isDark 
+                              ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20' 
+                              : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/20'
+                          }`}>
+                            -{r.discount_percentage}% OFF
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-xs font-light leading-relaxed line-clamp-2 ${
+                        lockedByTier ? 'text-[#A89588]/40' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        {r.description || 'Ritual exclusivo VIP de alta gama.'}
+                      </p>
+                    </div>
+
+                    <div className={`flex items-center justify-between pt-3 border-t relative z-10 ${
+                      isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                    }`}>
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-mono font-black text-[#D4AF37]`}>
+                          {r.points_required} PTS
+                        </span>
+                        <span className={`text-[7px] font-mono uppercase tracking-[0.15em] ${
+                          isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                        }`}>
+                          Nivel: {r.tier}
+                        </span>
+                      </div>
+
+                      {lockedByTier ? (
+                        <span className={`text-[8px] font-mono uppercase tracking-[0.15em] font-black flex items-center gap-1 px-3 py-1.5 rounded-xl border ${
+                          isDark ? 'text-[#A89588] bg-[#1E120C] border-[#3D281E]' : 'text-[#5C4A3E] bg-[#FFF9F6] border-[#F0E4DA]'
+                        }`}>
+                          Bloqueado
+                        </span>
+                      ) : (
+                        <button 
+                          disabled={!canAfford} 
+                          onClick={() => { setSelectedReward(r); setShowRedeemModal(true); }} 
+                          className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 border active:scale-95 flex items-center gap-1.5 shadow-sm hover:scale-105 ${
+                            canAfford 
+                              ? isDark 
+                                ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                                : 'bg-[#1A0E0A] text-[#FFF9F6] border-[#1A0E0A] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
+                              : isDark
+                                ? 'bg-[#1E120C] text-[#A89588] border-[#3D281E] cursor-not-allowed'
+                                : 'bg-[#FFF9F6] text-[#5C4A3E] border-[#F0E4DA] cursor-not-allowed'
+                          }`}
+                        >
+                          {currentPoints >= r.points_required ? (
+                            <>
+                              <PartyPopper className="w-3 h-3" /> Canjear
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-3 h-3" /> Faltan Puntos
+                            </>
+                          )}
+                          <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )
+              })
             )}
           </div>
         </div>
-      </div>
 
-      {/* ============================================================ */}
-      {/* ESCALAFÓN DEL CLUB — REDISEÑADO */}
-      {/* ============================================================ */}
-      {currentLevels.length > 0 && (
-        <div className={`border rounded-2xl p-5 space-y-4 shadow-lg transition-all duration-500 ${
-          isDark ? 'bg-stone-900/30 border-stone-900/60 shadow-black/20' : 'bg-stone-50/80 border-stone-200/60 shadow-stone-200/20'
-        }`}>
-          <p className={`text-[8px] uppercase font-mono font-black tracking-[0.3em] px-1 ${
-            isDark ? 'text-stone-500' : 'text-stone-400'
-          }`}>
-            Escalafón del Club Exclusive
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {currentLevels.map((lvl) => {
-              const isCurrent = lvl.name.toLowerCase() === currentLevelName.toLowerCase()
-              const isPassed = currentPoints >= lvl.min_points
-              return (
-                <div 
-                  key={lvl.id} 
-                  className={`p-4 rounded-xl border text-center transition-all duration-500 ${
-                    isCurrent 
-                      ? `bg-gradient-to-br ${activeTab === 'glow' ? 'from-pink-500/10 to-rose-500/5' : 'from-violet-500/10 to-purple-500/5'} border-${activeTab === 'glow' ? 'pink' : 'violet'}-500/40 shadow-lg ring-1 ring-${activeTab === 'glow' ? 'pink' : 'violet'}-500/20 scale-[1.02]`
-                      : isPassed 
-                        ? isDark ? 'bg-stone-950/20 border-stone-900/60 opacity-75' : 'bg-stone-100/40 border-stone-200/60 opacity-75'
-                        : 'opacity-40 border-transparent bg-stone-500/[0.02]'
+        {/* ============================================================ */}
+        {/* MODAL DE CANJE */}
+        {/* ============================================================ */}
+        <AnimatePresence>
+          {showRedeemModal && selectedReward && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50"
+              onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }}
+            >
+              <motion.div 
+                initial={{ scale: 0.92, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.92, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`relative w-full max-w-md rounded-2xl border p-7 shadow-2xl overflow-hidden transition-all duration-300 ${
+                  isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#D4AF37]" />
+
+                <button 
+                  onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
+                  className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 hover:scale-110 ${
+                    isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#A89588] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
                   }`}
                 >
-                  <span className="text-2xl block mb-1">{lvl.emoji}</span>
-                  <p className={`text-xs font-black tracking-tight ${
-                    isCurrent 
-                      ? activeTab === 'glow' ? 'text-pink-500' : 'text-violet-500'
-                      : isDark ? 'text-stone-300' : 'text-stone-700'
-                  }`}>{lvl.name}</p>
-                  <p className={`text-[8px] font-mono mt-0.5 ${
-                    isDark ? 'text-stone-500' : 'text-stone-400'
-                  }`}>{lvl.min_points} pts</p>
-                  {isCurrent && (
-                    <div className={`w-1.5 h-1.5 rounded-full mx-auto mt-1.5 animate-pulse ${
-                      activeTab === 'glow' ? 'bg-pink-500' : 'bg-violet-500'
-                    }`} />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+                  <X className="w-5 h-5" />
+                </button>
 
-      {/* ============================================================ */}
-      {/* CATÁLOGO DE PREMIOS — REDISEÑADO */}
-      {/* ============================================================ */}
-      <div className="space-y-5 pt-2">
-        <div className="flex items-center gap-3 px-1">
-          <div className={`p-2 rounded-xl ${
-            isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'
-          }`}>
-            <Gift className={`w-4 h-4 ${
-              isDark ? 'text-pink-400' : 'text-pink-600'
-            }`} />
-          </div>
-          <h3 className={`text-[9px] uppercase font-mono font-black tracking-[0.25em] ${
-            isDark ? 'text-stone-400' : 'text-stone-500'
-          }`}>
-            Catálogo de Premios
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {currentRewards.length === 0 ? (
-            <div className={`col-span-full p-12 text-center border border-dashed rounded-2xl transition-all duration-500 ${
-              isDark ? 'border-stone-800/60 bg-stone-900/20 text-stone-500' : 'border-stone-200/60 bg-white/40 text-stone-400'
-            }`}>
-              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${
-                isDark ? 'bg-stone-800/50' : 'bg-stone-100'
-              }`}>
-                <Gift className={`w-8 h-8 ${
-                  isDark ? 'text-stone-600' : 'text-stone-400'
-                }`} />
-              </div>
-              <p className="text-sm font-medium">No hay premios disponibles</p>
-              <p className="text-xs mt-1 text-stone-400">Vuelve pronto para descubrir nuevas recompensas</p>
-            </div>
-          ) : (
-            currentRewards.map((r, index) => {
-              const lockedByTier = isTierLocked(r.tier, currentLevels, currentLevelName)
-              const canAfford = currentPoints >= r.points_required && !lockedByTier
-
-              return (
-                <motion.div 
-                  key={r.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.4 }}
-                  className={`group relative p-5 rounded-2xl border transition-all duration-500 flex flex-col justify-between gap-4 ${
-                    lockedByTier 
-                      ? isDark ? 'bg-stone-900/20 border-stone-900/60 opacity-50' : 'bg-stone-50/50 border-stone-200/60 opacity-50'
-                      : canAfford 
-                        ? isDark ? 'bg-stone-900/40 border-stone-900/60 hover:border-pink-500/30 hover:shadow-2xl shadow-lg' : 'bg-white border-stone-200/50 hover:border-pink-300/50 hover:shadow-2xl shadow-md'
-                        : isDark ? 'bg-stone-900/20 border-stone-900/60 opacity-75' : 'bg-stone-50/50 border-stone-200/60 opacity-75'
-                  }`}
-                >
-                  {/* Gradiente de fondo sutil */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br from-pink-500/[0.03] to-rose-500/[0.01] rounded-2xl" />
-
-                  {lockedByTier && (
-                    <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[7px] font-mono font-black border shadow-sm z-10 ${
-                      isDark ? 'bg-stone-900 border-stone-800 text-stone-400' : 'bg-stone-100 border-stone-200 text-stone-500'
+                {!generatedCode ? (
+                  <div className="space-y-5 text-center pt-2">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto border shadow-sm ${
+                      isDark ? 'bg-[#3D281E] border-[#D4AF37]/20' : 'bg-[#FFF9F6] border-[#D4AF37]/20'
                     }`}>
-                      <Lock className="w-2.5 h-2.5 text-pink-500" /> Rango {r.tier}
+                      <Ticket className={`w-7 h-7 text-[#D4AF37]`} />
                     </div>
-                  )}
-
-                  <div className="space-y-2 relative z-10">
-                    <div className="flex justify-between items-start gap-2">
-                      <p className={`font-black text-sm tracking-tight transition-colors flex items-center gap-1.5 ${
-                        lockedByTier 
-                          ? 'text-stone-500 line-through'
-                          : isDark ? 'text-stone-100 group-hover:text-pink-400' : 'text-stone-900 group-hover:text-pink-600'
+                    <div>
+                      <h4 className={`font-serif text-xl font-light ${
+                        isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                       }`}>
-                        {r.name}
+                        ¿Confirmar Canje?
+                      </h4>
+                      <p className={`text-sm font-light mt-1.5 ${
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        Canjearás <strong className="font-mono text-[#D4AF37]">{selectedReward.points_required} puntos</strong> por:
                       </p>
-                      {!lockedByTier && r.discount_percentage > 0 && (
-                        <span className={`text-[8px] font-mono font-black px-2.5 py-1 rounded-full border shadow-sm shrink-0 ${
-                          isDark 
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
-                            : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                        }`}>
-                          -{r.discount_percentage}% OFF
-                        </span>
-                      )}
+                      <div className={`mt-4 p-4 rounded-xl border shadow-sm ${
+                        isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+                      }`}>
+                        <p className={`font-serif text-sm font-light text-[#D4AF37]`}>
+                          {selectedReward.name}
+                        </p>
+                        {selectedReward.discount_percentage > 0 && (
+                          <p className={`text-xs mt-0.5 ${
+                            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                          }`}>
+                            {selectedReward.discount_percentage}% de descuento
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <p className={`text-xs leading-relaxed line-clamp-2 ${
-                      lockedByTier ? 'text-stone-500/40' : isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>
-                      {r.description || 'Ritual exclusivo VIP de alta gama.'}
-                    </p>
-                  </div>
-
-                  <div className={`flex items-center justify-between pt-3 border-t relative z-10 ${
-                    isDark ? 'border-stone-800/60' : 'border-stone-200/60'
-                  }`}>
-                    <div className="flex flex-col">
-                      <span className={`text-xs font-mono font-black ${
-                        lockedByTier 
-                          ? 'text-stone-500'
-                          : activeTab === 'glow' ? 'text-pink-500' : 'text-violet-500'
-                      }`}>
-                        {r.points_required} PTS
-                      </span>
-                      <span className={`text-[7px] font-mono uppercase tracking-[0.15em] ${
-                        isDark ? 'text-stone-500' : 'text-stone-400'
-                      }`}>
-                        Nivel: {r.tier}
-                      </span>
-                    </div>
-
-                    {lockedByTier ? (
-                      <span className={`text-[8px] font-mono uppercase tracking-[0.15em] font-black flex items-center gap-1 px-3 py-1.5 rounded-xl border ${
-                        isDark ? 'text-stone-600 bg-stone-900/60 border-stone-800' : 'text-stone-400 bg-stone-50 border-stone-200'
-                      }`}>
-                        Bloqueado
-                      </span>
-                    ) : (
+                    <div className="flex gap-3 pt-2">
                       <button 
-                        disabled={!canAfford} 
-                        onClick={() => { setSelectedReward(r); setShowRedeemModal(true); }} 
-                        className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.15em] rounded-xl transition-all duration-300 border active:scale-95 flex items-center gap-1.5 shadow-lg hover:scale-105 ${
-                          canAfford 
-                            ? isDark 
-                              ? 'bg-white text-black border-white hover:bg-stone-100 shadow-white/10' 
-                              : 'bg-stone-900 text-white border-stone-900 hover:bg-stone-800 shadow-stone-900/20'
-                            : isDark
-                              ? 'bg-stone-900/40 text-stone-600 border-stone-800 cursor-not-allowed'
-                              : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed'
+                        onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 border ${
+                          isDark 
+                            ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E] hover:text-[#FFF9F6]' 
+                            : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA] hover:text-[#1A0E0A]'
                         }`}
                       >
-                        {currentPoints >= r.points_required ? (
-                          <>
-                            <PartyPopper className="w-3 h-3" /> Canjear
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-3 h-3" /> Faltan Puntos
-                          </>
-                        )}
-                        <ArrowUpRight className="w-3 h-3" />
+                        Cancelar
                       </button>
-                    )}
-                  </div>
-                </motion.div>
-              )
-            })
-          )}
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* MODAL DE CANJE — REDISEÑADO */}
-      {/* ============================================================ */}
-      <AnimatePresence>
-        {showRedeemModal && selectedReward && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }}
-          >
-            <motion.div 
-              initial={{ scale: 0.92, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={`relative w-full max-w-md rounded-3xl border p-7 shadow-2xl overflow-hidden transition-all duration-500 ${
-                isDark ? 'bg-[#0f0c1b] border-fuchsia-950' : 'bg-white border-pink-200'
-              }`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Línea superior decorativa */}
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
-                activeTab === 'glow' 
-                  ? 'from-pink-500 via-rose-500 to-pink-500' 
-                  : 'from-violet-500 via-purple-500 to-violet-500'
-              }`} />
-
-              <button 
-                onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
-                className={`absolute top-4 right-4 p-2 rounded-full transition-all duration-300 hover:scale-110 ${
-                  isDark ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
-                }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              {!generatedCode ? (
-                <div className="space-y-5 text-center pt-2">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto border shadow-lg ${
-                    isDark ? 'bg-pink-500/10 border-pink-500/20 shadow-pink-500/5' : 'bg-pink-50 border-pink-200 shadow-pink-200/30'
-                  }`}>
-                    <Ticket className={`w-7 h-7 ${
-                      isDark ? 'text-pink-400' : 'text-pink-600'
-                    }`} />
-                  </div>
-                  <div>
-                    <h4 className={`text-xl font-black tracking-tight ${
-                      isDark ? 'text-white' : 'text-stone-900'
-                    }`}>
-                      ¿Confirmar Canje?
-                    </h4>
-                    <p className={`text-sm mt-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>
-                      Canjearás <strong className={`font-mono ${
-                        activeTab === 'glow' ? 'text-pink-500' : 'text-violet-500'
-                      }`}>{selectedReward.points_required} puntos</strong> por:
-                    </p>
-                    <div className={`mt-4 p-4 rounded-xl border shadow-sm ${
-                      isDark ? 'bg-stone-900/40 border-stone-800/60' : 'bg-stone-50/80 border-stone-200/60'
-                    }`}>
-                      <p className={`font-black text-sm ${
-                        isDark ? 'text-pink-400' : 'text-pink-700'
-                      }`}>
-                        {selectedReward.name}
-                      </p>
-                      {selectedReward.discount_percentage > 0 && (
-                        <p className={`text-xs mt-0.5 ${
-                          isDark ? 'text-stone-400' : 'text-stone-500'
-                        }`}>
-                          {selectedReward.discount_percentage}% de descuento
-                        </p>
-                      )}
+                      <button 
+                        onClick={requestRedeem} 
+                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg ${
+                          isDark 
+                            ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                            : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
+                        }`}
+                      >
+                        Confirmar
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-3 pt-2">
+                ) : (
+                  <div className="space-y-5 text-center pt-2">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto border shadow-sm ${
+                      isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'
+                    }`}>
+                      <ShieldCheck className="w-7 h-7 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h4 className={`font-serif text-xl font-light ${
+                        isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                      }`}>
+                        ¡Premio Canjeado! 🎉
+                      </h4>
+                      <p className={`text-sm font-light mt-1.5 ${
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        Presenta este código en recepción.
+                      </p>
+                    </div>
+
+                    <div className={`p-4 rounded-2xl inline-block shadow-xl border mx-auto ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+                    }`}>
+                      <QRCodeSVG 
+                        value={generatedCode.toUpperCase().trim()} 
+                        size={180}
+                        level="H"
+                        bgColor={isDark ? '#1E120C' : '#FFFFFF'}
+                        fgColor={isDark ? '#FFF9F6' : '#1A0E0A'}
+                      />
+                    </div>
+
+                    <div className={`flex items-center justify-between border px-4 py-3 rounded-xl font-mono text-xs max-w-xs mx-auto shadow-inner ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+                    }`}>
+                      <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        Código
+                      </span>
+                      <span className={`font-black tracking-widest text-sm ${
+                        isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                      }`}>
+                        {generatedCode}
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => copyToClipboard(generatedCode)} 
+                        className={`p-1.5 rounded-lg transition-all duration-300 hover:scale-110 ${
+                          isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#A89588] hover:text-[#1A0E0A]'
+                        }`}
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+
                     <button 
                       onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
-                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 border ${
+                      className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 ${
                         isDark 
-                          ? 'border-stone-800/60 text-stone-400 hover:bg-stone-800/50' 
-                          : 'border-stone-200/60 text-stone-500 hover:bg-stone-50'
+                          ? 'bg-[#3D281E] text-[#A89588] hover:bg-[#4A3227] hover:text-[#FFF9F6]' 
+                          : 'bg-[#F0E4DA] text-[#5C4A3E] hover:bg-[#E8DDD4] hover:text-[#1A0E0A]'
                       }`}
                     >
-                      Cancelar
-                    </button>
-                    <button 
-                      onClick={requestRedeem} 
-                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] text-white shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
-                        isDark 
-                          ? 'bg-gradient-to-r from-pink-500 to-rose-500 shadow-pink-500/30' 
-                          : 'bg-gradient-to-r from-pink-500 to-rose-500 shadow-pink-500/30'
-                      }`}
-                    >
-                      Confirmar
+                      Finalizar
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-5 text-center pt-2">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto border shadow-lg ${
-                    isDark ? 'bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/5' : 'bg-emerald-50 border-emerald-200 shadow-emerald-200/30'
-                  }`}>
-                    <ShieldCheck className="w-7 h-7 text-emerald-500" />
-                  </div>
-                  <div>
-                    <h4 className={`text-xl font-black tracking-tight ${
-                      isDark ? 'text-white' : 'text-stone-900'
-                    }`}>
-                      ¡Premio Canjeado! 🎉
-                    </h4>
-                    <p className={`text-sm mt-1.5 ${
-                      isDark ? 'text-stone-400' : 'text-stone-500'
-                    }`}>
-                      Presenta este código en recepción.
-                    </p>
-                  </div>
-
-                  <div className={`p-4 rounded-2xl inline-block shadow-xl border mx-auto ${
-                    isDark ? 'bg-stone-950 border-stone-900' : 'bg-white border-stone-200'
-                  }`}>
-                    <QRCodeSVG 
-                      value={generatedCode.toUpperCase().trim()} 
-                      size={180}
-                      level="H"
-                      bgColor={isDark ? '#0a0908' : '#FFFFFF'}
-                      fgColor={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </div>
-
-                  <div className={`flex items-center justify-between border px-4 py-3 rounded-xl font-mono text-xs max-w-xs mx-auto shadow-inner ${
-                    isDark ? 'bg-stone-900/40 border-stone-800/60' : 'bg-stone-50 border-stone-200/60'
-                  }`}>
-                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
-                      isDark ? 'text-stone-500' : 'text-stone-400'
-                    }`}>
-                      Código
-                    </span>
-                    <span className={`font-black tracking-widest text-sm ${
-                      isDark ? 'text-white' : 'text-stone-900'
-                    }`}>
-                      {generatedCode}
-                    </span>
-                    <button 
-                      type="button"
-                      onClick={() => copyToClipboard(generatedCode)} 
-                      className={`p-1.5 rounded-lg transition-all duration-300 hover:scale-110 ${
-                        isDark ? 'text-stone-400 hover:text-stone-200' : 'text-stone-400 hover:text-stone-600'
-                      }`}
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={() => { setShowRedeemModal(false); setGeneratedCode(null); }} 
-                    className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 ${
-                      isDark 
-                        ? 'bg-stone-800 text-stone-200 hover:bg-stone-700' 
-                        : 'bg-stone-900 text-white hover:bg-stone-800'
-                    }`}
-                  >
-                    Finalizar
-                  </button>
-                </div>
-              )}
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* ============================================================ */}
-      {/* STYLES GLOBALES */}
-      {/* ============================================================ */}
+      </div>
+
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-8px); }
