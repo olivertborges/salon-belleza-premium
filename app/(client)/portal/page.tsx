@@ -51,11 +51,11 @@ interface Cliente {
 }
 
 // ============================================================
-// MICRO-COMPONENTES RESPONSIVOS Y ADAPTABLES AL TEMA
+// MICRO-COMPONENTES CON CORTE ORGÁNICO Y RELIEVE
 // ============================================================
 
 const LoadingSpinner = ({ isDark }: { isDark: boolean }) => (
-  <div className={`flex items-center justify-center min-h-[80vh] transition-colors duration-500 ${isDark ? 'bg-[#120A07]' : 'bg-[#FFF9F6]'}`}>
+  <div className={`flex items-center justify-center min-h-[80vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
     <div className="flex flex-col items-center gap-6">
       <div className="relative w-16 h-16">
         <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
@@ -69,11 +69,13 @@ const LoadingSpinner = ({ isDark }: { isDark: boolean }) => (
 )
 
 const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark: boolean }) => (
-  <div className={`relative overflow-hidden border p-6 rounded-none shadow-sm transition-all duration-500 group hover:border-[#D4AF37]/40 ${
-    isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'
+  <div className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-300 group ${
+    isDark 
+      ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-[#D4AF37]/40' 
+      : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)] hover:border-[#D4AF37]/40'
   }`}>
     <div className={`absolute top-0 right-0 w-24 h-24 rounded-full translate-x-8 -translate-y-8 pointer-events-none group-hover:scale-110 transition-transform duration-700 ${
-      isDark ? 'bg-[#2C1A14]/30' : 'bg-[#FFF9F6]'
+      isDark ? 'bg-[#3D281E]/40' : 'bg-[#FFF9F6]'
     }`} />
     
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
@@ -87,7 +89,7 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
           <p className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{glow}</p>
         </div>
         
-        <div className={`w-[1px] h-10 hidden md:block ${isDark ? 'bg-[#2C1A14]' : 'bg-[#F0E4DA]'}`} />
+        <div className={`w-[1px] h-10 hidden md:block ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
         
         {/* Marcador HAIR */}
         <div className="space-y-1.5">
@@ -99,7 +101,7 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
         </div>
       </div>
 
-      <div className={`text-left md:text-right border-t md:border-t-0 pt-4 md:pt-0 flex flex-col justify-end ${isDark ? 'border-[#2C1A14]' : 'border-[#F0E4DA]'}`}>
+      <div className={`text-left md:text-right border-t md:border-t-0 pt-4 md:pt-0 flex flex-col justify-end ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
         <span className="text-[9px] text-[#D4AF37] uppercase tracking-[0.3em] font-bold block mb-1">Estatus del Balance</span>
         <div className={`font-serif text-4xl font-normal tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
           {glow + hair} <span className="text-xs font-sans font-light tracking-widest opacity-60">PTS</span>
@@ -112,8 +114,8 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
 const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark: boolean }) => {
   if (!cita) {
     return (
-      <div className={`p-8 text-center border border-dashed rounded-none space-y-4 ${
-        isDark ? 'border-[#D4AF37]/20 bg-[#1A0E0A]/40' : 'border-[#D4AF37]/30 bg-white'
+      <div className={`p-8 text-center border border-dashed rounded-2xl space-y-4 shadow-sm transition-all duration-300 ${
+        isDark ? 'border-[#D4AF37]/20 bg-[#2A1B14]/40 hover:bg-[#2A1B14]/60' : 'border-[#D4AF37]/30 bg-white hover:bg-[#FFF9F6]/30'
       }`}>
         <Calendar className="w-6 h-6 text-[#A89588] mx-auto stroke-[1.2]" />
         <p className={`text-xs uppercase tracking-[0.2em] font-light ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>
@@ -133,14 +135,14 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
   const isConfirmed = cita.status === 'confirmed'
 
   return (
-    <div className={`p-6 border rounded-none shadow-sm transition-all duration-500 relative overflow-hidden group ${
-      isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'
+    <div className={`p-6 border rounded-2xl shadow-md transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl relative overflow-hidden group ${
+      isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
     }`}>
       <div className="absolute top-0 left-0 h-[3px] bg-[#D4AF37] w-0 group-hover:w-full transition-all duration-700" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-3">
-          <div className={`inline-flex items-center gap-2 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] ${
-            isDark ? 'bg-[#2C1A14] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+          <div className={`inline-flex items-center gap-2 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] rounded-full ${
+            isDark ? 'bg-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
           }`}>
             <span className={`w-1.5 h-1.5 rounded-full ${isConfirmed ? 'bg-amber-500' : 'bg-[#A89588]'} animate-pulse`} />
             {isConfirmed ? 'Confirmado' : 'Pendiente'}
@@ -162,8 +164,8 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
           </div>
         </div>
 
-        <div className={`w-12 h-12 border flex items-center justify-center rounded-none shrink-0 ${
-          isDark ? 'bg-[#2C1A14]/50 border-[#3d271f]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+        <div className={`w-12 h-12 border flex items-center justify-center rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+          isDark ? 'bg-[#3D281E]/50 border-[#4A3227]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <Crown className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
         </div>
@@ -290,7 +292,6 @@ export default function ClientDashboardIndex() {
     }
   }, [user, mounted])
 
-  // Retorno nulo controlado durante la fase de hidratación estática inicial
   if (!mounted) return null
 
   if (loading) return <LoadingSpinner isDark={isDark} />
@@ -299,31 +300,34 @@ export default function ClientDashboardIndex() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
-      isDark ? 'bg-[#120A07] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
       
       {/* Fondo Texturizado Minimalista */}
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-20 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 space-y-8 relative z-10">
 
         {/* ============================================================ */}
-        {/* 👤 PERFIL & CABECERA EDITORIAL (RESPONSIVA) */}
+        {/* 👤 PERFIL & CABECERA EDITORIAL CON RELIEVE Y NOMBRE COMPLETO */}
         {/* ============================================================ */}
-        <div className={`border p-5 sm:p-8 rounded-none shadow-sm space-y-6 transition-colors duration-500 ${
-          isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'
+        <div className={`border p-5 sm:p-8 rounded-2xl transition-all duration-300 ${
+          isDark 
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
         }`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-4 min-w-0">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-none border flex items-center justify-center shrink-0 ${
-                isDark ? 'bg-[#2C1A14] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl border flex items-center justify-center shrink-0 ${
+                isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
               }`}>
                 <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37] stroke-[1.2]" />
               </div>
-              <div className="space-y-0.5 min-w-0">
+              <div className="space-y-1 min-w-0 flex-1">
                 <span className="text-[9px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block">Panel Privado</span>
-                <h1 className="font-serif text-2xl sm:text-3xl font-light tracking-tight truncate">
-                  Bienvenido, <span className="italic font-normal">{nombreCliente}</span>
+                {/* Removido el truncate: Ahora respira y se ve el nombre entero */}
+                <h1 className="font-serif text-2xl sm:text-3xl font-light tracking-tight leading-snug">
+                  Bienvenido, <span className="italic font-normal block sm:inline">{nombreCliente}</span>
                 </h1>
               </div>
             </div>
@@ -332,8 +336,8 @@ export default function ClientDashboardIndex() {
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
-                className={`p-3 border transition-all duration-300 shrink-0 ${
-                  isDark ? 'bg-[#2C1A14] border-[#3d271f] text-[#FFF9F6]/70 hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
+                className={`p-3 border rounded-xl transition-all duration-300 shrink-0 ${
+                  isDark ? 'bg-[#3D281E] border-[#4A3227] text-[#FFF9F6]/70 hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
                 }`}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -341,7 +345,7 @@ export default function ClientDashboardIndex() {
 
               <Link 
                 href="/agenda" 
-                className="bg-[#1A0E0A] hover:bg-[#D4AF37] border border-transparent text-white px-5 sm:px-6 py-3 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-500 flex items-center justify-center gap-2 flex-1 lg:flex-none text-center"
+                className="bg-[#1A0E0A] hover:bg-[#D4AF37] border border-transparent text-white px-5 sm:px-6 py-3 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300 flex items-center justify-center gap-2 flex-1 lg:flex-none text-center rounded-xl shadow-md hover:shadow-lg"
               >
                 <Calendar className="w-3.5 h-3.5 stroke-[1.5]" />
                 Reservar Cita
@@ -349,7 +353,9 @@ export default function ClientDashboardIndex() {
             </div>
           </div>
 
-          <PointsCard glow={puntosGlow} hair={puntosHair} isDark={isDark} />
+          <div className="mt-6">
+            <PointsCard glow={puntosGlow} hair={puntosHair} isDark={isDark} />
+          </div>
         </div>
 
         {/* ============================================================ */}
@@ -367,10 +373,14 @@ export default function ClientDashboardIndex() {
         {/* 📢 PASARELA DE ANUNCIOS Y EVENTOS */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          }`}>
             <AnunciosBanner position="hero" limit={2} />
           </div>
-          <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          }`}>
             <PromocionesVolante limit={3} />
           </div>
         </div>
@@ -378,7 +388,9 @@ export default function ClientDashboardIndex() {
         {/* ============================================================ */}
         {/* 🎯 SECCIÓN MISIONES DEL ATELIER */}
         {/* ============================================================ */}
-        <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+        <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+          isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+        }`}>
           <MisionesDiarias />
         </div>
 
@@ -386,10 +398,14 @@ export default function ClientDashboardIndex() {
         {/* 🏆 FIDELIZACIÓN: INSIGNIAS Y RECOMENDADOS */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          }`}>
             <QRReferido codigo={codigoReferido} user={user} />
           </div>
-          <div className={`border p-6 flex flex-col justify-center ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`border p-6 flex flex-col justify-center rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          }`}>
             <InsigniasLogros 
               citas={citas.length} 
               serviciosUnicos={serviciosUnicos} 
@@ -403,16 +419,16 @@ export default function ClientDashboardIndex() {
         {/* ============================================================ */}
         {/* 🎡 EXPERIENCIA INTERACTIVA */}
         {/* ============================================================ */}
-        <div className={`border p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group ${
-          isDark ? 'bg-[#1A0E0A] border-[#D4AF37]/40' : 'bg-white border-[#D4AF37]/30'
+        <div className={`border p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group rounded-2xl shadow-md transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 ${
+          isDark ? 'bg-[#2A1B14] border-[#D4AF37]/40' : 'bg-white border-[#D4AF37]/30'
         }`}>
           <div className={`absolute top-0 right-0 w-32 h-32 rounded-full translate-x-12 translate-y-12 opacity-50 group-hover:scale-110 transition-transform duration-700 pointer-events-none ${
-            isDark ? 'bg-[#2C1A14]/30' : 'bg-[#FFF9F6]'
+            isDark ? 'bg-[#3D281E]/30' : 'bg-[#FFF9F6]'
           }`} />
           
           <div className="flex items-center gap-4 relative z-10">
-            <div className={`w-12 h-12 border flex items-center justify-center ${
-              isDark ? 'bg-[#2C1A14] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
+            <div className={`w-12 h-12 border flex items-center justify-center rounded-xl ${
+              isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
             }`}>
               <Gift className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
             </div>
@@ -424,7 +440,7 @@ export default function ClientDashboardIndex() {
           
           <button 
             onClick={() => setIsRuletaOpen(true)} 
-            className="w-full sm:w-auto bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-500 shrink-0 relative z-10 border border-transparent hover:border-transparent"
+            className="w-full sm:w-auto bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300 shrink-0 relative z-10 rounded-xl shadow-sm"
           >
             Activar Rueda
           </button>
