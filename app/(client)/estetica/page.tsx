@@ -539,133 +539,142 @@ export default function EsteticaPage() {
         )}
 
         {/* ============================================================ */}
-        {/* HERO SECTION — CON FOTO DE ANY */}
-        {/* ============================================================ */}
-        <div className={`relative overflow-hidden rounded-2xl min-h-[440px] md:min-h-[500px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
-          isDark 
-            ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
-            : 'border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+{/* HERO SECTION — ESTÉTICA (SIN FOTO DE ANY) */}
+{/* ============================================================ */}
+<div className={`relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-[380px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
+  isDark 
+    ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+    : 'border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+}`}>
+  {/* Fondo con gradiente limpio y textura */}
+  <div className={`absolute inset-0 ${
+    isDark 
+      ? 'bg-gradient-to-br from-[#1E120C] via-[#2A1B14] to-[#1E120C]' 
+      : 'bg-gradient-to-br from-[#FFF9F6] via-[#F5EDE8] to-[#FFF9F6]'
+  }`}>
+    {/* Efecto de luz ambiental - más sutil */}
+    <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
+    {/* Patrón decorativo */}
+    <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px] pointer-events-none" />
+  </div>
+
+  <div className="relative z-10 p-6 md:p-12 max-w-4xl w-full">
+    <div className="text-left">
+      
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-sm border mb-4 ${
+        isDark 
+          ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
+          : 'bg-[#D4AF37]/10 border-[#D4AF37]/20'
+      }`}>
+        <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+        <span className={`text-[7px] uppercase tracking-[0.2em] font-black ${
+          isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
         }`}>
-          <div className="absolute inset-0">
-            <img 
-              src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png"
-              alt="Any - Estética y Bienestar"
-              className="w-full h-full object-cover object-top"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-          </div>
+          {settings?.business_name || 'Fresh Nails Studio'} • Bienestar
+        </span>
+      </div>
 
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
-
-          <div className="relative z-10 p-6 md:p-12 max-w-3xl w-full">
-            <div className="text-white">
-              
-              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-sm border mb-4 ${
-                isDark 
-                  ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
-                  : 'bg-white/10 border-white/20'
-              }`}>
-                <Sparkles className="w-3 h-3 text-[#D4AF37]" />
-                <span className={`text-[7px] uppercase tracking-[0.2em] font-black ${
-                  isDark ? 'text-[#D4AF37]' : 'text-white/90'
-                }`}>
-                  {settings?.business_name || 'Fresh Nails Studio'}
-                </span>
-              </div>
-
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
-                <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-white">
-                  Any
-                </span>
-                <span className="block text-white/90 text-2xl md:text-3xl lg:text-4xl font-light mt-1">
-                  Estética & Bienestar
-                </span>
-              </h1>
-              
-              <p className="text-sm md:text-base text-white/70 mt-3 max-w-md font-light tracking-wide">
-                Especialista en tratamientos faciales, corporales y masajes para equilibrar cuerpo y mente.
-              </p>
-
-              <div className="flex flex-wrap gap-3 mt-6">
-                <Link 
-                  href="/agenda" 
-                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] ${
-                    isDark 
-                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Reservar con Any</span>
-                </Link>
-
-                <button 
-                  onClick={() => setActiveTab('galeria')} 
-                  className={`px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
-                    isDark 
-                      ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
-                      : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
-                  }`}
-                >
-                  <Camera className="w-3.5 h-3.5" /> 
-                  <span>Galería</span>
-                </button>
-              </div>
-
-              <div className="flex gap-4 mt-6 pt-4 border-t border-white/10">
-                <div>
-                  <p className="text-lg font-black text-[#D4AF37]">{servicios.length}</p>
-                  <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Servicios</p>
-                </div>
-                <div className="w-px bg-white/10" />
-                <div>
-                  <p className="text-lg font-black text-[#D4AF37]">{galleryImages.length}</p>
-                  <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Trabajos</p>
-                </div>
-                <div className="w-px bg-white/10" />
-                <div>
-                  <p className="text-lg font-black text-[#D4AF37]">{Object.values(reviews).flat().length}</p>
-                  <p className="text-[7px] font-black uppercase tracking-[0.15em] text-white/40">Reseñas</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/* TABS NAVEGACIÓN — RESPONSIVE */}
-        {/* ============================================================ */}
-        <div className={`flex border-b pb-0 overflow-x-auto ${
-          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+      <h1 className={`text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] ${
+        isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+      }`}>
+        <span className="font-serif italic font-light text-[#D4AF37]">
+          Bienestar
+        </span>
+        <span className="block text-2xl md:text-3xl lg:text-4xl font-light mt-1 ${
+          isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
         }`}>
-          {[
-            { id: 'servicios', label: 'Rituales', icon: <Sparkles className="w-4 h-4" /> },
-            { id: 'galeria', label: 'Inspiración', icon: <Camera className="w-4 h-4" /> },
-            { id: 'testimonios', label: 'Testimonios', icon: <Quote className="w-4 h-4" /> },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`relative px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-black whitespace-nowrap transition-all duration-500 flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? 'text-[#D4AF37]'
-                  : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
-              }`}
-            >
-              {tab.icon}
-              <span className="relative z-10">{tab.label}</span>
-              {activeTab === tab.id && (
-                <motion.span
-                  layoutId="tabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#D4AF37]"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-            </button>
-          ))}
+          & Estética Avanzada
+        </span>
+      </h1>
+      
+      <p className={`text-sm md:text-base mt-3 max-w-md font-light tracking-wide ${
+        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+      }`}>
+        Tratamientos faciales, corporales y masajes diseñados para equilibrar cuerpo y mente.
+      </p>
+
+      <div className="flex flex-wrap gap-3 mt-6">
+        <Link 
+          href="/agenda" 
+          className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] ${
+            isDark 
+              ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+              : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Reservar Cita</span>
+        </Link>
+
+        <button 
+          onClick={() => setActiveTab('galeria')} 
+          className={`px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:border-[#D4AF37]/40 hover:text-[#FFF9F6]' 
+              : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:border-[#D4AF37]/40 hover:text-[#1A0E0A]'
+          }`}
+        >
+          <Camera className="w-3.5 h-3.5" /> 
+          <span>Galería</span>
+        </button>
+      </div>
+
+      <div className="flex gap-6 mt-6 pt-4 border-t ${
+        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+      }`}>
+        <div>
+          <p className={`text-lg font-black ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>{servicios.length}</p>
+          <p className={`text-[7px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Servicios</p>
         </div>
+        <div className={`w-px ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+        <div>
+          <p className={`text-lg font-black ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>{galleryImages.length}</p>
+          <p className={`text-[7px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Trabajos</p>
+        </div>
+        <div className={`w-px ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+        <div>
+          <p className={`text-lg font-black ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>{Object.values(reviews).flat().length}</p>
+          <p className={`text-[7px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Reseñas</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+        {/* ============================================================ */}
+{/* TABS NAVEGACIÓN — RESPONSIVE (SIN SCROLL) */}
+{/* ============================================================ */}
+<div className={`flex flex-wrap justify-center border-b pb-0 ${
+  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+}`}>
+  {[
+    { id: 'servicios', label: 'Rituales', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'galeria', label: 'Inspiración', icon: <Camera className="w-4 h-4" /> },
+    { id: 'testimonios', label: 'Testimonios', icon: <Quote className="w-4 h-4" /> },
+  ].map((tab) => (
+    <button
+      key={tab.id}
+      onClick={() => setActiveTab(tab.id as any)}
+      className={`relative px-3 sm:px-5 md:px-8 py-2.5 sm:py-3.5 text-[9px] sm:text-[10px] md:text-xs uppercase tracking-[0.1em] sm:tracking-[0.15em] md:tracking-[0.2em] font-black whitespace-nowrap transition-all duration-500 flex items-center gap-1.5 sm:gap-2 ${
+        activeTab === tab.id
+          ? 'text-[#D4AF37]'
+          : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
+      }`}
+    >
+      {tab.icon}
+      <span className="relative z-10">{tab.label}</span>
+      {activeTab === tab.id && (
+        <motion.span
+          layoutId="tabIndicator"
+          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#D4AF37]"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+    </button>
+  ))}
+</div>
 
         {/* ============================================================ */}
         {/* TAB: SERVICIOS */}
