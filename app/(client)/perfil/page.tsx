@@ -103,27 +103,57 @@ export default function PerfilPage() {
       setLoading(true)
       setError(null)
 
-      // Obtener datos del cliente
+      // 1. Obtener datos del cliente
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select('*')
+        .select('id, name, email, phone, birth_date, address, avatar_url, created_at, referral_code')
         .eq('auth_user_id', user.id)
         .maybeSingle()
 
       if (clientError) throw clientError
 
-      if (clientData) {
-        setProfile(clientData)
-        setFormData({
-          name: clientData.name || '',
-          phone: clientData.phone || '',
-          birth_date: clientData.birth_date || '',
-          address: clientData.address || ''
-        })
+      if (!clientData) {
+        setLoading(false)
+        return
+      }
 
-        if (clientData.avatar_url) {
-          setAvatarPreview(clientData.avatar_url)
-        }
+      // 2. Obtener puntos de loyalty_wallets
+      const { data: walletData, error: walletError } = await supabase
+        .from('loyalty_wallets')
+        .select('glow_points, hair_points, glow_level, hair_level')
+        .eq('client_id', clientData.id)
+        .maybeSingle()
+
+      if (walletError) console.error('Error cargando wallet:', walletError)
+
+      // 3. Contar citas totales del cliente
+      const { count: appointmentsCount, error: countError } = await supabase
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', clientData.id)
+        .neq('status', 'cancelled')
+
+      if (countError) console.error('Error contando citas:', countError)
+
+      // 4. Construir perfil completo
+      const fullProfile: ClientProfile = {
+        ...clientData,
+        points_glow: walletData?.glow_points || 0,
+        points_hair: walletData?.hair_points || 0,
+        total_appointments: appointmentsCount || 0,
+        vip_level: walletData?.glow_level || 'Bronce'
+      }
+
+      setProfile(fullProfile)
+      setFormData({
+        name: clientData.name || '',
+        phone: clientData.phone || '',
+        birth_date: clientData.birth_date || '',
+        address: clientData.address || ''
+      })
+
+      if (clientData.avatar_url) {
+        setAvatarPreview(clientData.avatar_url)
       }
 
     } catch (error) {
@@ -642,7 +672,7 @@ export default function PerfilPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* ESTADÍSTICAS Y LOGROS */}
+        {/* ESTADÍSTICAS Y LOGROS — CON PUNTOS REALES */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className={`p-5 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5 ${
