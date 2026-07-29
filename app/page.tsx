@@ -297,6 +297,83 @@ const EsenciaSection = () => {
 }
 
 // ============================================================
+// LAS ARTISTAS (NUEVA SECCIÓN DE PROFESIONALES)
+// ============================================================
+const TeamSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
+
+  return (
+    <section id="equipo" ref={ref} className="py-32 bg-white border-t border-[#F0E4DA]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        {/* Encabezado de la sección */}
+        <div className="max-w-xl mb-20 space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">LAS ARTISTAS DEL ATELIER</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">
+            Manos maestras, <span className="italic font-normal text-[#D4AF37]">visiones únicas</span>
+          </h2>
+          <p className="text-sm text-[#5C4A3E] font-light leading-relaxed pt-2">
+            Especialistas dedicadas por completo a perfeccionar cada detalle de tu autenticidad.
+          </p>
+        </div>
+
+        {/* Contenedor de las dos profesionales */}
+        <div className="grid md:grid-cols-2 gap-16 md:gap-12 items-start">
+          
+          {/* Profesional 1: Peluquería */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8 }}
+            className="space-y-6"
+          >
+            <div className="relative aspect-[3/4] bg-[#FFF9F6] overflow-hidden border border-[#F0E4DA] p-3">
+              <img 
+                src="/imagenes/estilista-peluqueria.jpg" // <-- Reemplaza esto con tu link
+                alt="Especialista en Alta Peluquería" 
+                className="w-full h-full object-cover filter grayscale-[20%] hover:grayscale-0 transition-all duration-750"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Master Stylist</p>
+              <h3 className="font-serif text-2xl text-[#1A0E0A]">Nombre de la Estilista</h3>
+              <p className="text-xs text-[#5C4A3E] font-light leading-relaxed max-w-sm">
+                Especialista en cortes arquitectónicos, colorimetría francesa y rituales de restauración capilar avanzada.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Profesional 2: Uñas, Pestañas y Micropigmentación (Un poco más abajo para asimetría visual) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="space-y-6 md:mt-20" // md:mt-20 crea el efecto de revista
+          >
+            <div className="relative aspect-[3/4] bg-[#FFF9F6] overflow-hidden border border-[#F0E4DA] p-3">
+              <img 
+                src="/imagenes/especialista-estetica.jpg" // <-- Reemplaza esto con tu link
+                alt="Especialista en Uñas y Micropigmentación" 
+                className="w-full h-full object-cover filter grayscale-[20%] hover:grayscale-0 transition-all duration-750"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Nail & Derm Artist</p>
+              <h3 className="font-serif text-2xl text-[#1A0E0A]">Nombre de la Profesional</h3>
+              <p className="text-xs text-[#5C4A3E] font-light leading-relaxed max-w-sm">
+                Experta en ingeniería de uñas (manicura rusa), diseño de mirada y micropigmentación hiperrealista.
+              </p>
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
 // STATS SECTION (MINIMALISTA Y SOFISTICADA)
 // ============================================================
 const StatsSection = () => {
@@ -824,6 +901,7 @@ export default function Home() {
       <HeroSection />
       <EsenciaSection />
       <StatsSection />
+      <TeamSection />
       <CategoriesSection />
       <ServicesSection services={services} />
       <GallerySection images={galleryImages} />
