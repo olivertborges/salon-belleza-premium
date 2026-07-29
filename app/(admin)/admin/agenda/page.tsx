@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase/client'
 import { TimePicker } from '@/components/TimePicker'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import Link from 'next/link'
 
 type ViewMode = 'day' | 'week' | 'month'
@@ -27,7 +28,6 @@ export default function AdminAgendaPage() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  // Estados de datos
   const [citas, setCitas] = useState<any>([])
   const [staff, setStaff] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
@@ -48,7 +48,6 @@ export default function AdminAgendaPage() {
   const [staffId, setStaffId] = useState<string | null>(null)
   const [showStaffFilter, setShowStaffFilter] = useState(false)
 
-  // Estados para nueva cita
   const [newCita, setNewCita] = useState({
     clientId: '',
     serviceId: '',
@@ -108,9 +107,7 @@ export default function AdminAgendaPage() {
 
     const toast = document.createElement('div')
     toast.id = ID_TOAST
-    toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:top-5 md:right-5 z-[9999] p-4 rounded-2xl shadow-2xl w-[92%] max-w-sm transition-all duration-300 border ${
-      isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-    }`
+    toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:top-5 md:right-5 z-[9999] p-4 rounded-2xl shadow-2xl w-[92%] max-w-sm transition-all duration-300 border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`
 
     toast.innerHTML = `
       <div class="flex flex-col gap-2">
@@ -402,6 +399,90 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
+  // COMPONENTE: Lista de Citas
+  // ============================================================
+  const renderListaCitas = (fecha: Date) => {
+    const citasDelDia = getCitasDelDia(fecha)
+    const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
+
+    if (citasOrdenadas.length === 0) {
+      return (
+        <div className="text-center py-6">
+          <div className={`text-sm font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+            Sin turnos para este día
+          </div>
+          <button 
+            onClick={() => handleSlotClick(format(fecha, 'yyyy-MM-dd'), '11:00')}
+            className="mt-2 text-xs text-[#D4AF37] hover:text-[#E8D5A0] font-medium transition-colors"
+          >
+            + Agregar turno
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-2">
+        {citasOrdenadas.map((cita: any) => {
+          const statusInfo = getStatusBadge(cita.status)
+          const isBlocked = cita.status === 'blocked'
+
+          return (
+            <div 
+              key={cita.id} 
+              onClick={() => !isBlocked && abrirDetalleCita(cita)}
+              className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${
+                isBlocked 
+                  ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-70' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-70'
+                  : isDark ? 'bg-[#2A1B14] border-[#3D281E] cursor-pointer hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] cursor-pointer hover:border-[#D4AF37]/40'
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-[#1A0E0A] shrink-0 ${
+                  isBlocked ? 'bg-stone-400' : 'bg-[#D4AF37]'
+                }`}>
+                  {isBlocked ? <Ban className="w-4 h-4" /> : cita.clients?.name?.charAt(0) || 'C'}
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium truncate ${
+                    isBlocked 
+                      ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
+                    {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-medium truncate ${
+                      isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'
+                    }`}>
+                      {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
+                    </span>
+                    <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+                    <span className={`text-[10px] font-mono font-bold ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                      {cita.time?.slice(0,5) || '--:--'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {!isBlocked && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-mono font-bold text-[#D4AF37]">
+                    ${Number(cita.services?.price || 0).toLocaleString()}
+                  </span>
+                  <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
+                    {statusInfo.label}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // ============================================================
   // RENDER VISTA DÍA
   // ============================================================
   const renderVistaDia = () => {
@@ -430,9 +511,7 @@ export default function AdminAgendaPage() {
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl text-[#1A0E0A] shadow-md ${
-                isToday(fechaSeleccionada) ? 'bg-[#D4AF37]' : 'bg-[#D4AF37]'
-              }`}>
+              <div className="p-3 rounded-xl text-[#1A0E0A] shadow-md bg-[#D4AF37]">
                 <CalendarIcon className="w-5 h-5" />
               </div>
               <div>
@@ -500,7 +579,7 @@ export default function AdminAgendaPage() {
                         <div className="flex-1 flex items-center justify-between min-w-0">
                           <div className="flex items-center gap-3 min-w-0">
                             {!isBlocked ? (
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[#1A0E0A] shrink-0 bg-[#D4AF37]`}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[#1A0E0A] shrink-0 bg-[#D4AF37]">
                                 {cita.clients?.name?.charAt(0) || 'C'}
                               </div>
                             ) : (
@@ -818,90 +897,6 @@ export default function AdminAgendaPage() {
   }
 
   // ============================================================
-  // COMPONENTE: Lista de Citas
-  // ============================================================
-  const renderListaCitas = (fecha: Date) => {
-    const citasDelDia = getCitasDelDia(fecha)
-    const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
-
-    if (citasOrdenadas.length === 0) {
-      return (
-        <div className="text-center py-6">
-          <div className={`text-sm font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-            Sin turnos para este día
-          </div>
-          <button 
-            onClick={() => handleSlotClick(format(fecha, 'yyyy-MM-dd'), '11:00')}
-            className="mt-2 text-xs text-[#D4AF37] hover:text-[#E8D5A0] font-medium transition-colors"
-          >
-            + Agregar turno
-          </button>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-2">
-        {citasOrdenadas.map((cita: any) => {
-          const statusInfo = getStatusBadge(cita.status)
-          const isBlocked = cita.status === 'blocked'
-
-          return (
-            <div 
-              key={cita.id} 
-              onClick={() => !isBlocked && abrirDetalleCita(cita)}
-              className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${
-                isBlocked 
-                  ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-70' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-70'
-                  : isDark ? 'bg-[#2A1B14] border-[#3D281E] cursor-pointer hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] cursor-pointer hover:border-[#D4AF37]/40'
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-[#1A0E0A] shrink-0 ${
-                  isBlocked ? 'bg-stone-400' : 'bg-[#D4AF37]'
-                }`}>
-                  {isBlocked ? <Ban className="w-4 h-4" /> : cita.clients?.name?.charAt(0) || 'C'}
-                </div>
-                <div className="min-w-0">
-                  <p className={`text-sm font-medium truncate ${
-                    isBlocked 
-                      ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                      : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                  }`}>
-                    {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-medium truncate ${
-                      isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'
-                    }`}>
-                      {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
-                    </span>
-                    <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
-                    <span className={`text-[10px] font-mono font-bold ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      {cita.time?.slice(0,5) || '--:--'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {!isBlocked && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-mono font-bold text-[#D4AF37]">
-                    ${Number(cita.services?.price || 0).toLocaleString()}
-                  </span>
-                  <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
-                    {statusInfo.label}
-                  </span>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // ============================================================
   // LOADING
   // ============================================================
   if (loading) {
@@ -929,9 +924,7 @@ export default function AdminAgendaPage() {
 
       <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10">
 
-        {/* ============================================================ */}
-        {/* CABECERA */}
-        {/* ============================================================ */}
+        {/* HEADER */}
         <div className={`relative overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'}`}>
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
@@ -943,9 +936,7 @@ export default function AdminAgendaPage() {
               </div>
 
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className={`text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]`}>
-                  ✦ {settings?.business_name || 'Salón VIP'}
-                </p>
+                <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]">✦ {settings?.business_name || 'Salón VIP'}</p>
                 <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   Agenda Fresh Nails
                 </h2>
@@ -955,10 +946,10 @@ export default function AdminAgendaPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 border-[#F0E4DA] dark:border-[#3D281E]">
               <button 
                 onClick={() => cargarDatos()} 
-                className={`px-4 py-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.15em] w-full sm:w-auto hover:scale-105 active:scale-95 ${
+                className={`px-4 py-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 ${
                   isDark 
                     ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/40' 
                     : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#1A0E0A] hover:border-[#D4AF37]/40'
@@ -970,7 +961,7 @@ export default function AdminAgendaPage() {
 
               <button 
                 onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '12:00')}
-                className={`px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto hover:scale-105 active:scale-95 ${
+                className={`px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
                   isDark 
                     ? 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
                     : 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]'
@@ -983,9 +974,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* MENSAJES */}
-        {/* ============================================================ */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -1004,9 +993,7 @@ export default function AdminAgendaPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* KPIS */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-3 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -1045,9 +1032,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* SELECTORES */}
-        {/* ============================================================ */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className={`flex border rounded-xl p-1 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
             {(['day', 'week', 'month'] as const).map((mode) => (
@@ -1084,9 +1069,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* FILTRO STAFF */}
-        {/* ============================================================ */}
         {!isStaff && staff.length > 0 && (
           <div className="relative">
             <button
@@ -1136,18 +1119,14 @@ export default function AdminAgendaPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* VISTAS */}
-        {/* ============================================================ */}
         <div className="w-full">
           {viewMode === 'day' && renderVistaDia()}
           {viewMode === 'week' && renderVistaSemana()}
           {viewMode === 'month' && renderVistaMes()}
         </div>
 
-        {/* ============================================================ */}
         {/* MODAL: NUEVA CITA */}
-        {/* ============================================================ */}
         {showNewAppointment && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
@@ -1289,9 +1268,7 @@ export default function AdminAgendaPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* MODAL: DETALLE */}
-        {/* ============================================================ */}
         {showDetailModal && selectedCita && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
