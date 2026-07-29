@@ -13,7 +13,7 @@ import {
   GiNails, GiSparkles, GiLipstick, GiScissors
 } from 'react-icons/gi'
 
-// ✅ ICONOS POR CATEGORÍA (MANTENIDOS)
+// ✅ ICONOS POR CATEGORÍA
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
@@ -21,6 +21,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   'Cejas': FaRegStar,
   'Estética': GiSparkles,
   'Depilación': FaHeart,
+  'Pestañas': FaEye,
   'default': FaGem
 }
 
@@ -31,6 +32,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
   'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
   'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
+  'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=400&fit=crop',
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
@@ -142,7 +144,6 @@ const Header = () => {
 export default function ServiciosPublicPage() {
   const [servicios, setServicios] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState('Todos')
 
   // ✅ OBTENER TENANT_ID (LÓGICA INTACTA)
   const getTenantId = async (): Promise<string | null> => {
@@ -227,11 +228,8 @@ export default function ServiciosPublicPage() {
     fetchServicios()
   }, [])
 
-  // ✅ FILTRADO DE CATEGORÍAS
-  const categories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
-  const filteredServicios = selectedCategory === 'Todos'
-    ? servicios
-    : servicios.filter(s => s.category === selectedCategory)
+  // ✅ AGRUPAR SERVICIOS POR CATEGORÍA
+  const categoriesList = Array.from(new Set(servicios.map(s => s.category).filter(Boolean)))
 
   // ✅ RENDER CARGA EDITORIAL
   if (loading) {
@@ -263,7 +261,7 @@ export default function ServiciosPublicPage() {
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
-          className="text-center max-w-2xl mx-auto mb-20 space-y-4"
+          className="text-center max-w-2xl mx-auto mb-28 space-y-4"
         >
           <motion.span 
             variants={fadeInUp} 
@@ -275,132 +273,120 @@ export default function ServiciosPublicPage() {
             variants={fadeInUp} 
             className="font-serif text-4xl sm:text-6xl font-light tracking-tight text-[#1A0E0A] leading-tight"
           >
-            Nuestros <span className="italic font-normal text-[#D4AF37]">Tratamientos</span>
+            Menú General de <span className="italic font-normal text-[#D4AF37]">Tratamientos</span>
           </motion.h1>
           <motion.div variants={fadeInUp} className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-4" />
           <motion.p 
             variants={fadeInUp} 
             className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto leading-relaxed"
           >
-            Fusión de ciencia dermoestética, ingredientes orgánicos premium y maestría técnica de autor.
+            Explora todas nuestras disciplinas de autor diseñadas meticulosamente para realzar tu belleza natural.
           </motion.p>
         </motion.div>
 
-        {/* SELECTOR DE FILTROS MINIMALISTAS */}
-        {categories.length > 1 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-20 border-b border-[#F0E4DA] pb-6 max-w-4xl mx-auto"
-          >
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-xs uppercase tracking-[0.2em] font-medium transition-all duration-300 pb-2 relative ${
-                  selectedCategory === cat
-                    ? 'text-[#D4AF37]'
-                    : 'text-[#A89588] hover:text-[#1A0E0A]'
-                }`}
-              >
-                {cat}
-                {selectedCategory === cat && (
-                  <motion.div 
-                    layoutId="activeFilterLine"
-                    className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
-          </motion.div>
-        )}
-
-        {/* CONTENEDOR DE TARJETAS DE SERVICIOS */}
-        {filteredServicios.length === 0 ? (
+        {/* CONTENEDOR ESTRUCTURADO POR BLOQUES DE CATEGORÍAS */}
+        {servicios.length === 0 ? (
           <div className="text-center py-24 bg-white border border-[#F0E4DA]">
             <FaGem className="w-6 h-6 text-[#A89588]/40 mx-auto mb-4" />
             <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No hay tratamientos disponibles en este momento.</p>
           </div>
         ) : (
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {filteredServicios.map((servicio) => {
-              const Icon = CATEGORY_ICONS[servicio.category] || CATEGORY_ICONS.default
-              const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
-
+          <div className="space-y-24">
+            {categoriesList.map((categoryName) => {
+              const servicesInCategory = servicios.filter(s => s.category === categoryName)
+              const Icon = CATEGORY_ICONS[categoryName] || CATEGORY_ICONS.default
+              
               return (
-                <motion.div
-                  key={servicio.id}
-                  variants={fadeInUp}
-                  className="bg-white border border-[#F0E4DA] p-6 flex flex-col justify-between transition-all duration-500 hover:border-[#D4AF37] hover:shadow-xl group"
-                >
-                  <div>
-                    {/* Imagen y badges enmarcados */}
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#FFF9F6] border border-[#F0E4DA]/40 mb-6">
-                      <img 
-                        src={imageUrl} 
-                        alt={servicio.name}
-                        className="w-full h-full object-cover filter grayscale-[20%] group-hover:grayscale-0 transition-transform duration-1000 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-500" />
-
-                      {servicio.badge && (
-                        <span className="absolute top-4 right-4 z-10 text-[8px] font-bold tracking-widest uppercase bg-[#E879A0] text-white px-3 py-1.5 shadow-md">
-                          {servicio.badge}
-                        </span>
-                      )}
-
-                      <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-[#F0E4DA] px-3 py-1.5 shadow-sm">
-                        <span className="text-[8px] font-bold tracking-widest uppercase text-[#1A0E0A] flex items-center gap-1.5">
-                          <Icon className="text-[#D4AF37] text-xs" />
-                          {servicio.category || 'Atelier'}
-                        </span>
-                      </div>
+                <div key={categoryName} className="space-y-8">
+                  
+                  {/* Título de la Disciplina con Línea de Lujo */}
+                  <div className="flex items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
+                    <div className="text-[#D4AF37] text-xl p-2 bg-white border border-[#F0E4DA]">
+                      <Icon />
                     </div>
-
-                    {/* Encabezado e info */}
-                    <h3 className="font-serif text-xl text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300 line-clamp-1">
-                      {servicio.name}
-                    </h3>
-                    <p className="text-xs text-[#5C4A3E] font-light mt-3 leading-relaxed line-clamp-3">
-                      {servicio.description || 'Descubre este tratamiento premium personalizado en nuestro estudio.'}
-                    </p>
+                    <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">
+                      {categoryName}
+                    </h2>
+                    <span className="text-[10px] font-light tracking-[0.2em] text-[#A89588] uppercase ml-auto">
+                      {servicesInCategory.length} {servicesInCategory.length === 1 ? 'Servicio' : 'Servicios'}
+                    </span>
                   </div>
 
-                  {/* Precios e inversión */}
-                  <div className="mt-6 pt-5 border-t border-[#F0E4DA] flex items-center justify-between">
-                    <div>
-                      <p className="text-[8px] tracking-wider text-[#A89588] uppercase">Inversión</p>
-                      <p className="font-serif text-2xl text-[#1A0E0A] mt-0.5">${servicio.price}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 text-xs text-[#5C4A3E]/80 font-light">
-                      <FaClock className="text-[10px] text-[#D4AF37]" />
-                      <span>{servicio.duration} min</span>
-                    </div>
-                  </div>
+                  {/* Grid de Tarjetas de esta Categoría */}
+                  <motion.div 
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.05 }}
+                    variants={staggerContainer}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                  >
+                    {servicesInCategory.map((servicio) => {
+                      const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
 
-                  {/* Enlace a la reserva */}
-                  <div className="mt-4 pt-3 flex items-center">
-                    <Link 
-                      href="/agenda" 
-                      className="inline-flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#1A0E0A] hover:text-[#D4AF37] transition-colors group/link"
-                    >
-                      Reservar experiencia
-                      <FaArrowRight className="text-[9px] group-hover/link:translate-x-1 transition-transform duration-300" />
-                    </Link>
-                  </div>
+                      return (
+                        <motion.div
+                          key={servicio.id}
+                          variants={fadeInUp}
+                          className="bg-white border border-[#F0E4DA] p-6 flex flex-col justify-between transition-all duration-500 hover:border-[#D4AF37] hover:shadow-xl group"
+                        >
+                          <div>
+                            {/* Imagen y badges enmarcados */}
+                            <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#FFF9F6] border border-[#F0E4DA]/40 mb-6">
+                              <img 
+                                src={imageUrl} 
+                                alt={servicio.name}
+                                className="w-full h-full object-cover filter grayscale-[15%] group-hover:grayscale-0 transition-transform duration-1000 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-500" />
 
-                </motion.div>
+                              {servicio.badge && (
+                                <span className="absolute top-4 right-4 z-10 text-[8px] font-bold tracking-widest uppercase bg-[#E879A0] text-white px-3 py-1.5 shadow-md">
+                                  {servicio.badge}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Encabezado e info */}
+                            <h3 className="font-serif text-xl text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300 line-clamp-1">
+                              {servicio.name}
+                            </h3>
+                            <p className="text-xs text-[#5C4A3E] font-light mt-3 leading-relaxed line-clamp-3">
+                              {servicio.description || 'Descubre este tratamiento premium personalizado en nuestro estudio.'}
+                            </p>
+                          </div>
+
+                          {/* Precios e inversión */}
+                          <div className="mt-6 pt-5 border-t border-[#F0E4DA] flex items-center justify-between">
+                            <div>
+                              <p className="text-[8px] tracking-wider text-[#A89588] uppercase">Inversión</p>
+                              <p className="font-serif text-2xl text-[#1A0E0A] mt-0.5">${servicio.price}</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 text-xs text-[#5C4A3E]/80 font-light">
+                              <FaClock className="text-[10px] text-[#D4AF37]" />
+                              <span>{servicio.duration} min</span>
+                            </div>
+                          </div>
+
+                          {/* Enlace a la reserva */}
+                          <div className="mt-4 pt-3 flex items-center">
+                            <Link 
+                              href="/agenda" 
+                              className="inline-flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#1A0E0A] hover:text-[#D4AF37] transition-colors group/link"
+                            >
+                              Reservar experiencia
+                              <FaArrowRight className="text-[9px] group-hover/link:translate-x-1 transition-transform duration-300" />
+                            </Link>
+                          </div>
+
+                        </motion.div>
+                      )
+                    })}
+                  </motion.div>
+                </div>
               )
             })}
-          </motion.div>
+          </div>
         )}
       </div>
 
