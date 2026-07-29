@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -120,7 +120,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         initial="open"
         animate={collapsed ? "collapsed" : "open"}
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl
+          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl overflow-hidden
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isDark 
             ? 'bg-[#1E120C] border-r border-[#3D281E]' 
@@ -150,113 +150,82 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           />
         </div>
 
-        {/* CABECERA - FIJA EN LA PARTE SUPERIOR */}
-        <motion.div 
-          className={`h-16 px-4 flex items-center justify-between border-b shrink-0 relative z-10 ${
-            isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-          }`}
-        >
-          <motion.div 
-            className="flex items-center gap-3 overflow-hidden"
-            whileHover={{ scale: 1.02 }}
-          >
-            <motion.div 
+        {/* CABECERA - FIJA */}
+        <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 relative z-10 ${
+          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+        }`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div 
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#D4AF37]/20"
               style={brandGradient}
-              whileHover={{ rotate: -10, scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
             >
               <Sparkles className="w-4 h-4 text-[#1A0E0A] animate-pulse" />
-            </motion.div>
+            </div>
 
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <span className={`text-sm font-serif tracking-wide block font-extrabold ${
-                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                  }`}>
-                    Fresh Nails
-                  </span>
-                  <span className={`text-[9px] uppercase tracking-widest font-mono block font-bold ${
-                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                  }`}>
-                    {role || 'Studio'}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+            {!collapsed && (
+              <div>
+                <span className={`text-sm font-serif tracking-wide block font-extrabold ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  Fresh Nails
+                </span>
+                <span className={`text-[9px] uppercase tracking-widest font-mono block font-bold ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  {role || 'Studio'}
+                </span>
+              </div>
+            )}
+          </div>
 
           {isOpen && (
-            <motion.button 
+            <button 
               onClick={onClose} 
               className={`lg:hidden p-1.5 rounded-xl transition-colors ${
                 isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#A89588] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
               }`}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
             >
               <X className="w-4 h-4" />
-            </motion.button>
+            </button>
           )}
-        </motion.div>
+        </div>
 
         {/* PERFIL - FIJO */}
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="px-3 pt-4 shrink-0 relative z-10"
-            >
-              <motion.div 
-                className={`p-3 rounded-2xl flex items-center gap-3 transition-all border relative overflow-hidden ${
-                  isDark 
-                    ? 'bg-[#2A1B14] border-[#3D281E]' 
-                    : 'bg-white border-[#F0E4DA]'
-                }`}
-                whileHover={{ scale: 1.02, y: -2 }}
+        {!collapsed && (
+          <div className="px-3 pt-4 shrink-0 relative z-10">
+            <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
+              isDark 
+                ? 'bg-[#2A1B14] border-[#3D281E]' 
+                : 'bg-white border-[#F0E4DA]'
+            }`}>
+              <div 
+                className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
+                style={brandGradient}
               >
-                <motion.div 
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
-                  style={brandGradient}
-                  whileHover={{ scale: 1.1, rotate: -5 }}
-                >
-                  {user?.email?.charAt(0).toUpperCase() || 'A'}
-                </motion.div>
+                {user?.email?.charAt(0).toUpperCase() || 'A'}
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold truncate ${
-                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold truncate ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {user?.email || 'Admin'}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse" />
+                  <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${
+                    isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
                   }`}>
-                    {user?.email || 'Admin'}
-                  </p>
-                  <motion.div 
-                    className="flex items-center gap-1.5 mt-0.5"
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full" />
-                    <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${
-                      isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
-                    }`}>
-                      Activa
-                    </span>
-                  </motion.div>
+                    Activa
+                  </span>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* NAVEGACIÓN - SCROLLABLE PERO CON ALTURA LIMITADA */}
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-[#D4AF37]/20 px-3 py-2 relative z-10">
+        {/* NAVEGACIÓN - SCROLLABLE */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 relative z-10 scrollbar-thin scrollbar-thumb-[#D4AF37]/20">
           <nav className="space-y-1">
             {ALL_MENU_ITEMS.map((item, index) => {
               const Icon = item.icon
@@ -264,16 +233,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               const isHovered = hoveredItem === item.id
 
               return (
-                <motion.button
+                <button
                   key={item.id}
-                  custom={index}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover={{ scale: 1.02, x: 4 }}
-                  whileTap={{ scale: 0.95 }}
-                  onHoverStart={() => setHoveredItem(item.id)}
-                  onHoverEnd={() => setHoveredItem(null)}
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
                   onClick={() => handleNavigation(item.path)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group
@@ -289,132 +252,79 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   title={collapsed ? item.name : ''}
                 >
                   {isActive && (
-                    <motion.span 
-                      className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#1A0E0A]"
-                      layoutId="activeIndicator"
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
+                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#1A0E0A]" />
                   )}
 
-                  <motion.div
-                    animate={{
-                      scale: isActive ? 1.1 : (isHovered ? 1.1 : 1),
-                      rotate: isHovered ? [0, -5, 5, 0] : 0
-                    }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
-                      isActive ? 'text-[#1A0E0A]' : ''
-                    }`} />
-                  </motion.div>
+                  <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
+                    isActive ? 'text-[#1A0E0A]' : ''
+                  }`} />
 
-                  <AnimatePresence>
-                    {!collapsed && (
-                      <motion.span 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        className="truncate tracking-wide"
-                      >
-                        {item.name}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                  {!collapsed && (
+                    <span className="truncate tracking-wide">
+                      {item.name}
+                    </span>
+                  )}
 
                   {isActive && !collapsed && (
-                    <motion.span 
-                      className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1A0E0A]/60"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1A0E0A]/60 animate-pulse" />
                   )}
-                </motion.button>
+                </button>
               )
             })}
           </nav>
         </div>
 
-        {/* CONTROLES INFERIORES - SIEMPRE FIJOS AL FINAL */}
+        {/* CONTROLES INFERIORES - SIEMPRE FIJOS */}
         <div className={`p-3 border-t shrink-0 relative z-10 ${
-          isDark ? 'border-[#3D281E] bg-[#1E120C]/80' : 'border-[#F0E4DA] bg-[#FFF9F6]/80'
+          isDark ? 'border-[#3D281E] bg-[#1E120C]/90' : 'border-[#F0E4DA] bg-[#FFF9F6]/90'
         }`}>
           <div className="space-y-1">
-            <motion.button 
+            <button 
               onClick={toggleTheme} 
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 collapsed ? 'justify-center' : ''
               } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
-              whileHover={{ scale: 1.02, x: 4 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                animate={{ rotate: isDark ? [0, 360] : [0, -360] }}
-                transition={{ duration: 0.5 }}
-              >
-                {isDark ? 
-                  <Sun className="w-4 h-4 text-[#D4AF37]" /> : 
-                  <Moon className="w-4 h-4 text-[#D4AF37]" />
-                }
-              </motion.div>
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}
-                  >
-                    {isDark ? 'Modo Claro' : 'Modo Oscuro'}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              {isDark ? 
+                <Sun className="w-4 h-4 text-[#D4AF37]" /> : 
+                <Moon className="w-4 h-4 text-[#D4AF37]" />
+              }
+              {!collapsed && (
+                <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>
+                  {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+                </span>
+              )}
+            </button>
 
-            <motion.button 
+            <button 
               onClick={handleLogoutClick} 
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
                 collapsed ? 'justify-center' : ''
               } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
-              whileHover={{ scale: 1.02, x: 4 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ duration: 0.5 }}
-              >
-                <Power className={`w-4 h-4 transition-colors ${
+              <Power className={`w-4 h-4 transition-colors ${
+                isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
+              }`} />
+              {!collapsed && (
+                <span className={`transition-colors ${
                   isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
-                }`} />
-              </motion.div>
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className={`transition-colors ${
-                      isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
-                    }`}
-                  >
-                    Cerrar sesión
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+                }`}>
+                  Cerrar sesión
+                </span>
+              )}
+            </button>
           </div>
 
           {/* BORDE DECORATIVO INFERIOR */}
-          <motion.div 
+          <div 
             className="absolute bottom-0 left-0 right-0 h-[2px]"
             style={brandGradient}
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 3, repeat: Infinity }}
           />
         </div>
       </motion.aside>
 
       {/* BOTÓN FLOTANTE PARA COLLAPSE */}
-      <motion.button
+      <button
         onClick={() => setCollapsed(!collapsed)}
         className="hidden lg:flex fixed top-5 border rounded-full p-1.5 transition-all z-50 shadow-lg backdrop-blur-sm"
         style={{
@@ -423,18 +333,12 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           borderColor: isDark ? '#3D281E' : '#F0E4DA',
           color: isDark ? '#D4AF37' : '#D4AF37',
         }}
-        whileHover={{ scale: 1.1, rotate: collapsed ? 10 : -10 }}
-        whileTap={{ scale: 0.9 }}
-        animate={{ 
-          left: collapsed ? '60px' : '244px',
-          transition: { type: "spring", stiffness: 300, damping: 30 }
-        }}
       >
         {collapsed ? 
           <ChevronRight className="w-3.5 h-3.5" /> : 
           <ChevronLeft className="w-3.5 h-3.5" />
         }
-      </motion.button>
+      </button>
     </>
   )
 }
