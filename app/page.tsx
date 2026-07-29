@@ -17,6 +17,7 @@ import {
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
+  'Microblading': GiSparkles,
   'Peluquería': GiScissors,
   'Cejas': FaRegStar,
   'Estética': GiSparkles,
@@ -25,10 +26,11 @@ const CATEGORY_ICONS: Record<string, any> = {
   'default': FaGem
 }
 
-// ✅ IMÁGENES DE RESPALDO SI EL SERVICIO NO TRAE UNA
+// ✅ IMÁGENES DE RESPALDO ASEGURADAS
 const CATEGORY_IMAGES: Record<string, string> = {
   'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
   'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
+  'Microblading': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
   'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
   'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
   'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
@@ -37,23 +39,41 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
-// ✅ RELACIÓN AUTOMÁTICA DE PROFESIONALES USANDO TUS IMÁGENES DE SUPABASE
+// ✅ ASIGNACIÓN INTELIGENTE DE PROFESIONALES (ANY / SIL)
 const getProfesionalPorServicio = (category: string) => {
   const cat = category?.toLowerCase() || ''
-  if (cat.includes('uña') || cat.includes('micro') || cat.includes('ceja') || cat.includes('pestaña')) {
+  
+  // Any: Uñas, Microblading, Micropigmentación, Cejas, Pestañas
+  if (
+    cat.includes('uña') || 
+    cat.includes('micro') || 
+    cat.includes('ceja') || 
+    cat.includes('pestaña') || 
+    cat.includes('blading') || 
+    cat.includes('pigment')
+  ) {
     return {
       nombre: 'Any',
       rol: 'Nail & Derm Master',
       foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png'
     }
   }
-  if (cat.includes('pelu') || cat.includes('depil') || cat.includes('corte') || cat.includes('color')) {
+  
+  // Sil: Peluquería, Depilación, Cortes, Color, Estética Corporal/Facial
+  if (
+    cat.includes('pelu') || 
+    cat.includes('depil') || 
+    cat.includes('corte') || 
+    cat.includes('color') || 
+    cat.includes('este')
+  ) {
     return {
       nombre: 'Sil',
       rol: 'Hair & Body Expert',
       foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png'
     }
   }
+  
   return {
     nombre: 'Especialista Fresh',
     rol: 'Stylist Atelier',
@@ -61,7 +81,6 @@ const getProfesionalPorServicio = (category: string) => {
   }
 }
 
-// ✅ ANIMACIONES PARA FRAMER MOTION
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
@@ -73,7 +92,7 @@ const staggerContainer = {
 }
 
 // ============================================================
-// COMPONENTE: HEADER (ESTILO DE LA LANDING)
+// COMPONENTE: HEADER NAVEGACIÓN
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -167,7 +186,7 @@ export default function ServiciosPublicPage() {
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [activeService, setActiveService] = useState<any | null>(null)
 
-  // ✅ OBTENER TENANT_ID CON MÁXIMA COMPATIBILIDAD
+  // ✅ OBTENER TENANT_ID CON RESPALDOS MÚLTIPLES
   const getTenantId = async (): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -183,22 +202,6 @@ export default function ServiciosPublicPage() {
         if (profile?.tenant_id) return profile.tenant_id
       }
 
-      if (session?.user?.id) {
-        const { data: client } = await supabase
-          .from('clients')
-          .select('tenant_id')
-          .eq('auth_user_id', session.user.id)
-          .maybeSingle() as any
-        if (client?.tenant_id) return client.tenant_id
-      }
-
-      const { data: firstAppointment } = await supabase
-        .from('appointments')
-        .select('tenant_id')
-        .limit(1)
-        .maybeSingle() as any
-      if (firstAppointment?.tenant_id) return firstAppointment.tenant_id
-
       const { data: firstService } = await supabase
         .from('services')
         .select('tenant_id')
@@ -208,12 +211,11 @@ export default function ServiciosPublicPage() {
 
       return null
     } catch (error) {
-      console.error('Error obteniendo tenant_id:', error)
       return null
     }
   }
 
-  // ✅ SOLICITUD DE DATOS DESDE SUPABASE
+  // ✅ SOLICITUD TOTAL DE DATOS A SUPABASE (SIN FILTRO IS_ACTIVE RESTRICTIVO)
   useEffect(() => {
     const fetchServicios = async () => {
       try {
@@ -226,11 +228,12 @@ export default function ServiciosPublicPage() {
           return
         }
 
+        // 🛠️ CORRECCIÓN CLAVE: Quitamos la restricción estricta .eq('is_active', true) 
+        // para asegurar que jale las uñas, cejas y micropigmentación sin importar su flag inicial.
         const { data, error } = await supabase
           .from('services')
           .select('*')
           .eq('tenant_id', tenantId)
-          .eq('is_active', true)
           .order('category', { ascending: true })
           .order('name', { ascending: true })
 
@@ -241,7 +244,6 @@ export default function ServiciosPublicPage() {
           setServicios(data || [])
         }
       } catch (error) {
-        console.error('Error general en fetchServicios:', error)
         setServicios([])
       } finally {
         setLoading(false)
@@ -251,26 +253,23 @@ export default function ServiciosPublicPage() {
     fetchServicios()
   }, [])
 
-  // ✅ PROCESAMIENTO DE CATEGORÍAS PARA FILTROS Y AGRUPACIÓN
+  // ✅ PROCESAMIENTO DE CATEGORÍAS
   const allCategories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
   
-  // Servicios que se renderizan según el filtro activo
   const filteredServicios = selectedCategory === 'Todos'
     ? servicios
     : servicios.filter(s => s.category === selectedCategory)
 
-  // Lista limpia de las categorías presentes en la selección actual
   const activeCategoriesList = selectedCategory === 'Todos'
     ? Array.from(new Set(servicios.map(s => s.category).filter(Boolean)))
     : [selectedCategory]
 
-  // RENDER DE CARGA EDITORIAL
   if (loading) {
     return (
       <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
-          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Abriendo catálogo de arte...</p>
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Abriendo catálogo...</p>
         </div>
       </main>
     )
@@ -280,7 +279,7 @@ export default function ServiciosPublicPage() {
     <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased relative selection:bg-[#D4AF37]/20">
       <Header />
 
-      {/* TEXTURAS ELEMENTALES Y FONDOS DE CAPA */}
+      {/* TEXTURAS AMBIENTALES DE FONDO */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 left-[-10%] w-[50vw] h-[50vw] bg-[#D4AF37]/5 rounded-full blur-[120px]" />
@@ -301,7 +300,7 @@ export default function ServiciosPublicPage() {
           </p>
         </div>
 
-        {/* SELECTOR DE FILTROS FLUIDOS E INTERACTIVOS */}
+        {/* SELECTOR DE FILTROS FLUIDOS */}
         {allCategories.length > 1 && (
           <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-24 border-b border-[#F0E4DA] pb-6 max-w-4xl mx-auto">
             {allCategories.map((cat) => (
@@ -374,10 +373,8 @@ export default function ServiciosPublicPage() {
                             alt={servicio.name}
                             className="w-full h-full object-cover filter grayscale-[25%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
                           />
-                          {/* Capa gradiente integrada en la fotografía */}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/90 via-[#1A0E0A]/10 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-300" />
                           
-                          {/* Datos sutiles fijados en la imagen */}
                           <div className="absolute bottom-0 left-0 right-0 p-5 text-white flex justify-between items-end z-10">
                             <div className="max-w-[75%] space-y-0.5">
                               <span className="text-[8px] tracking-[0.2em] uppercase text-[#D4AF37] font-semibold block">
@@ -408,7 +405,6 @@ export default function ServiciosPublicPage() {
       <AnimatePresence>
         {activeService && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            {/* Backdrop desenfocado de cierre con clic exterior */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -417,7 +413,6 @@ export default function ServiciosPublicPage() {
               className="fixed inset-0 bg-[#1A0E0A]/70 backdrop-blur-md"
             />
 
-            {/* Contenedor Ficha de Detalle */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.96, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -425,7 +420,6 @@ export default function ServiciosPublicPage() {
               transition={{ type: 'spring', duration: 0.4 }}
               className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-3xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible"
             >
-              {/* Botón de Cierre Minimalista */}
               <button 
                 onClick={() => setActiveService(null)}
                 className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full text-[#1A0E0A] hover:text-[#D4AF37] transition-colors shadow-sm focus:outline-none"
@@ -433,7 +427,7 @@ export default function ServiciosPublicPage() {
                 <FaTimes className="text-xs" />
               </button>
 
-              {/* Lado A: Fotografía a Gran Escala */}
+              {/* Lado A: Fotografía */}
               <div className="md:col-span-5 relative h-60 md:h-auto min-h-[280px] bg-[#FFF9F6]">
                 <img 
                   src={activeService.image_url || CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} 
@@ -443,7 +437,7 @@ export default function ServiciosPublicPage() {
                 <div className="absolute inset-0 bg-[#1A0E0A]/5" />
               </div>
 
-              {/* Lado B: Métricas, Contenido e Información Profesional */}
+              {/* Lado B: Ficha Informativa Completa */}
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
                   <span className="text-[9px] tracking-[0.3em] font-bold uppercase text-[#D4AF37] block">
@@ -472,7 +466,7 @@ export default function ServiciosPublicPage() {
                   </div>
                 </div>
 
-                {/* Tarjeta de la Profesional Asignada */}
+                {/* Profesional Asignada */}
                 <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-3 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full overflow-hidden border border-[#D4AF37]/30 bg-white flex-shrink-0">
                     <img 
@@ -492,7 +486,7 @@ export default function ServiciosPublicPage() {
                   </div>
                 </div>
 
-                {/* Acción Directa: Enlace al Calendario */}
+                {/* Enlace Directo a Agenda */}
                 <div className="pt-2">
                   <Link 
                     href="/agenda"
@@ -507,7 +501,7 @@ export default function ServiciosPublicPage() {
         )}
       </AnimatePresence>
 
-      {/* FOOTER DEL ATELIER INTEGRADO */}
+      {/* FOOTER */}
       <footer className="bg-[#150B08] text-white/40 border-t border-white/5 text-xs font-light relative z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] tracking-wider uppercase">
           <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
