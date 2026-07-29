@@ -7,7 +7,7 @@ import {
   Sparkles, Bell, ShoppingCart, 
   Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand
+  Camera, Tag, Eye, Hand, User
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -20,8 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, signOut } = useAuth()
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [notificaciones, setNotificaciones] = useState(0)
-  const [notificacionesList, setNotificacionesList] = useState<any[]>([])
   const [carritoItems] = useState(1)
   const [loadingNotis, setLoadingNotis] = useState(true)
   const [animateBell, setAnimateBell] = useState(false)
@@ -42,76 +40,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.body.style.overflow = ''
     }
   }, [sidebarOpen])
-
-  useEffect(() => {
-    if (!user) return
-
-    const cargarNotificaciones = async () => {
-      try {
-        setLoadingNotis(true)
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('id, read')
-          .eq('user_id', user.id)
-          .eq('read', false)
-
-        if (error) throw error
-        setNotificaciones(data?.length || 0)
-        setNotificacionesList(data || [])
-      } catch (error) {
-        console.error('Error cargando notificaciones:', error)
-      } finally {
-        setLoadingNotis(false)
-      }
-    }
-
-    cargarNotificaciones()
-
-    const canalNotificaciones = supabase
-      .channel('notificaciones-layout')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          setNotificaciones(prev => prev + 1)
-          setNotificacionesList(prev => [...prev, payload.new])
-          setAnimateBell(true)
-          setTimeout(() => setAnimateBell(false), 1200)
-          try {
-            const audio = new Audio('/notification.mp3')
-            audio.volume = 0.25
-            audio.play().catch(() => {})
-          } catch (e) {}
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.new.read === true) {
-            setNotificaciones(prev => Math.max(0, prev - 1))
-            setNotificacionesList(prev => 
-              prev.map(n => n.id === payload.new.id ? { ...n, read: true } : n)
-            )
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(canalNotificaciones)
-    }
-  }, [user])
 
   // Menú unificado y limpio para Fresh Nails
   const menuItems = [
@@ -174,7 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       {/* ============================================================ */}
-      {/* SIDEBAR — REDISEÑADO */}
+      {/* SIDEBAR */}
       {/* ============================================================ */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:static lg:translate-x-0 flex flex-col shrink-0 ${
@@ -220,7 +148,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
-            const isPremiumLink = item.href.startsWith('/client/')
 
             return (
               <Link 
@@ -232,25 +159,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     ? isDark 
                       ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
                       : 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37] shadow-sm'
-                    : isPremiumLink
-                      ? 'border-transparent text-[#A89588] hover:text-[#D4AF37] hover:bg-[#D4AF37]/5'
-                      : 'border-transparent text-[#A89588] hover:text-[#1A0E0A] dark:hover:text-[#FFF9F6] hover:bg-[#D4AF37]/5'
+                    : 'border-transparent text-[#A89588] hover:text-[#1A0E0A] dark:hover:text-[#FFF9F6] hover:bg-[#D4AF37]/5'
                 }`}
               >
                 {/* Indicador Flotante Activo */}
                 {isActive && (
-                  <span className={`absolute left-0 w-1 h-6 rounded-r-full bg-[#D4AF37]`} />
+                  <span className="absolute left-0 w-1 h-6 rounded-r-full bg-[#D4AF37]" />
                 )}
 
                 {/* Contenedor del Ícono */}
                 <div className={`p-2 rounded-lg border transition-all duration-300 transform group-hover:scale-105 ${
                   isActive 
                     ? 'bg-[#D4AF37] border-[#D4AF37] text-[#1A0E0A] shadow-md shadow-[#D4AF37]/20'
-                    : isPremiumLink
-                      ? 'bg-[#D4AF37]/5 border-[#D4AF37]/10 text-[#D4AF37] group-hover:border-[#D4AF37]/30'
-                      : isDark
-                        ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
-                        : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
+                    : isDark
+                      ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
+                      : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
                 }`}>
                   <Icon className={`w-4 h-4 transition-transform duration-500 ${isActive ? '' : 'group-hover:rotate-6'}`} />
                 </div>
@@ -296,7 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ============================================================ */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
-        {/* HEADER — REDISEÑADO */}
+        {/* HEADER — REDISEÑADO (SIN NOTIFICACIONES Y SIN CARRITO) */}
         <header className={`sticky top-0 z-30 border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-all duration-300 ${
           isDark ? 'bg-[#1E120C]/80 border-[#3D281E] backdrop-blur-xl' : 'bg-[#FFF9F6]/80 border-[#F0E4DA] backdrop-blur-xl'
         }`}>
@@ -318,45 +241,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER */}
+          {/* ACCIONES DEL HEADER - SOLO THEME TOGGLE Y PERFIL */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
-            {/* Notificaciones */}
-            <Link 
-              href="/notificaciones"
-              className={`relative p-2.5 rounded-xl border transition-all active:scale-95 ${
-                isDark
-                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/30'
-                  : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/30 shadow-sm'
-              } ${animateBell ? 'animate-[bounce_0.5s_ease-in-out_infinite]' : ''}`}
-            >
-              <Bell className={`w-4 h-4 ${animateBell ? 'text-[#D4AF37]' : ''}`} />
-              {notificaciones > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-[#1A0E0A] text-[9px] font-black h-5 min-w-5 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-[#1E120C] shadow-md animate-fade-in">
-                  {notificaciones > 99 ? '99+' : notificaciones}
-                </span>
-              )}
-            </Link>
-
-            {/* Carrito */}
-            <button className={`relative p-2.5 rounded-xl border transition-all active:scale-95 ${
-              isDark
-                ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/30'
-                : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/30 shadow-sm'
-            }`}>
-              <ShoppingCart className="w-4 h-4" />
-              {carritoItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-[#1A0E0A] text-[9px] font-bold h-4.5 min-w-4.5 px-1 rounded-full flex items-center justify-center border border-white dark:border-[#1E120C] shadow-sm">
-                  {carritoItems}
-                </span>
-              )}
-            </button>
-
             <div className={`h-5 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
 
-            {/* Perfil VIP */}
-            <div className="flex items-center gap-3 pl-1 group cursor-pointer">
+            {/* Perfil VIP — CLICKEABLE PARA VER PERFIL */}
+            <Link 
+              href="/perfil"
+              className="flex items-center gap-3 pl-1 group cursor-pointer"
+            >
               <div className="text-right hidden xs:block">
                 <p className={`text-xs font-bold leading-none transition-colors group-hover:text-[#D4AF37] ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
@@ -374,7 +269,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }`}>
                 {inicialNombre}
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 
