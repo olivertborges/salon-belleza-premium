@@ -386,84 +386,121 @@ const CategoriesSection = () => {
 }
 
 // ============================================================
-// INTEGRACIÓN: SECCIÓN DE PROFESIONALES (LAS ARTISTAS)
+// LAS ARTISTAS (ALTA VISIBILIDAD & DISEÑO EDITORIAL)
 // ============================================================
-const ProfessionalsSection = () => {
+const TeamSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
-
-  const staff = [
-    {
-      name: 'Elena Rostova',
-      role: 'Master Nail Artist & Fundadora',
-      bio: 'Especializada en escuelas de manicura rusas y ucranianas. Con más de 8 años esculpiendo e innovando en la arquitectura estructural de las uñas.',
-      specialty: 'Manicura Rusa Combianada & Nivelación',
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=800&fit=crop'
-    },
-    {
-      name: 'Amara Walker',
-      role: 'Especialista en Dermapigmentación',
-      bio: 'Certificada por academias europeas en técnicas hiperrealistas. Su enfoque mezcla simetría molecular con el balance orgánico del rostro.',
-      specialty: 'Micropigmentación & Microblading 3D',
-      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&h=800&fit=crop'
-    }
-  ]
+  const isInView = useInView(ref, { once: true, amount: 0.15 })
 
   return (
-    <section id="equipo" ref={ref} className="py-32 bg-[#FFFDFB] border-t border-[#F0E4DA]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+    <section id="equipo" ref={ref} className="py-36 bg-[#FFF9F6] border-y border-[#D4AF37]/10 relative overflow-hidden">
+      {/* Elementos decorativos sutiles de fondo */}
+      <div className="absolute top-1/3 left-5 w-72 h-72 bg-[#F5D4E0]/20 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-5 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         
-        <div className="text-center max-w-xl mx-auto mb-24 space-y-3">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">MAESTRÍA HUMANA</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Las Artistas del <span className="italic font-normal text-[#D4AF37]">Atelier</span></h2>
-          <p className="text-xs text-[#5C4A3E] font-light tracking-wide mt-2">Manos expertas destinadas a perfeccionar cada rasgo con rigor internacional.</p>
+        {/* Encabezado Principal Impactante */}
+        <div className="text-center max-w-2xl mx-auto mb-28 space-y-4">
+          <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">EL ALMA DEL ATELIER</p>
+          <h2 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] font-light leading-tight">
+            Las Artistas Detrás <br />de tu <span className="italic font-normal text-[#D4AF37]">Transformación</span>
+          </h2>
+          <div className="w-16 h-[1px] bg-[#D4AF37] mx-auto mt-6" />
+          <p className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto pt-2 leading-relaxed">
+            Conoce a las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
+          </p>
         </div>
 
+        {/* Galería de Formato Grande Asimétrico */}
         <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
-          {staff.map((member, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 40 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: idx * 0.2 }}
-              className={`flex flex-col ${idx % 2 !== 0 ? 'md:mt-16' : ''} space-y-6 group`}
-            >
-              <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 border border-[#F0E4DA] p-3 bg-white">
-                <div className="w-full h-full overflow-hidden relative">
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-102"
-                  />
-                  <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
-                </div>
+          
+          {/* PROFESIONAL 1: ANY (Uñas, Micropigmentación, Cejas, Pestañas) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="space-y-8 group"
+          >
+            {/* Contenedor de la Imagen con Marco de Lujo */}
+            <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
+              <img 
+                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
+                alt="Any - Especialista en Estética y Micropigmentación" 
+                className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
+              />
+              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+              
+              {/* Etiqueta Flotante de Alta Costura */}
+              <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
+                <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Nail & Derm Master</p>
+                <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Any</h3>
               </div>
+            </div>
 
-              <div className="space-y-3 border-b border-[#F0E4DA] pb-6">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-                  <h3 className="font-serif text-2xl text-[#1A0E0A]">{member.name}</h3>
-                  <span className="text-[10px] tracking-widest text-[#D4AF37] font-semibold uppercase">{member.role}</span>
-                </div>
-                
-                <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                  {member.bio}
-                </p>
-
-                <div className="pt-2 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
-                  <p className="text-[11px] font-medium tracking-wide text-[#1A0E0A]">
-                    Especialidad: <span className="font-light text-[#5C4A3E]">{member.specialty}</span>
-                  </p>
-                </div>
+            {/* Descripción y Especialidades */}
+            <div className="pt-6 space-y-4 max-w-md">
+              <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
+                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Any transforma cada sesión en un ritual personalizado de alta definición.
+              </p>
+              
+              {/* Badges de Especialidad */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {['Manicura Rusa', 'Micropigmentación', 'Diseño de Cejas', 'Pestañas Premium'].map((tag) => (
+                  <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
+                    ✦ {tag}
+                  </span>
+                ))}
               </div>
-            </motion.div>
-          ))}
+            </div>
+          </motion.div>
+
+          {/* PROFESIONAL 2: SIL (Peluquería, Depilación) */}
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
+            className="space-y-8 group md:mt-24" // El desfase vertical genera el dinamismo visual de revista
+          >
+            {/* Contenedor de la Imagen con Marco de Lujo */}
+            <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
+              <img 
+                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png" 
+                alt="Sil - Especialista en Alta Peluquería" 
+                className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
+              />
+              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+              
+              {/* Etiqueta Flotante de Alta Costura */}
+              <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
+                <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Hair & Body Expert</p>
+                <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Sil</h3>
+              </div>
+            </div>
+
+            {/* Descripción y Especialidades */}
+            <div className="pt-6 space-y-4 max-w-md">
+              <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
+                Maestra del movimiento y el color. Sil diseña estilos capilares a medida analizando las facciones y la caída natural, garantizando un acabado elegante y orgánico.
+              </p>
+              
+              {/* Badges de Especialidad */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {['Alta Peluquería', 'Colorimetría Avanzada', 'Cortes de Autor', 'Depilación'].map((tag) => (
+                  <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
+                    ✦ {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
         </div>
-
       </div>
     </section>
   )
 }
+
 
 // ============================================================
 // SERVICIOS (CON DATOS DE LA DB COMPATIBLE)
@@ -898,7 +935,7 @@ export default function Home() {
       <EsenciaSection />
       <StatsSection />
       <CategoriesSection />
-      <ProfessionalsSection />
+      <TeamSection />
       <ServicesSection services={services} />
       <GallerySection images={galleryImages} />
       <TestimonialsSection />
