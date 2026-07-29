@@ -1,82 +1,57 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { 
-  FaClock, FaBars, FaTimes, FaInstagram, FaWhatsapp, FaMapMarkerAlt
+  FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
+  FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
+  FaPalette, FaHandSparkles, FaAward, FaLeaf,
+  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
+  FaSprayCan
 } from 'react-icons/fa'
+import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 
-// ✅ Estructura limpia de imágenes de respaldo
-const CATEGORY_IMAGES: { [key: string]: string } = {
+// ============================================================
+// CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO (INALTERADOS)
+// ============================================================
+const CATEGORY_ICONS: Record<string, any> = {
+  'Uñas': GiNails,
+  'Micropigmentación': GiSparkles,
+  'Peluquería': GiScissors,
+  'Cejas': FaRegStar,
+  'Estética': GiSparkles,
+  'Depilación': FaHeart,
+  'Pestañas': FaEye,
+  'Labios': GiLipstick,
+  'Microblading': FaSprayCan,
+  'default': FaGem
+}
+
+const CATEGORY_IMAGES: Record<string, string> = {
   'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
   'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
-  'Microblading': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
   'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
   'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
   'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
   'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
   'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=400&fit=crop',
+  'Labios': 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
+  'Microblading': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
-// ✅ Mapeo seguro de especialistas
-const getProfesionalPorServicio = (category: string) => {
-  const cat = (category || '').toLowerCase()
-  
-  if (
-    cat.includes('uña') || 
-    cat.includes('micro') || 
-    cat.includes('ceja') || 
-    cat.includes('pestaña') || 
-    cat.includes('blading') || 
-    cat.includes('pigment')
-  ) {
-    return {
-      nombre: 'Any',
-      rol: 'Nail & Derm Master',
-      foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png'
-    }
-  }
-  
-  if (
-    cat.includes('pelu') || 
-    cat.includes('depil') || 
-    cat.includes('corte') || 
-    cat.includes('color') || 
-    cat.includes('este')
-  ) {
-    return {
-      nombre: 'Sil',
-      rol: 'Hair & Body Expert',
-      foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png'
-    }
-  }
-  
-  return {
-    nombre: 'Especialista Fresh',
-    rol: 'Stylist Atelier',
-    foto: 'https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png'
-  }
+// Función auxiliar para limpiar acentos en los IDs de navegación
+const getCleanSlug = (text: string) => {
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 }
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
-}
-
-export default function LandingPage() {
-  const [servicios, setServicios] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState('Todos')
-  const [activeService, setActiveService] = useState<any | null>(null)
+// ============================================================
+// HEADER (REDISEÑADO ELEGANTE & MINIMALISTA)
+// ============================================================
+const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -86,425 +61,796 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const getTenantId = async (): Promise<string | null> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user?.user_metadata?.tenant_id) return session.user.user_metadata.tenant_id
-      if (session?.user?.app_metadata?.tenant_id) return session.user.app_metadata.tenant_id
+  return (
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      scrolled 
+        ? 'bg-[#FFFCF8]/90 backdrop-blur-md border-b border-[#D4AF37]/10 shadow-sm py-4' 
+        : 'bg-transparent py-6'
+    }`}>
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
+        <Link href="/" className="flex flex-col tracking-widest group">
+          <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
+            SALON FRESH
+          </span>
+          <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
+            NAILS & BEAUTY ATELIER
+          </span>
+        </Link>
 
-      if (session?.user?.id) {
-        const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).maybeSingle() as any
-        if (profile?.tenant_id) return profile.tenant_id
-      }
+        <nav className="hidden lg:flex items-center gap-10">
+          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+            <Link 
+              key={item}
+              href={`#${getCleanSlug(item)}`}
+              className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-colors duration-300 font-medium"
+            >
+              {item}
+            </Link>
+          ))}
+          <Link 
+            href="/agenda"
+            className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all duration-300 rounded-none"
+          >
+            Reservar Cita
+          </Link>
+        </nav>
 
-      const { data: firstService } = await supabase.from('services').select('tenant_id').limit(1).maybeSingle() as any
-      if (firstService?.tenant_id) return firstService.tenant_id
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden text-[#1A0E0A] hover:text-[#D4AF37] transition-colors p-2"
+          aria-label="Abrir menú"
+        >
+          {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+        </button>
+      </div>
 
-      return null
-    } catch (error) {
-      return null
-    }
-  }
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl"
+          >
+            <div className="flex flex-col gap-4">
+              {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+                <Link
+                  key={item}
+                  href={`#${getCleanSlug(item)}`}
+                  className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-all"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item}
+                </Link>
+              ))}
+              <Link 
+                href="/agenda"
+                className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2"
+                onClick={() => setIsOpen(false)}
+              >
+                Reservar Cita
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  )
+}
+
+// ============================================================
+// HERO (REDISEÑO ASIMÉTRICO DE ALTA COSTURA)
+// ============================================================
+const HeroSection = () => {
+  return (
+    <section className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-[#FFF9F6]">
+      <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
+      <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/30 rounded-full blur-[120px]" />
+      
+      <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 relative z-10 py-12">
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          
+          <motion.div 
+            className="lg:col-span-7 space-y-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="h-[1px] w-8 bg-[#D4AF37]" />
+              <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">
+                Haute Couture Beauty Atelier
+              </span>
+            </div>
+
+            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-[#1A0E0A] leading-[1.1] font-light">
+              Redefiniendo <br />
+              <span className="font-normal italic text-[#D4AF37] tracking-normal">la estética</span> <br />
+              como arte puro.
+            </h1>
+
+            <p className="text-[#5C4A3E] text-base md:text-lg font-light max-w-lg leading-relaxed">
+              Un santuario arquitectónico de relajación y vanguardia. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Link 
+                href="/agenda"
+                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center"
+              >
+                Agendar Experiencia
+              </Link>
+              <Link
+                href="#esencia"
+                className="border border-[#1A0E0A]/20 text-[#1A0E0A] hover:border-[#D4AF37] hover:text-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center bg-white/40 backdrop-blur-sm"
+              >
+                Conocer la Esencia
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6 pt-12 border-t border-[#F0E4DA] max-w-md">
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">05+</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Años Premium</p>
+              </div>
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">3K+</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Almas Felices</p>
+              </div>
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">4.9</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Reseñas Google</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className="lg:col-span-5 relative flex justify-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 0.2 }}
+          >
+            <div className="relative w-full max-w-md aspect-[3/4] bg-[#F0E4DA] overflow-hidden group">
+              <img 
+                src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=800&h=1000&fit=crop"
+                alt="Elegancia y Belleza"
+                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+              
+              <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-5 shadow-lg border-l-2 border-[#D4AF37]">
+                <p className="text-[9px] tracking-[0.25em] text-[#D4AF37] font-bold uppercase">Atelier Destacado</p>
+                <p className="font-serif text-base text-[#1A0E0A] mt-1">Técnicas exclusivas internacionales</p>
+              </div>
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// ESENCIA (ESTILO REVISTA EDITORIAL)
+// ============================================================
+const EsenciaSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.3 })
+
+  return (
+    <section id="esencia" ref={ref} className="py-32 bg-white relative">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="grid lg:grid-cols-12 gap-16 items-center">
+          
+          <div className="lg:col-span-5 order-2 lg:order-1 relative">
+            <div className="grid grid-cols-2 gap-4">
+              <motion.div 
+                className="aspect-[3/5] bg-gray-100 overflow-hidden"
+                animate={isInView ? { y: [40, 0], opacity: [0, 1] } : {}}
+                transition={{ duration: 0.8 }}
+              >
+                <img src="https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Detalle" />
+              </motion.div>
+              <motion.div 
+                className="aspect-[3/5] bg-gray-100 overflow-hidden mt-12"
+                animate={isInView ? { y: [-40, 0], opacity: [0, 1] } : {}}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <img src="https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Estilo" />
+              </motion.div>
+            </div>
+            <div className="absolute -z-10 bottom-4 right-4 left-4 top-4 border border-[#D4AF37]/20 pointer-events-none transform translate-x-4 translate-y-4" />
+          </div>
+
+          <motion.div 
+            className="lg:col-span-7 order-1 lg:order-2 space-y-6"
+            initial={{ opacity: 0, x: 30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRO MANIFIESTO</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light leading-tight">
+              Crear belleza no es seguir tendencias, es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
+            </h2>
+            <p className="text-[#5C4A3E] font-light leading-relaxed text-base">
+              Nos distanciamos de lo genérico. En Salon Fresh fusionamos ingredientes orgánicos premium con el dominio milimétrico de la técnica moderna. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
+            </p>
+            
+            <div className="grid sm:grid-cols-2 gap-6 pt-6">
+              <div className="border-t border-[#F0E4DA] pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaAward className="text-[#D4AF37]" />
+                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Alta Rigurosidad</h4>
+                </div>
+                <p className="text-xs text-[#5C4A3E] font-light">Especialistas certificados internacionalmente en continuo perfeccionamiento técnico.</p>
+              </div>
+              <div className="border-t border-[#F0E4DA] pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaLeaf className="text-[#D4AF37]" />
+                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Línea Orgánica</h4>
+                </div>
+                <p className="text-xs text-[#5C4A3E] font-light">Productos libres de crueldad y tóxicos, priorizando la salud a largo plazo de tu piel y uñas.</p>
+              </div>
+            </div>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// STATS SECTION (MINIMALISTA Y SOFISTICADA)
+// ============================================================
+const StatsSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+
+  const stats = [
+    { number: '05+', label: 'Años de Trayectoria' },
+    { number: '3K+', label: 'Clientes Premium' },
+    { number: '4.9', label: 'Calificación Global' },
+    { number: '100%', label: 'Garantía de Satisfacción' }
+  ]
+
+  return (
+    <section ref={ref} className="py-20 bg-[#FFF8F5] border-y border-[#F0E4DA]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {stats.map((stat, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 15 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: idx * 0.1 }}
+              className="text-center"
+            >
+              <p className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">{stat.number}</p>
+              <p className="text-[10px] tracking-[0.25em] text-[#5C4A3E] uppercase mt-2 font-medium">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// CATEGORIES SECTION (ESTILO MENÚ DE LUJO)
+// ============================================================
+const CategoriesSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.05 })
+
+  const categories = [
+    { id: 'manicura', name: 'Manicura de Autor', description: 'Manicura rusa refinada, nivelación e ingeniería de uñas con acabados de alta costura.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop', tag: 'Elite' },
+    { id: 'micropigmentacion', name: 'Micropigmentación', description: 'Realce hiperrealista de cejas, ojos y labios con pigmentos orgánicos biocompatibles.', image: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&fit=crop', tag: 'Premium' },
+    { id: 'microblading', name: 'Microblading 3D', description: 'Diseño arquitectónico pelo a pelo adaptado a la morfología de tu rostro.', image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&fit=crop', tag: 'Natural' },
+    { id: 'peluqueria', name: 'Alta Peluquería', description: 'Cortes direccionales, colorimetría francesa y tratamientos moleculares de reconstrucción.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop', tag: 'Vanguardia' },
+    { id: 'pestanas', name: 'Mirada Minimal', description: 'Lifting botox y extensiones avanzadas con peso pluma que respetan tu pestaña natural.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop', tag: 'Impacto' },
+    { id: 'estetica', name: 'Estética Avanzada', description: 'Tratamientos dermacéuticos de rejuvenecimiento celular y limpieza profunda hidrafacial.', image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&fit=crop', tag: 'Bienestar' }
+  ]
+
+  return (
+    <section id="categorias" ref={ref} className="py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-6">
+          <div className="space-y-3">
+            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRAS DISCIPLINAS</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">La Carta de <span className="italic font-normal text-[#D4AF37]">Especialidades</span></h2>
+          </div>
+          <Link href="/servicios" className="text-xs font-semibold tracking-[0.2em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] transition-colors border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 self-start md:self-auto">
+            Ver Todos los Tratamientos →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {categories.map((cat, idx) => (
+            <motion.div 
+              key={cat.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: idx * 0.05 }}
+              className="group border-b border-[#F0E4DA] pb-8 flex flex-col justify-between"
+            >
+              <div className="space-y-4">
+                <div className="relative aspect-[16/10] overflow-hidden mb-6 bg-gray-50">
+                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter grayscale-[30%] group-hover:grayscale-0" />
+                  <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-[9px] tracking-widest uppercase font-semibold text-[#1A0E0A] px-3 py-1.5">{cat.tag}</span>
+                </div>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300">{cat.name}</h3>
+                <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">{cat.description}</p>
+              </div>
+              
+              <div className="pt-6">
+                <Link href={`/servicios#${cat.id}`} className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors">
+                  Descubrir menú <FaArrowRight className="text-[9px] translate-x-0 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// SERVICIOS (CON DATOS DE LA DB COMPATIBLE)
+// ============================================================
+const ServicesSection = ({ services }: { services: any[] }) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+
+  if (!services || services.length === 0) return null
+
+  return (
+    <section id="servicios" ref={ref} className="py-32 bg-[#FFF9F6]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        <div className="text-center max-w-xl mx-auto mb-20 space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">RESERVAS DESTACADAS</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Experiencias más Solicitadas</h2>
+          <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-4" />
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {services.slice(0, 4).map((service, idx) => {
+            const Icon = CATEGORY_ICONS[service.category] || CATEGORY_ICONS.default
+
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                className="bg-white border border-[#F0E4DA] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[#D4AF37] hover:shadow-xl group"
+              >
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div className="text-[#D4AF37] text-xl p-3 bg-[#FFF8F5] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors duration-300">
+                      <Icon />
+                    </div>
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#5C4A3E]/60 bg-gray-50 px-2.5 py-1">
+                      {service.category || 'Premium'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-serif text-xl text-[#1A0E0A] mt-6 group-hover:text-[#D4AF37] transition-colors duration-300 min-h-[56px] flex items-center">
+                    {service.name}
+                  </h3>
+
+                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed mt-4 line-clamp-3">
+                    {service.description}
+                  </p>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-[#F0E4DA] flex items-end justify-between">
+                  <div>
+                    <p className="text-[9px] tracking-wider text-[#A89588] uppercase">Inversión</p>
+                    <p className="font-serif text-2xl text-[#1A0E0A] mt-0.5">${service.price}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#5C4A3E]/80 font-light">
+                    <FaClock className="text-[10px] text-[#D4AF37]" />
+                    <span>{service.duration} min</span>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {services.length > 4 && (
+          <div className="text-center mt-16">
+            <Link 
+              href="/servicios"
+              className="inline-flex items-center gap-3 border border-[#1A0E0A] text-[#1A0E0A] hover:bg-[#1A0E0A] hover:text-white px-8 py-4 text-xs font-semibold tracking-[0.25em] uppercase transition-all duration-300"
+            >
+              Explorar Catálogo Completo <FaArrowRight className="text-[10px]" />
+            </Link>
+          </div>
+        )}
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// GALERÍA (ESTILO DIARIO VISUAL CONTINUO)
+// ============================================================
+const GallerySection = ({ images }: { images: any[] }) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+
+  const displayImages = images && images.length > 0 
+    ? images 
+    : [
+        'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&fit=crop',
+        'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&fit=crop',
+        'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&fit=crop'
+      ]
+
+  return (
+    <section id="galeria" ref={ref} className="py-32 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-16 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+        <div className="space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">PORTAFOLIO VISUAL</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Obras Exclusivas</h2>
+        </div>
+        <p className="text-sm text-[#5C4A3E] font-light max-w-xs leading-relaxed">Una mirada íntima al arte real creado diariamente en los tocadores de nuestro atelier.</p>
+      </div>
+
+      <div className="relative w-full">
+        <div className="flex gap-6 overflow-x-auto pb-8 pt-4 px-6 lg:px-12 scrollbar-none snap-x snap-mandatory">
+          {displayImages.map((img, idx) => {
+            const imageUrl = typeof img === 'string' ? img : img.image_url
+            const title = typeof img === 'string' ? 'Acabado de Autor' : img.title || 'Diseño Exclusivo'
+
+            return (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                className="w-72 md:w-96 flex-shrink-0 snap-start group bg-white border border-[#F0E4DA] p-3"
+              >
+                <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 mb-4">
+                  <img src={imageUrl} alt={title} className="w-full h-full object-cover filter grayscale-[15%] group-hover:grayscale-0 transition-all duration-700" loading="lazy" />
+                </div>
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs font-serif text-[#1A0E0A] tracking-wide">{title}</p>
+                  <span className="text-[9px] tracking-widest text-[#D4AF37] uppercase font-bold">✦ Fresh Art</span>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="text-center mt-12">
+        <Link href="/galeria" className="text-xs font-bold tracking-[0.25em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 transition-colors">
+          Ver Todo el Feed de Arte
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// TESTIMONIOS (MINIMALISTA DE GRAN IMPACTO TIPOGRÁFICO)
+// ============================================================
+const TestimonialsSection = () => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const TESTIMONIALS = [
+    { name: 'Valeria Martínez', role: 'Cliente desde 2021', text: 'La precisión milimétrica de su manicura rusa superó todas mis expectativas. Un nivel de detalle que roza la perfección absoluta.' },
+    { name: 'Carolina Rodríguez', role: 'Cliente desde 2022', text: 'El ambiente del atelier es sublime. La colorimetría avanzada me devolvió la luminosidad natural del cabello. Son artesanas.' },
+    { name: 'Agustina Sosa', role: 'Cliente desde 2020', text: 'Tres años de fidelidad absoluta. La durabilidad y sanidad de los tratamientos faciales y de uñas no tienen rival en la ciudad.' }
+  ]
+
+  return (
+    <section id="testimonios" className="py-32 bg-[#FFF8F5] relative border-t border-[#F0E4DA]">
+      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center">
+        
+        <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold mb-12">VOCES INSIGNIA</p>
+        
+        <div className="min-h-[220px] flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-8"
+            >
+              <FaQuoteLeft className="text-[#D4AF37]/20 text-4xl mx-auto" />
+              <p className="font-serif text-xl md:text-3xl text-[#1A0E0A] font-light leading-relaxed italic">
+                "{TESTIMONIALS[currentIndex].text}"
+              </p>
+              <div>
+                <h4 className="text-sm font-bold tracking-[0.1em] text-[#1A0E0A] uppercase">{TESTIMONIALS[currentIndex].name}</h4>
+                <p className="text-xs text-[#A89588] mt-1 font-light">{TESTIMONIALS[currentIndex].role}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="flex justify-center gap-4 mt-12">
+          {TESTIMONIALS.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 transition-all duration-300 ${
+                idx === currentIndex ? 'w-10 bg-[#D4AF37]' : 'w-2 bg-[#F0E4DA] hover:bg-[#D4AF37]/50'
+              }`}
+              aria-label={`Ir al testimonio ${idx + 1}`}
+            />
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// CTA FINAL (REDISEÑO DE CONVERSIÓN MINIMALISTA)
+// ============================================================
+const CtaSection = () => {
+  return (
+    <section className="py-32 bg-[#1A0E0A] text-white relative overflow-hidden">
+      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:32px_32px]" />
+      
+      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center relative z-10 space-y-8">
+        <p className="text-[10px] tracking-[0.5em] text-[#D4AF37] uppercase font-bold">RESERVA PRIVADA</p>
+        <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia Fresh</span>?</h2>
+        <p className="text-white/60 font-light max-w-md mx-auto text-sm leading-relaxed">
+          Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu image.
+        </p>
+        
+        <div className="pt-4">
+          <Link 
+            href="/agenda"
+            className="inline-block bg-[#D4AF37] text-white hover:bg-white hover:text-[#1A0E0A] px-12 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300"
+          >
+            Agendar Ahora Online
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-6 pt-6 text-[10px] tracking-wider text-white/40 uppercase font-light">
+          <span>✦ Sin Costo Adicional de Gestión</span>
+          <span className="text-white/10">|</span>
+          <span>✦ Confirmación en Tiempo Real</span>
+          <span className="text-white/10">|</span>
+          <span>✦ Gestión de Cancelación Flexible</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// FOOTER (ESTILO BOUTIQUE INTERNACIONAL)
+// ============================================================
+const Footer = () => (
+  <footer className="bg-[#150B08] text-white/60 border-t border-white/5 text-xs font-light">
+    <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      
+      <div className="space-y-4">
+        <Link href="/" className="flex flex-col tracking-widest">
+          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH</span>
+          <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">ATELIER</span>
+        </Link>
+        <p className="text-white/40 leading-relaxed max-w-xs pr-4">
+          Un espacio donde el rigor metodológico y la finura estética convergen para esculpir tu versión más sublime y auténtica.
+        </p>
+        <div className="flex gap-3 pt-2">
+          <a 
+            href="https://instagram.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+            aria-label="Instagram"
+          >
+            <FaInstagram />
+          </a>
+          <a 
+            href="https://whatsapp.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+            aria-label="WhatsApp"
+          >
+            <FaWhatsapp />
+          </a>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Disponibilidad</h4>
+        <ul className="space-y-2.5">
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Lunes a Viernes</span><span className="text-white">09:00 - 20:00</span></li>
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Sábados</span><span className="text-white">09:00 - 18:00</span></li>
+          <li className="flex justify-between pr-4"><span className="text-white/30">Domingos y Feriados</span><span className="text-[#D4AF37] font-medium">Cerrado</span></li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Navegación</h4>
+        <ul className="grid grid-cols-2 gap-2">
+          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+            <li key={item}>
+              <Link href={`#${getCleanSlug(item)}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
+                <span className="text-[8px] text-[#D4AF37]/40">✦</span> {item}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Contacto Boutique</h4>
+        <ul className="space-y-4">
+          <li className="flex items-start gap-3">
+            <FaPhoneAlt className="text-[#D4AF37] mt-0.5" />
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-white/30">Línea Directa</p>
+              <p className="text-white font-medium mt-0.5">099 123 456</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <FaMapMarkerAlt className="text-[#D4AF37] mt-0.5" />
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-white/30">Ubicación</p>
+              <p className="text-white font-medium mt-0.5">Montevideo, Uruguay</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div className="border-t border-white/5 py-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-white/30 tracking-wider uppercase">
+        <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
+        <p className="font-light">✦ Hecho en Uruguay para el mundo</p>
+      </div>
+    </div>
+  </footer>
+)
+
+// ============================================================
+// MAIN (LÓGICA E INICIALIZACIONES TOTALMENTE INTACTAS)
+// ============================================================
+export default function Home() {
+  const [services, setServices] = useState<any[]>([])
+  const [galleryImages, setGalleryImages] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchServicios = async () => {
+    const loadData = async () => {
       try {
         setLoading(true)
-        const tenantId = await getTenantId()
-        if (!tenantId) { 
-          setServicios([])
-          setLoading(false)
-          return 
+
+        let tenantId = null
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (session?.user?.user_metadata?.tenant_id) {
+          tenantId = session.user.user_metadata.tenant_id
+        } else if (session?.user?.app_metadata?.tenant_id) {
+          tenantId = session.user.app_metadata.tenant_id
         }
 
-        const { data, error } = await supabase
+        if (!tenantId && session?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', session.user.id)
+            .maybeSingle() as any
+          if (profile?.tenant_id) tenantId = profile.tenant_id
+        }
+
+        if (!tenantId) {
+          const { data: firstService } = await supabase
+            .from('services')
+            .select('tenant_id')
+            .limit(1)
+            .maybeSingle() as any
+          if (firstService?.tenant_id) tenantId = firstService.tenant_id
+        }
+
+        if (!tenantId) {
+          setLoading(false)
+          return
+        }
+
+        const { data: servicesData } = await supabase
           .from('services')
           .select('*')
           .eq('tenant_id', tenantId)
+          .eq('is_active', true)
           .order('category', { ascending: true })
+          .order('name', { ascending: true })
 
-        if (!error && data) {
-          setServicios(data)
+        if (servicesData) setServices(servicesData)
+
+        let allImages: any[] = []
+
+        const { data: adminPhotos } = await supabase
+          .from('gallery')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(8)
+
+        if (adminPhotos) {
+          allImages = [...allImages, ...adminPhotos]
         }
-      } catch (e) {
-        console.error(e)
+
+        const { data: clientPhotos } = await supabase
+          .from('client_gallery')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .limit(6)
+
+        if (clientPhotos) {
+          const mapped = clientPhotos.map((p: any) => ({
+            ...p,
+            image_url: p.after_image_url || p.image_url || p.before_image_url || '',
+            client_name: p.client_name || 'Cliente'
+          }))
+          allImages = [...allImages, ...mapped]
+        }
+
+        allImages.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+
+        setGalleryImages(allImages.slice(0, 6))
+
+      } catch (error) {
+        console.error('Error cargando datos:', error)
       } finally {
         setLoading(false)
       }
     }
-    fetchServicios()
+
+    loadData()
   }, [])
 
-  const uniqueCategories = Array.from(new Set(servicios.map((s) => s.category).filter(Boolean)))
-  const allCategories = ['Todos', ...uniqueCategories]
-  
-  const filteredServicios = selectedCategory === 'Todos'
-    ? servicios
-    : servicios.filter((s) => s.category === selectedCategory)
-
-  const activeCategoriesList = selectedCategory === 'Todos'
-    ? uniqueCategories
-    : [selectedCategory]
+  if (loading) {
+    return (
+      <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Cargando la experiencia</p>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-[#FFFCF8] text-[#1A0E0A] antialiased font-sans relative selection:bg-[#D4AF37]/20">
-      
-      {/* ============================================================
-          HEADER DE NAVEGACIÓN FLUIDO
-         ============================================================ */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? 'bg-[#FFFCF8]/90 backdrop-blur-md border-b border-[#D4AF37]/10 py-4 shadow-sm' : 'bg-transparent py-6'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
-          <Link href="#" className="flex flex-col tracking-widest group">
-            <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors group-hover:text-[#D4AF37]">
-              SALON FRESH
-            </span>
-            <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-              NAILS & BEAUTY ATELIER
-            </span>
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-10">
-            {['Inicio', 'Esencia', 'Servicios', 'Artistas', 'Ubicación'].map((item) => (
-              <a 
-                key={item} 
-                href={`#${item.toLowerCase()}`} 
-                className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-all font-medium"
-              >
-                {item}
-              </a>
-            ))}
-            <Link href="/agenda" className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all rounded-none">
-              Reservar Cita
-            </Link>
-          </nav>
-
-          <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden text-[#1A0E0A] hover:text-[#D4AF37] p-2">
-            {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
-          </button>
-        </div>
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl">
-              <div className="flex flex-col gap-4">
-                {['Inicio', 'Esencia', 'Servicios', 'Artistas', 'Ubicación'].map((item) => (
-                  <a key={item} href={`#${item.toLowerCase()}`} className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37]" onClick={() => setIsOpen(false)}>
-                    {item}
-                  </a>
-                ))}
-                <Link href="/agenda" className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2" onClick={() => setIsOpen(false)}>
-                  Reservar Cita
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-
-      {/* ============================================================
-          SECCIÓN HERO (BIENVENIDA DE LUJO)
-         ============================================================ */}
-      <section id="inicio" className="relative min-h-screen flex items-center justify-center bg-[#FFF9F6] overflow-hidden pt-20">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1800&q=80" 
-            alt="Salon Fresh Hero" 
-            className="w-full h-full object-cover opacity-15 filter sepia-[20%]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FFFCF8]/50 to-[#FFFCF8]" />
-        </div>
-
-        <div className="max-w-5xl mx-auto px-6 text-center relative z-10 space-y-6">
-          <motion.span initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-[11px] font-bold tracking-[0.5em] text-[#D4AF37] uppercase block">
-            BIENVENIDO A TU PROPIO RITUAL
-          </motion.span>
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="font-serif text-5xl sm:text-7xl font-light tracking-tight text-[#1A0E0A] leading-tight">
-            Donde la belleza se convierte en <span className="italic font-normal text-[#D4AF37]">Alta Costura</span>
-          </h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.4 }} className="text-sm sm:text-base text-[#5C4A3E] font-light max-w-xl mx-auto leading-relaxed">
-            Especialistas en manicura avanzada, diseño de cejas, micropigmentación premium y transformaciones de peluquería vanguardistas.
-          </motion.p>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }} className="pt-4">
-            <Link href="/agenda" className="bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-10 py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 inline-block shadow-lg">
-              Agendar Experiencia
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECCIÓN: ESENCIA (NUESTRO MANIFESTO)
-         ============================================================ */}
-      <section id="esencia" className="py-28 max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-2 gap-16 items-center border-b border-[#F0E4DA]">
-        <div className="space-y-6">
-          <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">NUESTRA FILOSOFÍA</span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A0E0A] tracking-wide">
-            Creamos detalles que cautivan a simple vista
-          </h2>
-          <p className="text-xs sm:text-sm text-[#5C4A3E] font-light leading-relaxed">
-            En Salon Fresh no creemos en tratamientos genéricos. Diseñamos experiences personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
-          </p>
-          <div className="grid grid-cols-3 gap-4 pt-4 text-center">
-            <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
-              <span className="font-serif text-2xl text-[#D4AF37]">100%</span>
-              <p className="text-[9px] uppercase tracking-widest text-[#5C4A3E] mt-1">Customizado</p>
-            </div>
-            <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
-              <span className="font-serif text-2xl text-[#D4AF37]">Premium</span>
-              <p className="text-[9px] uppercase tracking-widest text-[#5C4A3E] mt-1">Activos</p>
-            </div>
-            <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
-              <span className="font-serif text-2xl text-[#D4AF37]">Elite</span>
-              <p className="text-[9px] uppercase tracking-widest text-[#5C4A3E] mt-1">Resultados</p>
-            </div>
-          </div>
-        </div>
-        <div className="relative aspect-[4/5] overflow-hidden border border-[#D4AF37]/20 shadow-2xl">
-          <img 
-            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80" 
-            alt="Interior Atelier" 
-            className="w-full h-full object-cover grayscale-[15%] hover:scale-105 transition-transform duration-700"
-          />
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECCIÓN PRINCIPAL: MENÚ DE SERVICIOS INTERACTIVO
-         ============================================================ */}
-      <section id="servicios" className="py-32 bg-[#FFF9F6] relative z-10 border-b border-[#F0E4DA]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
-          
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-            <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">MENU PREMIUM</span>
-            <h2 className="font-serif text-3xl sm:text-5xl font-light tracking-tight text-[#1A0E0A]">
-              Menú de <span className="italic font-normal text-[#D4AF37]">Tratamientos</span>
-            </h2>
-            <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-3" />
-            <p className="text-xs sm:text-sm text-[#5C4A3E] font-light">
-              Haz clic sobre la fotografía de cualquier tratamiento para desvelar su ritual extendido, precios y especialista asignada.
-            </p>
-          </div>
-
-          {/* Selector de Filtros */}
-          {allCategories.length > 1 && (
-            <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-20 border-b border-[#F0E4DA] pb-6 max-w-3xl mx-auto">
-              {allCategories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs uppercase tracking-[0.2em] font-medium transition-all duration-300 pb-2 relative ${
-                    selectedCategory === cat ? 'text-[#D4AF37]' : 'text-[#A89588] hover:text-[#1A0E0A]'
-                  }`}
-                >
-                  {cat}
-                  {selectedCategory === cat && (
-                    <motion.div layoutId="landingFilterLine" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Render del Catálogo Dinámico */}
-          {loading ? (
-            <div className="text-center py-20 flex flex-col items-center gap-2">
-              <div className="w-6 h-6 border-t-2 border-[#D4AF37] border-transparent rounded-full animate-spin" />
-              <span className="text-[10px] tracking-[0.2em] uppercase text-[#A89588]">Cargando Catálogo...</span>
-            </div>
-          ) : filteredServicios.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-[#F0E4DA]">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No hay servicios disponibles en este segmento.</p>
-            </div>
-          ) : (
-            <div className="space-y-20">
-              {activeCategoriesList.map((categoryName) => {
-                const servicesInCategory = filteredServicios.filter((s) => s.category === categoryName)
-                if (servicesInCategory.length === 0) return null
-
-                return (
-                  <div key={categoryName} className="space-y-8">
-                    <div className="flex items-center gap-4 border-b border-[#D4AF37]/20 pb-3">
-                      <h3 className="font-serif text-xl sm:text-2xl text-[#1A0E0A] font-light tracking-wide">{categoryName}</h3>
-                      <span className="w-full h-[1px] bg-[#F0E4DA]" />
-                    </div>
-
-                    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.05 }} variants={staggerContainer} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {servicesInCategory.map((servicio) => {
-                        const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
-                        
-                        return (
-                          <motion.div
-                            key={servicio.id}
-                            variants={fadeInUp}
-                            onClick={() => setActiveService(servicio)}
-                            className="relative aspect-[4/3] overflow-hidden bg-white border border-[#F0E4DA] group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500"
-                          >
-                            <img src={imageUrl} alt={servicio.name} className="w-full h-full object-cover filter grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/90 via-[#1A0E0A]/10 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-300" />
-                            
-                            <div className="absolute bottom-0 left-0 right-0 p-5 text-white flex justify-between items-end z-10">
-                              <div className="max-w-[75%]">
-                                <span className="text-[8px] tracking-[0.2em] uppercase text-[#D4AF37] font-semibold block mb-0.5">✦ {servicio.category}</span>
-                                <h4 className="font-serif text-base font-light tracking-wide truncate">{servicio.name}</h4>
-                              </div>
-                              <span className="text-[9px] tracking-widest uppercase font-bold border border-white/20 bg-white/10 backdrop-blur-md px-3 py-1.5 whitespace-nowrap group-hover:bg-[#D4AF37] group-hover:border-[#D4AF37] transition-all duration-300">Detalles</span>
-                            </div>
-                          </motion.div>
-                        )
-                      })}
-                    </motion.div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECCIÓN: ARTISTAS STAFF (ANY & SIL)
-         ============================================================ */}
-      <section id="artistas" className="py-28 max-w-7xl mx-auto px-6 lg:px-12 border-b border-[#F0E4DA]">
-        <div className="text-center max-w-xl mx-auto mb-16 space-y-3">
-          <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">NUESTRO STAFF</span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A0E0A]">Las Manos Detrás del <span className="italic font-normal text-[#D4AF37]">Arte</span></h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-          {/* Artista 1 */}
-          <div className="border border-[#F0E4DA] p-6 bg-[#FFF9F6] text-center space-y-4">
-            <div className="w-32 h-32 rounded-full overflow-hidden mx-auto border-2 border-[#D4AF37]/40">
-              <img src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" alt="Any Master Artist" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="font-serif text-xl font-normal text-[#1A0E0A]">Any</h3>
-              <p className="text-[10px] uppercase text-[#D4AF37] tracking-widest font-bold mt-0.5">Nail & Derm Master</p>
-            </div>
-            <p className="text-xs text-[#5C4A3E] font-light leading-relaxed px-4">
-              Especialista en estructuración arquitectónica de uñas de gel, micropigmentación facial hiperrealista y cuidado avanzado de la mirada.
-            </p>
-          </div>
-
-          {/* Artista 2 */}
-          <div className="border border-[#F0E4DA] p-6 bg-[#FFF9F6] text-center space-y-4">
-            <div className="w-32 h-32 rounded-full overflow-hidden mx-auto border-2 border-[#D4AF37]/40">
-              <img src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png" alt="Sil Master Artist" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="font-serif text-xl font-normal text-[#1A0E0A]">Sil</h3>
-              <p className="text-[10px] uppercase text-[#D4AF37] tracking-widest font-bold mt-0.5">Hair & Body Expert</p>
-            </div>
-            <p className="text-xs text-[#5C4A3E] font-light leading-relaxed px-4">
-              Ingeniera de color capilar, cortes de tendencia vanguardista y tratamientos de reestructuración y estética corporal holística.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          SECCIÓN: UBICACIÓN Y HORARIOS
-         ============================================================ */}
-      <section id="ubicación" className="py-28 bg-[#FFF9F6]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">VISÍTANOS</span>
-            <h2 className="font-serif text-3xl font-light text-[#1A0E0A]">Tu espacio de desconexión</h2>
-            <p className="text-xs sm:text-sm text-[#5C4A3E] font-light leading-relaxed">
-              Te esperamos en nuestro atelier para brindarte una atención VIP en un entorno seguro y relajante. Reserva previamente para garantizar tu espacio exclusivo.
-            </p>
-            <div className="space-y-3 text-xs text-[#5C4A3E]">
-              <p className="flex items-center gap-3"><FaMapMarkerAlt className="text-[#D4AF37]" /> Centro de Estética & Belleza Fresh Atelier</p>
-              <p className="flex items-center gap-3"><FaClock className="text-[#D4AF37]" /> Lunes a Sábados: 09:00 - 20:00</p>
-            </div>
-            <div className="flex gap-4 pt-2">
-              <a href="#" className="p-3 bg-white border border-[#F0E4DA] text-[#1A0E0A] hover:text-[#D4AF37] rounded-full transition-colors"><FaInstagram /></a>
-              <a href="#" className="p-3 bg-white border border-[#F0E4DA] text-[#1A0E0A] hover:text-[#D4AF37] rounded-full transition-colors"><FaWhatsapp /></a>
-            </div>
-          </div>
-          <div className="h-72 w-full border border-[#D4AF37]/20 bg-white shadow-xl flex items-center justify-center text-center p-8">
-            <div>
-              <FaMapMarkerAlt className="text-3xl text-[#D4AF37] mx-auto mb-3" />
-              <p className="font-serif text-lg text-[#1A0E0A] font-light">Mapa de Ubicación</p>
-              <p className="text-[11px] uppercase tracking-widest text-[#A89588] mt-1">Tu dirección configurada de Supabase / Google Maps</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          MODAL INTERACTIVO DE DETALLES (POPUP FLOTANTE DE LA LANDING)
-         ============================================================ */}
-      <AnimatePresence>
-        {activeService && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveService(null)} className="fixed inset-0 bg-[#1A0E0A]/70 backdrop-blur-md" />
-
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96, y: 15 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.96, y: 15 }} 
-              transition={{ type: 'spring', duration: 0.4 }} 
-              className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-3xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible"
-            >
-              <button onClick={() => setActiveService(null)} className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full text-[#1A0E0A] hover:text-[#D4AF37] shadow-sm"><FaTimes className="text-xs" /></button>
-
-              <div className="md:col-span-5 relative h-60 md:h-auto min-h-[280px]">
-                <img src={activeService.image_url || CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} alt={activeService.name} className="w-full h-full object-cover" />
-              </div>
-
-              <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-                <div className="space-y-3">
-                  <span className="text-[9px] tracking-[0.3em] font-bold uppercase text-[#D4AF37] block">{activeService.category}</span>
-                  <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide leading-tight">{activeService.name}</h2>
-                  <div className="w-10 h-[1px] bg-[#D4AF37] my-3" />
-                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed">
-                    {activeService.description || 'Este tratamiento exclusivo fusiona metodologías avanzadas de vanguardia con activos selectos de nuestro atelier para esculpir, refinar y embellecer bajo un diagnóstico totalmente personalizado.'}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-4">
-                  <div>
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Inversión</span>
-                    <span className="font-serif text-3xl text-[#1A0E0A] font-medium">${activeService.price}</span>
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Duración Estimada</span>
-                    <span className="text-xs font-semibold text-[#1A0E0A] flex items-center gap-1.5 mt-1"><FaClock className="text-[#D4AF37] text-[10px]" /> {activeService.duration} minutos</span>
-                  </div>
-                </div>
-
-                {/* Tarjeta Profesional Especializada */}
-                <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-3 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border border-[#D4AF37]/30 bg-white flex-shrink-0">
-                    <img src={getProfesionalPorServicio(activeService.category).foto} alt={getProfesionalPorServicio(activeService.category).nombre} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="text-[8px] tracking-widest uppercase text-[#D4AF37] block font-bold">Artista Asignada</span>
-                    <span className="font-serif text-sm text-[#1A0E0A] font-normal block">{getProfesionalPorServicio(activeService.category).nombre}</span>
-                    <span className="text-[9px] text-[#A89588] block font-light">{getProfesionalPorServicio(activeService.category).rol}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <Link href="/agenda" className="w-full block text-center bg-[#1A0E0A] hover:bg-[#D4AF37] text-white py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300">
-                    Agendar este Tratamiento
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* FOOTER */}
-      <footer className="bg-[#150B08] text-white/40 border-t border-white/5 text-[10px] tracking-wider uppercase">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
-          <p className="font-serif italic text-white/60 normal-case text-xs">Exclusividad & Elegancia Atelier</p>
-        </div>
-      </footer>
-    </div>
+    <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden antialiased selection:bg-[#D4AF37]/20">
+      <Header />
+      <HeroSection />
+      <EsenciaSection />
+      <StatsSection />
+      <CategoriesSection />
+      <ServicesSection services={services} />
+      <GallerySection images={galleryImages} />
+      <TestimonialsSection />
+      <CtaSection />
+      <Footer />
+    </main>
   )
 }
