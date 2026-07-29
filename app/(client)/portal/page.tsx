@@ -11,8 +11,18 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+// Componentes del Ecosistema del Cliente
+import InsigniasLogros from '@/components/InsigniasLogros'
+import InstagramFeed from '@/components/InstagramFeed'
+import QRReferido from '@/components/QRReferido'
+import RuletaModal from '@/components/RuedaSuerte'
+import MisionesDiarias from '@/components/MisionesDiarias'
+import AnunciosBanner from '@/components/AnunciosBanner'
+import PromocionesVolante from '@/components/PromocionesVolante'
+import FooterCliente from '@/components/FooterCliente'
+
 // ============================================================
-// TIPOS E INTERFACES
+// PROTOCOLOS DE TIPADO (TypeScript)
 // ============================================================
 interface ServicioInfo {
   name: string
@@ -72,7 +82,7 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Gem className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`}>Glow Points</span>
+            <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#A89588]">Glow Points</span>
           </div>
           <p className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{glow}</p>
         </div>
@@ -163,13 +173,16 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
 }
 
 // ============================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL (RUIDO BAJO E HIDRATACIÓN INTEGRAL)
 // ============================================================
 export default function ClientDashboardIndex() {
   const { user, tenantId, refreshUserData } = useAuth()
   const { theme } = useTheme()
 
-  // Estados
+  // Protección anti desajustes entre servidor y cliente (Next.js Hydration Mismatch)
+  const [mounted, setMounted] = useState(false)
+
+  // Estados de Negocio
   const [citas, setCitas] = useState<Cita[]>([])
   const [puntosGlow, setPuntosGlow] = useState(0)
   const [puntosHair, setPuntosHair] = useState(0)
@@ -182,6 +195,10 @@ export default function ClientDashboardIndex() {
   const [codigoReferido, setCodigoReferido] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
   const [isRuletaOpen, setIsRuletaOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const isDark = theme === 'dark'
 
@@ -268,8 +285,13 @@ export default function ClientDashboardIndex() {
       }
     }
 
-    loadDashboardData()
-  }, [user])
+    if (mounted) {
+      loadDashboardData()
+    }
+  }, [user, mounted])
+
+  // Retorno nulo controlado durante la fase de hidratación estática inicial
+  if (!mounted) return null
 
   if (loading) return <LoadingSpinner isDark={isDark} />
 
@@ -281,14 +303,14 @@ export default function ClientDashboardIndex() {
     }`}>
       
       {/* Fondo Texturizado Minimalista */}
-      <div className={`absolute inset-0 pointer-events-none z-0 opacity-20 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]`} />
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-20 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 space-y-8 relative z-10">
 
         {/* ============================================================ */}
-        {/* 👤 PERFIL & CABECERA EDITORIAL (TOTALMENTE RESPONSIVA) */}
+        {/* 👤 PERFIL & CABECERA EDITORIAL (RESPONSIVA) */}
         {/* ============================================================ */}
-        <div className={`border p-5 sm:p-8 rounded-none shadow-sm space-y-6 ${
+        <div className={`border p-5 sm:p-8 rounded-none shadow-sm space-y-6 transition-colors duration-500 ${
           isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'
         }`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -341,7 +363,9 @@ export default function ClientDashboardIndex() {
           <NextAppointmentCard cita={proximaCita} isDark={isDark} />
         </section>
 
-        {/* Quedan listos para heredar los colores del contenedor padre los subcomponentes */}
+        {/* ============================================================ */}
+        {/* 📢 PASARELA DE ANUNCIOS Y EVENTOS */}
+        {/* ============================================================ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
             <AnunciosBanner position="hero" limit={2} />
@@ -351,7 +375,81 @@ export default function ClientDashboardIndex() {
           </div>
         </div>
 
-        {/* ... Resto de subcomponentes ... */}
+        {/* ============================================================ */}
+        {/* 🎯 SECCIÓN MISIONES DEL ATELIER */}
+        {/* ============================================================ */}
+        <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+          <MisionesDiarias />
+        </div>
+
+        {/* ============================================================ */}
+        {/* 🏆 FIDELIZACIÓN: INSIGNIAS Y RECOMENDADOS */}
+        {/* ============================================================ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`border p-2 ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+            <QRReferido codigo={codigoReferido} user={user} />
+          </div>
+          <div className={`border p-6 flex flex-col justify-center ${isDark ? 'bg-[#1A0E0A] border-[#2C1A14]' : 'bg-white border-[#F0E4DA]'}`}>
+            <InsigniasLogros 
+              citas={citas.length} 
+              serviciosUnicos={serviciosUnicos} 
+              referidos={referidos.length} 
+              puntos={puntosGlow + puntosHair} 
+              racha={3} 
+            />
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 🎡 EXPERIENCIA INTERACTIVA */}
+        {/* ============================================================ */}
+        <div className={`border p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group ${
+          isDark ? 'bg-[#1A0E0A] border-[#D4AF37]/40' : 'bg-white border-[#D4AF37]/30'
+        }`}>
+          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full translate-x-12 translate-y-12 opacity-50 group-hover:scale-110 transition-transform duration-700 pointer-events-none ${
+            isDark ? 'bg-[#2C1A14]/30' : 'bg-[#FFF9F6]'
+          }`} />
+          
+          <div className="flex items-center gap-4 relative z-10">
+            <div className={`w-12 h-12 border flex items-center justify-center ${
+              isDark ? 'bg-[#2C1A14] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
+            }`}>
+              <Gift className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-serif text-xl font-light tracking-wide">La Rueda de la Fortuna</h3>
+              <p className={`text-xs font-light ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>Accede a recompensas y beneficios exclusivos por lealtad.</p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => setIsRuletaOpen(true)} 
+            className="w-full sm:w-auto bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-500 shrink-0 relative z-10 border border-transparent hover:border-transparent"
+          >
+            Activar Rueda
+          </button>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 📸 INSTAGRAM SOCIAL GALLERY */}
+        {/* ============================================================ */}
+        <div className={`pt-6 border-t ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`}>
+          <InstagramFeed />
+        </div>
+
+        {/* Footer del Ecosistema */}
+        <FooterCliente />
+
+        {/* ============================================================ */}
+        {/* 🎡 CAPA MODAL: EXPERIENCIA DIGITAL */}
+        {/* ============================================================ */}
+        <RuletaModal
+          isOpen={isRuletaOpen}
+          onClose={() => { setIsRuletaOpen(false); if (clientId) refreshPuntos(clientId) }}
+          onPremioProcesado={() => { if (clientId) refreshPuntos(clientId) }}
+          usuarioActivo={user || undefined}
+          tenantIdActivo={tenantId ?? undefined}
+        />
 
       </div>
     </div>
