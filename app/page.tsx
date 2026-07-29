@@ -6,8 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaClock, FaHeart, FaEye, FaGem,
-  FaBars, FaTimes, FaRegStar, FaInstagram, FaWhatsapp, FaMapMarkerAlt
+  FaClock, FaBars, FaTimes, FaInstagram, FaWhatsapp, FaMapMarkerAlt
 } from 'react-icons/fa'
 
 // ✅ IMÁGENES DE RESPALDO ASEGURADAS POR CATEGORÍA
@@ -109,7 +108,7 @@ export default function LandingPage() {
     }
   }
 
-  // Carga de todo el portafolio (Sin filtros restrictivos de is_active para traer cejas, uñas, etc.)
+  // Carga de todo el portafolio
   useEffect(() => {
     const fetchServicios = async () => {
       try {
@@ -241,7 +240,7 @@ export default function LandingPage() {
             Creamos detalles que cautivan a simple vista
           </h2>
           <p className="text-xs sm:text-sm text-[#5C4A3E] font-light leading-relaxed">
-            En Salon Fresh no creo en tratamientos genéricos. Diseñamos experiencias personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
+            En Salon Fresh no creemos en tratamientos genéricos. Diseñamos experiencias personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
           </p>
           <div className="grid grid-cols-3 gap-4 pt-4 text-center">
             <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
