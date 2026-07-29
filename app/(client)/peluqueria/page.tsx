@@ -416,164 +416,165 @@ export default function PeluqueriaPage() {
         )}
 
         {/* ============================================================ */}
-        {/* HERO SECTION — CON FOTO DE SYLVANA Y COLORES CONSISTENTES */}
-        {/* ============================================================ */}
-        <div className={`relative overflow-hidden rounded-2xl min-h-[440px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
+{/* HERO SECTION — CON SYLVANA COMO IMAGEN PRINCIPAL */}
+{/* ============================================================ */}
+<div className={`relative overflow-hidden rounded-2xl min-h-[440px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
+  isDark 
+    ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+    : 'border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+}`}>
+  {/* Fondo con FOTO DE SYLVANA como imagen principal */}
+  <div className="absolute inset-0">
+    <img 
+      src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png"
+      alt="Sylvana - Peluquería y Depilación"
+      className="w-full h-full object-cover object-top"
+    />
+    {/* Overlay oscuro para legibilidad del texto */}
+    <div className={`absolute inset-0 ${
+      isDark 
+        ? 'bg-gradient-to-r from-[#1E120C]/90 via-[#1E120C]/60 to-[#1E120C]/30' 
+        : 'bg-gradient-to-r from-[#1A0E0A]/85 via-[#1A0E0A]/50 to-transparent'
+    }`} />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+  </div>
+
+  {/* Efectos de luz ambiental */}
+  <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
+  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
+
+  <div className="relative z-10 p-8 md:p-14 max-w-6xl w-full">
+    <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-12">
+      
+      {/* Columna izquierda: Texto */}
+      <div className="flex-1 text-white">
+        <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border mb-6 ${
           isDark 
-            ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
-            : 'border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+            ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
+            : 'bg-white/10 border-white/20'
         }`}>
-          <div className="absolute inset-0">
-            <img src={HAIR_IMAGES.hero} alt="Peluquería" className="w-full h-full object-cover" />
-            <div className={`absolute inset-0 ${
+          <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
+          <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+            isDark ? 'text-[#D4AF37]' : 'text-white/90'
+          }`}>
+            {settings?.business_name || 'Fresh Nails Studio'} • <span className="font-bold">Peluquería & Depilación</span>
+          </span>
+        </div>
+
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
+          <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
+            Arte
+          </span>{' '}
+          Capilar
+        </h1>
+        <p className="text-sm md:text-base text-white/80 mt-4 max-w-lg font-medium tracking-wide">
+          Transformamos tu estilo con cortes, tratamientos y depilación de vanguardia, diseñados para realzar tu esencia.
+        </p>
+
+        <div className="flex flex-wrap gap-3 mt-8">
+          <Link 
+            href="/agenda" 
+            className={`group relative overflow-hidden px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-3 transition-all duration-500 hover:-translate-y-0.5 active:scale-[0.97] ${
               isDark 
-                ? 'bg-gradient-to-r from-[#1E120C]/95 via-[#1E120C]/70 to-transparent' 
-                : 'bg-gradient-to-r from-[#1A0E0A]/90 via-[#1A0E0A]/60 to-transparent'
-            }`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
+            }`}
+          >
+            <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
+            <span>Reservar con Sylvana</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
+          </Link>
+
+          <button 
+            onClick={() => setActiveTab('galeria')} 
+            className={`px-6 py-3.5 rounded-xl border text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
+              isDark 
+                ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
+                : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
+            }`}
+          >
+            <Camera className="w-4 h-4" /> 
+            <span>Galería</span>
+          </button>
+        </div>
+
+        {/* Micro estadísticas */}
+        <div className="flex gap-6 mt-8 pt-6 border-t border-white/10">
+          <div>
+            <p className="text-2xl font-black text-[#D4AF37]">{servicios.length}</p>
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Servicios</p>
           </div>
-
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
-
-          <div className="relative z-10 p-8 md:p-14 max-w-6xl w-full">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-8 lg:gap-12">
-              
-              {/* Columna izquierda: Texto */}
-              <div className="flex-1 text-white">
-                <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-xl border mb-6 ${
-                  isDark 
-                    ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
-                    : 'bg-white/10 border-white/20'
-                }`}>
-                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
-                  <span className={`text-[8px] uppercase tracking-[0.25em] font-black ${
-                    isDark ? 'text-[#D4AF37]' : 'text-white/90'
-                  }`}>
-                    {settings?.business_name || 'Fresh Nails Studio'} • <span className="font-bold">Peluquería & Depilación</span>
-                  </span>
-                </div>
-
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05]">
-                  <span className="font-serif italic font-light text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-white bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
-                    Arte
-                  </span>{' '}
-                  Capilar
-                </h1>
-                <p className="text-sm md:text-base text-white/80 mt-4 max-w-lg font-medium tracking-wide">
-                  Transformamos tu estilo con cortes, tratamientos y depilación de vanguardia, diseñados para realzar tu esencia.
-                </p>
-
-                <div className="flex flex-wrap gap-3 mt-8">
-                  <Link 
-                    href="/agenda" 
-                    className={`group relative overflow-hidden px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-3 transition-all duration-500 hover:-translate-y-0.5 active:scale-[0.97] ${
-                      isDark 
-                        ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                        : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
-                    }`}
-                  >
-                    <Calendar className="w-4 h-4 group-hover:rotate-12 transition-transform duration-500" />
-                    <span>Reservar con Sylvana</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </Link>
-
-                  <button 
-                    onClick={() => setActiveTab('galeria')} 
-                    className={`px-6 py-3.5 rounded-xl border text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
-                      isDark 
-                        ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
-                        : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
-                    }`}
-                  >
-                    <Camera className="w-4 h-4" /> 
-                    <span>Galería</span>
-                  </button>
-                </div>
-
-                <div className="flex gap-6 mt-8 pt-6 border-t border-white/10">
-                  <div>
-                    <p className="text-2xl font-black text-[#D4AF37]">{servicios.length}</p>
-                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Servicios</p>
-                  </div>
-                  <div className="w-px bg-white/10" />
-                  <div>
-                    <p className="text-2xl font-black text-[#D4AF37]">{galleryImages.length}</p>
-                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Trabajos</p>
-                  </div>
-                  <div className="w-px bg-white/10" />
-                  <div>
-                    <p className="text-2xl font-black text-[#D4AF37]">{Object.values(reviews).flat().length}</p>
-                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Reseñas</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* ============================================================ */}
-              {/* Columna derecha: TARJETA DE SYLVANA */}
-              {/* ============================================================ */}
-              <div className="flex-shrink-0 w-full lg:w-[220px] xl:w-[260px]">
-                <div className={`relative rounded-2xl overflow-hidden border backdrop-blur-xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl ${
-                  isDark 
-                    ? 'bg-[#2A1B14]/80 border-[#3D281E] shadow-[0_20px_60px_rgba(0,0,0,0.5)]' 
-                    : 'bg-white/10 border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.2)]'
-                }`}>
-                  <div className="aspect-[3/4] relative overflow-hidden">
-                    <img 
-                      src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png"
-                      alt="Sylvana - Peluquería y Depilación"
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-[#D4AF37] text-[#1A0E0A] text-[8px] font-black uppercase tracking-[0.15em] shadow-lg">
-                      ✦ Especialista
-                    </div>
-
-                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
-                      <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-[0.15em] border border-white/10">
-                        ✂️ Peluquería
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-[0.15em] border border-white/10">
-                        🪒 Depilación
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 text-center">
-                    <h3 className="text-white font-black text-base tracking-tight">
-                      Sylvana
-                    </h3>
-                    <p className="text-[9px] font-medium tracking-[0.1em] text-white/60">
-                      Peluquería & Depilación
-                    </p>
-                    
-                    <div className="flex items-center justify-center gap-1 mt-2">
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star key={s} className="w-2.5 h-2.5 fill-[#D4AF37] text-[#D4AF37]" />
-                        ))}
-                      </div>
-                      <span className="text-[8px] font-bold text-white/50">4.9</span>
-                    </div>
-
-                    <Link 
-                      href="/agenda?professional=sylvana"
-                      className={`mt-3 w-full py-2 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] block ${
-                        isDark 
-                          ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                          : 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]'
-                      }`}
-                    >
-                      Agendar con Sylvana
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+          <div className="w-px bg-white/10" />
+          <div>
+            <p className="text-2xl font-black text-[#D4AF37]">{galleryImages.length}</p>
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Trabajos</p>
+          </div>
+          <div className="w-px bg-white/10" />
+          <div>
+            <p className="text-2xl font-black text-[#D4AF37]">{Object.values(reviews).flat().length}</p>
+            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-white/50">Reseñas</p>
           </div>
         </div>
+      </div>
+
+      {/* Columna derecha: Información de Sylvana (sin foto, solo datos) */}
+      <div className="flex-shrink-0 w-full lg:w-[220px] xl:w-[260px]">
+        <div className={`relative rounded-2xl p-6 border backdrop-blur-xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl text-center ${
+          isDark 
+            ? 'bg-[#2A1B14]/80 border-[#3D281E] shadow-[0_20px_60px_rgba(0,0,0,0.5)]' 
+            : 'bg-white/10 border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.2)]'
+        }`}>
+          
+          {/* Avatar pequeño de Sylvana (circular) */}
+          <div className="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-[#D4AF37] shadow-lg mb-4">
+            <img 
+              src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png"
+              alt="Sylvana"
+              className="w-full h-full object-cover object-top"
+            />
+          </div>
+
+          <h3 className="text-white font-black text-lg tracking-tight">
+            Sylvana
+          </h3>
+          <p className="text-[10px] font-medium tracking-[0.1em] text-white/60">
+            Especialista en Peluquería & Depilación
+          </p>
+          
+          <div className="flex items-center justify-center gap-1 mt-3">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37]" />
+              ))}
+            </div>
+            <span className="text-[8px] font-bold text-white/50">4.9</span>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-1.5 mt-3">
+            <span className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-[0.15em] border border-white/10">
+              ✂️ Peluquería
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md text-white text-[7px] font-black uppercase tracking-[0.15em] border border-white/10">
+              🪒 Depilación
+            </span>
+          </div>
+
+          <Link 
+            href="/agenda?professional=sylvana"
+            className={`mt-4 w-full py-2.5 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] block ${
+              isDark 
+                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                : 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]'
+            }`}
+          >
+            Agendar con Sylvana
+          </Link>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
         {/* ============================================================ */}
         {/* TABS */}
