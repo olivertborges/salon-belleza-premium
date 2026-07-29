@@ -21,18 +21,18 @@ interface AdminSidebarProps {
 }
 
 const ALL_MENU_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'from-pink-500 to-rose-500' },
-  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/admin/agenda', color: 'from-violet-500 to-fuchsia-500' },
-  { id: 'galeria', name: 'Galería', icon: Palette, path: '/admin/galeria', color: 'from-amber-500 to-rose-500' },
-  { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'from-blue-500 to-cyan-500' },
-  { id: 'clientes', name: 'Clientas', icon: Users, path: '/admin/clientes', color: 'from-rose-500 to-pink-500' },
-  { id: 'fidelizacion', name: 'VIP Club', icon: Crown, path: '/admin/fidelizacion', color: 'from-amber-500 to-orange-500' },
-  { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'from-fuchsia-500 to-pink-500' },
-  { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones', color: 'from-emerald-500 to-teal-500' }, // ✅ NUEVO
-  { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'from-emerald-500 to-teal-500' },
-  { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'from-red-500 to-rose-500' },
-  { id: 'usuarios', name: 'Usuarios', icon: UsersRound, path: '/admin/usuarios', color: 'from-cyan-500 to-blue-500' },
-  { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'from-orange-500 to-amber-500' },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/admin/agenda', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'galeria', name: 'Galería', icon: Palette, path: '/admin/galeria', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'historial', name: 'Historial', icon: History, path: '/admin/historial', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'clientes', name: 'Clientas', icon: Users, path: '/admin/clientes', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'fidelizacion', name: 'VIP Club', icon: Crown, path: '/admin/fidelizacion', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'usuarios', name: 'Usuarios', icon: UsersRound, path: '/admin/usuarios', color: 'from-[#D4AF37] to-[#E8D5A0]' },
+  { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion', color: 'from-[#D4AF37] to-[#E8D5A0]' },
 ]
 
 // Animaciones
@@ -72,8 +72,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const isDark = theme === 'dark'
 
+  // Gradiente dorado fijo
   const brandGradient = {
-    backgroundImage: `linear-gradient(to right, ${settings?.primary_color || '#DB5B9A'}, ${settings?.secondary_color || '#E5A46E'})`
+    backgroundImage: 'linear-gradient(to right, #D4AF37, #E8D5A0)'
   }
 
   useEffect(() => {
@@ -125,16 +126,16 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isDark 
-            ? 'bg-gradient-to-b from-[#0f0c1b] via-[#130f24] to-[#0f0c1b] border-r border-fuchsia-950/40' 
-            : 'bg-gradient-to-b from-[#fffafd] via-white to-[#fff5f8] border-r border-pink-100/60'
+            ? 'bg-[#1E120C] border-r border-[#3D281E]' 
+            : 'bg-[#FFF9F6] border-r border-[#F0E4DA]'
           }
         `}
       >
-        {/* EFECTO GLOW DE FONDO */}
+        {/* EFECTO GLOW DE FONDO - DORADO */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div 
-            className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-20"
-            style={{ backgroundColor: settings?.primary_color || '#DB5B9A' }}
+            className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-10"
+            style={{ backgroundColor: '#D4AF37' }}
             animate={{
               x: [0, 20, -10, 0],
               y: [0, -10, 20, 0]
@@ -142,8 +143,8 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             transition={{ duration: 8, repeat: Infinity }}
           />
           <motion.div 
-            className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-20"
-            style={{ backgroundColor: settings?.secondary_color || '#E5A46E' }}
+            className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-10"
+            style={{ backgroundColor: '#E8D5A0' }}
             animate={{
               x: [0, -20, 10, 0],
               y: [0, 10, -20, 0]
@@ -152,10 +153,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           />
         </div>
 
-        {/* CABECERA CON BRILLO Y LOGO */}
+        {/* CABECERA */}
         <motion.div 
           className={`h-16 px-4 flex items-center justify-between border-b relative z-10 ${
-            isDark ? 'border-fuchsia-950/30' : 'border-pink-50'
+            isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
           }`}
         >
           <motion.div 
@@ -163,12 +164,12 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             whileHover={{ scale: 1.02 }}
           >
             <motion.div 
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#D4AF37]/20"
               style={brandGradient}
               whileHover={{ rotate: -10, scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <Sparkles className="w-4 h-4 text-white animate-pulse" />
+              <Sparkles className="w-4 h-4 text-[#1A0E0A] animate-pulse" />
             </motion.div>
 
             <AnimatePresence>
@@ -180,10 +181,14 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   transition={{ duration: 0.3 }}
                   className="animate-fade-in"
                 >
-                  <span className="text-sm font-serif tracking-wide block font-extrabold bg-gradient-to-r from-pink-600 via-fuchsia-600 to-rose-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-amber-300">
+                  <span className={`text-sm font-serif tracking-wide block font-extrabold ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
                     Fresh Nails
                   </span>
-                  <span className="text-[9px] uppercase tracking-widest font-mono block text-pink-400 dark:text-fuchsia-400/80 font-bold">
+                  <span className={`text-[9px] uppercase tracking-widest font-mono block font-bold ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
                     {role || 'Studio'}
                   </span>
                 </motion.div>
@@ -194,7 +199,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           {isOpen && (
             <motion.button 
               onClick={onClose} 
-              className="lg:hidden p-1.5 rounded-xl hover:bg-pink-100/20 text-pink-400 hover:text-pink-600 transition-colors"
+              className={`lg:hidden p-1.5 rounded-xl transition-colors ${
+                isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#A89588] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+              }`}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -203,7 +210,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           )}
         </motion.div>
 
-        {/* PERFIL GLOW CON ANIMACIÓN */}
+        {/* PERFIL */}
         <AnimatePresence>
           {!collapsed && (
             <motion.div 
@@ -215,13 +222,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               <motion.div 
                 className={`p-3 rounded-2xl flex items-center gap-3 transition-all border relative overflow-hidden ${
                   isDark 
-                    ? 'bg-gradient-to-r from-fuchsia-950/30 to-pink-950/20 border-fuchsia-900/30' 
-                    : 'bg-gradient-to-r from-pink-50/60 to-amber-50/40 border-pink-100/70'
+                    ? 'bg-[#2A1B14] border-[#3D281E]' 
+                    : 'bg-white border-[#F0E4DA]'
                 }`}
                 whileHover={{ scale: 1.02, y: -2 }}
               >
                 <motion.div 
-                  className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-white shadow-sm shrink-0"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center font-mono text-xs font-bold text-[#1A0E0A] shadow-sm shrink-0"
                   style={brandGradient}
                   whileHover={{ scale: 1.1, rotate: -5 }}
                 >
@@ -229,7 +236,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                 </motion.div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate text-stone-800 dark:text-pink-100">
+                  <p className={`text-xs font-semibold truncate ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
                     {user?.email || 'Admin'}
                   </p>
                   <motion.div 
@@ -237,8 +246,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                    <span className="text-[9px] font-mono tracking-wider text-emerald-600 dark:text-emerald-400 font-bold uppercase">
+                    <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full" />
+                    <span className={`text-[9px] font-mono tracking-wider font-bold uppercase ${
+                      isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+                    }`}>
                       Activa
                     </span>
                   </motion.div>
@@ -248,7 +259,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           )}
         </AnimatePresence>
 
-        {/* NAVEGACIÓN CON ANIMACIONES */}
+        {/* NAVEGACIÓN */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-none relative z-10">
           {ALL_MENU_ITEMS.map((item, index) => {
             const Icon = item.icon
@@ -271,10 +282,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group
                   ${collapsed ? 'justify-center px-0' : ''}
                   ${isActive 
-                    ? 'text-white shadow-lg' 
+                    ? 'text-[#1A0E0A] shadow-lg shadow-[#D4AF37]/20' 
                     : isDark
-                      ? 'text-stone-400 hover:text-stone-100 hover:bg-stone-900/30'
-                      : 'text-stone-500 hover:text-pink-700 hover:bg-pink-50/30'
+                      ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]/50'
+                      : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]/50'
                   }
                 `}
                 style={isActive ? brandGradient : {}}
@@ -282,7 +293,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               >
                 {isActive && (
                   <motion.span 
-                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-white/80"
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#1A0E0A]"
                     layoutId="activeIndicator"
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
@@ -292,7 +303,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   <motion.span 
                     className="absolute inset-0 rounded-xl pointer-events-none"
                     animate={{
-                      boxShadow: `inset 0 0 20px ${settings?.primary_color || '#DB5B9A'}15`
+                      boxShadow: `inset 0 0 20px rgba(212, 175, 55, 0.1)`
                     }}
                   />
                 )}
@@ -305,7 +316,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   transition={{ duration: 0.3 }}
                 >
                   <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
-                    isActive ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : ''
+                    isActive ? 'text-[#1A0E0A]' : ''
                   }`} />
                 </motion.div>
 
@@ -324,7 +335,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
 
                 {isActive && !collapsed && (
                   <motion.span 
-                    className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60"
+                    className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1A0E0A]/60"
                     animate={{ scale: [1, 1.5, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
@@ -334,17 +345,17 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           })}
         </nav>
 
-        {/* CONTROLES ELEGANTES CON ANIMACIONES */}
+        {/* CONTROLES */}
         <motion.div 
           className={`p-3 border-t space-y-1 shrink-0 relative z-10 ${
-            isDark ? 'border-fuchsia-950/30 bg-[#0c0a14]/50' : 'border-pink-50 bg-[#fffdf1]/30'
+            isDark ? 'border-[#3D281E] bg-[#1E120C]/50' : 'border-[#F0E4DA] bg-[#FFF9F6]/50'
           }`}
         >
           <motion.button 
             onClick={toggleTheme} 
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
               collapsed ? 'justify-center' : ''
-            }`}
+            } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
             whileHover={{ scale: 1.02, x: 4 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -353,8 +364,8 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               transition={{ duration: 0.5 }}
             >
               {isDark ? 
-                <Sun className="w-4 h-4 text-amber-400" /> : 
-                <Moon className="w-4 h-4 text-indigo-500" />
+                <Sun className="w-4 h-4 text-[#D4AF37]" /> : 
+                <Moon className="w-4 h-4 text-[#D4AF37]" />
               }
             </motion.div>
             <AnimatePresence>
@@ -363,7 +374,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="text-stone-500 dark:text-stone-400"
+                  className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}
                 >
                   {isDark ? 'Modo Claro' : 'Modo Oscuro'}
                 </motion.span>
@@ -375,7 +386,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             onClick={handleLogoutClick} 
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
               collapsed ? 'justify-center' : ''
-            }`}
+            } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
             whileHover={{ scale: 1.02, x: 4 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -383,7 +394,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               whileHover={{ rotate: [0, -10, 10, -10, 0] }}
               transition={{ duration: 0.5 }}
             >
-              <Power className="w-4 h-4 text-stone-400 group-hover:text-rose-500 transition-colors" />
+              <Power className={`w-4 h-4 transition-colors ${
+                isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
+              }`} />
             </motion.div>
             <AnimatePresence>
               {!collapsed && (
@@ -391,7 +404,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="text-stone-500 dark:text-stone-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors"
+                  className={`transition-colors ${
+                    isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
+                  }`}
                 >
                   Cerrar sesión
                 </motion.span>
@@ -415,9 +430,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         className="hidden lg:flex fixed top-5 border rounded-full p-1.5 transition-all z-50 shadow-lg backdrop-blur-sm"
         style={{
           left: collapsed ? '60px' : '244px',
-          backgroundColor: isDark ? '#151126' : 'white',
-          borderColor: isDark ? '#fuchsia-900/50' : '#pink-200',
-          color: isDark ? '#fuchsia-400' : '#pink-400',
+          backgroundColor: isDark ? '#2A1B14' : 'white',
+          borderColor: isDark ? '#3D281E' : '#F0E4DA',
+          color: isDark ? '#D4AF37' : '#D4AF37',
         }}
         whileHover={{ scale: 1.1, rotate: collapsed ? 10 : -10 }}
         whileTap={{ scale: 0.9 }}
