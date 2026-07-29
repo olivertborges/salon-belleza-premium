@@ -3,14 +3,15 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase/client'
 import { 
   Calendar, Sparkles, Gift, ArrowRight, RefreshCw, 
-  Crown, CheckCircle2, Clock, Gem, Star, 
-  Heart, Award, PartyPopper, Diamond, Medal, User
+  Crown, Clock, Gem, Star, User, Heart, Compass
 } from 'lucide-react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+
+// Componentes del Ecosistema del Cliente
 import InsigniasLogros from '@/components/InsigniasLogros'
 import InstagramFeed from '@/components/InstagramFeed'
 import QRReferido from '@/components/QRReferido'
@@ -21,8 +22,14 @@ import PromocionesVolante from '@/components/PromocionesVolante'
 import FooterCliente from '@/components/FooterCliente'
 
 // ============================================================
-// TIPOS
+// PROTOCOLOS DE TIPADO (TypeScript)
 // ============================================================
+interface ServicioInfo {
+  name: string
+  price: number
+  duration: number
+}
+
 interface Cita {
   id: string
   date: string
@@ -30,7 +37,7 @@ interface Cita {
   status: string
   service_id: string
   client_id: string
-  services?: { name: string; price: number; duration: number }
+  services?: ServicioInfo
 }
 
 interface Cliente {
@@ -44,133 +51,109 @@ interface Cliente {
 }
 
 // ============================================================
-// COMPONENTE DE CARGA - SIMPLIFICADO
+// MICRO-COMPONENTES REDISEÑADOS (ESTILO ATELIER EDITORIAL)
 // ============================================================
+
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative">
-        <div className="w-12 h-12 rounded-full border-2 border-rose-200/30 border-t-rose-400 animate-spin" />
-        <Sparkles className="w-5 h-5 text-rose-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+  <div className="flex items-center justify-center min-h-[80vh] bg-[#FFF9F6]">
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative w-16 h-16">
+        <div className="absolute inset-0 rounded-full border border-[#D4AF37]/20" />
+        <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
       </div>
-      <p className="text-xs text-stone-400 tracking-widest uppercase font-light animate-pulse">
-        Cargando tu espacio...
+      <p className="text-[10px] text-[#1A0E0A] tracking-[0.4em] uppercase font-light animate-pulse">
+        Sincronizando tu espacio de belleza...
       </p>
     </div>
   </div>
 )
 
-// ============================================================
-// TARJETA DE PUNTOS - REDISEÑADA Y MÁS LIMPIA
-// ============================================================
-const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark: boolean }) => (
-  <div className={`relative p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
-    isDark 
-      ? 'bg-zinc-900/60 border-zinc-800/50' 
-      : 'bg-white/80 border-rose-100/50 shadow-sm'
-  }`}>
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            isDark ? 'bg-rose-500/20' : 'bg-rose-100'
-          }`}>
-            <Gem className={`w-4 h-4 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
+const PointsCard = ({ glow, hair }: { glow: number; hair: number }) => (
+  <div className="relative overflow-hidden bg-white border border-[#F0E4DA] p-6 rounded-none shadow-sm group hover:border-[#D4AF37]/40 transition-all duration-500">
+    <div className="absolute top-0 right-0 w-24 h-24 bg-[#FFF9F6] rounded-full translate-x-8 -translate-y-8 pointer-events-none group-hover:scale-110 transition-transform duration-700" />
+    
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+      <div className="flex items-center gap-8">
+        {/* Marcador GLOW */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Gem className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span className="text-[9px] font-bold text-[#A89588] tracking-[0.2em] uppercase">Glow Points</span>
           </div>
-          <div>
-            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-stone-800'}`}>
-              {glow}
-            </span>
-            <span className="text-[10px] font-semibold text-rose-400 ml-1">GLOW</span>
-          </div>
+          <p className="font-serif text-3xl font-light text-[#1A0E0A]">{glow}</p>
         </div>
-        <div className="w-px h-8 bg-stone-200/30" />
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            isDark ? 'bg-amber-500/20' : 'bg-amber-100'
-          }`}>
-            <Star className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
+        
+        <div className="w-[1px] h-10 bg-[#F0E4DA] hidden sm:block" />
+        
+        {/* Marcador HAIR */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Star className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span className="text-[9px] font-bold text-[#A89588] tracking-[0.2em] uppercase">Hair Points</span>
           </div>
-          <div>
-            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-stone-800'}`}>
-              {hair}
-            </span>
-            <span className="text-[10px] font-semibold text-amber-400 ml-1">HAIR</span>
-          </div>
+          <p className="font-serif text-3xl font-light text-[#1A0E0A]">{hair}</p>
         </div>
       </div>
-      <div className="text-right">
-        <div className={`text-2xl font-serif ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>
-          {glow + hair}
+
+      <div className="text-left sm:text-right border-t sm:border-t-0 border-[#F0E4DA] pt-4 sm:pt-0">
+        <span className="text-[9px] text-[#D4AF37] uppercase tracking-[0.3em] font-bold block mb-1">Estatus del Balance</span>
+        <div className="font-serif text-4xl font-normal text-[#1A0E0A] tracking-tight">
+          {glow + hair} <span className="text-xs font-sans font-light text-[#5C4A3E] tracking-widest">PTS</span>
         </div>
-        <p className="text-[8px] text-stone-400 uppercase tracking-widest">Total</p>
       </div>
     </div>
   </div>
 )
 
-// ============================================================
-// TARJETA DE PRÓXIMA CITA - REDISEÑADA
-// ============================================================
-const NextAppointmentCard = ({ cita, isDark }: { cita: any; isDark: boolean }) => {
+const NextAppointmentCard = ({ cita }: { cita: Cita | undefined }) => {
   if (!cita) {
     return (
-      <div className={`p-6 rounded-2xl border-2 border-dashed text-center ${
-        isDark ? 'border-zinc-800/50 bg-zinc-900/20' : 'border-rose-200/40 bg-rose-50/20'
-      }`}>
-        <Calendar className="w-8 h-8 text-rose-300 mx-auto mb-3" />
-        <p className={`text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-          No tienes citas próximas
+      <div className="p-8 text-center bg-white border border-dashed border-[#D4AF37]/30 rounded-none space-y-4">
+        <Calendar className="w-6 h-6 text-[#A89588] mx-auto stroke-[1.2]" />
+        <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">
+          No registras rituales programados en el radar
         </p>
         <Link 
           href="/agenda"
-          className="inline-flex items-center gap-2 mt-3 text-xs font-semibold text-rose-500 hover:text-rose-600 transition-colors"
+          className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-[#D4AF37] hover:text-[#1A0E0A] transition-colors pt-2"
         >
-          Agenda tu cita
+          Agendar Tratamiento de Autor
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
     )
   }
 
+  const isConfirmed = cita.status === 'confirmed'
+
   return (
-    <div className={`p-5 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
-      isDark 
-        ? 'bg-zinc-900/60 border-zinc-800/50' 
-        : 'bg-white/80 border-rose-100/50 shadow-sm'
-    }`}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider ${
-              cita.status === 'confirmed'
-                ? 'bg-emerald-100/80 text-emerald-700 border border-emerald-200/50'
-                : 'bg-amber-100/80 text-amber-700 border border-amber-200/50'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                cita.status === 'confirmed' ? 'bg-emerald-500' : 'bg-amber-500'
-              } animate-pulse`} />
-              {cita.status === 'confirmed' ? 'Confirmada' : 'Pendiente'}
-            </span>
+    <div className="p-6 bg-white border border-[#F0E4DA] rounded-none shadow-sm hover:shadow-md transition-all duration-500 relative overflow-hidden group">
+      <div className="absolute top-0 left-0 h-[3px] bg-[#D4AF37] w-0 group-hover:w-full transition-all duration-700" />
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FFF9F6] border border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-[0.15em] text-[#1A0E0A]">
+            <span className={`w-1.5 h-1.5 rounded-full ${isConfirmed ? 'bg-amber-600' : 'bg-[#A89588]'} animate-pulse`} />
+            {isConfirmed ? 'Confirmado en Agenda' : 'Esperando Confirmación'}
           </div>
-          <h4 className={`text-lg font-serif ${isDark ? 'text-white' : 'text-stone-800'}`}>
-            {cita.services?.name || 'Servicio de Belleza'}
+          
+          <h4 className="font-serif text-2xl font-light tracking-wide text-[#1A0E0A]">
+            {cita.services?.name || 'Tratamiento de Belleza Plena'}
           </h4>
-          <div className="flex items-center gap-4 text-sm">
-            <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-stone-500'}`}>
-              <Calendar className="w-3.5 h-3.5 text-rose-400" />
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs pt-1">
+            <span className="flex items-center gap-2 text-[#5C4A3E] font-light tracking-wide">
+              <Calendar className="w-3.5 h-3.5 text-[#D4AF37] stroke-[1.5]" />
               {cita.date}
             </span>
-            <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-stone-500'}`}>
-              <Clock className="w-3.5 h-3.5 text-rose-400" />
+            <span className="flex items-center gap-2 text-[#5C4A3E] font-light tracking-wide">
+              <Clock className="w-3.5 h-3.5 text-[#D4AF37] stroke-[1.5]" />
               {cita.time} hs
             </span>
           </div>
         </div>
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-          isDark ? 'bg-rose-500/10' : 'bg-rose-100/50'
-        }`}>
-          <Crown className={`w-4 h-4 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
+
+        <div className="w-12 h-12 bg-[#FFF9F6] border border-[#F0E4DA] flex items-center justify-center rounded-none shrink-0 self-start sm:self-center">
+          <Crown className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
         </div>
       </div>
     </div>
@@ -178,13 +161,12 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: any; isDark: boolean }) =
 }
 
 // ============================================================
-// COMPONENTE PRINCIPAL
+// VISTA MAESTRA (DISEÑO EDITORIAL INTEGRADO)
 // ============================================================
 export default function ClientDashboardIndex() {
   const { user, tenantId, refreshUserData } = useAuth()
-  const { theme } = useTheme()
-  
-  // Estados
+
+  // Controladores de Estado Reactivos
   const [citas, setCitas] = useState<Cita[]>([])
   const [puntosGlow, setPuntosGlow] = useState(0)
   const [puntosHair, setPuntosHair] = useState(0)
@@ -198,11 +180,6 @@ export default function ClientDashboardIndex() {
   const [clientId, setClientId] = useState<string | null>(null)
   const [isRuletaOpen, setIsRuletaOpen] = useState(false)
 
-  const isDark = theme === 'dark'
-
-  // ============================================================
-  // FUNCIONES
-  // ============================================================
   const refreshPuntos = async (activeClientId: string) => {
     if (!activeClientId) return
     try {
@@ -217,7 +194,7 @@ export default function ClientDashboardIndex() {
         setPuntosHair(data.hair_points || 0)
       }
     } catch (error) {
-      console.error('Error al refrescar puntos:', error)
+      console.error('Error al sincronizar monedero de fidelidad:', error)
     }
   }
 
@@ -225,12 +202,9 @@ export default function ClientDashboardIndex() {
     setRefreshing(true)
     await refreshUserData()
     if (clientId) await refreshPuntos(clientId)
-    setTimeout(() => setRefreshing(false), 600)
+    setTimeout(() => setRefreshing(false), 800)
   }
 
-  // ============================================================
-  // EFECTO PRINCIPAL
-  // ============================================================
   useEffect(() => {
     async function loadDashboardData() {
       if (!user?.id) {
@@ -248,7 +222,7 @@ export default function ClientDashboardIndex() {
         if (clienteData) {
           const currentCliente = clienteData as unknown as Cliente
           setClientId(currentCliente.id)
-          setNombreCliente(currentCliente.name || 'Cliente')
+          setNombreCliente(currentCliente.name || 'Invitado Atelier')
           setCodigoReferido(currentCliente.referral_code || '')
 
           await refreshPuntos(currentCliente.id)
@@ -283,7 +257,7 @@ export default function ClientDashboardIndex() {
           setReferidos(referidosData || [])
         }
       } catch (error) {
-        console.error('Error cargando dashboard:', error)
+        console.error('Error al poblar el panel de control editorial:', error)
       } finally {
         setLoading(false)
       }
@@ -292,135 +266,97 @@ export default function ClientDashboardIndex() {
     loadDashboardData()
   }, [user])
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   if (loading) return <LoadingSpinner />
 
   const proximaCita = citasProximas[0]
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${
-      isDark ? 'bg-zinc-950' : 'bg-stone-50'
-    }`}>
+    <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased selection:bg-[#D4AF37]/20 pb-16">
       
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
+      {/* Fondo Texturizado Minimalista */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-30 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+
+      <div className="max-w-5xl mx-auto px-6 pt-24 pb-12 space-y-8 relative z-10">
 
         {/* ============================================================ */}
-        {/* 👤 HEADER */}
+        {/* 👤 PERFIL & CABECERA EDITORIAL */}
         {/* ============================================================ */}
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-          isDark 
-            ? 'bg-zinc-900/60 border-zinc-800/50' 
-            : 'bg-white/80 border-rose-100/50 shadow-sm'
-        }`}>
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isDark ? 'bg-rose-500/20' : 'bg-rose-100'
-                }`}>
-                  <User className={`w-5 h-5 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
-                </div>
-                <div>
-                  <h1 className={`text-2xl font-serif font-light ${
-                    isDark ? 'text-white' : 'text-stone-800'
-                  }`}>
-                    Hola, <span className={`font-serif italic ${
-                      isDark ? 'text-rose-400' : 'text-rose-500'
-                    }`}>{nombreCliente}</span>
-                  </h1>
-                </div>
+        <div className="bg-white border border-[#F0E4DA] p-6 sm:p-8 rounded-none shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-none bg-[#FFF9F6] border border-[#D4AF37]/30 flex items-center justify-center shrink-0">
+                <User className="w-6 h-6 text-[#D4AF37] stroke-[1.2]" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block">Panel Privado</span>
+                <h1 className="font-serif text-3xl sm:text-4xl font-light tracking-tight text-[#1A0E0A]">
+                  Bienvenido, <span className="italic font-normal">{nombreCliente}</span>
+                </h1>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-3 self-end sm:self-center">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  isDark 
-                    ? 'hover:bg-zinc-800/50 text-zinc-400 hover:text-white' 
-                    : 'hover:bg-rose-50 text-stone-400 hover:text-rose-600'
-                }`}
+                aria-label="Refrescar catálogo"
+                className="p-3 bg-[#FFF9F6] border border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37] transition-all duration-300"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
 
               <Link 
                 href="/agenda" 
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-white ${
-                  isDark 
-                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 hover:shadow-lg hover:shadow-rose-500/25' 
-                    : 'bg-gradient-to-r from-rose-500 to-pink-500 hover:shadow-lg hover:shadow-rose-500/25'
-                }`}
+                className="bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-500 flex items-center gap-2"
               >
-                <Calendar className="w-4 h-4" />
-                Agendar
-                <ArrowRight className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5 stroke-[1.5]" />
+                Reservar Cita
               </Link>
             </div>
           </div>
 
-          {/* Puntos */}
-          <div className="mt-4">
-            <PointsCard glow={puntosGlow} hair={puntosHair} isDark={isDark} />
-          </div>
+          {/* Wallet Integrada */}
+          <PointsCard glow={puntosGlow} hair={puntosHair} />
         </div>
 
         {/* ============================================================ */}
-        {/* 📅 PRÓXIMA CITA */}
+        {/* 📅 EJE DE CITAS ACTIVAS */}
         {/* ============================================================ */}
-        <section>
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar className={`w-4 h-4 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
-            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-stone-700'}`}>
-              Próxima Cita
-            </h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-rose-200/30 to-transparent" />
+        <section className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase">Próximo Ritual</span>
+            <div className="flex-1 h-[1px] bg-[#D4AF37]/20" />
           </div>
-          <NextAppointmentCard cita={proximaCita} isDark={isDark} />
+          <NextAppointmentCard cita={proximaCita} />
         </section>
 
         {/* ============================================================ */}
-        {/* 📢 ANUNCIOS */}
+        {/* 📢 PASARELA DE ANUNCIOS Y EVENTOS */}
         {/* ============================================================ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-            isDark ? 'shadow-black/20' : 'shadow-rose-200/10'
-          }`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border border-[#F0E4DA] bg-white p-2">
             <AnunciosBanner position="hero" limit={2} />
           </div>
-          <div className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-            isDark ? 'shadow-black/20' : 'shadow-rose-200/10'
-          }`}>
+          <div className="border border-[#F0E4DA] bg-white p-2">
             <PromocionesVolante limit={3} />
           </div>
         </div>
 
         {/* ============================================================ */}
-        {/* 🎯 MISIONES DIARIAS */}
+        {/* 🎯 SECCIÓN MISIONES DEL ATELIER */}
         {/* ============================================================ */}
-        <div className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-          isDark ? 'shadow-black/20' : 'shadow-rose-200/10'
-        }`}>
+        <div className="bg-white border border-[#F0E4DA] p-2">
           <MisionesDiarias />
         </div>
 
         {/* ============================================================ */}
-        {/* 🏆 LOGROS Y REFERIDOS */}
+        {/* 🏆 FIDELIZACIÓN: INSIGNIAS Y RECOMENDADOS */}
         {/* ============================================================ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-            isDark ? 'shadow-black/20' : 'shadow-rose-200/10'
-          }`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border border-[#F0E4DA] p-2">
             <QRReferido codigo={codigoReferido} user={user} />
           </div>
-          <div className={`p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
-            isDark 
-              ? 'bg-zinc-900/60 border-zinc-800/50' 
-              : 'bg-white/80 border-rose-100/50 shadow-sm'
-          }`}>
+          <div className="bg-white border border-[#F0E4DA] p-6 flex flex-col justify-center">
             <InsigniasLogros 
               citas={citas.length} 
               serviciosUnicos={serviciosUnicos} 
@@ -432,56 +368,41 @@ export default function ClientDashboardIndex() {
         </div>
 
         {/* ============================================================ */}
-        {/* 🎡 RULETA DE LA SUERTE */}
+        {/* 🎡 EXPERIENCIA INTERACTIVA (RULETA RE-IMAGINADA) */}
         {/* ============================================================ */}
-        <div className={`p-5 rounded-2xl border transition-all duration-300 hover:shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 ${
-          isDark 
-            ? 'bg-zinc-900/60 border-zinc-800/50' 
-            : 'bg-white/80 border-rose-100/50 shadow-sm'
-        }`}>
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              isDark ? 'bg-rose-500/20' : 'bg-rose-100'
-            }`}>
-              <Gift className={`w-5 h-5 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
+        <div className="bg-white border border-[#D4AF37]/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFF9F6] rounded-full translate-x-12 translate-y-12 opacity-50 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
+          
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 bg-[#FFF9F6] border border-[#D4AF37]/30 flex items-center justify-center">
+              <Gift className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
             </div>
-            <div>
-              <h3 className={`font-serif font-light ${isDark ? 'text-white' : 'text-stone-800'}`}>
-                Ruleta de la Suerte
-              </h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-500'}`}>
-                Gira y gana premios exclusivos
-              </p>
+            <div className="space-y-1">
+              <h3 className="font-serif text-xl font-light text-[#1A0E0A] tracking-wide">La Rueda de la Fortuna</h3>
+              <p className="text-xs text-[#5C4A3E] font-light">Accede a recompensas y beneficios exclusivos por lealtad.</p>
             </div>
           </div>
+          
           <button 
             onClick={() => setIsRuletaOpen(true)} 
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all duration-300 flex items-center gap-2 text-white ${
-              isDark 
-                ? 'bg-gradient-to-r from-rose-500 to-pink-500 hover:shadow-lg hover:shadow-rose-500/25' 
-                : 'bg-gradient-to-r from-rose-500 to-pink-500 hover:shadow-lg hover:shadow-rose-500/25'
-            }`}
+            className="w-full sm:w-auto bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-500 shrink-0 relative z-10"
           >
-            <PartyPopper className="w-4 h-4" />
-            Girar
+            Activar Rueda
           </button>
         </div>
 
         {/* ============================================================ */}
-        {/* 📸 INSTAGRAM */}
+        {/* 📸 INSTAGRAM SOCIAL GALLERY */}
         {/* ============================================================ */}
-        <div className={`pt-4 border-t ${isDark ? 'border-zinc-800/50' : 'border-rose-200/30'}`}>
-          <div className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${
-            isDark ? 'shadow-black/20' : 'shadow-rose-200/10'
-          }`}>
-            <InstagramFeed />
-          </div>
+        <div className="pt-6 border-t border-[#D4AF37]/20">
+          <InstagramFeed />
         </div>
 
+        {/* Footer del Ecosistema */}
         <FooterCliente />
 
         {/* ============================================================ */}
-        {/* 🎡 RULETA MODAL */}
+        {/* 🎡 CAPA MODAL: EXPERIENCIA DIGITAL */}
         {/* ============================================================ */}
         <RuletaModal
           isOpen={isRuletaOpen}
