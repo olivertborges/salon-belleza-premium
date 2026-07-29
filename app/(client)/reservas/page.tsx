@@ -72,30 +72,28 @@ export default function MisReservasPage() {
 
       setLoading(true)
       setError(null)
-      setCitas([]) // Evita parpadeos de reservas de sesiones anteriores
+      setCitas([])
 
       let clienteId = null
 
       try {
-        // 1. Intentar por auth_user_id
         const { data: cliente } = await supabase
           .from('clients')
           .select('id, name, phone, email')
           .eq('auth_user_id', user.id)
-          .maybeSingle()
+          .maybeSingle() as any
 
         if (cliente) {
           clienteId = cliente.id
           setNombreCliente(cliente.name || '')
         }
 
-        // 2. Fallback por email
         if (!clienteId && user.email) {
           const { data: clientePorEmail } = await supabase
             .from('clients')
             .select('id, name')
             .eq('email', user.email)
-            .maybeSingle()
+            .maybeSingle() as any
 
           if (clientePorEmail) {
             clienteId = clientePorEmail.id
@@ -103,7 +101,6 @@ export default function MisReservasPage() {
           }
         }
 
-        // 3. Fallback por LocalStorage
         if (!clienteId) {
           const telGuardado = localStorage.getItem('cliente_telefono')
           if (telGuardado) {
@@ -111,7 +108,7 @@ export default function MisReservasPage() {
               .from('clients')
               .select('id, name')
               .eq('phone', telGuardado)
-              .maybeSingle()
+              .maybeSingle() as any
 
             if (clientePorTel) {
               clienteId = clientePorTel.id
@@ -126,7 +123,6 @@ export default function MisReservasPage() {
           return
         }
 
-        // 4. Obtener Citas
         const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select(`
@@ -148,7 +144,6 @@ export default function MisReservasPage() {
         if (appointmentsData && appointmentsData.length > 0) {
           const rawAppointments = appointmentsData as any[]
 
-          // Mapeo optimizado de Staff
           const staffIds = rawAppointments
             .map((c) => c.professional_id)
             .filter((id): id is string => !!id)
@@ -321,7 +316,7 @@ export default function MisReservasPage() {
           </div>
         </div>
 
-        {/* NOTIFICACIÓN DE ERROR CRÍTICO O SESIÓN */}
+        {/* NOTIFICACIÓN DE ERROR */}
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl backdrop-blur-md transition-all duration-500 shadow-lg ${
             isDark 
@@ -357,7 +352,6 @@ export default function MisReservasPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {citas.map((cita, index) => {
-                // Formateo ISO seguro para prevenir Hydration Mismatch en zonas horarias
                 const fechaLinda = format(parseISO(cita.date), "EEEE d 'de' MMMM", { locale: es })
 
                 return (
