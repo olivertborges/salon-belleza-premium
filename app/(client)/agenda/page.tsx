@@ -5,9 +5,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { 
-  format, addDays, isToday, parseISO, startOfMonth, endOfMonth, 
-  eachDayOfInterval, isSameDay, isBefore, startOfDay, addMonths, subMonths,
-  isWeekend, getDay, isAfter
+  format, parseISO, startOfMonth, endOfMonth, 
+  eachDayOfInterval, isSameDay, isBefore, startOfDay, 
+  addMonths, subMonths, getDay, isAfter
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase/client'
@@ -23,9 +23,9 @@ import {
   Calendar, Clock, User, Sparkles, ChevronRight, 
   CheckCircle2, ChevronLeft, Phone, Mail, FileText,
   Scissors, Heart, ArrowRight, Check, X, Crown,
-  Star, Award, Zap, Shield, Layers, Gem, Compass, Flower2, 
-  PartyPopper, Bookmark, MapPin, MessageCircle, CalendarDays,
-  Sun, Moon, Palette, Eye, Info, AlertCircle
+  Star, Award, CalendarDays, AlertCircle, Info,
+  UserCircle, CalendarCheck, Clock4, Gem, StarOff,
+  MessageCircle, MapPin, Gift, PartyPopper, BadgeCheck
 } from 'lucide-react'
 
 // ============================================================
@@ -50,6 +50,7 @@ interface Staff {
   specialty?: string
   avatar_url?: string
   is_active: boolean
+  services?: Service[]
 }
 
 interface Appointment {
@@ -66,6 +67,16 @@ interface ClientData {
   email: string
   notes: string
 }
+
+// ============================================================
+// DATOS DE EJEMPLO PARA PROFESIONALES (SI NO HAY EN DB)
+// ============================================================
+const FALLBACK_STAFF = [
+  { id: '1', name: 'Laura Gómez', specialty: 'Manicura & Nail Art', avatar_url: '', rating: 4.9 },
+  { id: '2', name: 'María Fernández', specialty: 'Micropigmentación & Cejas', avatar_url: '', rating: 4.8 },
+  { id: '3', name: 'Ana Martínez', specialty: 'Peluquería & Colorimetría', avatar_url: '', rating: 4.7 },
+  { id: '4', name: 'Carolina Ruiz', specialty: 'Estética & Depilación', avatar_url: '', rating: 4.9 },
+]
 
 // ============================================================
 // CATEGORÍAS DE SERVICIOS
@@ -88,21 +99,21 @@ function AgendaContent() {
 
   const searchParams = useSearchParams()
   const urlProfessionalId = searchParams?.get('professional') || null
-  const urlServiceName = searchParams?.get('service') || null
 
   // Estados
   const [step, setStep] = useState(1)
-  const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [availableTimes, setAvailableTimes] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   // Selecciones
+  const [selectedProfessional, setSelectedProfessional] = useState<Staff | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [selectedProfessional, setSelectedProfessional] = useState<Staff | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [selectedTime, setSelectedTime] = useState('')
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -114,7 +125,6 @@ function AgendaContent() {
 
   // UI
   const [showSuccess, setShowSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   // ============================================================
   // HORARIOS PREDETERMINADOS
@@ -127,7 +137,7 @@ function AgendaContent() {
   ]
 
   // ============================================================
-  // FUNCIÓN PARA OBTENER HORARIOS DE LA DB
+  // FUNCIONES
   // ============================================================
   const fetchWorkingHours = useCallback(async () => {
     try {
@@ -149,7 +159,7 @@ function AgendaContent() {
   }, [tenantId])
 
   // ============================================================
-  // CARGA INICIAL DE DATOS
+  // CARGA INICIAL
   // ============================================================
   useEffect(() => {
     const fetchData = async () => {
@@ -157,48 +167,43 @@ function AgendaContent() {
         setLoading(true)
         setError(null)
 
-        const [servicesRes, staffRes, hours] = await Promise.all([
-          supabase.from('services').select('*').eq('is_active', true),
+        const [staffRes, servicesRes, hours] = await Promise.all([
           supabase.from('staff').select('*').eq('is_active', true),
+          supabase.from('services').select('*').eq('is_active', true),
           fetchWorkingHours()
         ])
 
+        let staffData = staffRes.data || []
         const servicesData = servicesRes.data || []
-        const staffData = staffRes.data || []
 
-        setServices(servicesData)
+        // Si no hay staff en DB, usar fallback
+        if (staffData.length === 0) {
+          staffData = FALLBACK_STAFF
+        }
+
         setStaff(staffData)
+        setServices(servicesData)
         setAvailableTimes(hours)
 
         // Pre-selección por URL
-        if (urlServiceName) {
-          const foundService = servicesData.find(
-            (s: any) => s.name.toLowerCase().trim() === urlServiceName.toLowerCase().trim()
-          )
-          if (foundService) {
-            setSelectedService(foundService)
-            setStep(2)
-          }
-        }
-
         if (urlProfessionalId) {
           const foundStaff = staffData.find((p: any) => p.id === urlProfessionalId)
           if (foundStaff) {
             setSelectedProfessional(foundStaff)
-            if (selectedService) setStep(3)
+            setStep(2)
           }
         }
 
       } catch (err) {
         console.error('Error cargando datos:', err)
-        setError('No pudimos cargar los servicios. Por favor, intenta de nuevo.')
+        setError('No pudimos cargar los datos. Por favor, intenta de nuevo.')
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [fetchWorkingHours, urlProfessionalId, urlServiceName])
+  }, [fetchWorkingHours, urlProfessionalId])
 
   // ============================================================
   // OBTENER OCUPACIÓN DEL PROFESIONAL
@@ -227,7 +232,26 @@ function AgendaContent() {
   }, [selectedDate, selectedProfessional])
 
   // ============================================================
-  // VERIFICAR DISPONIBILIDAD DE HORA
+  // SERVICIOS DEL PROFESIONAL SELECCIONADO
+  // ============================================================
+  const professionalServices = useMemo(() => {
+    // Si el profesional tiene servicios asignados en la DB, usarlos
+    if (selectedProfessional?.services && selectedProfessional.services.length > 0) {
+      return selectedProfessional.services
+    }
+    // Si no, mostrar todos los servicios (o filtrar por categoría)
+    if (selectedCategory === 'all') return services
+    return services.filter(s => {
+      const cat = s.category?.toLowerCase() || ''
+      if (selectedCategory === 'nails') return cat.includes('uña') || cat.includes('nail') || cat.includes('manicur')
+      if (selectedCategory === 'micropigmentation') return cat.includes('micro') || cat.includes('pigment') || cat.includes('ceja')
+      if (selectedCategory === 'hair') return cat.includes('pelu') || cat.includes('pelo') || cat.includes('cabello')
+      return true
+    })
+  }, [selectedProfessional, services, selectedCategory])
+
+  // ============================================================
+  // VERIFICAR DISPONIBILIDAD
   // ============================================================
   const checkAvailability = useCallback((time: string, date: string = selectedDate) => {
     const today = format(new Date(), 'yyyy-MM-dd')
@@ -259,32 +283,6 @@ function AgendaContent() {
   }, [appointments, selectedDate])
 
   // ============================================================
-  // OBTENER CATEGORÍA DE UN SERVICIO
-  // ============================================================
-  const getServiceCategory = useCallback((category: string): string => {
-    if (!category) return 'others'
-    const normalized = category.toLowerCase().trim()
-    if (normalized.includes('uña') || normalized.includes('nail') || normalized.includes('manicur')) return 'nails'
-    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja')) return 'micropigmentation'
-    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello')) return 'hair'
-    return 'others'
-  }, [])
-
-  // ============================================================
-  // SERVICIOS FILTRADOS
-  // ============================================================
-  const filteredServices = useMemo(() => {
-    if (selectedCategory === 'all') return services
-    return services.filter(s => getServiceCategory(s.category) === selectedCategory)
-  }, [services, selectedCategory, getServiceCategory])
-
-  // ============================================================
-  // HORAS DE MAÑANA Y TARDE
-  // ============================================================
-  const morningTimes = availableTimes.filter(t => t < '14:00')
-  const afternoonTimes = availableTimes.filter(t => t >= '14:00')
-
-  // ============================================================
   // DÍAS DEL MES
   // ============================================================
   const daysInMonth = eachDayOfInterval({
@@ -297,9 +295,11 @@ function AgendaContent() {
     return day === 0 || day === 1 || isBefore(startOfDay(date), startOfDay(new Date()))
   }, [])
 
-  const getCategoryInfo = (categoryId: string) => {
-    return CATEGORIES.find(c => c.id === categoryId) || CATEGORIES[0]
-  }
+  // ============================================================
+  // HORAS DE MAÑANA Y TARDE
+  // ============================================================
+  const morningTimes = availableTimes.filter(t => t < '14:00')
+  const afternoonTimes = availableTimes.filter(t => t >= '14:00')
 
   // ============================================================
   // RESERVAR CITA
@@ -358,7 +358,6 @@ function AgendaContent() {
 
       if (!clientId) throw new Error('No se pudo crear el cliente')
 
-      // Crear cita
       const { error: appointmentError } = await supabase
         .from('appointments')
         .insert([{
@@ -375,7 +374,6 @@ function AgendaContent() {
 
       if (appointmentError) throw appointmentError
 
-      // Sumar puntos
       const POINTS = 50
       const { data: wallet } = await supabase
         .from('loyalty_wallets')
@@ -417,6 +415,25 @@ function AgendaContent() {
   }
 
   // ============================================================
+  // GET CATEGORY INFO
+  // ============================================================
+  const getCategoryInfo = (categoryId: string) => {
+    return CATEGORIES.find(c => c.id === categoryId) || CATEGORIES[0]
+  }
+
+  // ============================================================
+  // GET CATEGORY FROM SERVICE
+  // ============================================================
+  const getServiceCategory = (category: string): string => {
+    if (!category) return 'others'
+    const normalized = category.toLowerCase().trim()
+    if (normalized.includes('uña') || normalized.includes('nail') || normalized.includes('manicur')) return 'nails'
+    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja')) return 'micropigmentation'
+    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello')) return 'hair'
+    return 'others'
+  }
+
+  // ============================================================
   // RENDER - LOADING
   // ============================================================
   if (loading) {
@@ -428,7 +445,7 @@ function AgendaContent() {
             <Sparkles className="w-5 h-5 text-rose-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
           </div>
           <p className="text-xs text-stone-400 tracking-widest uppercase font-light animate-pulse">
-            Cargando servicios...
+            Cargando profesionales...
           </p>
         </div>
       </div>
@@ -446,7 +463,7 @@ function AgendaContent() {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
         {/* ============================================================ */}
-        {/* HEADER HERO - VERSIÓN COMPACTA Y ELEGANTE */}
+        {/* HEADER */}
         {/* ============================================================ */}
         <div className={`p-6 rounded-2xl border transition-all duration-300 ${
           isDark 
@@ -459,15 +476,15 @@ function AgendaContent() {
                 <span className={`text-sm font-serif italic ${
                   isDark ? 'text-rose-400' : 'text-rose-500'
                 }`}>
-                  ✦ Reserva tu experiencia
+                  ✦ Elige a tu especialista
                 </span>
               </div>
               <h1 className={`text-2xl font-serif font-light ${
                 isDark ? 'text-white' : 'text-stone-800'
               }`}>
-                Agenda tu <span className={`font-serif italic ${
+                Reserva con tu <span className={`font-serif italic ${
                   isDark ? 'text-rose-400' : 'text-rose-500'
-                }`}>momento</span> de belleza
+                }`}>profesional</span> favorito
               </h1>
             </div>
 
@@ -489,7 +506,7 @@ function AgendaContent() {
         </div>
 
         {/* ============================================================ */}
-        {/* STEPPER - VERSIÓN LIMPIA */}
+        {/* STEPPER */}
         {/* ============================================================ */}
         {step < 5 && (
           <div className={`flex items-center gap-2 p-3 rounded-xl border ${
@@ -498,7 +515,7 @@ function AgendaContent() {
             {[1, 2, 3, 4].map((num) => {
               const isActive = step === num
               const isCompleted = step > num
-              const labels = ['Servicio', 'Profesional', 'Horario', 'Datos']
+              const labels = ['Profesional', 'Servicio', 'Horario', 'Datos']
 
               return (
                 <div key={num} className="flex-1 flex items-center gap-2">
@@ -564,13 +581,10 @@ function AgendaContent() {
         {/* ============================================================ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* ============================================================ */}
-          {/* PASOS */}
-          {/* ============================================================ */}
           <div className="lg:col-span-2 space-y-5">
 
             {/* ============================================================ */}
-            {/* PASO 1: SERVICIOS */}
+            {/* PASO 1: PROFESIONALES */}
             {/* ============================================================ */}
             {step === 1 && (
               <motion.div 
@@ -582,103 +596,102 @@ function AgendaContent() {
                   <h2 className={`text-lg font-serif font-light ${
                     isDark ? 'text-white' : 'text-stone-800'
                   }`}>
-                    Elige tu <span className="text-rose-500">servicio</span>
+                    Elige a tu <span className="text-rose-500">especialista</span>
                   </h2>
                   <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                    Selecciona una categoría y luego el tratamiento deseado
+                    Selecciona al profesional que realizará tu tratamiento
                   </p>
                 </div>
 
-                {/* Categorías */}
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((cat) => {
-                    const Icon = cat.icon
-                    const isSelected = selectedCategory === cat.id
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 flex items-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
-                            : isDark
-                              ? 'bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                              : 'bg-white/60 text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        {cat.label}
-                      </button>
-                    )
-                  })}
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {staff.map((prof, idx) => {
+                    const isSelected = selectedProfessional?.id === prof.id
+                    const rating = prof.rating || (4.5 + (idx * 0.1))
+                    const reviews = Math.floor(50 + Math.random() * 150)
 
-                {/* Grid de servicios */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredServices.length > 0 ? (
-                    filteredServices.map((service, idx) => (
+                    return (
                       <motion.button
-                        key={service.id}
+                        key={prof.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04 }}
+                        transition={{ delay: idx * 0.06 }}
                         onClick={() => {
-                          setSelectedService(service)
+                          setSelectedProfessional(prof)
                           setStep(2)
                         }}
-                        className={`group p-4 rounded-xl border text-left transition-all duration-300 hover:-translate-y-0.5 ${
-                          isDark 
-                            ? 'bg-zinc-900/40 border-zinc-800/50 hover:border-rose-500/30 hover:bg-zinc-900/60' 
-                            : 'bg-white/60 border-stone-200/50 hover:border-rose-300/50 hover:shadow-md'
+                        className={`group p-5 rounded-2xl border text-left transition-all duration-300 hover:-translate-y-1 ${
+                          isSelected
+                            ? isDark 
+                              ? 'border-rose-500/50 bg-rose-500/10 shadow-lg shadow-rose-500/10' 
+                              : 'border-rose-400 bg-rose-50/50 shadow-lg shadow-rose-200/20'
+                            : isDark 
+                              ? 'border-zinc-800/50 bg-zinc-900/40 hover:border-rose-500/30 hover:bg-zinc-900/60' 
+                              : 'border-stone-200/50 bg-white/60 hover:border-rose-300/50 hover:shadow-md'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1 min-w-0">
-                            <h4 className={`text-sm font-semibold truncate ${
-                              isDark ? 'text-white' : 'text-stone-800'
-                            }`}>
-                              {service.name}
-                            </h4>
-                            <p className={`text-xs line-clamp-1 ${
-                              isDark ? 'text-zinc-400' : 'text-stone-400'
-                            }`}>
-                              {service.description || 'Tratamiento de belleza premium'}
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 ${
+                            prof.avatar_url 
+                              ? 'overflow-hidden'
+                              : isDark 
+                                ? 'bg-gradient-to-br from-rose-500/20 to-pink-500/20 text-rose-400' 
+                                : 'bg-gradient-to-br from-rose-100 to-pink-100 text-rose-500'
+                          }`}>
+                            {prof.avatar_url ? (
+                              <img src={prof.avatar_url} alt={prof.name} className="w-full h-full object-cover" />
+                            ) : (
+                              prof.name?.charAt(0).toUpperCase()
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className={`font-semibold truncate ${
+                                isDark ? 'text-white' : 'text-stone-800'
+                              }`}>
+                                {prof.name}
+                              </h4>
+                              {idx === 0 && (
+                                <span className="flex-shrink-0 text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                                  Top
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
+                              {prof.specialty || prof.role || 'Especialista en belleza'}
                             </p>
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="text-rose-500 font-bold">
-                                ${Number(service.price).toLocaleString()}
+                            <div className="flex items-center gap-3 mt-1.5 text-xs">
+                              <span className="flex items-center gap-1 text-amber-500">
+                                <Star className="w-3 h-3 fill-current" />
+                                {rating.toFixed(1)}
                               </span>
                               <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>
-                                {service.duration} min
+                                ({reviews} reseñas)
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full text-[8px] font-medium ${
+                                isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                Disponible
                               </span>
                             </div>
                           </div>
-                          <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5 ${
+
+                          <ChevronRight className={`w-4 h-4 flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5 ${
                             isDark ? 'text-zinc-600' : 'text-stone-300'
                           }`} />
                         </div>
                       </motion.button>
-                    ))
-                  ) : (
-                    <div className={`col-span-full py-12 text-center border border-dashed rounded-xl ${
-                      isDark ? 'border-zinc-800' : 'border-stone-200'
-                    }`}>
-                      <Sparkles className={`w-8 h-8 mx-auto mb-3 ${
-                        isDark ? 'text-zinc-600' : 'text-stone-300'
-                      }`} />
-                      <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                        No hay servicios en esta categoría
-                      </p>
-                    </div>
-                  )}
+                    )
+                  })}
                 </div>
               </motion.div>
             )}
 
             {/* ============================================================ */}
-            {/* PASO 2: PROFESIONAL */}
+            {/* PASO 2: SERVICIOS DEL PROFESIONAL */}
             {/* ============================================================ */}
-            {step === 2 && (
+            {step === 2 && selectedProfessional && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -686,17 +699,22 @@ function AgendaContent() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className={`text-lg font-serif font-light ${
-                      isDark ? 'text-white' : 'text-stone-800'
-                    }`}>
-                      Elige tu <span className="text-rose-500">profesional</span>
-                    </h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className={`text-lg font-serif font-light ${
+                        isDark ? 'text-white' : 'text-stone-800'
+                      }`}>
+                        Servicios de <span className="text-rose-500">{selectedProfessional.name}</span>
+                      </h2>
+                    </div>
                     <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                      {selectedService?.name} — {selectedService?.duration} minutos
+                      Elige el tratamiento que deseas realizar
                     </p>
                   </div>
                   <button 
-                    onClick={() => setStep(1)}
+                    onClick={() => {
+                      setStep(1)
+                      setSelectedProfessional(null)
+                    }}
                     className={`text-xs font-medium flex items-center gap-1 transition-colors ${
                       isDark ? 'text-zinc-400 hover:text-white' : 'text-stone-400 hover:text-rose-500'
                     }`}
@@ -705,47 +723,110 @@ function AgendaContent() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {staff.map((prof, idx) => (
-                    <button
-                      key={prof.id}
-                      onClick={() => {
-                        setSelectedProfessional(prof)
-                        setStep(3)
-                      }}
-                      className={`group p-4 rounded-xl border text-left transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-4 ${
-                        isDark 
-                          ? 'bg-zinc-900/40 border-zinc-800/50 hover:border-rose-500/30 hover:bg-zinc-900/60' 
-                          : 'bg-white/60 border-stone-200/50 hover:border-rose-300/50 hover:shadow-md'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0 ${
-                        idx === 0 
-                          ? 'bg-rose-500/10 text-rose-500' 
-                          : isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-stone-100 text-stone-500'
-                      }`}>
-                        {prof.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm font-semibold ${
-                          isDark ? 'text-white' : 'text-stone-800'
-                        }`}>
-                          {prof.name}
-                        </h4>
-                        <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                          {prof.specialty || prof.role || 'Especialista'}
-                        </p>
-                        {idx === 0 && (
-                          <span className="inline-block text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-white mt-1">
-                            Top
+                {/* Categorías del profesional */}
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map((cat) => {
+                    const Icon = cat.icon
+                    const isSelected = selectedCategory === cat.id
+                    // Contar cuántos servicios hay en esta categoría
+                    const count = professionalServices.filter(s => 
+                      cat.id === 'all' ? true : getServiceCategory(s.category) === cat.id
+                    ).length
+
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        disabled={count === 0 && cat.id !== 'all'}
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
+                            : count === 0 && cat.id !== 'all'
+                              ? isDark ? 'text-zinc-600 cursor-not-allowed' : 'text-stone-300 cursor-not-allowed'
+                              : isDark
+                                ? 'bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                                : 'bg-white/60 text-stone-500 hover:text-stone-800 hover:bg-stone-100/50'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {cat.label}
+                        {count > 0 && cat.id !== 'all' && (
+                          <span className={`text-[8px] ${isSelected ? 'text-white/70' : isDark ? 'text-zinc-500' : 'text-stone-400'}`}>
+                            ({count})
                           </span>
                         )}
-                      </div>
-                      <ChevronRight className={`w-4 h-4 flex-shrink-0 ${
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Grid de servicios del profesional */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {professionalServices.length > 0 ? (
+                    professionalServices
+                      .filter(s => selectedCategory === 'all' || getServiceCategory(s.category) === selectedCategory)
+                      .map((service, idx) => (
+                        <motion.button
+                          key={service.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          onClick={() => {
+                            setSelectedService(service)
+                            setStep(3)
+                          }}
+                          className={`group p-4 rounded-xl border text-left transition-all duration-300 hover:-translate-y-0.5 ${
+                            isDark 
+                              ? 'bg-zinc-900/40 border-zinc-800/50 hover:border-rose-500/30 hover:bg-zinc-900/60' 
+                              : 'bg-white/60 border-stone-200/50 hover:border-rose-300/50 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[8px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                  isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-stone-100 text-stone-500'
+                                }`}>
+                                  {service.category || 'General'}
+                                </span>
+                              </div>
+                              <h4 className={`text-sm font-semibold truncate ${
+                                isDark ? 'text-white' : 'text-stone-800'
+                              }`}>
+                                {service.name}
+                              </h4>
+                              <p className={`text-xs line-clamp-1 ${
+                                isDark ? 'text-zinc-400' : 'text-stone-400'
+                              }`}>
+                                {service.description || 'Tratamiento de belleza premium'}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="text-rose-500 font-bold">
+                                  ${Number(service.price).toLocaleString()}
+                                </span>
+                                <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>
+                                  {service.duration} min
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:translate-x-0.5 ${
+                              isDark ? 'text-zinc-600' : 'text-stone-300'
+                            }`} />
+                          </div>
+                        </motion.button>
+                      ))
+                  ) : (
+                    <div className={`col-span-full py-12 text-center border border-dashed rounded-xl ${
+                      isDark ? 'border-zinc-800' : 'border-stone-200'
+                    }`}>
+                      <Sparkles className={`w-8 h-8 mx-auto mb-3 ${
                         isDark ? 'text-zinc-600' : 'text-stone-300'
                       }`} />
-                    </button>
-                  ))}
+                      <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
+                        {selectedProfessional.name} no tiene servicios en esta categoría
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -753,7 +834,7 @@ function AgendaContent() {
             {/* ============================================================ */}
             {/* PASO 3: CALENDARIO Y HORARIO */}
             {/* ============================================================ */}
-            {step === 3 && (
+            {step === 3 && selectedProfessional && selectedService && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -767,11 +848,14 @@ function AgendaContent() {
                       Elige tu <span className="text-rose-500">horario</span>
                     </h2>
                     <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                      Con {selectedProfessional?.name} para {selectedService?.name}
+                      {selectedService.name} con {selectedProfessional.name} — {selectedService.duration} min
                     </p>
                   </div>
                   <button 
-                    onClick={() => setStep(2)}
+                    onClick={() => {
+                      setStep(2)
+                      setSelectedService(null)
+                    }}
                     className={`text-xs font-medium flex items-center gap-1 transition-colors ${
                       isDark ? 'text-zinc-400 hover:text-white' : 'text-stone-400 hover:text-rose-500'
                     }`}
@@ -902,6 +986,9 @@ function AgendaContent() {
                                   }`}
                                 >
                                   {time}
+                                  {!available && reason === 'ocupado' && (
+                                    <span className="ml-1 text-[6px] text-rose-500">✕</span>
+                                  )}
                                 </button>
                               )
                             })}
@@ -937,6 +1024,9 @@ function AgendaContent() {
                                   }`}
                                 >
                                   {time}
+                                  {!available && reason === 'ocupado' && (
+                                    <span className="ml-1 text-[6px] text-rose-500">✕</span>
+                                  )}
                                 </button>
                               )
                             })}
@@ -966,7 +1056,7 @@ function AgendaContent() {
             {/* ============================================================ */}
             {/* PASO 4: DATOS DEL CLIENTE */}
             {/* ============================================================ */}
-            {step === 4 && (
+            {step === 4 && selectedProfessional && selectedService && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -980,7 +1070,7 @@ function AgendaContent() {
                       Tus <span className="text-rose-500">datos</span>
                     </h2>
                     <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                      {format(parseISO(selectedDate), "d MMM")} a las {selectedTime} hs
+                      {selectedService.name} con {selectedProfessional.name} · {format(parseISO(selectedDate), "d MMM")} a las {selectedTime} hs
                     </p>
                   </div>
                   <button 
@@ -1132,7 +1222,7 @@ function AgendaContent() {
             {/* ============================================================ */}
             {/* PASO 5: ÉXITO */}
             {/* ============================================================ */}
-            {step === 5 && (
+            {step === 5 && selectedProfessional && selectedService && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1151,19 +1241,19 @@ function AgendaContent() {
                 </h2>
 
                 <p className={`text-sm mt-2 ${isDark ? 'text-zinc-400' : 'text-stone-400'}`}>
-                  Tu experiencia de belleza ha sido agendada exitosamente.
+                  Tu experiencia de belleza ha sido agendada exitosamente con {selectedProfessional.name}.
                 </p>
 
                 <div className={`mt-6 p-4 rounded-xl text-left space-y-2 text-sm border ${
                   isDark ? 'border-zinc-800/50 bg-zinc-950/30' : 'border-stone-200/50 bg-white/40'
                 }`}>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Servicio</span>
-                    <span className={isDark ? 'text-white' : 'text-stone-800'}>{selectedService?.name}</span>
+                    <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Profesional</span>
+                    <span className={isDark ? 'text-white' : 'text-stone-800'}>{selectedProfessional.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Profesional</span>
-                    <span className={isDark ? 'text-white' : 'text-stone-800'}>{selectedProfessional?.name}</span>
+                    <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Servicio</span>
+                    <span className={isDark ? 'text-white' : 'text-stone-800'}>{selectedService.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Fecha</span>
@@ -1180,7 +1270,7 @@ function AgendaContent() {
                   }`}>
                     <span className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Total</span>
                     <span className="text-rose-500 font-bold">
-                      ${Number(selectedService?.price).toLocaleString()}
+                      ${Number(selectedService.price).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1189,8 +1279,8 @@ function AgendaContent() {
                   <button
                     onClick={() => {
                       setStep(1)
-                      setSelectedService(null)
                       setSelectedProfessional(null)
+                      setSelectedService(null)
                       setSelectedTime('')
                       setClientData({ name: '', phone: '', email: '', notes: '' })
                       setSelectedDate(format(new Date(), 'yyyy-MM-dd'))
@@ -1222,19 +1312,28 @@ function AgendaContent() {
           {/* ============================================================ */}
           {/* SIDEBAR - RESUMEN */}
           {/* ============================================================ */}
-          {step < 5 && (
+          {step > 1 && step < 5 && (
             <div className={`lg:sticky lg:top-6 space-y-4 p-5 rounded-xl border h-fit ${
               isDark ? 'border-zinc-800/50 bg-zinc-900/30' : 'border-stone-200/50 bg-white/60'
             }`}>
               <h3 className={`text-xs font-medium uppercase tracking-wider ${
                 isDark ? 'text-zinc-500' : 'text-stone-400'
               }`}>
-                Resumen
+                Resumen de tu cita
               </h3>
 
               <div className="space-y-3 text-sm">
-                {selectedService ? (
+                {selectedProfessional && (
                   <div>
+                    <p className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Profesional</p>
+                    <p className={`font-medium ${isDark ? 'text-white' : 'text-stone-800'}`}>
+                      {selectedProfessional.name}
+                    </p>
+                  </div>
+                )}
+
+                {selectedService && (
+                  <div className={`pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-stone-200'}`}>
                     <p className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Servicio</p>
                     <p className={`font-medium ${isDark ? 'text-white' : 'text-stone-800'}`}>
                       {selectedService.name}
@@ -1247,19 +1346,6 @@ function AgendaContent() {
                         ${Number(selectedService.price).toLocaleString()}
                       </span>
                     </div>
-                  </div>
-                ) : (
-                  <p className={isDark ? 'text-zinc-500' : 'text-stone-400'}>
-                    Selecciona un servicio
-                  </p>
-                )}
-
-                {selectedProfessional && (
-                  <div className={`pt-3 border-t ${isDark ? 'border-zinc-800' : 'border-stone-200'}`}>
-                    <p className={isDark ? 'text-zinc-500' : 'text-stone-400'}>Profesional</p>
-                    <p className={`font-medium ${isDark ? 'text-white' : 'text-stone-800'}`}>
-                      {selectedProfessional.name}
-                    </p>
                   </div>
                 )}
 
