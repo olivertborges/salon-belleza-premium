@@ -103,7 +103,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         initial="open"
         animate={collapsed ? "collapsed" : "open"}
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl
+          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col overflow-hidden shadow-2xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isDark 
             ? 'bg-[#1E120C] border-r border-[#3D281E]' 
@@ -126,12 +126,12 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
             </div>
             {!collapsed && (
               <div>
-                <span className={`text-sm font-serif tracking-wide block font-extrabold ${
+                <span className={`text-sm font-serif tracking-wide block font-extrabold truncate ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                 }`}>
                   Fresh Nails
                 </span>
-                <span className={`text-[9px] uppercase tracking-widest font-mono block font-bold ${
+                <span className={`text-[9px] uppercase tracking-widest font-mono block font-bold truncate ${
                   isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                 }`}>
                   {role || 'Studio'}
@@ -187,9 +187,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         )}
 
         {/* ============================================================ */}
-        {/* NAVEGACIÓN - SCROLLABLE */}
+        {/* NAVEGACIÓN - SCROLLABLE (min-h-0 vital para permitir scroll en flex) */}
         {/* ============================================================ */}
-        <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 custom-scrollbar">
           <nav className="space-y-1">
             {ALL_MENU_ITEMS.map((item) => {
               const Icon = item.icon
@@ -227,7 +227,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* CERRAR SESIÓN - SIEMPRE VISIBLE ABAJO */}
+        {/* CERRAR SESIÓN - FIJO ABAJO */}
         {/* ============================================================ */}
         <div className={`p-3 border-t shrink-0 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
@@ -238,11 +238,11 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               collapsed ? 'justify-center' : ''
             } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
           >
-            <Power className={`w-4 h-4 transition-colors ${
+            <Power className={`w-4 h-4 shrink-0 transition-colors ${
               isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
             }`} />
             {!collapsed && (
-              <span className={`transition-colors ${
+              <span className={`truncate transition-colors ${
                 isDark ? 'text-[#A89588] group-hover:text-[#D4AF37]' : 'text-[#5C4A3E] group-hover:text-[#D4AF37]'
               }`}>
                 Cerrar sesión
