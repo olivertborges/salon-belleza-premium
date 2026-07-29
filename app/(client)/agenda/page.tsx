@@ -387,7 +387,7 @@ function AgendaContent() {
       setStep(5)
     } catch (err) {
       setError('Ocurrió un error inesperado al agendar tu turno. Por favor, reintenta.')
-    } medical {
+    } finally {
       setSubmitting(false)
     }
   }
