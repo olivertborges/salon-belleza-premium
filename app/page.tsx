@@ -9,8 +9,8 @@ import {
   FaClock, FaBars, FaTimes, FaInstagram, FaWhatsapp, FaMapMarkerAlt
 } from 'react-icons/fa'
 
-// ✅ IMÁGENES DE RESPALDO ASEGURADAS POR CATEGORÍA
-const CATEGORY_IMAGES: Record<string, string> = {
+// ✅ Estructura limpia de imágenes de respaldo
+const CATEGORY_IMAGES: { [key: string]: string } = {
   'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
   'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
   'Microblading': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
@@ -22,9 +22,9 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
-// ✅ MAPEO DE PROFESIONALES (ANY / SIL) SEGÚN TUS RUTA DE STORAGE
+// ✅ Mapeo seguro de especialistas
 const getProfesionalPorServicio = (category: string) => {
-  const cat = category?.toLowerCase() || ''
+  const cat = (category || '').toLowerCase()
   
   if (
     cat.includes('uña') || 
@@ -80,14 +80,12 @@ export default function LandingPage() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  // Control del scroll del Header
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Múltiples fallbacks automáticos para conseguir el tenant_id
   const getTenantId = async (): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -108,13 +106,16 @@ export default function LandingPage() {
     }
   }
 
-  // Carga de todo el portafolio
   useEffect(() => {
     const fetchServicios = async () => {
       try {
         setLoading(true)
         const tenantId = await getTenantId()
-        if (!tenantId) { setServicios([]); setLoading(false); return }
+        if (!tenantId) { 
+          setServicios([])
+          setLoading(false)
+          return 
+        }
 
         const { data, error } = await supabase
           .from('services')
@@ -122,7 +123,9 @@ export default function LandingPage() {
           .eq('tenant_id', tenantId)
           .order('category', { ascending: true })
 
-        if (!error && data) setServicios(data)
+        if (!error && data) {
+          setServicios(data)
+        }
       } catch (e) {
         console.error(e)
       } finally {
@@ -132,14 +135,15 @@ export default function LandingPage() {
     fetchServicios()
   }, [])
 
-  const allCategories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
+  const uniqueCategories = Array.from(new Set(servicios.map((s) => s.category).filter(Boolean)))
+  const allCategories = ['Todos', ...uniqueCategories]
   
   const filteredServicios = selectedCategory === 'Todos'
     ? servicios
-    : servicios.filter(s => s.category === selectedCategory)
+    : servicios.filter((s) => s.category === selectedCategory)
 
   const activeCategoriesList = selectedCategory === 'Todos'
-    ? Array.from(new Set(servicios.map(s => s.category).filter(Boolean)))
+    ? uniqueCategories
     : [selectedCategory]
 
   return (
@@ -240,7 +244,7 @@ export default function LandingPage() {
             Creamos detalles que cautivan a simple vista
           </h2>
           <p className="text-xs sm:text-sm text-[#5C4A3E] font-light leading-relaxed">
-            En Salon Fresh no creemos en tratamientos genéricos. Diseñamos experiencias personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
+            En Salon Fresh no creemos en tratamientos genéricos. Diseñamos experiences personalizadas combinando la precisión técnica dermoestética de Any con el arte, color y simetría capilar de Sil. Cada sesión es un lienzo en blanco creado exclusivamente para ti.
           </p>
           <div className="grid grid-cols-3 gap-4 pt-4 text-center">
             <div className="border border-[#F0E4DA] p-4 bg-[#FFF9F6]">
@@ -316,7 +320,7 @@ export default function LandingPage() {
           ) : (
             <div className="space-y-20">
               {activeCategoriesList.map((categoryName) => {
-                const servicesInCategory = filteredServicios.filter(s => s.category === categoryName)
+                const servicesInCategory = filteredServicios.filter((s) => s.category === categoryName)
                 if (servicesInCategory.length === 0) return null
 
                 return (
