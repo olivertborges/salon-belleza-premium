@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   User,
   Mail,
@@ -17,23 +16,14 @@ import {
   Edit2,
   Save,
   X,
-  Check,
   AlertCircle,
   CheckCircle2,
   Sparkles,
-  Crown,
   Gem,
-  Star,
   Award,
-  Clock,
-  Scissors,
-  Heart,
-  Eye,
-  Hand,
   Calendar as CalendarIcon,
   LogOut,
   ArrowRight,
-  Shield,
   Smartphone,
   AtSign,
   UserCircle,
@@ -85,7 +75,6 @@ export default function PerfilPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
-  // Formulario
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -106,13 +95,19 @@ export default function PerfilPage() {
       // 1. Obtener datos del cliente
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select('id, name, email, phone, birth_date, address, avatar_url, created_at, referral_code')
+        .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle()
 
-      if (clientError) throw clientError
+      if (clientError) {
+        console.error('Error cargando cliente:', clientError)
+        setError('Error al cargar los datos del perfil')
+        setLoading(false)
+        return
+      }
 
       if (!clientData) {
+        setError('No se encontró tu perfil. Contacta con el administrador.')
         setLoading(false)
         return
       }
@@ -124,7 +119,9 @@ export default function PerfilPage() {
         .eq('client_id', clientData.id)
         .maybeSingle()
 
-      if (walletError) console.error('Error cargando wallet:', walletError)
+      if (walletError) {
+        console.error('Error cargando wallet:', walletError)
+      }
 
       // 3. Contar citas totales del cliente
       const { count: appointmentsCount, error: countError } = await supabase
@@ -133,11 +130,21 @@ export default function PerfilPage() {
         .eq('client_id', clientData.id)
         .neq('status', 'cancelled')
 
-      if (countError) console.error('Error contando citas:', countError)
+      if (countError) {
+        console.error('Error contando citas:', countError)
+      }
 
       // 4. Construir perfil completo
       const fullProfile: ClientProfile = {
-        ...clientData,
+        id: clientData.id,
+        name: clientData.name || '',
+        email: clientData.email || '',
+        phone: clientData.phone || '',
+        birth_date: clientData.birth_date || '',
+        address: clientData.address || '',
+        avatar_url: clientData.avatar_url || '',
+        created_at: clientData.created_at || new Date().toISOString(),
+        referral_code: clientData.referral_code || '',
         points_glow: walletData?.glow_points || 0,
         points_hair: walletData?.hair_points || 0,
         total_appointments: appointmentsCount || 0,
@@ -195,7 +202,6 @@ export default function PerfilPage() {
     setSuccess(null)
 
     try {
-      // 1. Subir avatar si hay uno nuevo
       let avatarUrl = profile.avatar_url
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
@@ -215,7 +221,6 @@ export default function PerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // 2. Actualizar perfil
       const { error: updateError } = await supabase
         .from('clients')
         .update({
@@ -230,7 +235,6 @@ export default function PerfilPage() {
 
       if (updateError) throw updateError
 
-      // 3. Actualizar estado local
       setProfile(prev => ({
         ...prev!,
         name: formData.name.trim(),
@@ -321,12 +325,10 @@ export default function PerfilPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
       isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
-      {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       <div className="max-w-4xl mx-auto px-4 space-y-8 relative z-10">
 
-        {/* ERROR / SUCCESS */}
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
             isDark 
@@ -359,9 +361,7 @@ export default function PerfilPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* HERO DEL PERFIL */}
-        {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-2xl border p-7 md:p-10 shadow-lg transition-all duration-300 mt-4 ${
           isDark 
             ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
@@ -448,7 +448,7 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            {/* Botones de acción */}
+            {/* Botones */}
             <div className="flex flex-col gap-2 shrink-0">
               {editing ? (
                 <>
@@ -506,9 +506,7 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* INFORMACIÓN DEL PERFIL */}
-        {/* ============================================================ */}
         <div className={`border rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 ${
           isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
@@ -519,7 +517,6 @@ export default function PerfilPage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nombre */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
                 isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -546,7 +543,6 @@ export default function PerfilPage() {
               )}
             </div>
 
-            {/* Email */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
                 isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -558,7 +554,6 @@ export default function PerfilPage() {
               </p>
             </div>
 
-            {/* Teléfono */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
                 isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -585,7 +580,6 @@ export default function PerfilPage() {
               )}
             </div>
 
-            {/* Fecha de nacimiento */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
                 isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -615,7 +609,6 @@ export default function PerfilPage() {
               )}
             </div>
 
-            {/* Dirección */}
             <div className="md:col-span-2">
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
                 isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -643,7 +636,6 @@ export default function PerfilPage() {
             </div>
           </div>
 
-          {/* Código de referido */}
           {profile.referral_code && (
             <div className={`mt-6 pt-6 border-t ${
               isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
@@ -671,9 +663,7 @@ export default function PerfilPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
-        {/* ESTADÍSTICAS Y LOGROS — CON PUNTOS REALES */}
-        {/* ============================================================ */}
+        {/* ESTADÍSTICAS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className={`p-5 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5 ${
             isDark 
@@ -736,9 +726,7 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* BOTÓN DE NAVEGACIÓN */}
-        {/* ============================================================ */}
         <div className={`border-t pt-6 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
