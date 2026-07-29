@@ -111,16 +111,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           }
         `}
       >
-        {/* EFECTO GLOW DE FONDO */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-10 bg-[#D4AF37]" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-10 bg-[#E8D5A0]" />
-        </div>
-
         {/* ============================================================ */}
-        {/* CABECERA */}
+        {/* CABECERA - FIJA */}
         {/* ============================================================ */}
-        <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 relative z-10 ${
+        <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
           <div className="flex items-center gap-3 overflow-hidden">
@@ -128,9 +122,8 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-[#D4AF37]/20"
               style={brandGradient}
             >
-              <Sparkles className="w-4 h-4 text-[#1A0E0A] animate-pulse" />
+              <Sparkles className="w-4 h-4 text-[#1A0E0A]" />
             </div>
-
             {!collapsed && (
               <div>
                 <span className={`text-sm font-serif tracking-wide block font-extrabold ${
@@ -146,7 +139,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               </div>
             )}
           </div>
-
           {isOpen && (
             <button 
               onClick={onClose} 
@@ -160,10 +152,10 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* PERFIL */}
+        {/* PERFIL - FIJO */}
         {/* ============================================================ */}
         {!collapsed && (
-          <div className="px-3 pt-4 shrink-0 relative z-10">
+          <div className="px-3 pt-4 shrink-0">
             <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
               isDark 
                 ? 'bg-[#2A1B14] border-[#3D281E]' 
@@ -175,7 +167,6 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               >
                 {user?.email?.charAt(0).toUpperCase() || 'A'}
               </div>
-
               <div className="flex-1 min-w-0">
                 <p className={`text-xs font-semibold truncate ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
@@ -196,9 +187,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         )}
 
         {/* ============================================================ */}
-        {/* NAVEGACIÓN - CON SCROLL */}
+        {/* NAVEGACIÓN - SCROLLABLE */}
         {/* ============================================================ */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 relative z-10">
+        <div className="flex-1 overflow-y-auto px-3 py-2">
           <nav className="space-y-1">
             {ALL_MENU_ITEMS.map((item) => {
               const Icon = item.icon
@@ -224,17 +215,8 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
                   {isActive && (
                     <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#1A0E0A]" />
                   )}
-
-                  <Icon className={`w-4 h-4 shrink-0 transition-all duration-300 ${
-                    isActive ? 'text-[#1A0E0A]' : ''
-                  }`} />
-
-                  {!collapsed && (
-                    <span className="truncate tracking-wide">
-                      {item.name}
-                    </span>
-                  )}
-
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1A0E0A]' : ''}`} />
+                  {!collapsed && <span className="truncate tracking-wide">{item.name}</span>}
                   {isActive && !collapsed && (
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1A0E0A]/60 animate-pulse" />
                   )}
@@ -245,9 +227,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* CERRAR SESIÓN - SIEMPRE VISIBLE EN LA PARTE INFERIOR */}
+        {/* CERRAR SESIÓN - SIEMPRE VISIBLE ABAJO */}
         {/* ============================================================ */}
-        <div className={`p-3 border-t shrink-0 relative z-10 ${
+        <div className={`p-3 border-t shrink-0 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
         }`}>
           <button 
@@ -281,10 +263,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           color: isDark ? '#D4AF37' : '#D4AF37',
         }}
       >
-        {collapsed ? 
-          <ChevronRight className="w-3.5 h-3.5" /> : 
-          <ChevronLeft className="w-3.5 h-3.5" />
-        }
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
       </button>
     </>
   )
