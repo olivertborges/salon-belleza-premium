@@ -16,28 +16,7 @@ import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 import { HiOutlineSparkles } from 'react-icons/hi'
 
 // ============================================================
-// PALETA DE LUJO
-// ============================================================
-const COLORS = {
-  gold: '#D4AF37',
-  goldLight: '#F4E4BC',
-  goldGlow: 'rgba(212, 175, 55, 0.2)',
-  rose: '#E879A0',
-  roseLight: '#F5D4E0',
-  roseGlow: 'rgba(232, 121, 160, 0.15)',
-  blush: '#FFF8F5',
-  cream: '#FFFCF8',
-  white: '#FFFFFF',
-  lightBg: '#FFF9F6',
-  darkText: '#1A0E0A',
-  textSoft: '#5C4A3E',
-  textMuted: '#A89588',
-  border: '#F0E4DA',
-  goldBorder: '#D4AF37',
-}
-
-// ============================================================
-// CONSTANTES PARA CATEGORÍAS
+// CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO (INALTERADOS)
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
@@ -66,92 +45,74 @@ const CATEGORY_IMAGES: Record<string, string> = {
 }
 
 // ============================================================
-// HEADER
+// HEADER (REDISEÑADO ELEGANTE & MINIMALISTA)
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
+    const handleScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
       scrolled 
-        ? 'bg-white/95 backdrop-blur-2xl border-b border-[#D4AF37]/20 shadow-2xl' 
-        : 'bg-transparent'
+        ? 'bg-[#FFFCF8]/90 backdrop-blur-md border-b border-[#D4AF37]/10 shadow-sm py-4' 
+        : 'bg-transparent py-6'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 lg:h-24">
-          <Link href="/" className="flex items-center gap-3 group">
-            <motion.div 
-              whileHover={{ rotate: 360, scale: 1.1 }}
-              transition={{ duration: 0.8 }}
-              className="relative"
-            >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-xl shadow-[#D4AF37]/30">
-                <FaGem className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-            </motion.div>
-            <div>
-              <span className="text-[#1A0E0A] font-serif text-2xl tracking-wider group-hover:text-[#D4AF37] transition-colors duration-300">
-                Salon Fresh
-              </span>
-              <span className="block text-[10px] tracking-[0.3em] text-[#D4AF37] font-light uppercase -mt-1">
-                Nails & Beauty
-              </span>
-            </div>
-          </Link>
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
+        <Link href="/" className="flex flex-col tracking-widest group">
+          <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
+            SALON FRESH
+          </span>
+          <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
+            NAILS & BEAUTY ATELIER
+          </span>
+        </Link>
 
-          <nav className="hidden lg:flex items-center gap-10">
-            {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
-              <Link 
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all duration-300 relative group font-light tracking-wide"
-              >
-                {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
+        <nav className="hidden lg:flex items-center gap-10">
+          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <Link 
-              href="/agenda"
-              className="px-8 py-3.5 text-xs font-light tracking-[0.2em] uppercase text-white bg-gradient-to-r from-[#D4AF37] to-[#E879A0] hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full"
+              key={item}
+              href={`#${item.toLowerCase()}`}
+              className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-colors duration-300 font-medium"
             >
-              <span className="flex items-center gap-2">
-                <FaCalendarCheck className="text-xs" />
-                Reservar Cita
-              </span>
+              {item}
             </Link>
-          </nav>
-
-          <button 
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden w-12 h-12 flex items-center justify-center border border-[#F0E4DA] rounded-full hover:border-[#D4AF37]/40 transition-all hover:shadow-lg"
+          ))}
+          <Link 
+            href="/agenda"
+            className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all duration-300 rounded-none"
           >
-            {isOpen ? <FaTimes className="text-[#1A0E0A]" /> : <FaBars className="text-[#1A0E0A]" />}
-          </button>
-        </div>
+            Reservar Cita
+          </Link>
+        </nav>
+
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden text-[#1A0E0A] hover:text-[#D4AF37] transition-colors p-2"
+        >
+          {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+        </button>
       </div>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white/95 backdrop-blur-2xl border-t border-[#F0E4DA]"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl"
           >
-            <div className="px-6 py-8 space-y-4">
+            <div className="flex flex-col gap-4">
               {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
                 <Link
                   key={item}
                   href={`#${item.toLowerCase()}`}
-                  className="block text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all font-light tracking-wide"
+                  className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   {item}
@@ -159,7 +120,7 @@ const Header = () => {
               ))}
               <Link 
                 href="/agenda"
-                className="block w-full text-center px-6 py-4 text-xs font-light tracking-[0.2em] uppercase text-white bg-gradient-to-r from-[#D4AF37] to-[#E879A0] transition-all rounded-full"
+                className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2"
                 onClick={() => setIsOpen(false)}
               >
                 Reservar Cita
@@ -173,301 +134,162 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO
+// HERO (REDISEÑO ASIMÉTRICO DE ALTA COSTURA)
 // ============================================================
 const HeroSection = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return
-      const rect = containerRef.current.getBoundingClientRect()
-      const x = (e.clientX - rect.left - rect.width / 2) / 20
-      const y = (e.clientY - rect.top - rect.height / 2) / 20
-      setMousePosition({ x, y })
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
-
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#FFF8F5]">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FFF8F5] via-[#FFFCF8] to-[#F5EDE0]" />
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#D4AF37]/20 animate-pulse-slow" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full filter blur-[200px] bg-[#E879A0]/15 animate-pulse-slow-delay" />
-        <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:30px_30px] opacity-10" />
-      </div>
-
-      <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
-          <motion.div
-            initial={{ opacity: 0, x: -60 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+    <section className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-[#FFF9F6]">
+      <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
+      <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/30 rounded-full blur-[120px]" />
+      
+      <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 relative z-10 py-12">
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          
+          <motion.div 
+            className="lg:col-span-7 space-y-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
           >
-            <motion.div
-              initial={{ opacity: 0, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, filter: 'blur(0px)' }}
-              transition={{ duration: 1.5, delay: 0.3 }}
-            >
-              <div className="inline-flex items-center gap-3 bg-white/60 backdrop-blur-sm border border-[#D4AF37]/20 px-5 py-2 rounded-full mb-8 shadow-lg">
-                <span className="flex h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
-                <span className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light">
-                  ✦ Atelier de Lujo ✦
-                </span>
-                <span className="flex h-2 w-2 rounded-full bg-[#E879A0] animate-pulse delay-300" />
-              </div>
+            <div className="flex items-center gap-3">
+              <span className="h-[1px] w-8 bg-[#D4AF37]" />
+              <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">
+                Haute Couture Beauty Atelier
+              </span>
+            </div>
 
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-[#1A0E0A] leading-[1.05] tracking-tight">
-                Donde la belleza
-                <br />
-                <span className="relative inline-block">
-                  <span className="italic bg-gradient-to-r from-[#D4AF37] via-[#E879A0] to-[#D4AF37] bg-clip-text text-transparent bg-[length:300%_auto] animate-gradient">
-                    se convierte en arte
-                  </span>
-                  <motion.div 
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className="absolute -top-6 -right-8 text-[#D4AF37]"
-                  >
-                    <FaGem className="text-lg" />
-                  </motion.div>
-                </span>
-              </h1>
+            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-[#1A0E0A] leading-[1.1] font-light">
+              Redefiniendo <br />
+              <span className="font-normal italic text-[#D4AF37] tracking-normal">la estética</span> <br />
+              como arte puro.
+            </h1>
 
-              <p className="text-[#5C4A3E] text-lg font-light max-w-xl mt-6 leading-relaxed">
-                Un santuario de elegancia donde cada detalle está pensado para realzar 
-                tu belleza natural con técnicas de vanguardia y materiales de lujo.
-              </p>
-            </motion.div>
+            <p className="text-[#5C4A3E] text-base md:text-lg font-light max-w-lg leading-relaxed">
+              Un santuario arquitectónico de relajación y vanguardia. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="flex flex-wrap gap-4 mt-10"
-            >
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
                 href="/agenda"
-                className="group relative px-10 py-4 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white text-xs font-light tracking-[0.2em] uppercase hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full"
+                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center"
               >
-                <span className="relative z-10 flex items-center gap-3">
-                  <FaCalendarCheck />
-                  Reservar Cita
-                  <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform duration-300" />
-                </span>
+                Agendar Experiencia
               </Link>
-
               <Link
                 href="#esencia"
-                className="px-10 py-4 border-2 border-[#D4AF37]/30 text-[#5C4A3E] text-xs font-light tracking-[0.2em] uppercase hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all duration-500 rounded-full flex items-center gap-3 bg-white/50 backdrop-blur-sm"
+                className="border border-[#1A0E0A]/20 text-[#1A0E0A] hover:border-[#D4AF37] hover:text-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center bg-white/40 backdrop-blur-sm"
               >
-                <FaLeaf className="text-[#D4AF37]" />
-                Descubrir
+                Conocer la Esencia
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
-              className="flex items-center gap-16 mt-16 pt-8 border-t border-[#F0E4DA]"
-            >
-              <div className="group">
-                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">5+</p>
-                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Años de Excelencia</p>
+            <div className="grid grid-cols-3 gap-6 pt-12 border-t border-[#F0E4DA] max-w-md">
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">05+</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Años Premium</p>
               </div>
-              <div className="group">
-                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">3K+</p>
-                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Clientas Satisfechas</p>
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">3K+</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Almas Felices</p>
               </div>
-              <div className="group">
-                <p className="text-4xl font-serif text-[#D4AF37] group-hover:scale-110 transition-transform">4.9★</p>
-                <p className="text-[10px] text-[#5C4A3E] uppercase tracking-widest mt-1 font-light">Valoración Premium</p>
+              <div>
+                <p className="font-serif text-3xl text-[#1A0E0A]">4.9</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Reseñas Google</p>
               </div>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            ref={containerRef}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="relative"
-            style={{
-              transform: `perspective(1000px) rotateY(${mousePosition.x}deg) rotateX(${-mousePosition.y}deg)`
-            }}
-          >
-            <div className="relative aspect-square max-w-md mx-auto">
-              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-[#D4AF37]/20 via-[#E879A0]/10 to-[#D4AF37]/20 animate-spin-slow" />
-              <div className="absolute -inset-8 rounded-3xl bg-gradient-to-br from-[#D4AF37]/10 to-[#E879A0]/10 animate-spin-slow-reverse" />
-              
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-[#D4AF37]/20 border-4 border-white/50">
-                <img 
-                  src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=600&h=600&fit=crop&crop=center"
-                  alt="Belleza"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/20 to-transparent" />
-              </div>
-
-              <motion.div 
-                animate={{ y: [0, -15, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/30"
-              >
-                <FaCrown className="text-3xl text-white" />
-              </motion.div>
-              
-              <motion.div 
-                animate={{ y: [0, 15, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white shadow-2xl flex items-center justify-center border-2 border-[#D4AF37]/30"
-              >
-                <GiNails className="text-2xl text-[#D4AF37]" />
-              </motion.div>
             </div>
           </motion.div>
+
+          <motion.div 
+            className="lg:col-span-5 relative flex justify-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 0.2 }}
+          >
+            <div className="relative w-full max-w-md aspect-[3/4] bg-[#F0E4DA] overflow-hidden group">
+              <img 
+                src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=800&h=1000&fit=crop"
+                alt="Elegancia y Belleza"
+                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+              
+              <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-5 shadow-lg border-l-2 border-[#D4AF37]">
+                <p className="text-[9px] tracking-[0.25em] text-[#D4AF37] font-bold uppercase">Atelier Destacado</p>
+                <p className="font-serif text-base text-[#1A0E0A] mt-1">Técnicas exclusivas internacionales</p>
+              </div>
+            </div>
+          </motion.div>
+
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          animation: gradient 4s ease-in-out infinite;
-        }
-        .animate-pulse-slow {
-          animation: pulse 6s ease-in-out infinite;
-        }
-        .animate-pulse-slow-delay {
-          animation: pulse 6s ease-in-out infinite 2s;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-        .animate-spin-slow {
-          animation: spin 20s linear infinite;
-        }
-        .animate-spin-slow-reverse {
-          animation: spin 25s linear infinite reverse;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </section>
   )
 }
 
 // ============================================================
-// ESENCIA
+// ESENCIA (ESTILO REVISTA EDITORIAL)
 // ============================================================
 const EsenciaSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  })
-
-  const y1 = useTransform(scrollYProgress, [0, 1], [80, -80])
-  const y2 = useTransform(scrollYProgress, [0, 1], [40, -40])
-  const y3 = useTransform(scrollYProgress, [0, 1], [120, -120])
-
-  const GALLERY_IMAGES = [
-    'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&h=800&fit=crop',
-    'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&h=800&fit=crop',
-    'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&h=800&fit=crop'
-  ]
+  const isInView = useInView(ref, { once: true, amount: 0.3 })
 
   return (
-    <section id="esencia" ref={ref} className="py-32 bg-white relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/10" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 80 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 80 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <div className="inline-block mb-6">
-              <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50">
-                Nuestra Esencia
-              </span>
+    <section id="esencia" ref={ref} className="py-32 bg-white relative">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="grid lg:grid-cols-12 gap-16 items-center">
+          
+          <div className="lg:col-span-5 order-2 lg:order-1 relative">
+            <div className="grid grid-cols-2 gap-4">
+              <motion.div 
+                className="aspect-[3/5] bg-gray-100 overflow-hidden"
+                animate={isInView ? { y: [40, 0], opacity: [0, 1] } : {}}
+                transition={{ duration: 0.8 }}
+              >
+                <img src="https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Detalle" />
+              </motion.div>
+              <motion.div 
+                className="aspect-[3/5] bg-gray-100 overflow-hidden mt-12"
+                animate={isInView ? { y: [-40, 0], opacity: [0, 1] } : {}}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <img src="https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Estilo" />
+              </motion.div>
             </div>
-            
-            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-4 leading-tight">
-              Donde el arte
-              <br />
-              <span className="italic bg-gradient-to-r from-[#D4AF37] to-[#E879A0] bg-clip-text text-transparent">
-                encuentra su hogar
-              </span>
-            </h2>
-            
-            <p className="text-[#5C4A3E] font-light leading-relaxed mt-6 text-lg">
-              En Salon Fresh Nails, cada detalle está cuidadosamente diseñado para ofrecerte 
-              una experiencia de belleza única. Nuestra pasión por la excelencia se refleja 
-              en cada servicio, desde la técnica hasta la atención personalizada.
-            </p>
+            <div className="absolute -z-10 bottom-4 right-4 left-4 top-4 border border-[#D4AF37]/20 pointer-events-none transform translate-x-4 translate-y-4" />
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="bg-[#FFF8F5] border border-[#F0E4DA] p-5 rounded-2xl hover:border-[#D4AF37] transition-all group">
-                <FaAward className="text-[#D4AF37] text-2xl mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm text-[#1A0E0A] font-light">Excelencia Artística</p>
+          <motion.div 
+            className="lg:col-span-7 order-1 lg:order-2 space-y-6"
+            initial={{ opacity: 0, x: 30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRO MANIFIESTO</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light leading-tight">
+              Crear belleza no es seguir tendencias, es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
+            </h2>
+            <p className="text-[#5C4A3E] font-light leading-relaxed text-base">
+              Nos distanciamos de lo genérico. En Salon Fresh fusionamos ingredientes orgánicos premium con el dominio milimétrico de la técnica moderna. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
+            </p>
+            
+            <div className="grid sm:grid-cols-2 gap-6 pt-6">
+              <div className="border-t border-[#F0E4DA] pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaAward className="text-[#D4AF37]" />
+                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Alta Rigurosidad</h4>
+                </div>
+                <p className="text-xs text-[#5C4A3E] font-light">Especialistas certificados internacionalmente en continuo perfeccionamiento técnico.</p>
               </div>
-              <div className="bg-[#FFF8F5] border border-[#F0E4DA] p-5 rounded-2xl hover:border-[#E879A0] transition-all group">
-                <FaRegHeart className="text-[#E879A0] text-2xl mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm text-[#1A0E0A] font-light">Cuidado Personalizado</p>
+              <div className="border-t border-[#F0E4DA] pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaLeaf className="text-[#E879A0]" />
+                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Línea Orgánica</h4>
+                </div>
+                <p className="text-xs text-[#5C4A3E] font-light">Productos libres de crueldad y tóxicos, priorizando la salud a largo plazo de tu piel y uñas.</p>
               </div>
             </div>
           </motion.div>
 
-          <div className="relative h-[500px] lg:h-[600px]">
-            <motion.div
-              style={{ y: y1 }}
-              className="absolute top-0 right-0 w-64 h-80 rounded-[40%_60%_30%_70%] overflow-hidden shadow-2xl border-4 border-white"
-            >
-              <img 
-                src={GALLERY_IMAGES[0]} 
-                alt="Arte en uñas"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-
-            <motion.div
-              style={{ y: y2 }}
-              className="absolute bottom-0 left-0 w-56 h-72 rounded-[60%_30%_70%_40%] overflow-hidden shadow-2xl border-4 border-white"
-            >
-              <img 
-                src={GALLERY_IMAGES[1]} 
-                alt="Belleza"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-
-            <motion.div
-              style={{ y: y3 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-60 rounded-[40%_70%_50%_60%] overflow-hidden shadow-2xl border-4 border-[#D4AF37]/30"
-            >
-              <img 
-                src={GALLERY_IMAGES[2]} 
-                alt="Arte en uñas"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </div>
         </div>
       </div>
     </section>
@@ -475,618 +297,34 @@ const EsenciaSection = () => {
 }
 
 // ============================================================
-// STATS SECTION - NUEVA
+// STATS SECTION (MINIMALISTA Y SOFISTICADA)
 // ============================================================
 const StatsSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true })
 
   const stats = [
-    { number: '5+', label: 'Años de Excelencia', icon: FaAward, color: '#D4AF37' },
-    { number: '3K+', label: 'Clientas Satisfechas', icon: FaRegHeart, color: '#E879A0' },
-    { number: '4.9★', label: 'Valoración Premium', icon: FaStar, color: '#D4AF37' },
-    { number: '100%', label: 'Satisfacción Garantizada', icon: FaCheckCircle, color: '#E879A0' }
+    { number: '05+', label: 'Años de Trayectoria' },
+    { number: '3K+', label: 'Clientes Premium' },
+    { number: '4.9', label: 'Calificación Global' },
+    { number: '100%', label: 'Garantía de Satisfacción' }
   ]
 
   return (
-    <section ref={ref} className="py-20 bg-white border-y border-[#F0E4DA]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
-          }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-8"
-        >
-          {stats.map((stat, idx) => {
-            const Icon = stat.icon
-            return (
-              <motion.div
-                key={idx}
-                variants={{
-                  hidden: { opacity: 0, y: 30 },
-                  visible: { opacity: 1, y: 0 }
-                }}
-                className="text-center group"
-              >
-                <div className="relative inline-block">
-                  <div 
-                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto transition-all duration-500 group-hover:scale-110"
-                    style={{ backgroundColor: `${stat.color}15` }}
-                  >
-                    <Icon className="text-2xl" style={{ color: stat.color }} />
-                  </div>
-                  <div 
-                    className="absolute -inset-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
-                    style={{ backgroundColor: `${stat.color}20` }}
-                  />
-                </div>
-                <p 
-                  className="text-4xl font-serif mt-4 transition-colors duration-300 group-hover:text-[#D4AF37]"
-                  style={{ color: '#1A0E0A' }}
-                >
-                  {stat.number}
-                </p>
-                <p className="text-[#5C4A3E] text-xs font-light tracking-widest uppercase mt-1">
-                  {stat.label}
-                </p>
-              </motion.div>
-            )
-          })}
-        </motion.div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// CATEGORIES SECTION - NUEVA
-// ============================================================
-const CategoriesSection = () => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.1 })
-
-  const categories = [
-    {
-      id: 'manicura',
-      name: 'Manicura',
-      description: 'Manicura rusa, esmaltado semipermanente, diseño de uñas y cuidado profesional con técnicas de vanguardia.',
-      icon: GiNails,
-      color: '#D4AF37',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&h=400&fit=crop',
-      tag: '⭐ Premium'
-    },
-    {
-      id: 'micropigmentacion',
-      name: 'Micropigmentación',
-      description: 'Labios, cejas y ojos con técnicas avanzadas para resultados naturales y duraderos. Pigmentación de alta calidad.',
-      icon: GiSparkles,
-      color: '#E879A0',
-      image: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=400&h=400&fit=crop',
-      tag: '✨ Tendencia'
-    },
-    {
-      id: 'microblading',
-      name: 'Microblading',
-      description: 'Diseño de cejas con técnica de microblading, pelo a pelo, para un resultado hiperrealista y natural.',
-      icon: FaSprayCan,
-      color: '#F2994A',
-      image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=400&h=400&fit=crop',
-      tag: '🌟 Natural'
-    },
-    {
-      id: 'peluqueria',
-      name: 'Peluquería',
-      description: 'Cortes de autor, colorimetría avanzada, tratamientos capilares de lujo y peinados de alta costura.',
-      icon: GiScissors,
-      color: '#2D9CDB',
-      image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=400&h=400&fit=crop',
-      tag: '✂️ Vanguardia'
-    },
-    {
-      id: 'pestanas',
-      name: 'Pestañas',
-      description: 'Extensiones de pestañas, lifting, tintado y tratamientos para una mirada impactante y natural.',
-      icon: FaEye,
-      color: '#9B5DE5',
-      image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400&h=400&fit=crop',
-      tag: '👁️ Impacto'
-    },
-    {
-      id: 'cejas',
-      name: 'Cejas',
-      description: 'Diseño de cejas, depilación con hilo, tinte y técnicas de realce natural para enmarcar tu mirada.',
-      icon: FaRegStar,
-      color: '#F2994A',
-      image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=400&h=400&fit=crop',
-      tag: '✨ Definición'
-    },
-    {
-      id: 'labios',
-      name: 'Labios',
-      description: 'Micropigmentación de labios, hidratación profunda y tratamientos de volumen natural para una sonrisa perfecta.',
-      icon: GiLipstick,
-      color: '#E879A0',
-      image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=400&h=400&fit=crop',
-      tag: '💋 Glamour'
-    },
-    {
-      id: 'estetica',
-      name: 'Estética Facial',
-      description: 'Tratamientos faciales de lujo, limpieza profunda, hidratación y revitalización con productos premium.',
-      icon: GiSparkles,
-      color: '#27AE60',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=400&fit=crop',
-      tag: '🌸 Bienestar'
-    },
-    {
-      id: 'depilacion',
-      name: 'Depilación',
-      description: 'Depilación con cera, hilo y técnicas avanzadas para una piel suave y libre de vello.',
-      icon: FaHeart,
-      color: '#E879A0',
-      image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
-      tag: '✨ Suavidad'
-    }
-  ]
-
-  return (
-    <section id="categorías" ref={ref} className="py-32 bg-white relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FFF8F5] via-white to-[#FFF8F5]" />
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/5" />
-        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/5" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
-          }}
-          className="text-center mb-16"
-        >
-          <motion.span 
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="inline-block text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-6 py-2 rounded-full bg-white/50 backdrop-blur-sm"
-          >
-            ✦ Categorías de Servicios ✦
-          </motion.span>
-          <motion.h2 
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
-          >
-            Especialidades que <span className="italic text-[#D4AF37]">transforman</span>
-          </motion.h2>
-          <motion.p 
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="text-[#5C4A3E] font-light mt-4 max-w-2xl mx-auto"
-          >
-            Descubre nuestra amplia gama de servicios profesionales, diseñados para realzar 
-            tu belleza natural con técnicas de vanguardia y productos de lujo.
-          </motion.p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category, idx) => {
-            const Icon = category.icon
-            return (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-                transition={{ delay: idx * 0.05, duration: 0.5 }}
-                className="group relative"
-              >
-                <div className="relative bg-white border border-[#F0E4DA] rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10 hover:border-[#D4AF37]/30 hover:-translate-y-2">
-                  
-                  <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={category.image} 
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/80 via-[#1A0E0A]/30 to-transparent" />
-                    
-                    <div className="absolute top-4 right-4">
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full text-white shadow-lg" style={{
-                        background: `linear-gradient(135deg, ${category.color}, ${category.color}dd)`,
-                        boxShadow: `0 4px 15px ${category.color}40`
-                      }}>
-                        {category.tag}
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-4 left-4">
-                      <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                        <Icon className="text-2xl text-white" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="text-xl font-serif text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300">
-                      {category.name}
-                    </h3>
-                    <p className="text-[#5C4A3E] text-sm font-light mt-2 leading-relaxed">
-                      {category.description}
-                    </p>
-                    
-                    <div className="mt-4 flex items-center gap-3">
-                      <div className="h-0.5 flex-1 bg-gradient-to-r from-[#D4AF37] to-transparent" />
-                      <Link 
-                        href="/servicios"
-                        className="text-xs text-[#D4AF37] hover:text-[#E879A0] transition-colors font-light tracking-wider uppercase flex items-center gap-1 group/link"
-                      >
-                        Ver más
-                        <FaArrowRight className="text-[10px] group-hover/link:translate-x-1 transition-transform" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="absolute -inset-full top-0 left-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent transform skew-x-12 group-hover:translate-x-full transition-transform duration-1000" />
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-16"
-        >
-          <Link 
-            href="/servicios"
-            className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full text-xs font-light tracking-[0.2em] uppercase group"
-          >
-            <FaGem className="text-xs" />
-            Explorar todos los servicios
-            <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
-          </Link>
-        </motion.div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// SERVICIOS - CON DATOS DE LA DB
-// ============================================================
-const ServicesSection = ({ services }: { services: any[] }) => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.1 })
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
-
-  if (!services || services.length === 0) return null
-
-  return (
-    <section id="servicios" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-5" />
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
-          }}
-          className="text-center mb-20"
-        >
-          <motion.span 
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
-          >
-            ✦ Servicios de Lujo ✦
-          </motion.span>
-          <motion.h2 
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
-          >
-            Experiencias que <span className="italic text-[#D4AF37]">transforman</span>
-          </motion.h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.slice(0, 4).map((service, idx) => {
-            const Icon = CATEGORY_ICONS[service.category] || CATEGORY_ICONS.default
-            const imageUrl = service.image_url || CATEGORY_IMAGES[service.category] || CATEGORY_IMAGES.default
-            const isHovered = hoveredId === service.id
-
-            return (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-                transition={{ delay: idx * 0.1 }}
-                onMouseEnter={() => setHoveredId(service.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                className="group relative bg-white border border-[#F0E4DA] hover:border-[#D4AF37] rounded-2xl overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
-              >
-                <div className={`absolute inset-0 transition-all duration-700 ${
-                  isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
-                }`}>
-                  <img 
-                    src={imageUrl} 
-                    alt={service.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
-                </div>
-
-                <div className="relative z-10 p-8">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                    isHovered ? 'bg-[#D4AF37] text-white scale-110' : 'bg-[#FFF8F5] text-[#D4AF37]'
-                  }`}>
-                    <Icon className="text-2xl" />
-                  </div>
-                  
-                  <h3 className={`text-xl font-serif mt-6 transition-colors duration-500 ${
-                    isHovered ? 'text-[#D4AF37]' : 'text-[#1A0E0A]'
-                  }`}>
-                    {service.name}
-                  </h3>
-                  
-                  <p className="text-[#5C4A3E] text-sm font-light mt-3 leading-relaxed line-clamp-3">
-                    {service.description}
-                  </p>
-
-                  <div className="flex items-center justify-between mt-6 pt-6 border-t border-[#F0E4DA]">
-                    <div>
-                      <span className={`text-2xl font-serif transition-colors duration-500 ${
-                        isHovered ? 'text-[#D4AF37]' : 'text-[#1A0E0A]'
-                      }`}>
-                        ${service.price}
-                      </span>
-                      <span className="text-xs text-[#5C4A3E] ml-2 flex items-center gap-1">
-                        <FaClock className="text-[10px]" />
-                        {service.duration}min
-                      </span>
-                    </div>
-                    <span className={`text-[10px] font-light tracking-wider uppercase px-4 py-1.5 rounded-full transition-all duration-500 ${
-                      isHovered ? 'bg-[#D4AF37] text-white' : 'bg-[#FFF8F5] text-[#5C4A3E]'
-                    }`}>
-                      {service.category || 'Premium'}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {services.length > 4 && (
-          <div className="text-center mt-12">
-            <Link 
-              href="/servicios"
-              className="inline-flex items-center gap-3 text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all group font-light tracking-wider"
-            >
-              Ver todos los servicios
-              <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
-            </Link>
-          </div>
-        )}
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// GALERÍA
-// ============================================================
-const GallerySection = ({ images }: { images: any[] }) => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.1 })
-
-  const displayImages = images && images.length > 0 
-    ? images 
-    : [
-        'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&h=800&fit=crop',
-        'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&h=800&fit=crop',
-        'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&h=800&fit=crop'
-      ]
-
-  return (
-    <section id="galeria" ref={ref} className="py-32 bg-white relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FFF8F5] via-white to-[#FFF8F5]" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
-          }}
-          className="text-center mb-16"
-        >
-          <motion.span 
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
-          >
-            ✦ Galería ✦
-          </motion.span>
-          <motion.h2 
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
-          >
-            Nuestras <span className="italic text-[#D4AF37]">creaciones</span>
-          </motion.h2>
-        </motion.div>
-      </div>
-
-      <div className="relative">
-        <motion.div
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          className="flex gap-4 w-max"
-        >
-          {[...displayImages, ...displayImages].map((img, idx) => {
-            const imageUrl = typeof img === 'string' ? img : img.image_url
-            const title = typeof img === 'string' ? 'Creación' : img.title || 'Creación exclusiva'
-
-            return (
-              <div key={idx} className="w-72 md:w-96 flex-shrink-0 group">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl shadow-xl">
-                  <img 
-                    src={imageUrl} 
-                    alt={title}
-                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                    <p className="text-white text-sm font-light tracking-wider">{title}</p>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </motion.div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-12 text-center">
-        <Link 
-          href="/galeria"
-          className="inline-flex items-center gap-3 text-sm text-[#5C4A3E] hover:text-[#D4AF37] transition-all group font-light tracking-wider"
-        >
-          Ver toda la galería
-          <FaArrowRight className="text-xs group-hover:translate-x-2 transition-transform" />
-        </Link>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// TESTIMONIOS
-// ============================================================
-const TestimonialsSection = () => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.1 })
-  const [currentIndex, setCurrentIndex] = useState(0)
-
-  const TESTIMONIALS = [
-    { 
-      name: 'Valeria Martínez',
-      role: 'Clienta desde 2021',
-      text: 'La manicura rusa es una obra de arte. La precisión y el cuidado son excepcionales.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop'
-    },
-    { 
-      name: 'Carolina Rodríguez',
-      role: 'Clienta desde 2022',
-      text: 'El mejor salón de Montevideo. Los diseños de nail art son divinos y la atención es de primer nivel.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop'
-    },
-    { 
-      name: 'Agustina Sosa',
-      role: 'Clienta desde 2020',
-      text: 'Llevo 3 años viniendo y nunca me decepcionan. La duración de las extensiones es increíble.',
-      rating: 5,
-      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop'
-    }
-  ]
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS.length)
-    }, 6000)
-    return () => clearInterval(timer)
-  }, [])
-
-  return (
-    <section id="testimonios" ref={ref} className="py-32 bg-[#FFF8F5] relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#E879A0]/10" />
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
-          }}
-          className="text-center mb-16"
-        >
-          <motion.span 
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-            className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-light border border-[#D4AF37]/20 px-5 py-2 rounded-full bg-white/50"
-          >
-            ✦ Testimonios ✦
-          </motion.span>
-          <motion.h2 
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-            className="font-serif text-4xl md:text-5xl text-[#1A0E0A] mt-6"
-          >
-            Lo que <span className="italic text-[#D4AF37]">dicen</span>
-          </motion.h2>
-        </motion.div>
-
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-white border border-[#F0E4DA] rounded-3xl p-12 shadow-2xl hover:shadow-3xl transition-all"
-        >
-          <div className="flex items-center gap-6 mb-8">
-            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-[#D4AF37]/30 shadow-xl">
-              <img 
-                src={TESTIMONIALS[currentIndex].image} 
-                alt={TESTIMONIALS[currentIndex].name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div>
-              <h4 className="text-xl font-serif text-[#1A0E0A]">
-                {TESTIMONIALS[currentIndex].name}
-              </h4>
-              <p className="text-[#5C4A3E] text-sm font-light">
-                {TESTIMONIALS[currentIndex].role}
-              </p>
-            </div>
-          </div>
-
-          <FaQuoteLeft className="text-[#D4AF37]/20 text-4xl mb-4" />
-          
-          <p className="text-[#1A0E0A] font-light leading-relaxed text-lg">
-            "{TESTIMONIALS[currentIndex].text}"
-          </p>
-
-          <div className="flex items-center gap-1 mt-6">
-            {[...Array(TESTIMONIALS[currentIndex].rating)].map((_, i) => (
-              <FaStar key={i} className="text-[#D4AF37] text-lg" />
-            ))}
-          </div>
-        </motion.div>
-
-        <div className="flex justify-center gap-3 mt-8">
-          {TESTIMONIALS.map((_, idx) => (
-            <button
+    <section ref={ref} className="py-20 bg-[#FFF8F5] border-y border-[#F0E4DA]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {stats.map((stat, idx) => (
+            <motion.div
               key={idx}
-              onClick={() => setCurrentIndex(idx)}
-              className={`h-1 rounded-full transition-all duration-500 ${
-                idx === currentIndex 
-                  ? 'w-12 bg-gradient-to-r from-[#D4AF37] to-[#E879A0]' 
-                  : 'w-4 bg-[#F0E4DA] hover:bg-[#D4AF37]/50'
-              }`}
-            />
+              initial={{ opacity: 0, y: 15 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: idx * 0.1 }}
+              className="text-center"
+            >
+              <p className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">{stat.number}</p>
+              <p className="text-[10px] tracking-[0.25em] text-[#5C4A3E] uppercase mt-2 font-medium">{stat.label}</p>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -1095,203 +333,379 @@ const TestimonialsSection = () => {
 }
 
 // ============================================================
-// CTA FINAL
+// CATEGORIES SECTION (ESTILO MENÚ DE LUJO)
 // ============================================================
-const CtaSection = () => {
+const CategoriesSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(ref, { once: true, amount: 0.05 })
+
+  const categories = [
+    { id: 'manicura', name: 'Manicura de Autor', description: 'Manicura rusa refinada, nivelación e ingeniería de uñas con acabados de alta costura.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop', tag: 'Elite' },
+    { id: 'micropigmentacion', name: 'Micropigmentación', description: 'Realce hiperrealista de cejas, ojos y labios con pigmentos orgánicos biocompatibles.', image: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&fit=crop', tag: 'Premium' },
+    { id: 'microblading', name: 'Microblading 3D', description: 'Diseño arquitectónico pelo a pelo adaptado a la morfología de tu rostro.', image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&fit=crop', tag: 'Natural' },
+    { id: 'peluqueria', name: 'Alta Peluquería', description: 'Cortes direccionales, colorimetría francesa y tratamientos moleculares de reconstrucción.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop', tag: 'Vanguardia' },
+    { id: 'pestanas', name: 'Mirada Minimal', description: 'Lifting botox y extensiones avanzadas con peso pluma que respetan tu pestaña natural.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop', tag: 'Impacto' },
+    { id: 'estetica', name: 'Estética Avanzada', description: 'Tratamientos dermacéuticos de rejuvenecimiento celular y limpieza profunda hidrafacial.', image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&fit=crop', tag: 'Bienestar' }
+  ]
 
   return (
-    <section ref={ref} className="py-28 bg-gradient-to-br from-[#FFF8F5] to-[#F5EDE0] relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#D4AF37_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full filter blur-[200px] bg-[#D4AF37]/10" />
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="inline-block mb-6"
-          >
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-2xl shadow-[#D4AF37]/30">
-              <FaGem className="text-3xl text-white" />
-            </div>
-          </motion.div>
-          
-          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A]">
-            ¿Lista para <span className="italic text-[#D4AF37]">brillar</span>?
-          </h2>
-          
-          <p className="text-[#5C4A3E] font-light mt-4 max-w-md mx-auto text-lg">
-            Descubre una experiencia de belleza única en Salon Fresh Nails.
-          </p>
-
-          <Link 
-            href="/agenda"
-            className="inline-flex items-center gap-4 px-12 py-5 mt-10 bg-gradient-to-r from-[#D4AF37] to-[#E879A0] text-white hover:shadow-2xl hover:shadow-[#D4AF37]/30 transition-all duration-500 rounded-full text-xs font-light tracking-[0.2em] uppercase group"
-          >
-            <FaCalendarCheck />
-            Agendar Cita
-            <FaArrowRight className="group-hover:translate-x-2 transition-transform" />
-          </Link>
-
-          <div className="flex flex-wrap justify-center gap-8 mt-8 text-xs text-[#5C4A3E] font-light">
-            <span className="flex items-center gap-2">
-              <FaStar className="text-[#D4AF37] text-[8px]" /> Sin costo de reserva
-            </span>
-            <span className="flex items-center gap-2">
-              <FaStar className="text-[#D4AF37] text-[8px]" /> Confirmación inmediata
-            </span>
-            <span className="flex items-center gap-2">
-              <FaStar className="text-[#D4AF37] text-[8px]" /> Flexibilidad total
-            </span>
+    <section id="categorías" ref={ref} className="py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-6">
+          <div className="space-y-3">
+            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRAS DISCIPLINAS</p>
+            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">La Carta de <span className="italic font-normal text-[#D4AF37]">Especialidades</span></h2>
           </div>
-        </motion.div>
+          <Link href="/servicios" className="text-xs font-semibold tracking-[0.2em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] transition-colors border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 self-start md:self-auto">
+            Ver Todos los Tratamientos →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {categories.map((cat, idx) => (
+            <motion.div 
+              key={cat.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: idx * 0.05 }}
+              className="group border-b border-[#F0E4DA] pb-8 flex flex-col justify-between"
+            >
+              <div className="space-y-4">
+                <div className="relative aspect-[16/10] overflow-hidden mb-6 bg-gray-50">
+                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter grayscale-[30%] group-hover:grayscale-0" />
+                  <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-[9px] tracking-widest uppercase font-semibold text-[#1A0E0A] px-3 py-1.5">{cat.tag}</span>
+                </div>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300">{cat.name}</h3>
+                <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">{cat.description}</p>
+              </div>
+              
+              <div className="pt-6">
+                <Link href={`/servicios#${cat.id}`} className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors">
+                  Descubrir menú <FaArrowRight className="text-[9px] translate-x-0 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
       </div>
     </section>
   )
 }
 
 // ============================================================
-// FOOTER - REDISEÑADO
+// SERVICIOS (CON DATOS DE LA DB COMPATIBLE)
 // ============================================================
-const Footer = () => (
-  <footer className="bg-[#1A0E0A] text-white/70 border-t border-[#D4AF37]/10">
-    <div className="relative">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
-      
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          
-          <div>
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#E879A0] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20 group-hover:shadow-[#D4AF37]/40 transition-all duration-500">
-                <FaGem className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <span className="text-white font-serif text-xl tracking-wider group-hover:text-[#D4AF37] transition-colors duration-300">
-                  Salon Fresh
-                </span>
-                <span className="block text-[8px] tracking-[0.3em] text-[#D4AF37] font-light uppercase">
-                  Nails & Beauty
-                </span>
-              </div>
+const ServicesSection = ({ services }: { services: any[] }) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+
+  if (!services || services.length === 0) return null
+
+  return (
+    <section id="servicios" ref={ref} className="py-32 bg-[#FFF9F6]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        <div className="text-center max-w-xl mx-auto mb-20 space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">RESERVAS DESTACADAS</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Experiencias más Solicitadas</h2>
+          <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-4" />
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {services.slice(0, 4).map((service, idx) => {
+            const Icon = CATEGORY_ICONS[service.category] || CATEGORY_ICONS.default
+            const imageUrl = service.image_url || CATEGORY_IMAGES[service.category] || CATEGORY_IMAGES.default
+
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                className="bg-white border border-[#F0E4DA] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[#D4AF37] hover:shadow-xl group"
+              >
+                <div>
+                  <div className="flex justify-between items-start">
+                    <div className="text-[#D4AF37] text-xl p-3 bg-[#FFF8F5] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors duration-300">
+                      <Icon />
+                    </div>
+                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#5C4A3E]/60 bg-gray-50 px-2.5 py-1">
+                      {service.category || 'Premium'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-serif text-xl text-[#1A0E0A] mt-6 group-hover:text-[#D4AF37] transition-colors duration-300 min-h-[56px] flex items-center">
+                    {service.name}
+                  </h3>
+
+                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed mt-4 line-clamp-3">
+                    {service.description}
+                  </p>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-[#F0E4DA] flex items-end justify-between">
+                  <div>
+                    <p className="text-[9px] tracking-wider text-[#A89588] uppercase">Inversión</p>
+                    <p className="font-serif text-2xl text-[#1A0E0A] mt-0.5">${service.price}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#5C4A3E]/80 font-light">
+                    <FaClock className="text-[10px] text-[#D4AF37]" />
+                    <span>{service.duration} min</span>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {services.length > 4 && (
+          <div className="text-center mt-16">
+            <Link 
+              href="/servicios"
+              className="inline-flex items-center gap-3 border border-[#1A0E0A] text-[#1A0E0A] hover:bg-[#1A0E0A] hover:text-white px-8 py-4 text-xs font-semibold tracking-[0.25em] uppercase transition-all duration-300"
+            >
+              Explorar Catálogo Completo <FaArrowRight className="text-[10px]" />
             </Link>
-            
-            <p className="text-white/50 text-sm font-light mt-6 leading-relaxed max-w-xs">
-              Redefiniendo el cuidado y la estética con arte, pasión y excelencia. 
-              Un espacio donde la belleza se convierte en experiencia.
-            </p>
-            
-            <div className="flex gap-4 mt-6">
-              <a 
-                href="#" 
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center justify-center text-white/40 hover:text-[#D4AF37] transition-all duration-300 hover:scale-110"
+          </div>
+        )}
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// GALERÍA (ESTILO DIARIO VISUAL CONTINUO)
+// ============================================================
+const GallerySection = ({ images }: { images: any[] }) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true })
+
+  const displayImages = images && images.length > 0 
+    ? images 
+    : [
+        'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&fit=crop',
+        'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&fit=crop',
+        'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&fit=crop'
+      ]
+
+  return (
+    <section id="galeria" ref={ref} className="py-32 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-16 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+        <div className="space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">PORTAFOLIO VISUAL</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Obras Exclusivas</h2>
+        </div>
+        <p className="text-sm text-[#5C4A3E] font-light max-w-xs leading-relaxed">Una mirada íntima al arte real creado diariamente en los tocadores de nuestro atelier.</p>
+      </div>
+
+      <div className="relative w-full">
+        <div className="flex gap-6 overflow-x-auto pb-8 pt-4 px-6 lg:px-12 scrollbar-none snap-x snap-mandatory">
+          {displayImages.map((img, idx) => {
+            const imageUrl = typeof img === 'string' ? img : img.image_url
+            const title = typeof img === 'string' ? 'Acabado de Autor' : img.title || 'Diseño Exclusivo'
+
+            return (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                className="w-72 md:w-96 flex-shrink-0 snap-start group bg-white border border-[#F0E4DA] p-3"
               >
-                <FaInstagram className="text-sm" />
-              </a>
-              <a 
-                href="#" 
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 flex items-center justify-center text-white/40 hover:text-[#D4AF37] transition-all duration-300 hover:scale-110"
-              >
-                <FaWhatsapp className="text-sm" />
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
-              Horarios de Atención
-            </h4>
-            <ul className="space-y-4 text-sm">
-              <li className="flex justify-between items-center border-b border-white/5 pb-3">
-                <span className="text-white/50 font-light">Lunes a Viernes</span>
-                <span className="text-white font-light">09:00 - 20:00</span>
-              </li>
-              <li className="flex justify-between items-center border-b border-white/5 pb-3">
-                <span className="text-white/50 font-light">Sábados</span>
-                <span className="text-white font-light">09:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between items-center">
-                <span className="text-white/50 font-light">Domingos</span>
-                <span className="text-[#D4AF37] font-light">Cerrado</span>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
-              Enlaces Rápidos
-            </h4>
-            <ul className="space-y-3">
-              {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
-                <li key={item}>
-                  <Link 
-                    href={`#${item.toLowerCase()}`}
-                    className="text-white/50 hover:text-[#D4AF37] transition-all duration-300 text-sm font-light flex items-center gap-2 group"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]/30 group-hover:bg-[#D4AF37] transition-all duration-300" />
-                    {item}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-light mb-6">
-              Contacto
-            </h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-4 group">
-                <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#D4AF37]/20 transition-all duration-300">
-                  <FaPhoneAlt className="text-[#D4AF37] text-xs" />
+                <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 mb-4">
+                  <img src={imageUrl} alt={title} className="w-full h-full object-cover filter grayscale-[15%] group-hover:grayscale-0 transition-all duration-700" loading="lazy" />
                 </div>
-                <div>
-                  <p className="text-white/40 text-[10px] font-light uppercase tracking-wider">Teléfono</p>
-                  <p className="text-white text-sm font-light">099 123 456</p>
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs font-serif text-[#1A0E0A] tracking-wide">{title}</p>
+                  <span className="text-[9px] tracking-widest text-[#D4AF37] uppercase font-bold">✦ Fresh Art</span>
                 </div>
-              </li>
-              <li className="flex items-start gap-4 group">
-                <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#D4AF37]/20 transition-all duration-300">
-                  <FaMapMarkerAlt className="text-[#D4AF37] text-xs" />
-                </div>
-                <div>
-                  <p className="text-white/40 text-[10px] font-light uppercase tracking-wider">Dirección</p>
-                  <p className="text-white text-sm font-light">Montevideo, Uruguay</p>
-                </div>
-              </li>
-            </ul>
-          </div>
+              </motion.div>
+            )
+          })}
         </div>
       </div>
+
+      <div className="text-center mt-12">
+        <Link href="/galeria" className="text-xs font-bold tracking-[0.25em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 transition-colors">
+          Ver Todo el Feed de Arte
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// TESTIMONIOS (MINIMALISTA DE GRAN IMPACTO TIPOGRÁFICO)
+// ============================================================
+const TestimonialsSection = () => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const TESTIMONIALS = [
+    { name: 'Valeria Martínez', role: 'Cliente desde 2021', text: 'La precisión milimétrica de su manicura rusa superó todas mis expectativas. Un nivel de detalle que roza la perfección absoluta.' },
+    { name: 'Carolina Rodríguez', role: 'Cliente desde 2022', text: 'El ambiente del atelier es sublime. La colorimetría avanzada me devolvió la luminosidad natural del cabello. Son artesanas.' },
+    { name: 'Agustina Sosa', role: 'Cliente desde 2020', text: 'Tres años de fidelidad absoluta. La durabilidad y sanidad de los tratamientos faciales y de uñas no tienen rival en la ciudad.' }
+  ]
+
+  return (
+    <section id="testimonios" className="py-32 bg-[#FFF8F5] relative border-t border-[#F0E4DA]">
+      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center">
+        
+        <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold mb-12">VOCES INSIGNIA</p>
+        
+        <div className="min-h-[220px] flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-8"
+            >
+              <FaQuoteLeft className="text-[#D4AF37]/20 text-4xl mx-auto" />
+              <p className="font-serif text-xl md:text-3xl text-[#1A0E0A] font-light leading-relaxed italic">
+                "{TESTIMONIALS[currentIndex].text}"
+              </p>
+              <div>
+                <h4 className="text-sm font-bold tracking-[0.1em] text-[#1A0E0A] uppercase">{TESTIMONIALS[currentIndex].name}</h4>
+                <p className="text-xs text-[#A89588] mt-1 font-light">{TESTIMONIALS[currentIndex].role}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="flex justify-center gap-4 mt-12">
+          {TESTIMONIALS.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 transition-all duration-300 ${
+                idx === currentIndex ? 'w-10 bg-[#D4AF37]' : 'w-2 bg-[#F0E4DA] hover:bg-[#D4AF37]/50'
+              }`}
+            />
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// CTA FINAL (REDISEÑO DE CONVERSIÓN MINIMALISTA)
+// ============================================================
+const CtaSection = () => {
+  return (
+    <section className="py-32 bg-[#1A0E0A] text-white relative overflow-hidden">
+      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:32px_32px]" />
+      
+      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center relative z-10 space-y-8">
+        <p className="text-[10px] tracking-[0.5em] text-[#D4AF37] uppercase font-bold">RESERVA PRIVADA</p>
+        <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia Fresh</span>?</h2>
+        <p className="text-white/60 font-light max-w-md mx-auto text-sm leading-relaxed">
+          Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu imagen.
+        </p>
+        
+        <div className="pt-4">
+          <Link 
+            href="/agenda"
+            className="inline-block bg-[#D4AF37] text-white hover:bg-white hover:text-[#1A0E0A] px-12 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300"
+          >
+            Agendar Ahora Online
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-6 pt-6 text-[10px] tracking-wider text-white/40 uppercase font-light">
+          <span>✦ Sin Costo Adicional de Gestión</span>
+          <span className="text-white/10">|</span>
+          <span>✦ Confirmación en Tiempo Real</span>
+          <span className="text-white/10">|</span>
+          <span>✦ Gestión de Cancelación Flexible</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// FOOTER (ESTILO BOUTIQUE INTERNACIONAL)
+// ============================================================
+const Footer = () => (
+  <footer className="bg-[#150B08] text-white/60 border-t border-white/5 text-xs font-light">
+    <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      
+      <div className="space-y-4">
+        <Link href="/" className="flex flex-col tracking-widest">
+          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH</span>
+          <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">ATELIER</span>
+        </Link>
+        <p className="text-white/40 leading-relaxed max-w-xs pr-4">
+          Un espacio donde el rigor metodológico y la finura estética convergen para esculpir tu versión más sublime y auténtica.
+        </p>
+        <div className="flex gap-3 pt-2">
+          <a href="#" className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"><FaInstagram /></a>
+          <a href="#" className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"><FaWhatsapp /></a>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Disponibilidad</h4>
+        <ul className="space-y-2.5">
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Lunes a Viernes</span><span className="text-white">09:00 - 20:00</span></li>
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Sábados</span><span className="text-white">09:00 - 18:00</span></li>
+          <li className="flex justify-between pr-4"><span className="text-white/30">Domingos y Feriados</span><span className="text-[#D4AF37] font-medium">Cerrado</span></li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Navegación</h4>
+        <ul className="grid grid-cols-2 gap-2">
+          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+            <li key={item}>
+              <Link href={`#${item.toLowerCase()}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
+                <span className="text-[8px] text-[#D4AF37]/40">✦</span> {item}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Contacto Boutique</h4>
+        <ul className="space-y-4">
+          <li className="flex items-start gap-3">
+            <FaPhoneAlt className="text-[#D4AF37] mt-0.5" />
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-white/30">Línea Directa</p>
+              <p className="text-white font-medium mt-0.5">099 123 456</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <FaMapMarkerAlt className="text-[#D4AF37] mt-0.5" />
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-white/30">Ubicación</p>
+              <p className="text-white font-medium mt-0.5">Montevideo, Uruguay</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
     </div>
 
-    <div className="border-t border-white/5">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/30 text-[10px] font-light tracking-wider">
-            © 2026 Salon Fresh Nails. Todos los derechos reservados.
-          </p>
-          <div className="flex items-center gap-6 text-[10px] text-white/20 font-light">
-            <span>✦ Hecho con pasión en Uruguay</span>
-            <span className="hidden sm:inline">|</span>
-            <span className="hidden sm:inline">Términos y Condiciones</span>
-          </div>
-        </div>
+    <div className="border-t border-white/5 py-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-white/30 tracking-wider uppercase">
+        <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
+        <p className="font-light">✦ Hecho en Uruguay para el mundo</p>
       </div>
     </div>
   </footer>
 )
 
 // ============================================================
-// MAIN
+// MAIN (LÓGICA E INICIALIZACIONES TOTALMENTE INTACTAS)
 // ============================================================
 export default function Home() {
   const [services, setServices] = useState<any[]>([])
@@ -1302,10 +716,10 @@ export default function Home() {
     const loadData = async () => {
       try {
         setLoading(true)
-        
+
         let tenantId = null
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user?.user_metadata?.tenant_id) {
           tenantId = session.user.user_metadata.tenant_id
         } else if (session?.user?.app_metadata?.tenant_id) {
@@ -1326,7 +740,8 @@ export default function Home() {
             .from('services')
             .select('tenant_id')
             .limit(1)
-            .maybeSingle() as any          if (firstService?.tenant_id) tenantId = firstService.tenant_id
+            .maybeSingle() as any
+          if (firstService?.tenant_id) tenantId = firstService.tenant_id
         }
 
         if (!tenantId) {
@@ -1394,17 +809,17 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="bg-white min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-16 h-16 rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37] animate-spin" />
-          <p className="text-xs text-[#5C4A3E] tracking-[0.3em] uppercase font-light animate-pulse">Cargando...</p>
+      <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Cargando la experiencia</p>
         </div>
       </main>
     )
   }
 
   return (
-    <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden">
+    <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden antialiased selection:bg-[#D4AF37]/20">
       <Header />
       <HeroSection />
       <EsenciaSection />
@@ -1415,36 +830,6 @@ export default function Home() {
       <TestimonialsSection />
       <CtaSection />
       <Footer />
-
-      <style jsx>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          animation: gradient 4s ease-in-out infinite;
-        }
-        .animate-pulse-slow {
-          animation: pulse 6s ease-in-out infinite;
-        }
-        .animate-pulse-slow-delay {
-          animation: pulse 6s ease-in-out infinite 2s;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-        .animate-spin-slow {
-          animation: spin 20s linear infinite;
-        }
-        .animate-spin-slow-reverse {
-          animation: spin 25s linear infinite reverse;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </main>
   )
 }
