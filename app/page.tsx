@@ -15,7 +15,7 @@ import {
 import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 
 // ============================================================
-// CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO (INALTERADOS)
+// CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
@@ -30,26 +30,12 @@ const CATEGORY_ICONS: Record<string, any> = {
   'default': FaGem
 }
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
-  'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
-  'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
-  'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
-  'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
-  'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=400&fit=crop',
-  'Labios': 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
-  'Microblading': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
-  'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
-}
-
-// Función auxiliar para limpiar acentos en los IDs de navegación
 const getCleanSlug = (text: string) => {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 }
 
 // ============================================================
-// HEADER (REDISEÑADO ELEGANTE & MINIMALISTA)
+// HEADER (ELEGANTE & MINIMALISTA)
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -78,7 +64,7 @@ const Header = () => {
         </Link>
 
         <nav className="hidden lg:flex items-center gap-10">
-          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+          {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <Link 
               key={item}
               href={`#${getCleanSlug(item)}`}
@@ -113,7 +99,7 @@ const Header = () => {
             className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl"
           >
             <div className="flex flex-col gap-4">
-              {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+              {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
                 <Link
                   key={item}
                   href={`#${getCleanSlug(item)}`}
@@ -302,7 +288,7 @@ const EsenciaSection = () => {
 }
 
 // ============================================================
-// STATS SECTION (MINIMALISTA Y SOFISTICADA)
+// STATS SECTION
 // ============================================================
 const StatsSection = () => {
   const ref = useRef(null)
@@ -389,6 +375,86 @@ const CategoriesSection = () => {
                 <Link href={`/servicios#${cat.id}`} className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors">
                   Descubrir menú <FaArrowRight className="text-[9px] translate-x-0 group-hover:translate-x-1 transition-transform" />
                 </Link>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+// ============================================================
+// INTEGRACIÓN: SECCIÓN DE PROFESIONALES (LAS ARTISTAS)
+// ============================================================
+const ProfessionalsSection = () => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
+
+  const staff = [
+    {
+      name: 'Elena Rostova',
+      role: 'Master Nail Artist & Fundadora',
+      bio: 'Especializada en escuelas de manicura rusas y ucranianas. Con más de 8 años esculpiendo e innovando en la arquitectura estructural de las uñas.',
+      specialty: 'Manicura Rusa Combianada & Nivelación',
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=800&fit=crop'
+    },
+    {
+      name: 'Amara Walker',
+      role: 'Especialista en Dermapigmentación',
+      bio: 'Certificada por academias europeas en técnicas hiperrealistas. Su enfoque mezcla simetría molecular con el balance orgánico del rostro.',
+      specialty: 'Micropigmentación & Microblading 3D',
+      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&h=800&fit=crop'
+    }
+  ]
+
+  return (
+    <section id="equipo" ref={ref} className="py-32 bg-[#FFFDFB] border-t border-[#F0E4DA]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        
+        <div className="text-center max-w-xl mx-auto mb-24 space-y-3">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">MAESTRÍA HUMANA</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Las Artistas del <span className="italic font-normal text-[#D4AF37]">Atelier</span></h2>
+          <p className="text-xs text-[#5C4A3E] font-light tracking-wide mt-2">Manos expertas destinadas a perfeccionar cada rasgo con rigor internacional.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
+          {staff.map((member, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 40 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, delay: idx * 0.2 }}
+              className={`flex flex-col ${idx % 2 !== 0 ? 'md:mt-16' : ''} space-y-6 group`}
+            >
+              <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 border border-[#F0E4DA] p-3 bg-white">
+                <div className="w-full h-full overflow-hidden relative">
+                  <img 
+                    src={member.image} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-102"
+                  />
+                  <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+                </div>
+              </div>
+
+              <div className="space-y-3 border-b border-[#F0E4DA] pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                  <h3 className="font-serif text-2xl text-[#1A0E0A]">{member.name}</h3>
+                  <span className="text-[10px] tracking-widest text-[#D4AF37] font-semibold uppercase">{member.role}</span>
+                </div>
+                
+                <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
+                  {member.bio}
+                </p>
+
+                <div className="pt-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                  <p className="text-[11px] font-medium tracking-wide text-[#1A0E0A]">
+                    Especialidad: <span className="font-light text-[#5C4A3E]">{member.specialty}</span>
+                  </p>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -542,7 +608,7 @@ const GallerySection = ({ images }: { images: any[] }) => {
 }
 
 // ============================================================
-// TESTIMONIOS (MINIMALISTA DE GRAN IMPACTO TIPOGRÁFICO)
+// TESTIMONIOS (DE GRAN IMPACTO TIPOGRÁFICO)
 // ============================================================
 const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -600,7 +666,7 @@ const TestimonialsSection = () => {
 }
 
 // ============================================================
-// CTA FINAL (REDISEÑO DE CONVERSIÓN MINIMALISTA)
+// CTA FINAL
 // ============================================================
 const CtaSection = () => {
   return (
@@ -611,7 +677,7 @@ const CtaSection = () => {
         <p className="text-[10px] tracking-[0.5em] text-[#D4AF37] uppercase font-bold">RESERVA PRIVADA</p>
         <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia Fresh</span>?</h2>
         <p className="text-white/60 font-light max-w-md mx-auto text-sm leading-relaxed">
-          Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu image.
+          Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu imagen.
         </p>
         
         <div className="pt-4">
@@ -622,21 +688,13 @@ const CtaSection = () => {
             Agendar Ahora Online
           </Link>
         </div>
-
-        <div className="flex flex-wrap justify-center gap-6 pt-6 text-[10px] tracking-wider text-white/40 uppercase font-light">
-          <span>✦ Sin Costo Adicional de Gestión</span>
-          <span className="text-white/10">|</span>
-          <span>✦ Confirmación en Tiempo Real</span>
-          <span className="text-white/10">|</span>
-          <span>✦ Gestión de Cancelación Flexible</span>
-        </div>
       </div>
     </section>
   )
 }
 
 // ============================================================
-// FOOTER (ESTILO BOUTIQUE INTERNACIONAL)
+// FOOTER (CORREGIDO Y SIN ANIDACIONES DE ENLACES)
 // ============================================================
 const Footer = () => (
   <footer className="bg-[#150B08] text-white/60 border-t border-white/5 text-xs font-light">
@@ -684,7 +742,7 @@ const Footer = () => (
       <div className="space-y-4">
         <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Navegación</h4>
         <ul className="grid grid-cols-2 gap-2">
-          {['Esencia', 'Categorías', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+          {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <li key={item}>
               <Link href={`#${getCleanSlug(item)}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
                 <span className="text-[8px] text-[#D4AF37]/40">✦</span> {item}
@@ -726,7 +784,7 @@ const Footer = () => (
 )
 
 // ============================================================
-// MAIN (LÓGICA E INICIALIZACIONES TOTALMENTE INTACTAS)
+// COMPONENTE PRINCIPAL (HOME)
 // ============================================================
 export default function Home() {
   const [services, setServices] = useState<any[]>([])
@@ -737,7 +795,6 @@ export default function Home() {
     const loadData = async () => {
       try {
         setLoading(true)
-
         let tenantId = null
         const { data: { session } } = await supabase.auth.getSession()
 
@@ -790,9 +847,7 @@ export default function Home() {
           .order('created_at', { ascending: false })
           .limit(8)
 
-        if (adminPhotos) {
-          allImages = [...allImages, ...adminPhotos]
-        }
+        if (adminPhotos) allImages = [...allImages, ...adminPhotos]
 
         const { data: clientPhotos } = await supabase
           .from('client_gallery')
@@ -812,10 +867,7 @@ export default function Home() {
           allImages = [...allImages, ...mapped]
         }
 
-        allImages.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
-
+        allImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         setGalleryImages(allImages.slice(0, 6))
 
       } catch (error) {
@@ -846,6 +898,7 @@ export default function Home() {
       <EsenciaSection />
       <StatsSection />
       <CategoriesSection />
+      <ProfessionalsSection />
       <ServicesSection services={services} />
       <GallerySection images={galleryImages} />
       <TestimonialsSection />
