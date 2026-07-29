@@ -46,20 +46,6 @@ const sidebarVariants = {
   }
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: { 
-      delay: 0.05 * i,
-      type: "spring",
-      stiffness: 400,
-      damping: 25
-    }
-  })
-}
-
 export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
   const { settings } = useSettings()
   const { user, role, signOut } = useAuth() 
@@ -130,27 +116,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
       >
         {/* EFECTO GLOW DE FONDO */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div 
-            className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-10"
-            style={{ backgroundColor: '#D4AF37' }}
-            animate={{
-              x: [0, 20, -10, 0],
-              y: [0, -10, 20, 0]
-            }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.div 
-            className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-10"
-            style={{ backgroundColor: '#E8D5A0' }}
-            animate={{
-              x: [0, -20, 10, 0],
-              y: [0, 10, -20, 0]
-            }}
-            transition={{ duration: 10, repeat: Infinity }}
-          />
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl opacity-10 bg-[#D4AF37]" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl opacity-10 bg-[#E8D5A0]" />
         </div>
 
+        {/* ============================================================ */}
         {/* CABECERA - FIJA */}
+        {/* ============================================================ */}
         <div className={`h-16 px-4 flex items-center justify-between border-b shrink-0 relative z-10 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
@@ -190,7 +162,9 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           )}
         </div>
 
+        {/* ============================================================ */}
         {/* PERFIL - FIJO */}
+        {/* ============================================================ */}
         {!collapsed && (
           <div className="px-3 pt-4 shrink-0 relative z-10">
             <div className={`p-3 rounded-2xl flex items-center gap-3 border ${
@@ -224,19 +198,18 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           </div>
         )}
 
-        {/* NAVEGACIÓN - SCROLLABLE */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 relative z-10 scrollbar-thin scrollbar-thumb-[#D4AF37]/20">
+        {/* ============================================================ */}
+        {/* NAVEGACIÓN - CON SCROLL */}
+        {/* ============================================================ */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 relative z-10">
           <nav className="space-y-1">
-            {ALL_MENU_ITEMS.map((item, index) => {
+            {ALL_MENU_ITEMS.map((item) => {
               const Icon = item.icon
               const isActive = isItemActive(item.path)
-              const isHovered = hoveredItem === item.id
 
               return (
                 <button
                   key={item.id}
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
                   onClick={() => handleNavigation(item.path)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all relative group
@@ -274,9 +247,11 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           </nav>
         </div>
 
+        {/* ============================================================ */}
         {/* CONTROLES INFERIORES - SIEMPRE FIJOS */}
+        {/* ============================================================ */}
         <div className={`p-3 border-t shrink-0 relative z-10 ${
-          isDark ? 'border-[#3D281E] bg-[#1E120C]/90' : 'border-[#F0E4DA] bg-[#FFF9F6]/90'
+          isDark ? 'border-[#3D281E] bg-[#1E120C]/95' : 'border-[#F0E4DA] bg-[#FFF9F6]/95'
         }`}>
           <div className="space-y-1">
             <button 
@@ -314,13 +289,13 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
               )}
             </button>
           </div>
-
-          {/* BORDE DECORATIVO INFERIOR */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-[2px]"
-            style={brandGradient}
-          />
         </div>
+
+        {/* BORDE DECORATIVO INFERIOR */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-[2px]"
+          style={brandGradient}
+        />
       </motion.aside>
 
       {/* BOTÓN FLOTANTE PARA COLLAPSE */}
