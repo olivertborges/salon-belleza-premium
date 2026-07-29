@@ -60,7 +60,7 @@ interface ClientData {
   notes: string
 }
 
-// Mapeo visual de categorías según los datos reales extraídos
+// Mapeo visual de categorías
 const CATEGORIES = [
   { id: 'nails', label: 'Uñas & Manicuría', icon: Heart },
   { id: 'micropigmentation', label: 'Micropigmentación & Mirada', icon: Crown },
@@ -74,6 +74,23 @@ const DEFAULT_TIMES = [
   '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
   '18:00', '18:30', '19:00', '19:30'
 ]
+
+// ============================================================
+// COMPONENTE DE CARGA (CON TEMA)
+// ============================================================
+const BookingLoadingSpinner = ({ isDark }: { isDark: boolean }) => (
+  <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+    <div className="flex flex-col items-center gap-6">
+      <div className="relative w-16 h-16">
+        <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+        <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
+      </div>
+      <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+        Cargando agenda de belleza...
+      </p>
+    </div>
+  </div>
+)
 
 function AgendaContent() {
   const { theme } = useTheme()
@@ -139,7 +156,7 @@ function AgendaContent() {
     }
   }, [tenantId])
 
-  // Carga inicial de datos desde Supabase
+  // Carga inicial de datos
   useEffect(() => {
     let isMounted = true
     const fetchData = async () => {
@@ -180,7 +197,7 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [fetchWorkingHours, urlProfessionalId])
 
-  // Cargar citas del profesional seleccionado para la fecha dada
+  // Cargar citas del profesional seleccionado
   useEffect(() => {
     if (!selectedProfessional?.id) return
     let isMounted = true
@@ -204,21 +221,19 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [selectedDate, selectedProfessional])
 
-  // Clasificador de categorías visuales según las respuestas de la BD
+  // Clasificador de categorías
   const getServiceCategory = useCallback((catName: string): string => {
     if (!catName) return 'others'
     const norm = catName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
-    
+
     if (norm === 'unas' || norm === 'manicuria' || norm.includes('mano') || norm.includes('pie')) return 'nails'
     if (norm === 'cejas' || norm === 'pestanas' || norm === 'labios' || norm.includes('micro')) return 'micropigmentation'
     if (norm === 'corte' || norm === 'color' || norm.includes('pelu')) return 'hair'
-    
+
     return 'others'
   }, [])
 
-  // ============================================================
-  // FILTRADO INTELIGENTE MAPEADO CON LAS ESPECIALIDADES REALES
-  // ============================================================
+  // Servicios por categoría
   const servicesByCategory = useMemo(() => {
     if (!selectedProfessional) return { nails: [], micropigmentation: [], hair: [], others: [] }
 
@@ -226,12 +241,9 @@ function AgendaContent() {
 
     let baseServices = services.filter(service => {
       const sCat = service.category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-      
-      // Regla 1: Si la especialidad menciona Manos/Pies/Uñas/Manicuría
+
       const targetsNails = specText.includes('una') || specText.includes('manicur') || specText.includes('mano') || specText.includes('pie')
-      // Regla 2: Si la especialidad menciona Micropigmentación/Cejas/Pestañas/Labios
       const targetsMicro = specText.includes('micro') || specText.includes('ceja') || specText.includes('pestana') || specText.includes('labio')
-      // Regla 3: Si la especialidad menciona Peluquería/Corte/Color
       const targetsHair = specText.includes('pelu') || specText.includes('corte') || specText.includes('color')
 
       if (targetsNails && (sCat === 'unas' || sCat === 'manicuria' || sCat.includes('mano') || sCat.includes('pie'))) {
@@ -244,7 +256,6 @@ function AgendaContent() {
         return true
       }
 
-      // Si el profesional tiene múltiples áreas mezcladas, evaluamos de forma individual el renglón
       const matchesCategory = (sCat === 'unas' || sCat === 'manicuria') && (specText.includes('una') || specText.includes('manic')) ||
                               (sCat === 'cejas' || sCat === 'pestanas' || sCat === 'labios') && (specText.includes('ceja') || specText.includes('pestan') || specText.includes('labio') || specText.includes('micro')) ||
                               (sCat === 'corte' || sCat === 'color') && (specText.includes('pelu') || specText.includes('corte') || specText.includes('color'))
@@ -252,12 +263,10 @@ function AgendaContent() {
       return matchesCategory
     })
 
-    // Fallback de seguridad extrema: si no cruzó ningún servicio por texto, mostramos los globales activos
     if (baseServices.length === 0) {
       baseServices = services
     }
 
-    // Buscador interactivo
     const filtered = baseServices.filter(s => {
       if (!searchQuery) return true
       const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -266,7 +275,6 @@ function AgendaContent() {
       return nameNorm.includes(query) || descNorm.includes(query)
     })
 
-    // Distribuir en grupos visuales finales
     const groups: Record<string, Service[]> = { nails: [], micropigmentation: [], hair: [], others: [] }
     filtered.forEach(s => {
       const catId = getServiceCategory(s.category)
@@ -393,74 +401,138 @@ function AgendaContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="w-16 h-16 rounded-full border-4 border-rose-100 border-t-rose-500 animate-spin" />
-      </div>
-    )
+    return <BookingLoadingSpinner isDark={isDark} />
   }
 
   return (
-    <div className={`min-h-screen pb-32 ${isDark ? 'bg-zinc-950 text-stone-100' : 'bg-stone-50 text-stone-800'}`}>
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        
-        {/* ENCABEZADO */}
-        <div className={`p-8 rounded-3xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-rose-100 shadow-sm'}`}>
-          <span className="text-[10px] font-bold tracking-widest text-rose-500 uppercase block mb-1">✦ Panel de Reservas</span>
-          <h1 className="text-3xl font-serif font-light">Reserva tu Turno</h1>
-          <p className="text-xs text-stone-400 mt-1">Sincronización automática de especialidades según los registros de la base de datos.</p>
+    <div className={`min-h-screen pb-32 transition-colors duration-500 antialiased ${
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+    }`}>
+      {/* Fondo texturizado */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
+
+        {/* ============================================================ */}
+        {/* ENCABEZADO EDITORIAL */}
+        {/* ============================================================ */}
+        <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+          isDark 
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+        }`}>
+          <span className={`text-[10px] font-bold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1`}>
+            ✦ Panel de Reservas
+          </span>
+          <h1 className={`font-serif text-3xl font-light tracking-tight ${
+            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+          }`}>
+            Reserva tu Turno
+          </h1>
+          <p className={`text-xs font-light mt-1 ${
+            isDark ? 'text-[#FFF9F6]/60' : 'text-[#5C4A3E]'
+          }`}>
+            Sincronización automática de especialidades según los registros de la base de datos.
+          </p>
         </div>
 
-        {/* PASOS: TOTALMENTE INTEGRADOS CON GRID ADAPTATIVO SIN SCROLL LATERAL */}
+        {/* ============================================================ */}
+        {/* PASOS: CON ESTILO DASHBOARD */}
+        {/* ============================================================ */}
         {step < 5 && (
-          <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white shadow-sm'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+            isDark 
+              ? 'bg-[#2A1B14]/40 border-[#3D281E]' 
+              : 'bg-white border-[#F0E4DA] shadow-sm'
+          }`}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full justify-items-stretch">
-              {[1, 2, 3, 4].map((num) => (
-                <div 
-                  key={num} 
-                  className={`flex items-center gap-2 p-2 rounded-xl transition-all ${step === num ? 'bg-rose-50 border border-rose-200 shadow-2xs' : ''}`}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors flex-shrink-0 ${step === num ? 'bg-rose-500 text-white' : step > num ? 'bg-emerald-500 text-white' : 'bg-stone-100 text-stone-400'}`}>
-                    {step > num ? <Check className="w-3 h-3" /> : num}
+              {[1, 2, 3, 4].map((num) => {
+                const isActive = step === num
+                const isCompleted = step > num
+                return (
+                  <div 
+                    key={num} 
+                    className={`flex items-center gap-2 p-2 rounded-xl transition-all ${
+                      isActive 
+                        ? isDark ? 'bg-[#3D281E] border border-[#D4AF37]/40' : 'bg-[#FFF9F6] border border-[#D4AF37]/30'
+                        : ''
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors flex-shrink-0 ${
+                      isActive 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A]' 
+                        : isCompleted 
+                          ? 'bg-[#D4AF37]/30 text-[#D4AF37]' 
+                          : isDark ? 'bg-[#3D281E] text-[#FFF9F6]/40' : 'bg-[#F0E4DA] text-[#5C4A3E]'
+                    }`}>
+                      {isCompleted ? <Check className="w-3 h-3" /> : num}
+                    </div>
+                    <span className={`text-[10px] tracking-wide transition-all ${
+                      isActive 
+                        ? `font-bold ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`
+                        : isDark ? 'text-[#FFF9F6]/60' : 'text-[#5C4A3E]'
+                    }`}>
+                      {['1. Perfil', '2. Servicios', '3. Horario', '4. Registrar'][num - 1]}
+                    </span>
                   </div>
-                  <span className={`text-xs tracking-tight transition-all font-medium ${step === num ? 'font-bold text-rose-600' : 'text-stone-500'}`}>
-                    {['1. Perfil', '2. Servicios', '3. Horario', '4. Registrar'][num - 1]}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
-            
+
+            {/* ERROR */}
             {error && (
-              <div className="p-4 bg-rose-50 text-rose-600 rounded-xl text-xs font-medium flex items-center gap-2">
-                <X className="w-4 h-4 cursor-pointer" onClick={() => setError(null)} /> {error}
+              <div className={`p-4 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                isDark ? 'bg-[#3D281E]/60 text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+              }`}>
+                <X className="w-4 h-4 cursor-pointer text-[#D4AF37]" onClick={() => setError(null)} /> 
+                {error}
               </div>
             )}
 
-            {/* PASO 1: PROFESIONALES ACTIVOS */}
+            {/* ============================================================ */}
+            {/* PASO 1: PROFESIONALES */}
+            {/* ============================================================ */}
             {step === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {staff.map((prof) => (
                   <div 
                     key={prof.id} 
                     onClick={() => { setSelectedProfessional(prof); setStep(2); }}
-                    className={`p-6 rounded-2xl border cursor-pointer text-left transition-all ${isDark ? 'bg-zinc-900 border-zinc-800 hover:border-rose-500' : 'bg-white border-stone-200 hover:border-rose-300 hover:shadow-md'}`}
+                    className={`p-6 rounded-2xl border cursor-pointer text-left transition-all duration-300 hover:-translate-y-0.5 ${
+                      isDark 
+                        ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                        : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+                    }`}
                   >
                     <div className="flex gap-4 items-center">
-                      <div className="w-14 h-14 rounded-full bg-rose-50 text-rose-500 font-bold text-xl flex items-center justify-center border shadow-inner overflow-hidden flex-shrink-0">
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center border shrink-0 overflow-hidden ${
+                        isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
+                      }`}>
                         {prof.avatar_url && !avatarErrors[prof.id] ? (
                           <img src={prof.avatar_url} alt="" className="w-full h-full object-cover" onError={() => setAvatarErrors(prev => ({ ...prev, [prof.id]: true }))}/>
-                        ) : prof.name?.charAt(0).toUpperCase()}
+                        ) : (
+                          <span className={`font-serif text-xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                            {prof.name?.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-sm text-stone-800">{prof.name}</h3>
-                        <p className="text-[11px] text-rose-500 font-medium">{prof.specialty || 'Especialista'}</p>
-                        <div className="flex items-center gap-1 text-[10px] text-amber-500 mt-0.5">
-                          <Star className="w-3 h-3 fill-current"/> <span>4.9</span>
+                        <h3 className={`font-serif text-lg font-light ${
+                          isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                        }`}>
+                          {prof.name}
+                        </h3>
+                        <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#D4AF37]">
+                          {prof.specialty || 'Especialista'}
+                        </p>
+                        <div className="flex items-center gap-1 text-[10px] text-[#D4AF37] mt-0.5">
+                          <Star className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37]" /> 
+                          <span>{prof.rating || '4.9'}</span>
                         </div>
                       </div>
                     </div>
@@ -469,67 +541,132 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* PASO 2: CATÁLOGO DE TRATAMIENTOS */}
+            {/* ============================================================ */}
+            {/* PASO 2: SERVICIOS */}
+            {/* ============================================================ */}
             {step === 2 && selectedProfessional && (
               <div className="space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b">
+                <div className={`flex justify-between items-center pb-3 border-b ${
+                  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                }`}>
                   <div>
-                    <h2 className="text-base font-bold text-stone-800">Servicios Asignados</h2>
-                    <p className="text-[11px] text-stone-400">Tratamientos correspondientes a la especialidad de {selectedProfessional.name}.</p>
+                    <h2 className={`font-serif text-xl font-light ${
+                      isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                    }`}>
+                      Servicios Asignados
+                    </h2>
+                    <p className={`text-[10px] font-light ${
+                      isDark ? 'text-[#FFF9F6]/60' : 'text-[#5C4A3E]'
+                    }`}>
+                      Tratamientos correspondientes a la especialidad de {selectedProfessional.name}.
+                    </p>
                   </div>
-                  <button onClick={() => { setStep(1); setSelectedServices([]); }} className="text-xs text-rose-500 font-medium hover:underline">Cambiar Profesional</button>
+                  <button 
+                    onClick={() => { setStep(1); setSelectedServices([]); }} 
+                    className={`text-[9px] font-bold tracking-[0.2em] uppercase transition-colors ${
+                      isDark ? 'text-[#A89588] hover:text-[#D4AF37]' : 'text-[#5C4A3E] hover:text-[#D4AF37]'
+                    }`}
+                  >
+                    Cambiar
+                  </button>
                 </div>
 
+                {/* Buscador */}
                 <div className="relative">
-                  <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`} />
                   <input 
                     type="text" 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Escribe para buscar un tratamiento..." 
-                    className="w-full bg-white border border-stone-200 text-stone-800 text-xs pl-10 pr-4 py-2.5 rounded-xl focus:outline-rose-400"
+                    className={`w-full border rounded-xl text-xs pl-10 pr-4 py-2.5 transition-all duration-300 ${
+                      isDark 
+                        ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
+                        : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
+                    }`}
                   />
                 </div>
 
-                <div className="space-y-2">
+                {/* Categorías */}
+                <div className="space-y-3">
                   {CATEGORIES.map(cat => {
                     const categoryServices = servicesByCategory[cat.id] || []
                     const isExpanded = !!expandedCategories[cat.id]
                     if (categoryServices.length === 0) return null
 
                     return (
-                      <div key={cat.id} className="bg-white border border-stone-100 rounded-xl overflow-hidden shadow-sm">
+                      <div key={cat.id} className={`border rounded-xl overflow-hidden transition-all duration-300 ${
+                        isDark ? 'bg-[#2A1B14]/40 border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+                      }`}>
                         <button 
                           type="button" 
                           onClick={() => toggleCategory(cat.id)}
-                          className="w-full px-4 py-3 bg-stone-50/60 flex justify-between items-center text-xs font-semibold text-stone-700"
+                          className={`w-full px-4 py-3 flex justify-between items-center text-[10px] font-bold tracking-[0.2em] uppercase transition-colors ${
+                            isDark ? 'bg-[#3D281E]/40 text-[#FFF9F6]/70 hover:text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#5C4A3E] hover:text-[#1A0E0A]'
+                          }`}
                         >
                           <span className="flex items-center gap-2">
-                            <cat.icon className="w-3.5 h-3.5 text-rose-400" />
+                            <cat.icon className={`w-3.5 h-3.5 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`} />
                             {cat.label} ({categoryServices.length})
                           </span>
-                          <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${isExpanded ? 'rotate-180 text-rose-500' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''} ${
+                            isDark ? 'text-[#A89588]' : 'text-[#A89588]'
+                          }`} />
                         </button>
 
                         {isExpanded && (
-                          <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-stone-50">
+                          <div className={`p-3 grid grid-cols-1 md:grid-cols-2 gap-3 border-t ${
+                            isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                          }`}>
                             {categoryServices.map(service => {
                               const isSelected = selectedServices.some(s => s.id === service.id)
                               return (
                                 <div 
                                   key={service.id}
                                   onClick={() => toggleServiceSelection(service)}
-                                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between relative ${isSelected ? 'bg-rose-50/40 border-rose-400 shadow-2xs' : 'bg-white border-stone-200 hover:border-stone-300'}`}
+                                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 flex flex-col justify-between relative hover:-translate-y-0.5 ${
+                                    isSelected 
+                                      ? isDark 
+                                        ? 'bg-[#3D281E] border-[#D4AF37]/60 shadow-[0_4px_15px_rgba(212,175,55,0.1)]' 
+                                        : 'bg-[#FFF9F6] border-[#D4AF37]/60 shadow-[0_4px_15px_rgba(212,175,55,0.1)]'
+                                      : isDark 
+                                        ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/30' 
+                                        : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/30'
+                                  }`}
                                 >
                                   <div className="pr-6">
-                                    <h4 className={`text-xs font-semibold ${isSelected ? 'text-rose-600' : 'text-stone-800'}`}>{service.name}</h4>
-                                    <p className="text-[10px] text-stone-400 line-clamp-2 mt-0.5 font-light">{service.description || 'Servicio premium del salón.'}</p>
+                                    <h4 className={`text-xs font-semibold ${
+                                      isSelected 
+                                        ? 'text-[#D4AF37]' 
+                                        : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                                    }`}>
+                                      {service.name}
+                                    </h4>
+                                    <p className={`text-[10px] font-light line-clamp-2 mt-0.5 ${
+                                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                                    }`}>
+                                      {service.description || 'Servicio premium del salón.'}
+                                    </p>
                                   </div>
-                                  <div className="flex justify-between items-center mt-3 pt-2 border-t border-stone-50 text-[10px] font-medium text-stone-500">
-                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-stone-300"/> {service.duration} min</span>
-                                    <span className="text-rose-500 font-bold text-xs">${Number(service.price).toLocaleString()}</span>
+                                  <div className={`flex justify-between items-center mt-3 pt-2 border-t text-[9px] font-bold tracking-[0.1em] ${
+                                    isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                                  }`}>
+                                    <span className={`flex items-center gap-1 ${
+                                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                                    }`}>
+                                      <Clock className="w-3 h-3" /> {service.duration} min
+                                    </span>
+                                    <span className="text-[#D4AF37]">
+                                      ${Number(service.price).toLocaleString()}
+                                    </span>
                                   </div>
-                                  <div className={`absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center text-xs ${isSelected ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-400'}`}>
+                                  <div className={`absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold transition-all ${
+                                    isSelected 
+                                      ? 'bg-[#D4AF37] text-[#1A0E0A]' 
+                                      : isDark ? 'bg-[#3D281E] text-[#A89588]' : 'bg-[#F0E4DA] text-[#A89588]'
+                                  }`}>
                                     {isSelected ? <Check className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
                                   </div>
                                 </div>
@@ -544,24 +681,66 @@ function AgendaContent() {
               </div>
             )}
 
+            {/* ============================================================ */}
             {/* PASO 3: CALENDARIO */}
+            {/* ============================================================ */}
             {step === 3 && (
               <div className="space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b">
-                  <h2 className="text-sm font-bold text-stone-800">Fecha y Hora</h2>
-                  <button onClick={() => setStep(2)} className="text-xs text-rose-500 font-medium hover:underline">Volver a Servicios</button>
+                <div className={`flex justify-between items-center pb-3 border-b ${
+                  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                }`}>
+                  <h2 className={`font-serif text-xl font-light ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
+                    Fecha y Hora
+                  </h2>
+                  <button 
+                    onClick={() => setStep(2)} 
+                    className={`text-[9px] font-bold tracking-[0.2em] uppercase transition-colors ${
+                      isDark ? 'text-[#A89588] hover:text-[#D4AF37]' : 'text-[#5C4A3E] hover:text-[#D4AF37]'
+                    }`}
+                  >
+                    Volver
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                  <div className="md:col-span-3 p-4 bg-white border rounded-2xl shadow-sm space-y-3">
-                    <div className="flex justify-between items-center text-xs font-bold text-stone-700">
-                      <span className="uppercase">{format(currentMonth, 'MMMM yyyy', { locale: es })}</span>
+                  {/* Calendario */}
+                  <div className={`md:col-span-3 p-4 border rounded-2xl transition-all duration-300 space-y-3 ${
+                    isDark 
+                      ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                      : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+                  }`}>
+                    <div className={`flex justify-between items-center text-xs font-bold ${
+                      isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                    }`}>
+                      <span className="font-serif text-sm font-light uppercase tracking-wide">
+                        {format(currentMonth, 'MMMM yyyy', { locale: es })}
+                      </span>
                       <div className="flex gap-1">
-                        <button type="button" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 border rounded hover:bg-stone-50"><ChevronLeft className="w-3.5 h-3.5"/></button>
-                        <button type="button" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1 border rounded hover:bg-stone-50"><ChevronRight className="w-3.5 h-3.5"/></button>
+                        <button 
+                          type="button" 
+                          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+                          className={`p-1 rounded-lg border transition-colors ${
+                            isDark ? 'border-[#3D281E] hover:bg-[#3D281E]' : 'border-[#F0E4DA] hover:bg-[#FFF9F6]'
+                          }`}
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+                          className={`p-1 rounded-lg border transition-colors ${
+                            isDark ? 'border-[#3D281E] hover:bg-[#3D281E]' : 'border-[#F0E4DA] hover:bg-[#FFF9F6]'
+                          }`}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-stone-400">
+                    <div className={`grid grid-cols-7 gap-1 text-center text-[9px] font-bold tracking-[0.2em] uppercase ${
+                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    }`}>
                       {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, idx) => <div key={idx}>{d}</div>)}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -575,7 +754,15 @@ function AgendaContent() {
                             type="button"
                             disabled={disabled}
                             onClick={() => { setSelectedDate(dateStr); setSelectedTime(''); }}
-                            className={`p-2 text-xs font-semibold rounded-lg text-center ${isSelected ? 'bg-rose-500 text-white shadow-sm' : disabled ? 'text-stone-200 opacity-25 cursor-not-allowed' : 'text-stone-700 hover:bg-stone-50'}`}
+                            className={`p-2 text-xs font-serif font-light rounded-lg text-center transition-all duration-300 ${
+                              isSelected 
+                                ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                                : disabled 
+                                  ? isDark ? 'text-[#3D281E] cursor-not-allowed' : 'text-[#F0E4DA] cursor-not-allowed'
+                                  : isDark 
+                                    ? 'text-[#FFF9F6]/70 hover:bg-[#3D281E] hover:text-[#FFF9F6]' 
+                                    : 'text-[#5C4A3E] hover:bg-[#FFF9F6] hover:text-[#1A0E0A]'
+                            }`}
                           >
                             {format(day, 'd')}
                           </button>
@@ -584,8 +771,17 @@ function AgendaContent() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-2 p-4 bg-white border rounded-2xl shadow-sm max-h-[300px] overflow-y-auto space-y-3">
-                    <span className="text-[10px] font-bold text-stone-400 block uppercase">Turnos</span>
+                  {/* Horarios */}
+                  <div className={`md:col-span-2 p-4 border rounded-2xl transition-all duration-300 max-h-[300px] overflow-y-auto space-y-3 ${
+                    isDark 
+                      ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                      : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+                  }`}>
+                    <span className={`text-[9px] font-bold tracking-[0.3em] uppercase block ${
+                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    }`}>
+                      Turnos
+                    </span>
                     <div className="grid grid-cols-2 gap-1.5">
                       {availableTimes.map(t => {
                         const { available } = checkAvailability(t)
@@ -595,7 +791,17 @@ function AgendaContent() {
                             type="button"
                             disabled={!available}
                             onClick={() => setSelectedTime(t)}
-                            className={`py-1.5 text-xs rounded-lg border font-medium ${selectedTime === t ? 'bg-rose-500 text-white border-rose-500' : available ? 'bg-white border-stone-200 hover:border-rose-300' : 'bg-stone-50 text-stone-300 line-through cursor-not-allowed'}`}
+                            className={`py-1.5 text-xs rounded-lg border font-medium transition-all duration-300 ${
+                              selectedTime === t 
+                                ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,0.3)]' 
+                                : available 
+                                  ? isDark 
+                                    ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]/70 hover:border-[#D4AF37]/40 hover:text-[#FFF9F6]' 
+                                    : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:border-[#D4AF37]/40 hover:text-[#1A0E0A]'
+                                  : isDark 
+                                    ? 'bg-[#1E120C] border-[#3D281E] text-[#3D281E] cursor-not-allowed line-through' 
+                                    : 'bg-[#F0E4DA] border-[#F0E4DA] text-[#A89588] cursor-not-allowed line-through'
+                            }`}
                           >
                             {t}
                           </button>
@@ -606,56 +812,157 @@ function AgendaContent() {
                 </div>
 
                 {selectedTime && (
-                  <button onClick={() => setStep(4)} className="w-full py-3 bg-rose-500 text-white font-semibold rounded-xl text-xs uppercase tracking-wider shadow-md hover:bg-rose-600 transition-all">
+                  <button 
+                    onClick={() => setStep(4)} 
+                    className={`w-full py-3 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
+                      isDark 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                        : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                    }`}
+                  >
                     Continuar al Formulario
                   </button>
                 )}
               </div>
             )}
 
+            {/* ============================================================ */}
             {/* PASO 4: FORMULARIO */}
+            {/* ============================================================ */}
             {step === 4 && (
-              <div className="p-6 bg-white border rounded-2xl shadow-sm space-y-4 text-left">
-                <h3 className="text-base font-bold text-stone-800 border-b pb-2">Información de Contacto</h3>
+              <div className={`p-6 border rounded-2xl transition-all duration-300 space-y-4 ${
+                isDark 
+                  ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                  : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+              }`}>
+                <h3 className={`font-serif text-xl font-light border-b pb-2 ${
+                  isDark ? 'text-[#FFF9F6] border-[#3D281E]' : 'text-[#1A0E0A] border-[#F0E4DA]'
+                }`}>
+                  Información de Contacto
+                </h3>
                 <form onSubmit={e => { e.preventDefault(); setShowSummaryModal(true); }} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[11px] font-bold text-stone-400 block mb-1">Nombre Completo *</label>
-                      <input type="text" required value={clientData.name} onChange={e => setClientData({...clientData, name: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs focus:outline-rose-400" placeholder="Tu nombre" />
+                      <label className={`text-[9px] font-bold tracking-[0.2em] uppercase block mb-1 ${
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        Nombre Completo *
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={clientData.name} 
+                        onChange={e => setClientData({...clientData, name: e.target.value})} 
+                        className={`w-full border rounded-xl px-3 py-2 text-xs transition-all duration-300 ${
+                          isDark 
+                            ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
+                            : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
+                        }`}
+                        placeholder="Tu nombre"
+                      />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-stone-400 block mb-1">WhatsApp de contacto *</label>
-                      <input type="tel" required value={clientData.phone} onChange={e => setClientData({...clientData, phone: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs focus:outline-rose-400" placeholder="Ej: 099123456" />
+                      <label className={`text-[9px] font-bold tracking-[0.2em] uppercase block mb-1 ${
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                      }`}>
+                        WhatsApp de contacto *
+                      </label>
+                      <input 
+                        type="tel" 
+                        required 
+                        value={clientData.phone} 
+                        onChange={e => setClientData({...clientData, phone: e.target.value})} 
+                        className={`w-full border rounded-xl px-3 py-2 text-xs transition-all duration-300 ${
+                          isDark 
+                            ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
+                            : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
+                        }`}
+                        placeholder="Ej: 099123456"
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-stone-400 block mb-1">Notas Adicionales</label>
-                    <textarea value={clientData.notes} onChange={e => setClientData({...clientData, notes: e.target.value})} className="w-full bg-white border border-stone-200 text-stone-800 p-3 rounded-xl text-xs focus:outline-rose-400 resize-none" rows={3} placeholder="Detalles de interés..." />
+                    <label className={`text-[9px] font-bold tracking-[0.2em] uppercase block mb-1 ${
+                      isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    }`}>
+                      Notas Adicionales
+                    </label>
+                    <textarea 
+                      value={clientData.notes} 
+                      onChange={e => setClientData({...clientData, notes: e.target.value})} 
+                      className={`w-full border rounded-xl p-3 text-xs transition-all duration-300 resize-none ${
+                        isDark 
+                          ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
+                          : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
+                      }`}
+                      rows={3} 
+                      placeholder="Detalles de interés..."
+                    />
                   </div>
-                  <button type="submit" className="w-full py-3 bg-rose-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-rose-600">
+                  <button 
+                    type="submit" 
+                    className={`w-full py-3 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
+                      isDark 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                        : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                    }`}
+                  >
                     Ver Resumen del Turno
                   </button>
                 </form>
               </div>
             )}
 
-            {/* PASO 5: PANTALLA ÉXITO */}
+            {/* ============================================================ */}
+            {/* PASO 5: ÉXITO */}
+            {/* ============================================================ */}
             {step === 5 && (
-              <div className="p-8 bg-white border rounded-3xl text-center shadow-lg space-y-4 max-w-md mx-auto">
-                <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto text-emerald-500 border border-emerald-100">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className={`p-8 border rounded-2xl text-center transition-all duration-300 shadow-lg max-w-md mx-auto ${
+                isDark 
+                  ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+                  : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+              }`}>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto border ${
+                  isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
+                }`}>
+                  <CheckCircle2 className="w-8 h-8 text-[#D4AF37]" />
                 </div>
-                <h2 className="text-xl font-serif text-stone-800">¡Turno Agendado con Éxito!</h2>
-                <p className="text-xs text-stone-400">Tu cita ha sido guardada satisfactoriamente en nuestra agenda.</p>
-                <div className="p-4 bg-stone-50 rounded-xl text-left text-xs space-y-2 text-stone-700">
-                  <div><strong>Profesional:</strong> {selectedProfessional?.name}</div>
-                  <div><strong>Fecha y Hora:</strong> {selectedDate} a las {selectedTime} hs</div>
-                  <div className="border-t pt-2">
-                    <strong>Tratamientos Seleccionados:</strong>
-                    {selectedServices.map(s => <div key={s.id} className="text-stone-500 pl-2">• {s.name} ({s.category})</div>)}
+                <h2 className={`font-serif text-2xl font-light mt-4 ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  ¡Turno Agendado con Éxito!
+                </h2>
+                <p className={`text-xs font-light mt-1 ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Tu cita ha sido guardada satisfactoriamente en nuestra agenda.
+                </p>
+                <div className={`mt-4 p-4 rounded-xl text-left text-xs space-y-2 transition-all ${
+                  isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
+                }`}>
+                  <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                    <strong>Profesional:</strong> {selectedProfessional?.name}
+                  </div>
+                  <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                    <strong>Fecha y Hora:</strong> {selectedDate} a las {selectedTime} hs
+                  </div>
+                  <div className={`border-t pt-2 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
+                    <strong className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>Tratamientos:</strong>
+                    {selectedServices.map(s => (
+                      <div key={s.id} className={isDark ? 'text-[#A89588] pl-2' : 'text-[#5C4A3E] pl-2'}>
+                        • {s.name}
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <button onClick={() => { setStep(1); setSelectedServices([]); setSelectedTime(''); }} className="w-full py-2.5 bg-stone-900 text-white text-xs font-bold rounded-xl uppercase tracking-wider hover:bg-stone-800">
+                <button 
+                  onClick={() => { setStep(1); setSelectedServices([]); setSelectedTime(''); }} 
+                  className={`mt-4 w-full py-2.5 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                  }`}
+                >
                   Volver al Panel Principal
                 </button>
               </div>
@@ -663,41 +970,92 @@ function AgendaContent() {
 
           </div>
 
-          {/* TOTALES LATERAL */}
+          {/* ============================================================ */}
+          {/* SIDEBAR - RESUMEN */}
+          {/* ============================================================ */}
           {step > 1 && step < 5 && (
-            <div className="p-5 bg-white border rounded-2xl shadow-sm text-left space-y-4 lg:sticky lg:top-4">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block border-b pb-1">Resumen</span>
-              
+            <div className={`p-5 border rounded-2xl transition-all duration-300 space-y-4 lg:sticky lg:top-4 ${
+              isDark 
+                ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+            }`}>
+              <span className={`text-[9px] font-bold tracking-[0.3em] uppercase block border-b pb-2 ${
+                isDark ? 'text-[#A89588] border-[#3D281E]' : 'text-[#5C4A3E] border-[#F0E4DA]'
+              }`}>
+                Resumen
+              </span>
+
               {selectedProfessional && (
                 <div className="text-xs">
-                  <span className="text-stone-400 block text-[10px] font-bold uppercase">Especialista</span>
-                  <span className="font-semibold text-stone-800">{selectedProfessional.name}</span>
+                  <span className={`block text-[9px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Especialista
+                  </span>
+                  <span className={`font-serif text-sm font-light ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
+                    {selectedProfessional.name}
+                  </span>
                 </div>
               )}
 
               {selectedServices.length > 0 && (
-                <div className="space-y-1 text-xs pt-2 border-t border-stone-100">
-                  <span className="text-stone-400 block text-[10px] font-bold uppercase">Tratamientos</span>
+                <div className={`space-y-1 text-xs pt-2 border-t ${
+                  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                }`}>
+                  <span className={`block text-[9px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Tratamientos
+                  </span>
                   {selectedServices.map(s => (
-                    <div key={s.id} className="flex justify-between items-center bg-stone-50 p-1.5 rounded-lg text-[11px] text-stone-700">
-                      <span className="truncate max-w-[140px]">{s.name}</span>
-                      <button onClick={() => toggleServiceSelection(s)} className="text-stone-400 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5"/></button>
+                    <div key={s.id} className={`flex justify-between items-center p-1.5 rounded-lg text-[10px] transition-all ${
+                      isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
+                    }`}>
+                      <span className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                        {s.name}
+                      </span>
+                      <button 
+                        onClick={() => toggleServiceSelection(s)} 
+                        className={isDark ? 'text-[#A89588] hover:text-[#D4AF37]' : 'text-[#A89588] hover:text-[#D4AF37]'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
 
               {selectedTime && (
-                <div className="text-xs pt-2 border-t border-stone-100">
-                  <span className="text-stone-400 block text-[10px] font-bold uppercase">Fecha y Hora</span>
-                  <span className="font-medium text-stone-800">{selectedDate} — {selectedTime} hs</span>
+                <div className={`text-xs pt-2 border-t ${
+                  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                }`}>
+                  <span className={`block text-[9px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Fecha y Hora
+                  </span>
+                  <span className={`font-medium ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
+                    {selectedDate} — {selectedTime} hs
+                  </span>
                 </div>
               )}
 
               {selectedServices.length > 0 && (
-                <div className="pt-3 border-t border-stone-100 flex justify-between items-center font-bold text-stone-800">
-                  <span className="text-[10px] text-stone-400 uppercase">Monto Final:</span>
-                  <span className="text-rose-500 font-serif text-lg">${totalPrice.toLocaleString()}</span>
+                <div className={`pt-3 border-t flex justify-between items-center font-bold ${
+                  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                }`}>
+                  <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Monto Final:
+                  </span>
+                  <span className={`font-serif text-lg ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+                    ${totalPrice.toLocaleString()}
+                  </span>
                 </div>
               )}
             </div>
@@ -706,36 +1064,97 @@ function AgendaContent() {
         </div>
       </div>
 
-      {/* FOOTER DISPOSITIVOS MÓVILES */}
+      {/* ============================================================ */}
+      {/* FOOTER MÓVIL */}
+      {/* ============================================================ */}
       {step === 2 && selectedServices.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t p-4 shadow-xl flex items-center justify-between lg:hidden">
+        <div className={`fixed bottom-0 left-0 right-0 z-40 p-4 shadow-xl flex items-center justify-between lg:hidden transition-all duration-300 ${
+          isDark ? 'bg-[#2A1B14] border-t border-[#3D281E]' : 'bg-white border-t border-[#F0E4DA]'
+        }`}>
           <div className="text-left">
-            <span className="text-[9px] text-stone-400 font-bold uppercase block">Total</span>
-            <span className="text-base font-bold text-rose-500 font-serif">${totalPrice.toLocaleString()}</span>
+            <span className={`text-[9px] font-bold tracking-[0.2em] uppercase block ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>
+              Total
+            </span>
+            <span className={`font-serif text-base font-bold ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+              ${totalPrice.toLocaleString()}
+            </span>
           </div>
-          <button onClick={() => setStep(3)} className="px-5 py-2.5 bg-rose-500 text-white font-bold text-xs rounded-xl shadow-md uppercase tracking-wider hover:bg-rose-600 flex items-center gap-1">
+          <button 
+            onClick={() => setStep(3)} 
+            className={`px-5 py-2.5 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md flex items-center gap-1 transition-all duration-300 ${
+              isDark 
+                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+            }`}
+          >
             Elegir Horario <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
 
+      {/* ============================================================ */}
       {/* MODAL DE CONFIRMACIÓN */}
+      {/* ============================================================ */}
       {showSummaryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 text-left">
-            <h3 className="font-serif text-base text-stone-800 border-b pb-2">Confirmar Cita</h3>
-            <div className="text-xs space-y-2 bg-stone-50 p-3 rounded-xl border text-stone-700">
-              <div><strong>Cliente:</strong> {clientData.name}</div>
-              <div><strong>WhatsApp:</strong> {clientData.phone}</div>
-              <div><strong>Especialista:</strong> {selectedProfessional?.name}</div>
-              <div><strong>Fecha/Hora:</strong> {selectedDate} a las {selectedTime} hs</div>
-              <div className="border-t pt-2">
-                <strong>Importe Total:</strong> <span className="text-rose-500 font-bold">${totalPrice.toLocaleString()}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A0E0A]/60 backdrop-blur-sm">
+          <div className={`rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 transition-all duration-300 ${
+            isDark 
+              ? 'bg-[#2A1B14] border border-[#3D281E]' 
+              : 'bg-white border border-[#F0E4DA]'
+          }`}>
+            <h3 className={`font-serif text-xl font-light border-b pb-2 ${
+              isDark ? 'text-[#FFF9F6] border-[#3D281E]' : 'text-[#1A0E0A] border-[#F0E4DA]'
+            }`}>
+              Confirmar Cita
+            </h3>
+            <div className={`text-xs space-y-2 p-3 rounded-xl border ${
+              isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+            }`}>
+              <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                <strong>Cliente:</strong> {clientData.name}
+              </div>
+              <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                <strong>WhatsApp:</strong> {clientData.phone}
+              </div>
+              <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                <strong>Especialista:</strong> {selectedProfessional?.name}
+              </div>
+              <div className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                <strong>Fecha/Hora:</strong> {selectedDate} a las {selectedTime} hs
+              </div>
+              <div className={`border-t pt-2 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
+                <strong className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
+                  Importe Total:
+                </strong>
+                <span className={`font-serif font-bold ml-1 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+                  ${totalPrice.toLocaleString()}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setShowSummaryModal(false)} className="flex-1 py-2 border rounded-xl text-xs font-semibold hover:bg-stone-50">Editar</button>
-              <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 py-2 bg-emerald-500 text-white font-bold rounded-xl text-xs disabled:opacity-50">
+              <button 
+                type="button" 
+                onClick={() => setShowSummaryModal(false)} 
+                className={`flex-1 py-2 border rounded-xl text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 ${
+                  isDark 
+                    ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E] hover:text-[#FFF9F6]' 
+                    : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#FFF9F6] hover:text-[#1A0E0A]'
+                }`}
+              >
+                Editar
+              </button>
+              <button 
+                type="button" 
+                onClick={handleSubmit} 
+                disabled={submitting} 
+                className={`flex-1 py-2 font-bold rounded-xl text-[10px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 ${
+                  isDark 
+                    ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                    : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                }`}
+              >
                 {submitting ? 'Guardando...' : 'Confirmar'}
               </button>
             </div>
@@ -749,7 +1168,7 @@ function AgendaContent() {
 
 export default function ClientBookingPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[70vh]"><div className="w-12 h-12 rounded-full border-4 border-rose-100 border-t-rose-500 animate-spin" /></div>}>
+    <Suspense fallback={<BookingLoadingSpinner isDark={false} />}>
       <AgendaContent />
     </Suspense>
   )
