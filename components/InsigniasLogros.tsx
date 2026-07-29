@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Award, Zap, Sparkles, Flame, Crown, Heart, Lock } from 'lucide-react'
+import { Award, Zap, Sparkles, Flame, Crown, Heart, Lock, Gem, Star } from 'lucide-react'
 
 interface InsigniasLogrosProps {
   citas: number
@@ -30,10 +30,10 @@ export default function InsigniasLogros({
       desc: 'Tu debut en el salón',
       icon: Heart,
       desbloqueado: citas > 0,
-      colorClassDark: 'from-rose-500/10 to-pink-500/10 text-rose-400 border-rose-500/30 shadow-[0_10px_30px_rgba(244,63,94,0.1)]',
-      colorClassLight: 'from-rose-500/5 to-pink-500/5 text-rose-600 border-rose-200 shadow-sm',
-      iconColorDark: 'text-rose-400 bg-rose-950/40 border-rose-500/30',
-      iconColorLight: 'text-rose-600 bg-rose-50 border-rose-200'
+      colorClassDark: 'from-[#D4AF37]/10 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/30 shadow-[0_10px_30px_rgba(212,175,55,0.1)]',
+      colorClassLight: 'from-[#D4AF37]/5 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/20 shadow-sm',
+      iconColorDark: 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30',
+      iconColorLight: 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
     },
     {
       id: 'fiel',
@@ -42,10 +42,10 @@ export default function InsigniasLogros({
       desc: 'Más de 5 visitas registradas',
       icon: Crown,
       desbloqueado: citas >= 5,
-      colorClassDark: 'from-amber-500/10 to-yellow-600/10 text-amber-300 border-amber-500/30 shadow-[0_10px_30px_rgba(245,158,11,0.1)]',
-      colorClassLight: 'from-amber-500/5 to-yellow-600/5 text-amber-700 border-amber-200 shadow-sm',
-      iconColorDark: 'text-amber-400 bg-amber-950/40 border-amber-500/30',
-      iconColorLight: 'text-amber-600 bg-amber-50 border-amber-200'
+      colorClassDark: 'from-[#D4AF37]/10 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/30 shadow-[0_10px_30px_rgba(212,175,55,0.1)]',
+      colorClassLight: 'from-[#D4AF37]/5 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/20 shadow-sm',
+      iconColorDark: 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30',
+      iconColorLight: 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
     },
     {
       id: 'racha_activa',
@@ -54,10 +54,10 @@ export default function InsigniasLogros({
       desc: 'Mantienes tu racha activa',
       icon: Flame,
       desbloqueado: racha > 0,
-      colorClassDark: 'from-orange-600/10 to-amber-500/10 text-orange-400 border-orange-500/30 shadow-[0_10px_30px_rgba(234,88,12,0.1)]',
-      colorClassLight: 'from-orange-500/5 to-amber-500/5 text-orange-700 border-orange-200 shadow-sm',
-      iconColorDark: 'text-orange-400 bg-orange-950/40 border-orange-500/30',
-      iconColorLight: 'text-orange-600 bg-orange-50 border-orange-200'
+      colorClassDark: 'from-[#D4AF37]/10 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/30 shadow-[0_10px_30px_rgba(212,175,55,0.1)]',
+      colorClassLight: 'from-[#D4AF37]/5 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/20 shadow-sm',
+      iconColorDark: 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30',
+      iconColorLight: 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
     },
     {
       id: 'embajador',
@@ -66,10 +66,10 @@ export default function InsigniasLogros({
       desc: 'Invitaste amigos al ecosistema',
       icon: Sparkles,
       desbloqueado: referidos > 0,
-      colorClassDark: 'from-purple-500/10 to-indigo-500/10 text-purple-400 border-purple-500/30 shadow-[0_10px_30px_rgba(168,85,247,0.1)]',
-      colorClassLight: 'from-purple-500/5 to-indigo-500/5 text-purple-700 border-purple-200 shadow-sm',
-      iconColorDark: 'text-purple-400 bg-purple-950/40 border-purple-500/30',
-      iconColorLight: 'text-purple-600 bg-purple-50 border-purple-200'
+      colorClassDark: 'from-[#D4AF37]/10 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/30 shadow-[0_10px_30px_rgba(212,175,55,0.1)]',
+      colorClassLight: 'from-[#D4AF37]/5 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/20 shadow-sm',
+      iconColorDark: 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30',
+      iconColorLight: 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
     },
     {
       id: 'coleccionista',
@@ -78,99 +78,128 @@ export default function InsigniasLogros({
       desc: 'Probaste 3 o más servicios',
       icon: Zap,
       desbloqueado: serviciosUnicos >= 3,
-      colorClassDark: 'from-cyan-500/10 to-blue-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_10px_30px_rgba(6,182,212,0.1)]',
-      colorClassLight: 'from-cyan-500/5 to-blue-500/5 text-cyan-700 border-cyan-200 shadow-sm',
-      iconColorDark: 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30',
-      iconColorLight: 'text-cyan-600 bg-cyan-50 border-cyan-200'
+      colorClassDark: 'from-[#D4AF37]/10 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/30 shadow-[0_10px_30px_rgba(212,175,55,0.1)]',
+      colorClassLight: 'from-[#D4AF37]/5 to-[#E8D5A0]/5 text-[#D4AF37] border-[#D4AF37]/20 shadow-sm',
+      iconColorDark: 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30',
+      iconColorLight: 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
     }
   ]
 
-  return (
-    <div className={`border p-6 sm:p-8 rounded-3xl transition-all duration-300 shadow-md ${
-      isDark 
-        ? 'bg-[#141211] border-stone-850 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
-        : 'bg-white border-stone-200'
-    } space-y-8`}>
+  // Calcular insignias desbloqueadas
+  const desbloqueadas = insignias.filter(i => i.desbloqueado).length
+  const totalInsignias = insignias.length
 
-      {/* Encabezado Principal */}
-      <div className={`flex items-center gap-4 border-b pb-6 ${
-        isDark ? 'border-stone-900' : 'border-stone-100'
+  return (
+    <div className={`p-6 sm:p-8 rounded-2xl border transition-all duration-300 shadow-sm ${
+      isDark 
+        ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+        : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+    } space-y-6`}>
+
+      {/* ============================================================ */}
+      {/* ENCABEZADO */}
+      {/* ============================================================ */}
+      <div className={`flex items-center justify-between border-b pb-4 ${
+        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
       }`}>
-        <div className={`w-12 h-12 border rounded-xl flex items-center justify-center ${
-          isDark ? 'bg-gradient-to-r from-rose-500/10 to-amber-500/10 border-amber-500/20' : 'bg-rose-50 border-rose-200'
-        }`}>
-          <Award className="w-5 h-5 text-rose-500 dark:text-rose-400" />
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
+            isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+          }`}>
+            <Award className="w-5 h-5 text-[#D4AF37]" />
+          </div>
+          <div>
+            <h2 className={`font-serif text-xl font-light ${
+              isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+            }`}>
+              Insignias y <span className="font-serif italic text-[#D4AF37]">Reconocimientos</span>
+            </h2>
+            <p className={`text-[8px] uppercase tracking-[0.2em] font-medium mt-0.5 ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>
+              Colecciona logros con cada visita
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className={`text-xl font-extralight tracking-tight ${isDark ? 'text-stone-100' : 'text-stone-900'}`}>
-            Insignias y <span className="font-serif italic font-normal text-rose-600 dark:text-rose-300">Reconocimientos</span>
-          </h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500 font-medium mt-1">Colecciona logros con cada visita</p>
+
+        {/* Contador de insignias */}
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+        }`}>
+          <Gem className="w-4 h-4 text-[#D4AF37]" />
+          <span className={`text-sm font-black ${
+            isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+          }`}>
+            {desbloqueadas}/{totalInsignias}
+          </span>
         </div>
       </div>
 
-      {/* Grid de Insignias Estilizadas */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      {/* ============================================================ */}
+      {/* GRID DE INSIGNIAS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
         {insignias.map((insignia) => {
           const Icon = insignia.icon
+          const isUnlocked = insignia.desbloqueado
+
           return (
             <div 
               key={insignia.id}
-              className={`relative flex flex-col items-center justify-between p-6 rounded-2xl border text-center transition-all duration-500 group ${
-                insignia.desbloqueado 
+              className={`relative flex flex-col items-center justify-between p-4 sm:p-5 rounded-2xl border text-center transition-all duration-500 group ${
+                isUnlocked 
                   ? isDark
-                    ? `bg-gradient-to-b ${insignia.colorClassDark} hover:-translate-y-1`
-                    : `bg-gradient-to-b ${insignia.colorClassLight} hover:-translate-y-1`
+                    ? `bg-gradient-to-b ${insignia.colorClassDark} hover:-translate-y-1 hover:shadow-lg`
+                    : `bg-gradient-to-b ${insignia.colorClassLight} hover:-translate-y-1 hover:shadow-lg`
                   : isDark
-                    ? 'bg-[#1a1715]/40 border-stone-900 hover:border-stone-850'
-                    : 'bg-stone-50/50 border-stone-200 hover:bg-stone-50'
+                    ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#3D281E]'
+                    : 'bg-[#FFF9F6] border-[#F0E4DA] hover:bg-[#FFF9F6]'
               }`}
             >
-              {/* Icono de la Insignia */}
-              <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 ${
-                insignia.desbloqueado 
+              {/* Icono */}
+              <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110 ${
+                isUnlocked 
                   ? isDark ? insignia.iconColorDark : insignia.iconColorLight
-                  : isDark ? 'bg-stone-950 border-stone-900 text-stone-600' : 'bg-stone-100 border-stone-200 text-stone-400'
+                  : isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#A89588]'
               }`}>
                 <Icon className="w-5 h-5" />
               </div>
 
-              {/* Textos Mixtos Estilo Fresh Nails */}
-              <div className="space-y-1 flex-1 flex flex-col justify-center">
+              {/* Título */}
+              <div className="space-y-0.5 flex-1 flex flex-col justify-center">
                 <p className={`text-xs font-medium tracking-tight ${
-                  insignia.desbloqueado 
-                    ? isDark ? 'text-stone-100' : 'text-stone-800' 
-                    : 'text-stone-400 dark:text-stone-500'
+                  isUnlocked 
+                    ? isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]' 
+                    : isDark ? 'text-[#A89588]' : 'text-[#A89588]'
                 }`}>
-                  {insignia.titulo} <span className={`font-serif italic block ${
-                    insignia.desbloqueado 
-                      ? 'text-rose-600 dark:text-rose-300' 
-                      : 'text-stone-400 dark:text-stone-500/70'
-                  }`}>{insignia.subtitulo}</span>
+                  {insignia.titulo} 
+                  <span className={`font-serif italic block text-[#D4AF37]`}>
+                    {insignia.subtitulo}
+                  </span>
                 </p>
-                <p className={`text-[9px] font-light leading-tight mt-1.5 max-w-[110px] mx-auto ${
-                  isDark ? 'text-stone-500' : 'text-stone-400'
+                <p className={`text-[8px] font-light leading-tight mt-1 max-w-[100px] mx-auto ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                 }`}>
                   {insignia.desc}
                 </p>
               </div>
 
-              {/* Indicador de Estado Elegante inferior */}
-              <div className="mt-4 pt-1 flex items-center justify-center h-4 w-full">
-                {insignia.desbloqueado ? (
-                  <span className={`text-[8px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-full uppercase border ${
+              {/* Estado */}
+              <div className="mt-3 pt-1 flex items-center justify-center h-4 w-full">
+                {isUnlocked ? (
+                  <span className={`text-[7px] font-mono font-bold tracking-[0.15em] px-2 py-0.5 rounded-full uppercase border ${
                     isDark 
-                      ? 'text-rose-400 bg-rose-500/5 border-rose-500/20' 
-                      : 'text-rose-600 bg-rose-50 border-rose-200'
+                      ? 'text-[#D4AF37] bg-[#3D281E] border-[#D4AF37]/30' 
+                      : 'text-[#D4AF37] bg-[#FFF9F6] border-[#D4AF37]/20'
                   }`}>
-                    Desbloqueado
+                    ✓ Desbloqueado
                   </span>
                 ) : (
                   <div className={`flex items-center gap-1 transition-colors ${
-                    isDark ? 'text-stone-600 group-hover:text-stone-500' : 'text-stone-400 group-hover:text-stone-600'
+                    isDark ? 'text-[#A89588]' : 'text-[#A89588]'
                   }`}>
                     <Lock className="w-2.5 h-2.5" />
-                    <span className="text-[8px] font-mono uppercase tracking-widest">Por lograr</span>
+                    <span className="text-[7px] font-mono uppercase tracking-[0.1em]">Bloqueado</span>
                   </div>
                 )}
               </div>
@@ -179,6 +208,41 @@ export default function InsigniasLogros({
         })}
       </div>
 
+      {/* ============================================================ */}
+      {/* BARRA DE PROGRESO DE INSIGNIAS */}
+      {/* ============================================================ */}
+      <div className={`pt-4 border-t ${
+        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+      }`}>
+        <div className="flex justify-between items-center mb-2">
+          <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
+            Progreso de Colección
+          </span>
+          <span className={`text-[8px] font-black font-mono text-[#D4AF37]`}>
+            {desbloqueadas}/{totalInsignias}
+          </span>
+        </div>
+        <div className={`h-2 w-full rounded-full overflow-hidden ${
+          isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
+        }`}>
+          <div 
+            className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out" 
+            style={{ width: `${(desbloqueadas / totalInsignias) * 100}%` }} 
+          />
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }
