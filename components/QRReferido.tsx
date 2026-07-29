@@ -5,8 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { QrCode, Share2, Copy, Check, Users, Gift, Sparkles, Crown } from 'lucide-react'
-import { toast } from 'react-hot-toast'
+import { QrCode, Share2, Copy, Check, Users, Gift, Sparkles, Crown, Gem, ArrowRight } from 'lucide-react'
 
 interface QRReferidoProps {
   codigo: string
@@ -20,6 +19,7 @@ export default function QRReferido({ codigo, user }: QRReferidoProps) {
   const [urlReferido, setUrlReferido] = useState('')
   const [referidosCount, setReferidosCount] = useState(0)
   const [puntosGanados, setPuntosGanados] = useState(0)
+  const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const isDark = theme === 'dark'
   const codigoActual = codigo || 'X7K-9M2-P4R'
@@ -62,22 +62,27 @@ export default function QRReferido({ codigo, user }: QRReferidoProps) {
     loadReferidosStats()
   }, [user, tenantId])
 
+  const showToastMessage = (message: string, type: 'success' | 'error') => {
+    setShowToast({ message, type })
+    setTimeout(() => setShowToast(null), 3500)
+  }
+
   const handleCopy = async () => {
     if (!urlReferido) return
     try {
       await navigator.clipboard.writeText(urlReferido)
       setCopiado(true)
-      toast.success('✅ Enlace copiado al portapapeles')
+      showToastMessage('✅ Enlace copiado al portapapeles', 'success')
       setTimeout(() => setCopiado(false), 3000)
     } catch (err) {
       console.error(err)
-      toast.error('Error al copiar el enlace')
+      showToastMessage('❌ Error al copiar el enlace', 'error')
     }
   }
 
   const handleShare = async () => {
     if (!urlReferido) return
-    
+
     const mensaje = `✨ Te invito a Fresh Nails Atelier 💅
     
 🎁 Usa mi código de referido: ${codigoActual}
@@ -92,7 +97,7 @@ export default function QRReferido({ codigo, user }: QRReferidoProps) {
           text: mensaje,
           url: urlReferido,
         })
-        toast.success('✅ Compartido exitosamente')
+        showToastMessage('✅ Compartido exitosamente', 'success')
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           console.error(err)
@@ -103,133 +108,187 @@ export default function QRReferido({ codigo, user }: QRReferidoProps) {
     }
   }
 
-  // Colores dinámicos adaptados para el generador de QR externo
-  const qrBgColor = isDark ? '1c1917' : 'ffffff'
-  const qrColor = 'ec4899' // Rosa vibrante para que el QR sea espectacular y combine
+  // Colores para el QR
+  const qrBgColor = isDark ? '1E120C' : 'FFF9F6'
+  const qrColor = 'D4AF37'
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(urlReferido || 'fresh_nails')}&bgcolor=${qrBgColor}&color=${qrColor}`
 
   return (
-    <div className={`p-6 rounded-3xl border transition-all duration-500 shadow-xl relative overflow-hidden ${
+    <div className={`p-6 rounded-2xl border transition-all duration-300 shadow-sm relative overflow-hidden ${
       isDark 
-        ? 'bg-stone-900/60 border-pink-950/30 backdrop-blur-md' 
-        : 'bg-white border-pink-100/70'
+        ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+        : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
     } space-y-5`}>
-      
-      {/* Detalle chic decorativo */}
-      <div className="absolute top-0 left-0 w-32 h-32 bg-amber-400/5 dark:bg-amber-400/10 rounded-br-full pointer-events-none"></div>
 
-      {/* ENCABEZADO EXCLUSIVO */}
-      <div className="flex items-center gap-4 border-b pb-4 border-pink-100/40 dark:border-stone-800">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-pink-500 to-amber-400 text-white shadow-md shadow-pink-500/20">
-          <Crown className="w-5 h-5 animate-pulse" />
+      {/* Toast flotante */}
+      {showToast && (
+        <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-20 px-5 py-3 rounded-xl border text-sm font-medium shadow-lg animate-fadeIn ${
+          showToast.type === 'success'
+            ? isDark 
+              ? 'bg-[#3D281E]/90 border-[#D4AF37]/30 text-[#D4AF37]' 
+              : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'
+            : isDark 
+              ? 'bg-[#3D281E]/90 border-rose-500/30 text-rose-400' 
+              : 'bg-white border-rose-300 text-rose-600'
+        }`}>
+          {showToast.message}
+        </div>
+      )}
+
+      {/* Elemento decorativo */}
+      <div className="absolute top-0 left-0 w-32 h-32 bg-[#D4AF37]/5 rounded-br-full pointer-events-none" />
+
+      {/* ============================================================ */}
+      {/* ENCABEZADO */}
+      {/* ============================================================ */}
+      <div className={`flex items-center gap-4 border-b pb-4 ${
+        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+      }`}>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
+          isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+        }`}>
+          <Crown className="w-5 h-5 text-[#D4AF37] animate-pulse" />
         </div>
         <div>
-          <h3 className="text-lg font-black tracking-tight text-stone-800 dark:text-white">
-            Código <span className="font-serif italic font-normal text-pink-500 dark:text-pink-400">Exclusivo</span>
+          <h3 className={`font-serif text-lg font-light ${
+            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+          }`}>
+            Código <span className="font-serif italic text-[#D4AF37]">Exclusivo</span>
           </h3>
-          <p className="text-[9px] uppercase tracking-widest font-black text-amber-500 dark:text-amber-400">
+          <p className={`text-[8px] uppercase tracking-[0.25em] font-black ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
             Comparte tu brillo & gana beneficios
           </p>
         </div>
       </div>
 
+      {/* ============================================================ */}
       {/* TARJETAS DE CONTADORES */}
+      {/* ============================================================ */}
       <div className="grid grid-cols-2 gap-4">
-        <div className={`p-3.5 rounded-2xl border text-center transition-all ${
-          isDark ? 'bg-stone-950/40 border-stone-850' : 'bg-pink-50/30 border-pink-100/60'
+        <div className={`p-3.5 rounded-2xl border text-center transition-all hover:-translate-y-0.5 ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
-          <div className="w-7 h-7 rounded-lg bg-pink-500/10 text-pink-500 mx-auto flex items-center justify-center">
-            <Users className="w-4 h-4" />
+          <div className={`w-7 h-7 rounded-lg mx-auto flex items-center justify-center ${
+            isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+          }`}>
+            <Users className="w-4 h-4 text-[#D4AF37]" />
           </div>
-          <p className="text-2xl font-black mt-2 text-stone-800 dark:text-white tracking-tight">
+          <p className={`font-serif text-2xl font-light mt-2 ${
+            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+          }`}>
             {referidosCount}
           </p>
-          <p className="text-[9px] uppercase font-black tracking-wider text-stone-400 dark:text-stone-500 mt-0.5">
+          <p className={`text-[8px] uppercase font-black tracking-[0.15em] mt-0.5 ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
             Amigos Traídos
           </p>
         </div>
-        
-        <div className={`p-3.5 rounded-2xl border text-center transition-all ${
-          isDark ? 'bg-stone-950/40 border-stone-850' : 'bg-amber-50/30 border-amber-100/60'
+
+        <div className={`p-3.5 rounded-2xl border text-center transition-all hover:-translate-y-0.5 ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
-          <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 mx-auto flex items-center justify-center">
-            <Sparkles className="w-4 h-4" />
+          <div className={`w-7 h-7 rounded-lg mx-auto flex items-center justify-center ${
+            isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+          }`}>
+            <Sparkles className="w-4 h-4 text-[#D4AF37]" />
           </div>
-          <p className="text-2xl font-black mt-2 text-stone-800 dark:text-white tracking-tight">
+          <p className={`font-serif text-2xl font-light mt-2 ${
+            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+          }`}>
             {puntosGanados}
           </p>
-          <p className="text-[9px] uppercase font-black tracking-wider text-stone-400 dark:text-stone-500 mt-0.5">
+          <p className={`text-[8px] uppercase font-black tracking-[0.15em] mt-0.5 ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
             Puntos VIP Acumulados
           </p>
         </div>
       </div>
 
+      {/* ============================================================ */}
+      {/* QR Y CÓDIGO */}
+      {/* ============================================================ */}
       <div className="flex flex-col items-center gap-5">
-        {/* CONTENEDOR DEL QR MAGENTA */}
-        <div className={`p-4 border rounded-3xl shadow-md transition-all duration-500 hover:scale-[1.03] ${
-          isDark ? 'bg-stone-900 border-pink-500/20' : 'bg-gradient-to-br from-pink-50 via-white to-amber-50 border-pink-100'
+        {/* QR */}
+        <div className={`p-4 border rounded-2xl shadow-sm transition-all duration-300 hover:scale-[1.02] ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <img 
             src={qrUrl} 
             alt="Código QR" 
-            className="w-32 h-32 sm:w-36 sm:h-36 object-contain rounded-2xl shadow-inner"
+            className="w-32 h-32 sm:w-36 sm:h-36 object-contain rounded-xl"
             loading="lazy"
           />
         </div>
 
-        {/* ETIQUETA DE CÓDIGO INTERACTIVA */}
+        {/* Código */}
         <div className={`w-full p-4 rounded-2xl border text-center relative overflow-hidden ${
           isDark 
-            ? 'bg-gradient-to-r from-pink-950/30 via-stone-950 to-amber-950/30 border-pink-950/50' 
-            : 'bg-gradient-to-r from-pink-50 via-amber-50 to-pink-50 border-pink-100'
+            ? 'bg-[#1E120C] border-[#3D281E]' 
+            : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <div className="relative z-10 space-y-1">
-            <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+            <p className={`text-[8px] font-black uppercase tracking-[0.25em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>
               Tu código de invitación
             </p>
             <div className="flex items-center justify-center gap-2">
-              <span className="text-xl sm:text-2xl font-serif italic font-black bg-gradient-to-r from-pink-500 to-amber-500 bg-clip-text text-transparent">
+              <span className="text-xl sm:text-2xl font-serif italic font-black text-[#D4AF37]">
                 FRESH
               </span>
-              <span className="text-lg font-light text-pink-300 dark:text-stone-700">✦</span>
-              <span className="text-xl sm:text-2xl font-mono font-black tracking-widest text-stone-800 dark:text-white">
+              <span className={`text-lg font-light ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`}>✦</span>
+              <span className={`text-xl sm:text-2xl font-mono font-black tracking-widest ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
                 {codigoActual}
               </span>
             </div>
           </div>
         </div>
 
-        {/* RECOMPENSA BANNER */}
+        {/* BANNER DE RECOMPENSA */}
         <div className={`w-full p-3.5 rounded-xl border text-center ${
-          isDark ? 'bg-stone-950/40 border-stone-850' : 'bg-stone-50/80 border-stone-200'
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
-          <p className="text-xs sm:text-sm font-medium text-stone-600 dark:text-stone-300">
-            🎁 ¡Regalo Mutuo! Ambos ganan <span className="font-serif italic text-pink-600 dark:text-pink-400 font-black">500 puntos</span> al registrarse.
+          <p className={`text-xs font-medium ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
+            🎁 ¡Regalo Mutuo! Ambos ganan <span className={`font-serif font-black text-[#D4AF37]`}>500 puntos</span> al registrarse.
           </p>
         </div>
 
-        {/* INPUT DE ENLACE Y BOTÓN ACCIÓN */}
+        {/* ============================================================ */}
+        {/* ACCIONES */}
+        {/* ============================================================ */}
         <div className="w-full space-y-3">
           <div className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
-            isDark ? 'bg-stone-950/60 border-stone-850' : 'bg-stone-50 border-stone-200'
+            isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
           }`}>
             <div className="flex-1 min-w-0 pl-2">
-              <p className="text-[8px] font-black uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                Enlace Premium de invitación
+              <p className={`text-[7px] font-black uppercase tracking-[0.2em] ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Enlace de invitación
               </p>
-              <p className="text-[11px] truncate font-mono text-stone-600 dark:text-stone-300 mt-0.5">
+              <p className={`text-[10px] truncate font-mono mt-0.5 ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
                 {urlReferido || 'Generando enlace...'}
               </p>
             </div>
-            
+
             <button
               onClick={handleCopy}
               className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${
                 copiado
                   ? 'bg-emerald-500 text-white'
                   : isDark 
-                    ? 'bg-stone-800 hover:bg-stone-700 text-stone-300' 
-                    : 'bg-stone-950 hover:bg-stone-900 text-white'
+                    ? 'bg-[#3D281E] hover:bg-[#4A3227] text-[#A89588]' 
+                    : 'bg-[#1A0E0A] hover:bg-[#D4AF37] text-[#FFF9F6] hover:text-[#1A0E0A]'
               }`}
               title="Copiar enlace"
             >
@@ -239,17 +298,34 @@ export default function QRReferido({ codigo, user }: QRReferidoProps) {
 
           <button
             onClick={handleShare}
-            className="w-full py-4 rounded-xl bg-stone-950 text-white hover:bg-stone-900 font-black text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 shadow-xl border border-stone-800 transform active:scale-[0.99]"
+            className={`w-full py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+              isDark 
+                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
+            }`}
           >
-            <Share2 className="w-4 h-4 text-pink-400" />
+            <Share2 className="w-4 h-4" />
             <span>Compartir pase exclusivo</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
-          
-          <p className="text-[9px] text-center text-stone-400 dark:text-stone-500 font-medium">
+
+          <p className={`text-[8px] text-center font-medium ${
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+          }`}>
             Abre el selector de aplicaciones de tu smartphone al presionar.
           </p>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   )
 }
