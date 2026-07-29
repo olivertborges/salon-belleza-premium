@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { useSettings } from '@/contexts/SettingsContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -47,7 +46,6 @@ const sidebarVariants = {
 }
 
 export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose }: AdminSidebarProps) {
-  const { settings } = useSettings()
   const { user, role, signOut } = useAuth() 
   const { theme } = useTheme()
   const router = useRouter()
@@ -105,7 +103,7 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         initial="open"
         animate={collapsed ? "collapsed" : "open"}
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl overflow-hidden
+          fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col shadow-2xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isDark 
             ? 'bg-[#1E120C] border-r border-[#3D281E]' 
@@ -247,14 +245,14 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
         </div>
 
         {/* ============================================================ */}
-        {/* CERRAR SESIÓN - SIEMPRE VISIBLE */}
+        {/* CERRAR SESIÓN - SIEMPRE VISIBLE EN LA PARTE INFERIOR */}
         {/* ============================================================ */}
         <div className={`p-3 border-t shrink-0 relative z-10 ${
-          isDark ? 'border-[#3D281E] bg-[#1E120C]/95' : 'border-[#F0E4DA] bg-[#FFF9F6]/95'
+          isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
         }`}>
           <button 
             onClick={handleLogoutClick} 
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-medium transition-all group ${
               collapsed ? 'justify-center' : ''
             } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
           >
