@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
-import { Bell, Menu, User, Sun, Moon, Sparkles } from 'lucide-react'
+import { Bell, Menu, User, Sun, Moon, Settings, UserCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -79,7 +80,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       </div>
 
       {/* ============================================================ */}
-      {/* LADO DERECHO */}
+      {/* LADO DERECHO - SIN CARRITO */}
       {/* ============================================================ */}
       <div className="flex items-center gap-2.5 md:gap-4 h-10">
 
@@ -162,21 +163,27 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           )}
         </div>
 
-        {/* 3. Icono Perfil móvil */}
-        <button className={`md:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
-          isDark
-            ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/40'
-            : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#FFF9F6] hover:border-[#D4AF37]/40'
-        }`}>
+        {/* 3. Icono Perfil móvil - CLICKEABLE */}
+        <Link 
+          href="/admin/perfil"
+          className={`md:hidden h-10 w-10 p-2.5 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
+            isDark
+              ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/40'
+              : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#FFF9F6] hover:border-[#D4AF37]/40'
+          }`}
+        >
           <User className="w-4 h-4" />
-        </button>
+        </Link>
 
-        {/* Separador Visual y Perfil (Desktop) */}
+        {/* Separador Visual y Perfil (Desktop) - CLICKEABLE */}
         <div className={`h-6 w-[1px] mx-0.5 hidden md:block shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
 
-        <div className="hidden md:flex items-center gap-3 shrink-0">
+        <Link 
+          href="/admin/perfil"
+          className="hidden md:flex items-center gap-3 shrink-0 group cursor-pointer transition-all hover:opacity-80"
+        >
           <div className="text-right">
-            <p className={`text-xs font-medium truncate max-w-[150px] transition-colors ${
+            <p className={`text-xs font-medium truncate max-w-[150px] transition-colors group-hover:text-[#D4AF37] ${
               isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
             }`}>
               {userName}
@@ -185,14 +192,14 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               Admin
             </span>
           </div>
-          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-bold shadow-sm transition-colors ${
+          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-sm font-bold shadow-sm transition-all group-hover:scale-105 group-hover:border-[#D4AF37] ${
             isDark
-              ? 'bg-[#2A1B14] border-[#D4AF37]/40 text-[#D4AF37]'
-              : 'bg-[#FFF9F6] border-[#D4AF37]/40 text-[#D4AF37]'
+              ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] group-hover:border-[#D4AF37]/60'
+              : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] group-hover:border-[#D4AF37]/60'
           }`}>
             {firstName.charAt(0).toUpperCase()}
           </div>
-        </div>
+        </Link>
 
       </div>
     </header>
