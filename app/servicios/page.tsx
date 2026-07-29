@@ -13,7 +13,7 @@ import {
   GiNails, GiSparkles, GiScissors
 } from 'react-icons/gi'
 
-// ✅ ICONOS POR CATEGORÍA
+// ✅ ICONOS POR CATEGORÍA BASE (Respaldo si no se procesa la columna icon)
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
@@ -25,7 +25,7 @@ const CATEGORY_ICONS: Record<string, any> = {
   'default': FaGem
 }
 
-// ✅ IMÁGENES DE RESPALDO SI EL SERVICIO NO TRAE UNA
+// ✅ IMÁGENES EDITORIALES FIJAS SEGÚN TU CATEGORÍA REAL
 const CATEGORY_IMAGES: Record<string, string> = {
   'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
   'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
@@ -37,7 +37,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
-// ✅ RELACIÓN AUTOMÁTICA DE PROFESIONALES USANDO TUS IMÁGENES DE SUPABASE
+// ✅ RELACIÓN DE ARTISTAS DEL ATELIER POR CATEGORÍA
 const getProfesionalPorServicio = (category: string) => {
   const cat = category?.toLowerCase() || ''
   if (cat.includes('uña') || cat.includes('micro') || cat.includes('ceja') || cat.includes('pestaña')) {
@@ -61,7 +61,7 @@ const getProfesionalPorServicio = (category: string) => {
   }
 }
 
-// ✅ ANIMACIONES PARA FRAMER MOTION
+// ✅ ANIMACIONES FRAMER MOTION
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
@@ -73,7 +73,7 @@ const staggerContainer = {
 }
 
 // ============================================================
-// COMPONENTE: HEADER (ESTILO DE LA LANDING)
+// COMPONENTE: HEADER NAVEGACIÓN
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -159,7 +159,7 @@ const Header = () => {
 }
 
 // ============================================================
-// COMPONENTE PRINCIPAL: PÁGINA PÚBLICA DE SERVICIOS
+// COMPONENTE PRINCIPAL
 // ============================================================
 export default function ServiciosPublicPage() {
   const [servicios, setServicios] = useState<any[]>([])
@@ -167,7 +167,7 @@ export default function ServiciosPublicPage() {
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [activeService, setActiveService] = useState<any | null>(null)
 
-  // ✅ OBTENER TENANT_ID CON MÁXIMA COMPATIBILIDAD
+  // ✅ CONTROLADOR DE TENANT ID OPTIMIZADO
   const getTenantId = async (): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -179,31 +179,15 @@ export default function ServiciosPublicPage() {
           .from('profiles')
           .select('tenant_id')
           .eq('id', session.user.id)
-          .maybeSingle() as any
+          .maybeSingle()
         if (profile?.tenant_id) return profile.tenant_id
       }
-
-      if (session?.user?.id) {
-        const { data: client } = await supabase
-          .from('clients')
-          .select('tenant_id')
-          .eq('auth_user_id', session.user.id)
-          .maybeSingle() as any
-        if (client?.tenant_id) return client.tenant_id
-      }
-
-      const { data: firstAppointment } = await supabase
-        .from('appointments')
-        .select('tenant_id')
-        .limit(1)
-        .maybeSingle() as any
-      if (firstAppointment?.tenant_id) return firstAppointment.tenant_id
 
       const { data: firstService } = await supabase
         .from('services')
         .select('tenant_id')
         .limit(1)
-        .maybeSingle() as any
+        .maybeSingle()
       if (firstService?.tenant_id) return firstService.tenant_id
 
       return null
@@ -213,7 +197,7 @@ export default function ServiciosPublicPage() {
     }
   }
 
-  // ✅ SOLICITUD DE DATOS DESDE SUPABASE
+  // ✅ EFECTO DE PETICIÓN A SUPABASE
   useEffect(() => {
     const fetchServicios = async () => {
       try {
@@ -226,9 +210,10 @@ export default function ServiciosPublicPage() {
           return
         }
 
+        // Usamos exactamente los nombres de tus columnas reales
         const { data, error } = await supabase
           .from('services')
-          .select('*')
+          .select('id, name, description, price, duration, category, badge, is_active, subcategory')
           .eq('tenant_id', tenantId)
           .eq('is_active', true)
           .order('category', { ascending: true })
@@ -251,26 +236,23 @@ export default function ServiciosPublicPage() {
     fetchServicios()
   }, [])
 
-  // ✅ PROCESAMIENTO DE CATEGORÍAS PARA FILTROS Y AGRUPACIÓN
+  // Mapeo dinámico de categorías a partir de la BD
   const allCategories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
   
-  // Servicios que se renderizan según el filtro activo
   const filteredServicios = selectedCategory === 'Todos'
     ? servicios
     : servicios.filter(s => s.category === selectedCategory)
 
-  // Lista limpia de las categorías presentes en la selección actual
   const activeCategoriesList = selectedCategory === 'Todos'
     ? Array.from(new Set(servicios.map(s => s.category).filter(Boolean)))
     : [selectedCategory]
 
-  // RENDER DE CARGA EDITORIAL
   if (loading) {
     return (
       <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
-          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Abriendo catálogo de arte...</p>
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Desplegando el dossier del atelier...</p>
         </div>
       </main>
     )
@@ -280,7 +262,7 @@ export default function ServiciosPublicPage() {
     <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased relative selection:bg-[#D4AF37]/20">
       <Header />
 
-      {/* TEXTURAS ELEMENTALES Y FONDOS DE CAPA */}
+      {/* Fondos y Texturas Estéticas */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 left-[-10%] w-[50vw] h-[50vw] bg-[#D4AF37]/5 rounded-full blur-[120px]" />
@@ -289,7 +271,7 @@ export default function ServiciosPublicPage() {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-40 pb-32 relative z-10">
         
-        {/* ENCABEZADO TIPO REVISTA */}
+        {/* Encabezado Editorial */}
         <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
           <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D4AF37]">VISUAL ATELIER MENU</span>
           <h1 className="font-serif text-4xl sm:text-6xl font-light tracking-tight text-[#1A0E0A] leading-tight">
@@ -301,7 +283,7 @@ export default function ServiciosPublicPage() {
           </p>
         </div>
 
-        {/* SELECTOR DE FILTROS FLUIDOS E INTERACTIVOS */}
+        {/* Filtros Interactivos */}
         {allCategories.length > 1 && (
           <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-24 border-b border-[#F0E4DA] pb-6 max-w-4xl mx-auto">
             {allCategories.map((cat) => (
@@ -325,11 +307,11 @@ export default function ServiciosPublicPage() {
           </div>
         )}
 
-        {/* ESTRUCTURA DINÁMICA DE LA GALERÍA FOTOGRÁFICA */}
+        {/* Galería Fotográfica Pura */}
         {filteredServicios.length === 0 ? (
           <div className="text-center py-24 bg-white border border-[#F0E4DA]">
             <FaGem className="w-6 h-6 text-[#A89588]/40 mx-auto mb-4" />
-            <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No hay obras dermoestéticas cargadas en este segmento.</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No hay tratamientos activos en este segmento.</p>
           </div>
         ) : (
           <div className="space-y-24">
@@ -351,7 +333,7 @@ export default function ServiciosPublicPage() {
                     </span>
                   </div>
 
-                  {/* Grid de Fotografías Puras Interactivas */}
+                  {/* Grid Interactiva */}
                   <motion.div 
                     initial="hidden"
                     whileInView="visible"
@@ -360,7 +342,8 @@ export default function ServiciosPublicPage() {
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                   >
                     {servicesInCategory.map((servicio) => {
-                      const imageUrl = servicio.image_url || CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
+                      // Se asigna la imagen según su categoría real de la BD
+                      const imageUrl = CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
                       
                       return (
                         <motion.div
@@ -374,14 +357,20 @@ export default function ServiciosPublicPage() {
                             alt={servicio.name}
                             className="w-full h-full object-cover filter grayscale-[25%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
                           />
-                          {/* Capa gradiente integrada en la fotografía */}
                           <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/90 via-[#1A0E0A]/10 to-transparent opacity-85 group-hover:opacity-90 transition-opacity duration-300" />
                           
-                          {/* Datos sutiles fijados en la imagen */}
+                          {/* Insignia dinámica si viene configurada desde la BD */}
+                          {servicio.badge && (
+                            <span className="absolute top-4 left-4 z-10 text-[8px] tracking-[0.2em] font-bold uppercase bg-[#D4AF37] text-white px-2.5 py-1">
+                              {servicio.badge}
+                            </span>
+                          )}
+
+                          {/* Textos fijados en la fotografía */}
                           <div className="absolute bottom-0 left-0 right-0 p-5 text-white flex justify-between items-end z-10">
                             <div className="max-w-[75%] space-y-0.5">
                               <span className="text-[8px] tracking-[0.2em] uppercase text-[#D4AF37] font-semibold block">
-                                ✦ {servicio.category}
+                                ✦ {servicio.subcategory || servicio.category}
                               </span>
                               <h3 className="font-serif text-lg leading-tight font-light tracking-wide truncate">
                                 {servicio.name}
@@ -408,7 +397,6 @@ export default function ServiciosPublicPage() {
       <AnimatePresence>
         {activeService && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            {/* Backdrop desenfocado de cierre con clic exterior */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -417,7 +405,6 @@ export default function ServiciosPublicPage() {
               className="fixed inset-0 bg-[#1A0E0A]/70 backdrop-blur-md"
             />
 
-            {/* Contenedor Ficha de Detalle */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.96, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -425,7 +412,6 @@ export default function ServiciosPublicPage() {
               transition={{ type: 'spring', duration: 0.4 }}
               className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-3xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible"
             >
-              {/* Botón de Cierre Minimalista */}
               <button 
                 onClick={() => setActiveService(null)}
                 className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full text-[#1A0E0A] hover:text-[#D4AF37] transition-colors shadow-sm focus:outline-none"
@@ -436,29 +422,29 @@ export default function ServiciosPublicPage() {
               {/* Lado A: Fotografía a Gran Escala */}
               <div className="md:col-span-5 relative h-60 md:h-auto min-h-[280px] bg-[#FFF9F6]">
                 <img 
-                  src={activeService.image_url || CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} 
+                  src={CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} 
                   alt={activeService.name}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-[#1A0E0A]/5" />
               </div>
 
-              {/* Lado B: Métricas, Contenido e Información Profesional */}
+              {/* Lado B: Métricas de la Base de Datos */}
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
                   <span className="text-[9px] tracking-[0.3em] font-bold uppercase text-[#D4AF37] block">
-                    {activeService.category}
+                    {activeService.category} {activeService.subcategory && `• ${activeService.subcategory}`}
                   </span>
                   <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide leading-tight">
                     {activeService.name}
                   </h2>
                   <div className="w-10 h-[1px] bg-[#D4AF37] my-3" />
                   <p className="text-xs text-[#5C4A3E] font-light leading-relaxed">
-                    {activeService.description || 'Este tratamiento exclusivo fusiona metodologías avanzadas de vanguardia con activos selectos de nuestro atelier para esculpir, refinar y embellecer bajo un diagnóstico totalmente personalizado.'}
+                    {activeService.description || 'Este tratamiento exclusivo fusiona metodologías avanzadas de vanguardia con activos selectos de nuestro atelier para esculpir y embellecer bajo un diagnóstico personalizado.'}
                   </p>
                 </div>
 
-                {/* Métricas: Valores y Tiempos */}
+                {/* Métricas Reales */}
                 <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-4">
                   <div>
                     <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Inversión</span>
@@ -472,7 +458,7 @@ export default function ServiciosPublicPage() {
                   </div>
                 </div>
 
-                {/* Tarjeta de la Profesional Asignada */}
+                {/* Tarjeta de la Profesional */}
                 <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-3 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full overflow-hidden border border-[#D4AF37]/30 bg-white flex-shrink-0">
                     <img 
@@ -492,10 +478,10 @@ export default function ServiciosPublicPage() {
                   </div>
                 </div>
 
-                {/* Acción Directa: Enlace al Calendario */}
+                {/* Acción Directa pasando el ID por URL */}
                 <div className="pt-2">
                   <Link 
-                    href="/agenda"
+                    href={`/agenda?service=${activeService.id}`}
                     className="w-full block text-center bg-[#1A0E0A] hover:bg-[#D4AF37] text-white py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300"
                   >
                     Agendar este Tratamiento
@@ -507,7 +493,7 @@ export default function ServiciosPublicPage() {
         )}
       </AnimatePresence>
 
-      {/* FOOTER DEL ATELIER INTEGRADO */}
+      {/* Footer */}
       <footer className="bg-[#150B08] text-white/40 border-t border-white/5 text-xs font-light relative z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] tracking-wider uppercase">
           <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
