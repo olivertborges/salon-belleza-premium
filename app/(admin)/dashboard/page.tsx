@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { 
   Calendar, Users, DollarSign, TrendingUp, Sparkles, 
   Clock, BarChart, ArrowUp, RefreshCw, UserCheck,
-  PlusCircle, Scissors
+  PlusCircle, Scissors, Gem, Crown, Star
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
@@ -39,6 +39,10 @@ export default function DashboardPage() {
 
   const [isAdmin, setIsAdmin] = useState(false)
   const isDark = theme === 'dark'
+
+  const brandGradient = {
+    backgroundImage: 'linear-gradient(135deg, #D4AF37, #E8D5A0, #D4AF37)'
+  }
 
   useEffect(() => {
     setAuthorized(true)
@@ -197,23 +201,15 @@ export default function DashboardPage() {
 
   if ((!authorized && loading) || settingsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
-        <div className="absolute w-64 h-64 bg-gradient-to-r from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
-        <div className="relative flex flex-col items-center justify-center gap-5 backdrop-blur-2xl px-12 py-10 rounded-3xl border shadow-2xl bg-white/80 border-pink-200/50">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 animate-spin border-pink-300/50 border-t-pink-500" />
-            <Sparkles className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse text-pink-500" />
+      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-16 h-16">
+            <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+            <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
-          <div className="space-y-1.5 text-center">
-            <p className="text-sm font-black tracking-[0.15em] animate-pulse text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-rose-600 to-amber-600">
-              ABRIENDO EL SALÓN
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.3em] text-stone-400">
-              FRESH BEAUTY STUDIO
-            </p>
-          </div>
+          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+            Cargando panel ejecutivo...
+          </p>
         </div>
       </div>
     )
@@ -221,262 +217,377 @@ export default function DashboardPage() {
 
   if (!authorized) return null
 
-  const primaryColor = settings?.primary_color || '#DB5B9A'
-  const secondaryColor = settings?.secondary_color || '#E5A46E'
-  const brandGradient = { backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})` }
-
   return (
-   <div className="space-y-6 px-4 pb-4 md:px-6 md:pb-6 pt-0 max-w-full overflow-x-hidden">
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+    }`}>
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      {/* 👑 HEADER — BIENVENIDA MULTI-RESPONSIVE OPTIMIZADO */}
-      <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl transition-all duration-700 ${
-        isDark 
-          ? 'bg-gradient-to-br from-zinc-950 via-zinc-900/80 to-black border-zinc-900/60' 
-          : 'bg-gradient-to-br from-rose-50/90 via-pink-50/80 to-amber-50/70 border-pink-200/50'
-      }`}>
-        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
-        
-        {/* Usamos flex-col en móviles y md:flex-row en tablets/PC para que nada se corte ni se aplaste */}
-        <div className={`relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 ${
-          isDark ? 'bg-[#0f0c1b]' : 'bg-white'
+      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10">
+
+        {/* ============================================================ */}
+        {/* HEADER */}
+        {/* ============================================================ */}
+        <div className={`relative overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${
+          isDark 
+            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
         }`}>
-          
-          {/* Bloque Izquierdo: Textos e Iconos */}
-          <div className="flex items-start gap-4 min-w-0 w-full">
-            <div className="p-3.5 rounded-2xl text-white shadow-md shrink-0 mt-0.5" style={{ backgroundColor: primaryColor }}>
-              <Sparkles className="w-6 h-6 md:w-7 md:h-7 animate-spin-slow" />
-            </div>
-            
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <p className={`text-xs md:text-sm uppercase tracking-widest font-black font-mono truncate ${
-                isDark ? 'text-pink-400' : 'text-pink-600'
+          <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4 min-w-0 w-full">
+              <div className={`p-3.5 rounded-2xl shadow-sm shrink-0 mt-0.5 ${
+                isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
               }`}>
-                ✨ {settings?.business_name || 'Salón VIP'}
-              </p>
-              
-              {/* Crecimos la tipografía a text-2xl base y text-3xl en desktop */}
-              <h2 className={`text-2xl md:text-3xl font-serif font-black tracking-tight leading-tight break-words ${
-                isDark ? 'text-white' : 'text-stone-900'
-              }`}>
-                Panel Ejecutivo
-              </h2>
-              
-              {/* Cambiado a text-sm para leerse claro y break-words para que salte de línea correctamente */}
-              <p className={`text-sm leading-relaxed break-words font-medium ${
-                isDark ? 'text-pink-100/70' : 'text-stone-500'
-              }`}>
-                Control absoluto de tus citas, ingresos y comunidad VIP.
-              </p>
-            </div>
-          </div>
-
-          {/* Bloque Derecho: Botones de Acción (Se adaptan a rejilla en móviles y línea en desktop) */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 border-stone-100 dark:border-zinc-900">
-            <button 
-              onClick={handleRefresh} 
-              disabled={refreshing} 
-              className={`px-4 py-2.5 rounded-xl border hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm font-bold w-full sm:w-auto ${
-                isDark 
-                  ? 'bg-fuchsia-950/40 border-fuchsia-900/40 text-pink-400' 
-                  : 'bg-pink-50 border-pink-100/60 text-pink-600'
-              }`}
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>Actualizar</span>
-            </button>
-
-            <Link 
-              href="/admin/agenda"
-              className="px-4 py-2.5 rounded-xl text-white hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm font-bold w-full sm:w-auto shadow-md"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Ver Agenda</span>
-            </Link>
-          </div>
-
-        </div>
-      </div>
-
-      {/* 📊 MÉTRICAS PRINCIPALES */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card Citas */}
-        <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-stone-400">Citas Hoy</p>
-              <p className={`text-4xl font-black mt-1 ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>{stats.citasHoy}</p>
-              <p className="text-xs text-emerald-500 font-bold mt-0.5">+{stats.citasSemana} esta semana</p>
-            </div>
-            <div className={`p-3.5 rounded-xl ${isDark ? 'bg-pink-500/20 text-pink-400' : 'bg-pink-100/50 text-pink-600'}`}>
-              <Calendar className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card Pendientes */}
-        <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-stone-400">Pendientes</p>
-              <p className={`text-4xl font-black mt-1 ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>{stats.pendientes}</p>
-              <p className="text-xs text-amber-500 font-bold mt-0.5">Requieren atención</p>
-            </div>
-            <div className={`p-3.5 rounded-xl ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100/50 text-amber-600'}`}>
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* Card Ingresos */}
-        <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl shadow-lg ${
-          isDark ? 'bg-[#130f24] border-fuchsia-950' : 'bg-white border-pink-100/60'
-        }`}>
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wider text-stone-400">Ingresos</p>
-              <p className={`text-4xl font-black mt-1 ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>{settings?.currency || '$'}{stats.ingresos.toLocaleString()}</p>
-              <p className="text-xs text-emerald-500 font-bold mt-0.5">Hoy</p>
-            </div>
-            <div className={`p-3.5 rounded-xl ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100/50 text-emerald-600'}`}>
-              <DollarSign className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 📋 SECCIONES DETALLADAS Y ACCIONES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-xl ${isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'}`}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'}`}>
-                <Clock className={`w-4 h-4 ${isDark ? 'text-pink-400' : 'text-pink-600'}`} />
+                <Crown className="w-6 h-6 text-[#D4AF37]" />
               </div>
-              <h3 className={`text-base font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
-                Próximas <span className="font-serif italic font-normal text-pink-500">Citas</span>
-              </h3>
+
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className={`text-[10px] uppercase tracking-[0.25em] font-black ${
+                  isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
+                }`}>
+                  ✦ {settings?.business_name || 'Salón VIP'}
+                </p>
+                <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-tight ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  Panel Ejecutivo
+                </h2>
+                <p className={`text-sm font-light ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Control absoluto de tus citas, ingresos y comunidad VIP.
+                </p>
+              </div>
             </div>
-            <Link href="/admin/agenda" className={`text-xs font-black uppercase tracking-wider flex items-center gap-1 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>
-              Ver todas <ArrowUp className="w-3 h-3 rotate-45" />
-            </Link>
+
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 ${
+              isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+            }`}>
+              <button 
+                onClick={handleRefresh} 
+                disabled={refreshing} 
+                className={`px-4 py-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.15em] w-full sm:w-auto hover:scale-105 active:scale-95 ${
+                  isDark 
+                    ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/40' 
+                    : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#1A0E0A] hover:border-[#D4AF37]/40'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Actualizar</span>
+              </button>
+
+              <Link 
+                href="/admin/agenda"
+                className={`px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto hover:scale-105 active:scale-95 ${
+                  isDark 
+                    ? 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                    : 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Ver Agenda</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* MÉTRICAS PRINCIPALES */}
+        {/* ============================================================ */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Citas Hoy
+                </p>
+                <p className={`font-serif text-4xl font-light mt-1 ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {stats.citasHoy}
+                </p>
+                <p className={`text-[10px] font-medium mt-0.5 text-[#D4AF37]`}>
+                  +{stats.citasSemana} esta semana
+                </p>
+              </div>
+              <div className={`p-3.5 rounded-xl ${
+                isDark ? 'bg-[#3D281E] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
+              }`}>
+                <Calendar className="w-6 h-6" />
+              </div>
+            </div>
           </div>
 
-          {stats.citasProximas.length === 0 ? (
-            <div className={`text-center py-10 border border-dashed rounded-xl ${isDark ? 'border-fuchsia-950/50' : 'border-pink-100/60'}`}>
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-stone-300" />
-              <p className="text-sm text-stone-400">No hay citas próximas</p>
+          <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Pendientes
+                </p>
+                <p className={`font-serif text-4xl font-light mt-1 ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {stats.pendientes}
+                </p>
+                <p className={`text-[10px] font-medium mt-0.5 text-[#A89588]`}>
+                  Requieren atención
+                </p>
+              </div>
+              <div className={`p-3.5 rounded-xl ${
+                isDark ? 'bg-[#3D281E] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
+              }`}>
+                <Clock className="w-6 h-6" />
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {stats.citasProximas.map((cita, idx) => {
-                const hoy = new Date()
-                const citaDate = new Date(cita.date)
-                const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-                let label = `En ${diffDias} d`
-                let color = 'text-stone-400'
-                if (diffDias === 0) { label = 'Hoy'; color = 'text-rose-500' }
-                else if (diffDias === 1) { label = 'Mañana'; color = 'text-amber-500' }
+          </div>
 
-                return (
-                  <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'border-fuchsia-950/50 bg-[#0f0c1b]' : 'border-pink-100/60 bg-pink-50/20'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-pink-500 to-rose-500">
-                        {citaDate.getDate()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className={`text-sm font-bold truncate ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>{cita.clienteNombre}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className="text-xs font-medium text-pink-500 truncate">{cita.servicioNombre}</span>
-                          <span className="text-xs font-mono text-stone-400">{cita.time?.slice(0,5) || '--:--'}</span>
-                          <span className={`text-[10px] font-black uppercase tracking-wider ${color}`}>{label}</span>
+          <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>
+                  Ingresos
+                </p>
+                <p className={`font-serif text-4xl font-light mt-1 text-[#D4AF37]`}>
+                  {settings?.currency || '$'}{stats.ingresos.toLocaleString()}
+                </p>
+                <p className={`text-[10px] font-medium mt-0.5 text-[#A89588]`}>
+                  Hoy
+                </p>
+              </div>
+              <div className={`p-3.5 rounded-xl ${
+                isDark ? 'bg-[#3D281E] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
+              }`}>
+                <DollarSign className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* SECCIONES DETALLADAS */}
+        {/* ============================================================ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Citas Próximas */}
+          <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-sm transition-all duration-300 ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl ${
+                  isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+                }`}>
+                  <Clock className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <h3 className={`font-serif text-xl font-light ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  Próximas <span className="font-serif italic text-[#D4AF37]">Citas</span>
+                </h3>
+              </div>
+              <Link href="/admin/agenda" className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-1 transition-colors ${
+                isDark ? 'text-[#A89588] hover:text-[#D4AF37]' : 'text-[#5C4A3E] hover:text-[#D4AF37]'
+              }`}>
+                Ver todas <ArrowUp className="w-3 h-3 rotate-45" />
+              </Link>
+            </div>
+
+            {stats.citasProximas.length === 0 ? (
+              <div className={`text-center py-10 border border-dashed rounded-xl ${
+                isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+              }`}>
+                <Calendar className="w-8 h-8 mx-auto mb-2 text-[#A89588]" />
+                <p className={`text-sm ${
+                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                }`}>No hay citas próximas</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {stats.citasProximas.map((cita, idx) => {
+                  const hoy = new Date()
+                  const citaDate = new Date(cita.date)
+                  const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+                  let label = `En ${diffDias} d`
+                  let color = 'text-[#A89588]'
+                  if (diffDias === 0) { label = 'Hoy'; color = 'text-[#D4AF37]' }
+                  else if (diffDias === 1) { label = 'Mañana'; color = 'text-[#E8D5A0]' }
+
+                  return (
+                    <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
+                    }`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-[#1A0E0A] bg-[#D4AF37]">
+                          {citaDate.getDate()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-medium truncate ${
+                            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                          }`}>{cita.clienteNombre}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className={`text-xs font-medium text-[#D4AF37] truncate`}>{cita.servicioNombre}</span>
+                            <span className={`text-xs font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.time?.slice(0,5) || '--:--'}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${color}`}>{label}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <span className="text-sm font-bold text-emerald-500">{settings?.currency || '$'}{cita.precio?.toLocaleString() || 0}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className={`rounded-2xl border p-6 shadow-xl ${isDark ? 'bg-[#130f24] border-fuchsia-950/50' : 'bg-white border-pink-100/60'}`}>
-          <div className="flex items-center gap-3 mb-5">
-            <div className={`p-2 rounded-xl ${isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'}`}>
-              <TrendingUp className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-            </div>
-            <h3 className={`text-base font-black tracking-tight ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>
-              Top <span className="font-serif italic font-normal text-amber-500">Servicios</span>
-            </h3>
-          </div>
-
-          {stats.serviciosTop.length === 0 ? (
-            <div className={`text-center py-10 border border-dashed rounded-xl ${isDark ? 'border-fuchsia-950/50' : 'border-pink-100/60'}`}>
-              <BarChart className="w-8 h-8 mx-auto mb-2 text-stone-300" />
-              <p className="text-sm text-stone-400">Sin datos</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {stats.serviciosTop.map((serv, idx) => {
-                const maxCount = stats.serviciosTop[0]?.count || 1
-                const porcentaje = Math.round((serv.count / maxCount) * 100)
-                const colors = ['from-pink-500 to-rose-500', 'from-amber-500 to-orange-500', 'from-violet-500 to-purple-500']
-
-                return (
-                  <div key={idx} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black text-white bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`}>
-                          {idx + 1}
-                        </span>
-                        <span className={`text-sm font-bold truncate ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>{serv.nombre}</span>
+                      <div className="text-right shrink-0 ml-2">
+                        <span className={`text-sm font-bold text-[#D4AF37]`}>{settings?.currency || '$'}{cita.precio?.toLocaleString() || 0}</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-stone-400">{serv.count}x</span>
                     </div>
-                    <div className={`w-full rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-fuchsia-950/50' : 'bg-pink-100/30'}`}>
-                      <div className={`h-full rounded-full bg-gradient-to-r ${colors[idx] || 'from-pink-500 to-rose-500'}`} style={{ width: `${porcentaje}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
-      {/* 🔧 ACCIONES RÁPIDAS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Link href="/admin/agenda" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-pink-500/10' : 'bg-pink-100/50'}`}>
-            <PlusCircle className="w-5 h-5 text-pink-500" />
+          {/* Top Servicios */}
+          <div className={`rounded-2xl border p-6 shadow-sm transition-all duration-300 ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className={`p-2 rounded-xl ${
+                isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+              }`}>
+                <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+              </div>
+              <h3 className={`font-serif text-xl font-light ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
+                Top <span className="font-serif italic text-[#D4AF37]">Servicios</span>
+              </h3>
+            </div>
+
+            {stats.serviciosTop.length === 0 ? (
+              <div className={`text-center py-10 border border-dashed rounded-xl ${
+                isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+              }`}>
+                <BarChart className="w-8 h-8 mx-auto mb-2 text-[#A89588]" />
+                <p className={`text-sm ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Sin datos</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {stats.serviciosTop.map((serv, idx) => {
+                  const maxCount = stats.serviciosTop[0]?.count || 1
+                  const porcentaje = Math.round((serv.count / maxCount) * 100)
+
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black text-[#1A0E0A] bg-[#D4AF37]`}>
+                            {idx + 1}
+                          </span>
+                          <span className={`text-sm font-medium truncate ${
+                            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                          }`}>{serv.nombre}</span>
+                        </div>
+                        <span className={`text-xs font-mono font-bold ${
+                          isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                        }`}>{serv.count}x</span>
+                      </div>
+                      <div className={`w-full rounded-full h-1.5 overflow-hidden ${
+                        isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'
+                      }`}>
+                        <div className="h-full rounded-full bg-[#D4AF37]" style={{ width: `${porcentaje}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-          <p className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Nueva Cita</p>
-        </Link>
-        <Link href="/admin/cliente" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-violet-500/10' : 'bg-violet-100/50'}`}>
-            <Users className="w-5 h-5 text-violet-500" />
-          </div>
-          <p className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Clientes</p>
-        </Link>
-        <Link href="/admin/servicios" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-emerald-500/10' : 'bg-emerald-100/50'}`}>
-            <Scissors className="w-5 h-5 text-emerald-500" />
-          </div>
-          <p className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Servicios</p>
-        </Link>
-        <Link href="/admin/staff" className={`group relative overflow-hidden rounded-2xl border p-4 text-center shadow-lg ${isDark ? 'bg-[#130f24] border-fuchsia-950 shadow-black/20' : 'bg-white border-pink-100/60 shadow-pink-200/20'}`}>
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-amber-500/10' : 'bg-amber-100/50'}`}>
-            <UserCheck className="w-5 h-5 text-amber-500" />
-          </div>
-          <p className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-pink-100' : 'text-stone-800'}`}>Staff</p>
-        </Link>
+        </div>
+
+        {/* ============================================================ */}
+        {/* ACCIONES RÁPIDAS */}
+        {/* ============================================================ */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Link href="/admin/agenda" className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+            }`}>
+              <PlusCircle className="w-5 h-5 text-[#D4AF37]" />
+            </div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>Nueva Cita</p>
+          </Link>
+
+          <Link href="/admin/clientes" className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+            }`}>
+              <Users className="w-5 h-5 text-[#D4AF37]" />
+            </div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>Clientes</p>
+          </Link>
+
+          <Link href="/admin/servicios" className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+            }`}>
+              <Scissors className="w-5 h-5 text-[#D4AF37]" />
+            </div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>Servicios</p>
+          </Link>
+
+          <Link href="/admin/staff" className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+            isDark 
+              ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+              : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+          }`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${
+              isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
+            }`}>
+              <UserCheck className="w-5 h-5 text-[#D4AF37]" />
+            </div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${
+              isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+            }`}>Staff</p>
+          </Link>
+        </div>
+
       </div>
 
       <style jsx global>{`
