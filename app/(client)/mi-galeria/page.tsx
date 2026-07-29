@@ -127,7 +127,7 @@ export default function GaleriaPage() {
   }, [tenantId])
 
   // ============================================================
-  // 🔥 CARGAR DATOS - CONSULTA AMBAS TABLAS
+  // 🔥 CARGAR DATOS
   // ============================================================
   const loadGalleryData = useCallback(async () => {
     setLoading(true)
@@ -147,9 +147,7 @@ export default function GaleriaPage() {
 
       let allImages: GalleryImage[] = []
 
-      // ============================================================
-      // 1. FOTOS DE ADMIN (tabla gallery)
-      // ============================================================
+      // Fotos de ADMIN
       const { data: adminPhotos, error: adminError } = await supabase
         .from('gallery')
         .select('*')
@@ -158,10 +156,7 @@ export default function GaleriaPage() {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
-      if (adminError) {
-        console.error('Error cargando fotos de admin:', adminError)
-      } else if (adminPhotos) {
-        console.log(`📸 Encontradas ${adminPhotos.length} fotos de admin`)
+      if (!adminError && adminPhotos) {
         const mappedAdmin = adminPhotos.map((p: any) => ({
           ...p,
           source: 'admin' as const,
@@ -171,14 +166,12 @@ export default function GaleriaPage() {
           views: p.views ?? 0,
           sensory_category: p.sensory_category || 'glossy',
           polish_used: p.polish_used || 'Fresh Nails Premium',
-          price: p.price ? `$${p.price}` : '$45.00'
+          price: p.price ? `$${p.price}` : null
         }))
         allImages = [...allImages, ...mappedAdmin]
       }
 
-      // ============================================================
-      // 2. FOTOS DE CLIENTES (tabla client_gallery)
-      // ============================================================
+      // Fotos de CLIENTES
       const { data: clientPhotos, error: clientError } = await supabase
         .from('client_gallery')
         .select('*')
@@ -187,10 +180,7 @@ export default function GaleriaPage() {
         .eq('is_public', true)
         .order('created_at', { ascending: false })
 
-      if (clientError) {
-        console.error('Error cargando fotos de clientes:', clientError)
-      } else if (clientPhotos) {
-        console.log(`📸 Encontradas ${clientPhotos.length} fotos de clientes`)
+      if (!clientError && clientPhotos) {
         const mappedClient = clientPhotos.map((p: any) => ({
           ...p,
           source: 'client' as const,
@@ -200,23 +190,19 @@ export default function GaleriaPage() {
           views: p.views ?? 0,
           sensory_category: p.sensory_category || 'glossy',
           polish_used: p.polish_used || 'Fresh Nails Premium',
-          price: p.price ? `$${p.price}` : '$45.00',
+          price: p.price ? `$${p.price}` : null,
           image_url: p.after_image_url || p.image_url || p.before_image_url || ''
         }))
         allImages = [...allImages, ...mappedClient]
       }
 
-      // Ordenar por fecha (más reciente primero)
       allImages.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
 
-      console.log(`✅ Total: ${allImages.length} fotos cargadas`)
       setPublicImages(allImages)
 
-      // ============================================================
-      // 3. FOTOS PERSONALES DEL CLIENTE (si está logueado)
-      // ============================================================
+      // Fotos personales
       if (activeUserId) {
         const { data: cliente } = await supabase
           .from('clients')
@@ -235,7 +221,6 @@ export default function GaleriaPage() {
 
           if (personalPhotos) {
             setClientImages(personalPhotos)
-            console.log(`📸 Encontradas ${personalPhotos.length} fotos personales del cliente`)
           }
         }
       }
@@ -310,7 +295,6 @@ export default function GaleriaPage() {
     setSelectedImage(filteredImages[newIndex])
   }, [selectedImage, filteredImages])
 
-  // Cerrar con ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isModalOpen) {
@@ -326,136 +310,151 @@ export default function GaleriaPage() {
   // ============================================================
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] dark:bg-neutral-950 flex flex-col items-center justify-center gap-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#C9A96E]/5 via-transparent to-[#C9A96E]/5 animate-pulse" />
-        <div className="absolute w-64 h-64 bg-[#C9A96E]/5 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="relative flex flex-col items-center justify-center gap-4 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-[#C9A96E]/20 border-t-[#C9A96E] animate-spin" />
-            <Sparkles className="w-6 h-6 text-[#C9A96E] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-16 h-16">
+            <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+            <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
-          <div className="space-y-1.5 text-center">
-            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-[#C9A96E] to-[#D4B87A] animate-pulse">
-              CARGANDO
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
-              GALERÍA DE ARTE
-            </p>
-          </div>
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <span 
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]/60 animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
+          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+            Cargando galería de arte...
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-700 ${
-      isDark 
-        ? 'bg-gradient-to-b from-[#09090b] via-[#0d0d12] to-[#09090b] text-neutral-100' 
-        : 'bg-gradient-to-b from-[#FAF8F5] via-white to-[#FAF8F5]/50 text-neutral-900'
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
+      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
+      {/* Fondo texturizado */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       {/* ============================================================ */}
-      {/* HERO — PRESTIGE EDITION */}
+      {/* HERO — EXPERIENCIA VISUAL IMPRESIONANTE SIN VIDEO */}
       {/* ============================================================ */}
-      <section className={`relative h-[65vh] min-h-[480px] flex items-center justify-center overflow-hidden ${
+      <div className={`relative overflow-hidden min-h-[60vh] flex items-center justify-center border-b transition-all duration-300 ${
         isDark 
-          ? 'bg-gradient-to-br from-[#C9A96E]/10 via-neutral-950 to-[#C9A96E]/5' 
-          : 'bg-gradient-to-br from-[#C9A96E]/15 via-[#FAF8F5] to-[#C9A96E]/5'
+          ? 'border-[#3D281E]' 
+          : 'border-[#F0E4DA]'
       }`}>
-        {/* Ondas decorativas */}
+        {/* Fondo con gradiente y textura */}
+        <div className={`absolute inset-0 ${
+          isDark 
+            ? 'bg-gradient-to-br from-[#1E120C] via-[#2A1B14] to-[#1E120C]' 
+            : 'bg-gradient-to-br from-[#FFF9F6] via-[#F5EDE8] to-[#FFF9F6]'
+        }`}>
+          {/* Efectos de luz ambiental */}
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#D4AF37]/10 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#D4AF37]/5 rounded-full blur-[140px] pointer-events-none" />
+          
+          {/* Patrón decorativo */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px] pointer-events-none" />
+          
+          {/* Círculos decorativos flotantes */}
+          <div className="absolute top-10 left-10 w-3 h-3 rounded-full bg-[#D4AF37] opacity-10 animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-2 h-2 rounded-full bg-[#D4AF37] opacity-15 animate-pulse delay-75" />
+          <div className="absolute top-1/3 right-1/4 w-4 h-4 rounded-full border border-[#D4AF37] opacity-10 animate-pulse delay-150" />
+          <div className="absolute bottom-1/3 left-1/4 w-5 h-5 rounded-full border border-[#D4AF37] opacity-5 animate-pulse delay-200" />
+        </div>
+
+        {/* Líneas decorativas onduladas */}
         <svg 
-          className="absolute inset-0 w-full h-full opacity-30 dark:opacity-20"
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
           viewBox="0 0 1000 600"
           preserveAspectRatio="xMidYMid meet"
         >
-          <path d="M 0 100 Q 150 20 250 120 T 500 80 T 750 150 T 1000 60" stroke="#C9A96E" strokeWidth="1.5" fill="none" opacity="0.6" />
-          <path d="M 0 180 Q 200 300 350 200 T 600 280 T 850 180 T 1000 250" stroke="#C9A96E" strokeWidth="1" fill="none" opacity="0.4" />
-          <path d="M 0 250 Q 180 350 300 270 T 550 320 T 800 260 T 1000 320" stroke="#C9A96E" strokeWidth="0.5" fill="none" opacity="0.2" />
-          <circle cx="500" cy="350" r="4" fill="#C9A96E" opacity="0.15" />
+          <path d="M 0 150 Q 200 80 400 150 T 800 150 T 1000 120" stroke="#D4AF37" strokeWidth="1.5" fill="none" opacity="0.4" />
+          <path d="M 0 250 Q 250 300 500 250 T 1000 280" stroke="#D4AF37" strokeWidth="1" fill="none" opacity="0.3" />
+          <path d="M 0 350 Q 300 400 600 350 T 1000 380" stroke="#D4AF37" strokeWidth="0.5" fill="none" opacity="0.2" />
         </svg>
 
-        {/* Efectos de luz */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#C9A96E]/10 rounded-full blur-[120px] pointer-events-none animate-[pulse_8s_ease-in-out_infinite]" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4B87A]/5 rounded-full blur-[100px] pointer-events-none animate-[pulse_10s_ease-in-out_infinite] delay-1000" />
-
-        <div className="relative z-10 text-center max-w-3xl px-6">
-          <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full border backdrop-blur-xl mb-8 ${
+        <div className="relative z-10 text-center max-w-4xl px-6 py-16">
+          {/* Badge superior */}
+          <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-sm border mb-6 ${
             isDark 
-              ? 'bg-[#C9A96E]/10 border-[#C9A96E]/20' 
-              : 'bg-white/40 border-[#C9A96E]/30'
+              ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' 
+              : 'bg-[#D4AF37]/10 border-[#D4AF37]/20'
           }`}>
-            <Sparkles className="w-3.5 h-3.5 text-[#C9A96E] animate-[spin_4s_linear_infinite]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
             <span className={`text-[8px] tracking-[0.3em] uppercase font-black ${
-              isDark ? 'text-[#C9A96E]/80' : 'text-[#C9A96E]'
+              isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'
             }`}>
-              ✦ Galería Fresh Nails ✦
+              ✦ Galería de Arte ✦
             </span>
           </div>
 
-          <h1 className={`text-5xl md:text-7xl lg:text-8xl font-light font-serif tracking-wide ${
-            isDark ? 'text-white' : 'text-neutral-800'
+          {/* Título principal */}
+          <h1 className={`text-5xl md:text-7xl lg:text-8xl font-light font-serif tracking-wide leading-[1.1] ${
+            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
           }`}>
-            Galería de{' '}
-            <span className="font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#C9A96E] via-[#D4B87A] to-[#C9A96E] bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite]">
-              Arte
+            Inspiración
+            <span className="block font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#D4AF37] bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite] mt-2">
+              Visual
             </span>
           </h1>
 
-          <div className="w-16 h-[2px] bg-[#C9A96E] mx-auto my-6" />
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto my-6" />
 
           <p className={`text-sm font-light max-w-md mx-auto ${
-            isDark ? 'text-neutral-400' : 'text-neutral-500'
+            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
           }`}>
             Descubre nuestra colección de diseños exclusivos, creados por nuestros artistas.
           </p>
 
-          <button 
-            onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            className={`group mt-10 px-8 py-3.5 rounded-full text-[10px] tracking-[0.25em] uppercase font-medium transition-all duration-500 flex items-center gap-3 mx-auto shadow-2xl ${
-              isDark 
-                ? 'bg-white text-neutral-950 hover:bg-[#C9A96E] hover:text-white shadow-white/5' 
-                : 'bg-neutral-900 text-white hover:bg-[#C9A96E] hover:text-white shadow-neutral-900/20'
-            }`}
-          >
-            Explorar Colección
-            <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-1 transition-transform duration-300" />
-          </button>
+          {/* Indicador de scroll */}
+          <div className="flex flex-col items-center gap-2 mt-10">
+            <button 
+              onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              className={`group inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[9px] tracking-[0.25em] uppercase font-medium transition-all duration-500 ${
+                isDark 
+                  ? 'text-[#A89588] hover:text-[#D4AF37]' 
+                  : 'text-[#5C4A3E] hover:text-[#D4AF37]'
+              }`}
+            >
+              <span>Explorar Colección</span>
+              <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-1 transition-transform duration-300" />
+            </button>
+            <div className="w-px h-6 bg-[#D4AF37] opacity-30" />
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span 
+                  key={i}
+                  className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#D4AF37]/40' : 'bg-[#D4AF37]/40'} animate-pulse`}
+                  style={{ animationDelay: `${i * 0.3}s` }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* ============================================================ */}
       {/* GALERÍA */}
       {/* ============================================================ */}
-      <div ref={galleryRef} className={`max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-20 pb-20`}>
+      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-6 relative z-20 pb-20">
 
-        {/* CONTROLES FLOTANTES — REDISEÑADOS */}
-        <div className={`rounded-2xl border shadow-2xl p-5 md:p-6 mb-10 backdrop-blur-xl transition-all duration-500 ${
+        {/* CONTROLES FLOTANTES */}
+        <div className={`rounded-2xl border shadow-lg p-5 md:p-6 mb-10 transition-all duration-300 ${
           isDark 
-            ? 'bg-neutral-900/80 border-neutral-800/60 shadow-black/40' 
-            : 'bg-white/90 border-neutral-200/50 shadow-neutral-200/20'
+            ? 'bg-[#2A1B14]/90 border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.3)]' 
+            : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
         }`}>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Tabs */}
             <div className={`flex gap-1 rounded-full p-1 w-full md:w-auto ${
-              isDark ? 'bg-neutral-800/50' : 'bg-neutral-100'
+              isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
             }`}>
               <button
                 onClick={() => setActiveTab('public')}
                 className={`flex-1 md:flex-none px-5 py-2.5 rounded-full text-[9px] tracking-[0.2em] uppercase font-black transition-all duration-500 ${
                   activeTab === 'public' 
                     ? isDark 
-                      ? 'bg-neutral-700 text-white shadow-lg' 
-                      : 'bg-white text-neutral-900 shadow-sm' 
-                    : isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-400 hover:text-neutral-600'
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_4px_15px_rgba(26,14,10,0.2)]' 
+                    : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
                 }`}
               >
                 Colección
@@ -465,9 +464,9 @@ export default function GaleriaPage() {
                 className={`flex-1 md:flex-none px-5 py-2.5 rounded-full text-[9px] tracking-[0.2em] uppercase font-black transition-all duration-500 ${
                   activeTab === 'personal' 
                     ? isDark 
-                      ? 'bg-neutral-700 text-white shadow-lg' 
-                      : 'bg-white text-neutral-900 shadow-sm' 
-                    : isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-400 hover:text-neutral-600'
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_4px_15px_rgba(26,14,10,0.2)]' 
+                    : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
                 }`}
               >
                 Mis Fotos <span className="ml-1 text-[7px] opacity-50">({clientImages.length})</span>
@@ -477,14 +476,16 @@ export default function GaleriaPage() {
             {/* Controles de vista */}
             <div className="flex items-center gap-3 w-full md:w-auto justify-end">
               <div className={`flex gap-1 rounded-full p-1 ${
-                isDark ? 'bg-neutral-800/50' : 'bg-neutral-100'
+                isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
               }`}>
                 <button
                   onClick={() => setViewMode('masonry')}
                   className={`p-2 rounded-full transition-all duration-300 ${
                     viewMode === 'masonry' 
-                      ? isDark ? 'bg-neutral-700 text-white shadow-lg' : 'bg-white text-neutral-900 shadow-sm' 
-                      : isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      ? isDark 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_2px_10px_rgba(212,175,55,0.2)]' 
+                        : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_2px_10px_rgba(26,14,10,0.15)]' 
+                      : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#A89588] hover:text-[#1A0E0A]'
                   }`}
                 >
                   <Grid3x3 className="w-3.5 h-3.5" />
@@ -493,8 +494,10 @@ export default function GaleriaPage() {
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-full transition-all duration-300 ${
                     viewMode === 'grid' 
-                      ? isDark ? 'bg-neutral-700 text-white shadow-lg' : 'bg-white text-neutral-900 shadow-sm' 
-                      : isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      ? isDark 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_2px_10px_rgba(212,175,55,0.2)]' 
+                        : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_2px_10px_rgba(26,14,10,0.15)]' 
+                      : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#A89588] hover:text-[#1A0E0A]'
                   }`}
                 >
                   <LayoutList className="w-3.5 h-3.5" />
@@ -506,10 +509,10 @@ export default function GaleriaPage() {
           {/* Filtros de categoría */}
           {activeTab === 'public' && (
             <div className={`flex flex-wrap items-center gap-2 mt-4 pt-4 border-t ${
-              isDark ? 'border-neutral-800/60' : 'border-neutral-200/50'
+              isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
             }`}>
               <span className={`text-[7px] tracking-[0.3em] uppercase font-black mr-2 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
               }`}>
                 Filtrar:
               </span>
@@ -525,16 +528,15 @@ export default function GaleriaPage() {
                   onClick={() => setSensoryFilter(btn.id as any)}
                   className={`group relative px-4 py-1.5 rounded-full text-[8px] tracking-[0.15em] font-black uppercase transition-all duration-500 ${
                     sensoryFilter === btn.id 
-                      ? 'bg-[#C9A96E] text-white shadow-lg shadow-[#C9A96E]/20 scale-105' 
+                      ? isDark 
+                        ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                        : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
                       : isDark 
-                        ? 'bg-neutral-800/50 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700' 
-                        : 'bg-neutral-100/80 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200'
+                        ? 'bg-[#2A1B14]/50 text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' 
+                        : 'bg-[#FFF9F6]/80 text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
                   }`}
                 >
                   <span className="mr-1">{btn.icon}</span> {btn.label}
-                  {sensoryFilter === btn.id && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/80 animate-ping" />
-                  )}
                 </button>
               ))}
             </div>
@@ -547,35 +549,22 @@ export default function GaleriaPage() {
         {activeTab === 'public' ? (
           <>
             {filteredImages.length === 0 ? (
-              <div className={`text-center py-20 rounded-3xl border border-dashed transition-all duration-500 ${
+              <div className={`text-center py-20 rounded-2xl border border-dashed transition-all duration-300 ${
                 isDark 
-                  ? 'border-neutral-800/60 bg-neutral-900/20' 
-                  : 'border-neutral-200/60 bg-white/40'
+                  ? 'border-[#3D281E] bg-[#2A1B14]/40' 
+                  : 'border-[#F0E4DA] bg-white'
               }`}>
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
-                  isDark ? 'bg-neutral-800/50' : 'bg-neutral-100'
+                  isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <ImageIcon className={`w-9 h-9 ${
-                    isDark ? 'text-neutral-600' : 'text-neutral-400'
-                  }`} />
+                  <ImageIcon className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
                 </div>
-                <p className={`text-sm font-medium ${
-                  isDark ? 'text-neutral-300' : 'text-neutral-700'
-                }`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   No hay imágenes en esta categoría
                 </p>
-                <p className={`text-xs mt-1 ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>
+                <p className={`text-xs mt-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   Las fotos subidas por el administrador aparecerán aquí automáticamente
                 </p>
-                <div className="flex items-center justify-center gap-1.5 mt-4">
-                  {['✨', '💎', '🌟'].map((emoji, i) => (
-                    <span key={i} className="text-lg animate-[bounce_2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.2}s` }}>
-                      {emoji}
-                    </span>
-                  ))}
-                </div>
               </div>
             ) : (
               <div className={viewMode === 'masonry' ? 'columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-5 space-y-4 md:space-y-5' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5'}>
@@ -599,9 +588,15 @@ export default function GaleriaPage() {
                     >
                       <div 
                         onClick={() => openLightbox(img)}
-                        className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-700 ${
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 ${
                           viewMode === 'masonry' ? '' : `h-full ${heightClass}`
-                        } ${isHovered ? 'shadow-2xl scale-[1.02] z-10' : isDark ? 'shadow-black/20' : 'shadow-neutral-200/30'}`}
+                        } ${
+                          isHovered 
+                            ? isDark 
+                              ? 'shadow-[0_15px_40px_rgba(212,175,55,0.15)] scale-[1.02]' 
+                              : 'shadow-[0_15px_40px_rgba(212,175,55,0.2)] scale-[1.02]' 
+                            : isDark ? 'shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+                        }`}
                       >
                         <img 
                           src={img.image_url} 
@@ -627,7 +622,7 @@ export default function GaleriaPage() {
                               <button 
                                 onClick={(e) => handleLike(img.id, e)} 
                                 className={`p-1.5 rounded-full transition-all duration-300 ${
-                                  isLiked ? 'text-red-500' : 'text-white/60 hover:text-white'
+                                  isLiked ? 'text-rose-400' : 'text-white/60 hover:text-white'
                                 }`}
                               >
                                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
@@ -638,7 +633,7 @@ export default function GaleriaPage() {
 
                         {/* Badge de origen */}
                         <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[6px] text-white/90 tracking-[0.25em] uppercase font-black backdrop-blur-md ${
-                          isAdmin ? 'bg-pink-500/70' : 'bg-amber-500/70'
+                          isAdmin ? 'bg-[#D4AF37]/80' : 'bg-[#A89588]/80'
                         }`}>
                           {isAdmin ? '👑 Studio' : '📸 Cliente'}
                         </div>
@@ -654,9 +649,9 @@ export default function GaleriaPage() {
                           {img.likes || 0}
                         </div>
 
-                        {/* Precio (solo para fotos de admin) */}
+                        {/* Precio */}
                         {isAdmin && img.price && (
-                          <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[8px] text-[#C9A96E] font-black">
+                          <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm px-2.5 py-1 rounded-full text-[8px] text-[#D4AF37] font-black">
                             {img.price}
                           </div>
                         )}
@@ -673,35 +668,22 @@ export default function GaleriaPage() {
           /* ============================================================ */
           <div>
             {clientImages.length === 0 ? (
-              <div className={`text-center py-20 rounded-3xl border border-dashed transition-all duration-500 ${
+              <div className={`text-center py-20 rounded-2xl border border-dashed transition-all duration-300 ${
                 isDark 
-                  ? 'border-neutral-800/60 bg-neutral-900/20' 
-                  : 'border-neutral-200/60 bg-white/40'
+                  ? 'border-[#3D281E] bg-[#2A1B14]/40' 
+                  : 'border-[#F0E4DA] bg-white'
               }`}>
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
-                  isDark ? 'bg-neutral-800/50' : 'bg-neutral-100'
+                  isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <Camera className={`w-9 h-9 ${
-                    isDark ? 'text-neutral-600' : 'text-neutral-400'
-                  }`} />
+                  <Camera className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
                 </div>
-                <p className={`text-sm font-medium ${
-                  isDark ? 'text-neutral-300' : 'text-neutral-700'
-                }`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   Tu historial está vacío
                 </p>
-                <p className={`text-xs mt-1 max-w-xs mx-auto ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>
+                <p className={`text-xs mt-1 max-w-xs mx-auto ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   Sube tus primeros diseños para mantener un seguimiento de tu evolución
                 </p>
-                <div className="flex items-center justify-center gap-1.5 mt-4">
-                  {['✨', '💎', '🌟'].map((emoji, i) => (
-                    <span key={i} className="text-lg animate-[bounce_2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.2}s` }}>
-                      {emoji}
-                    </span>
-                  ))}
-                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
@@ -712,10 +694,10 @@ export default function GaleriaPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05, duration: 0.4 }}
                     onClick={() => openLightbox(img)}
-                    className={`relative rounded-2xl overflow-hidden cursor-pointer group aspect-square transition-all duration-500 ${
+                    className={`relative rounded-2xl overflow-hidden cursor-pointer group aspect-square transition-all duration-500 hover:-translate-y-1 ${
                       isDark 
-                        ? 'bg-neutral-900/40 hover:shadow-2xl hover:shadow-pink-500/5' 
-                        : 'bg-neutral-100 hover:shadow-2xl hover:shadow-pink-200/20'
+                        ? 'bg-[#2A1B14] hover:shadow-[0_10px_30px_rgba(212,175,55,0.1)]' 
+                        : 'bg-[#FFF9F6] hover:shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
                     }`}
                   >
                     <img 
@@ -748,7 +730,7 @@ export default function GaleriaPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* LIGHTBOX — REDISEÑADO */}
+      {/* LIGHTBOX — CON DISEÑO PREMIUM */}
       {/* ============================================================ */}
       <AnimatePresence>
         {isModalOpen && selectedImage && (
@@ -759,7 +741,6 @@ export default function GaleriaPage() {
             className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 md:p-6"
             onClick={closeLightbox}
           >
-            {/* Botón cerrar */}
             <motion.button 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -770,7 +751,6 @@ export default function GaleriaPage() {
               <X className="w-6 h-6" />
             </motion.button>
 
-            {/* Navegación */}
             {filteredImages.length > 1 && (
               <>
                 <motion.button 
@@ -794,7 +774,6 @@ export default function GaleriaPage() {
               </>
             )}
 
-            {/* Contador */}
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -804,7 +783,6 @@ export default function GaleriaPage() {
               {filteredImages.findIndex(i => i.id === selectedImage.id) + 1} / {filteredImages.length}
             </motion.div>
 
-            {/* Contenido del lightbox */}
             <motion.div 
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -814,10 +792,11 @@ export default function GaleriaPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className={`flex flex-col md:flex-row h-full rounded-2xl overflow-hidden shadow-2xl ${
-                isDark ? 'bg-neutral-900' : 'bg-white'
+                isDark 
+                  ? 'bg-[#2A1B14] border border-[#3D281E]' 
+                  : 'bg-white border border-[#F0E4DA]'
               }`}>
-                {/* Imagen */}
-                <div className="md:w-3/5 bg-neutral-950 flex items-center justify-center p-4 md:p-6 min-h-[300px] md:min-h-[500px]">
+                <div className="md:w-3/5 bg-[#1E120C] flex items-center justify-center p-4 md:p-6 min-h-[300px] md:min-h-[500px]">
                   <img 
                     src={selectedImage.image_url} 
                     alt={selectedImage.title}
@@ -825,79 +804,66 @@ export default function GaleriaPage() {
                   />
                 </div>
 
-                {/* Info lateral */}
                 <div className={`md:w-2/5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto ${
-                  isDark ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-900'
+                  isDark ? 'bg-[#2A1B14] text-[#FFF9F6]' : 'bg-white text-[#1A0E0A]'
                 }`}>
                   <div className="space-y-5">
-                    {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`text-[7px] tracking-[0.2em] uppercase font-black px-3 py-1 rounded-full ${
-                        isDark ? 'bg-white/10 text-white/80' : 'bg-neutral-100 text-neutral-600'
+                        isDark ? 'bg-[#3D281E] text-[#A89588]' : 'bg-[#FFF9F6] text-[#5C4A3E]'
                       }`}>
                         {selectedImage.sensory_category || 'Exclusivo'}
                       </span>
                       {selectedImage.source === 'admin' && (
-                        <span className="text-[7px] tracking-[0.2em] uppercase font-black px-3 py-1 rounded-full bg-pink-500/30 text-pink-300">
+                        <span className="text-[7px] tracking-[0.2em] uppercase font-black px-3 py-1 rounded-full bg-[#D4AF37]/30 text-[#D4AF37]">
                           👑 Fresh Nails
                         </span>
                       )}
                     </div>
 
-                    {/* Título */}
                     <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-wide ${
-                      isDark ? 'text-white' : 'text-neutral-800'
+                      isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                     }`}>
                       {selectedImage.title}
                     </h2>
 
-                    {/* Descripción */}
                     {selectedImage.description && (
                       <p className={`text-sm font-light leading-relaxed ${
-                        isDark ? 'text-neutral-400' : 'text-neutral-500'
+                        isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                       }`}>
                         {selectedImage.description}
                       </p>
                     )}
 
-                    {/* Detalles */}
                     <div className={`space-y-3 pt-4 border-t ${
-                      isDark ? 'border-white/10' : 'border-neutral-200/60'
+                      isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                     }`}>
                       <div className="flex justify-between text-sm">
-                        <span className={`font-medium ${
-                          isDark ? 'text-neutral-500' : 'text-neutral-400'
-                        }`}>Artista</span>
-                        <span className={`font-light ${
-                          isDark ? 'text-white/80' : 'text-neutral-700'
-                        }`}>{selectedImage.client_name || 'Fresh Nails'}</span>
+                        <span className={`font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Artista</span>
+                        <span className={`font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                          {selectedImage.client_name || 'Fresh Nails'}
+                        </span>
                       </div>
                       {selectedImage.polish_used && (
                         <div className="flex justify-between text-sm">
-                          <span className={`font-medium ${
-                            isDark ? 'text-neutral-500' : 'text-neutral-400'
-                          }`}>Esmaltado</span>
-                          <span className={`font-light text-right ${
-                            isDark ? 'text-white/80' : 'text-neutral-700'
-                          }`}>{selectedImage.polish_used}</span>
+                          <span className={`font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Esmaltado</span>
+                          <span className={`font-light text-right ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                            {selectedImage.polish_used}
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between text-sm">
-                        <span className={`font-medium ${
-                          isDark ? 'text-neutral-500' : 'text-neutral-400'
-                        }`}>Visualizaciones</span>
-                        <span className={`font-light ${
-                          isDark ? 'text-white/80' : 'text-neutral-700'
-                        }`}>{selectedImage.views || 0}</span>
+                        <span className={`font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Visualizaciones</span>
+                        <span className={`font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                          {selectedImage.views || 0}
+                        </span>
                       </div>
                       {selectedImage.price && (
                         <div className={`flex justify-between pt-3 border-t ${
-                          isDark ? 'border-white/5' : 'border-neutral-200/60'
+                          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                         }`}>
-                          <span className={`font-medium ${
-                            isDark ? 'text-neutral-500' : 'text-neutral-400'
-                          }`}>Precio</span>
-                          <span className="text-2xl font-serif text-[#C9A96E]">
+                          <span className={`font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Precio</span>
+                          <span className="text-2xl font-serif text-[#D4AF37]">
                             {selectedImage.price}
                           </span>
                         </div>
@@ -905,33 +871,33 @@ export default function GaleriaPage() {
                     </div>
                   </div>
 
-                  {/* Botones de acción */}
                   <div className={`flex items-center gap-3 pt-6 border-t mt-4 ${
-                    isDark ? 'border-white/10' : 'border-neutral-200/60'
+                    isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                   }`}>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleLike(selectedImage.id, e); }}
                       className={`flex-1 py-3.5 rounded-full text-[9px] tracking-[0.2em] uppercase font-black transition-all duration-300 flex items-center justify-center gap-2 ${
                         likedImages.has(selectedImage.id) 
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
                           : isDark 
-                            ? 'bg-white/10 text-white/80 hover:bg-white/20' 
-                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                            ? 'bg-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#4A3227]' 
+                            : 'bg-[#FFF9F6] text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
                       }`}
                     >
                       <Heart className={`w-4 h-4 ${likedImages.has(selectedImage.id) ? 'fill-current' : ''}`} />
                       {likedImages.has(selectedImage.id) ? 'Inspirado' : 'Inspirar'}
                     </button>
 
-                    <button 
-                      className={`px-6 py-3.5 rounded-full text-[9px] tracking-[0.2em] uppercase font-black transition-all duration-300 flex items-center gap-2 shadow-xl ${
+                    <Link 
+                      href="/agenda" 
+                      className={`px-6 py-3.5 rounded-full text-[9px] tracking-[0.2em] uppercase font-black transition-all duration-300 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
                         isDark 
-                          ? 'bg-[#C9A96E] text-white hover:bg-[#B8955A] shadow-[#C9A96E]/20' 
-                          : 'bg-neutral-900 text-white hover:bg-[#C9A96E] hover:text-white shadow-neutral-900/20'
+                          ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
+                          : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A] shadow-[0_4px_15px_rgba(26,14,10,0.15)]'
                       }`}
                     >
                       <Calendar className="w-3.5 h-3.5" /> Agendar
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -940,9 +906,6 @@ export default function GaleriaPage() {
         )}
       </AnimatePresence>
 
-      {/* ============================================================ */}
-      {/* STYLES GLOBALES */}
-      {/* ============================================================ */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-8px); }
