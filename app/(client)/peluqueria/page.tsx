@@ -577,32 +577,34 @@ export default function PeluqueriaPage() {
 </div>
 
         {/* ============================================================ */}
-        {/* TABS */}
-        {/* ============================================================ */}
-        <div className={`flex justify-center border-b pb-0 ${
-          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-        }`}>
-          {(['servicios', 'galeria', 'testimonios'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`relative px-8 py-4 text-xs uppercase tracking-[0.2em] font-black transition-all duration-500 ${
-                activeTab === tab 
-                  ? 'text-[#D4AF37]' 
-                  : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
-              }`}
-            >
-              <span className="relative z-10">{tab === 'servicios' ? 'Rituales' : tab === 'galeria' ? 'Inspiración' : 'Testimonios'}</span>
-              {activeTab === tab && (
-                <motion.span 
-                  layoutId="tabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#D4AF37]"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
+{/* TABS — RESPONSIVE */}
+{/* ============================================================ */}
+<div className={`flex justify-center border-b pb-0 overflow-x-auto ${
+  isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+}`}>
+  {(['servicios', 'galeria', 'testimonios'] as const).map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`relative px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-black whitespace-nowrap transition-all duration-500 ${
+        activeTab === tab 
+          ? 'text-[#D4AF37]' 
+          : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
+      }`}
+    >
+      <span className="relative z-10">
+        {tab === 'servicios' ? 'Rituales' : tab === 'galeria' ? 'Inspiración' : 'Testimonios'}
+      </span>
+      {activeTab === tab && (
+        <motion.span 
+          layoutId="tabIndicator"
+          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#D4AF37]"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      )}
+    </button>
+  ))}
+</div>
 
         {/* ============================================================ */}
         {/* TAB: SERVICIOS */}
