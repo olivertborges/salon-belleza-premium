@@ -210,56 +210,68 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [selectedDate, selectedProfessional])
 
-  // Clasificador de categorías por palabras clave
+  // Clasificador de categorías por palabras clave mejorado (evita conflictos de tildes)
   const getServiceCategory = useCallback((category: string): string => {
     if (!category) return 'others'
-    const normalized = category.toLowerCase().trim()
-    if (normalized.includes('uña') || normalized.includes('nail') || normalized.includes('manicur')) return 'nails'
-    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja')) return 'micropigmentation'
-    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello') || normalized.includes('hair')) return 'hair'
+    const normalized = category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+    
+    if (normalized.includes('una') || normalized.includes('nail') || normalized.includes('manicur') || normalized.includes('pedicur') || normalized.includes('esmalte')) return 'nails'
+    if (normalized.includes('micro') || normalized.includes('pigment') || normalized.includes('ceja') || normalized.includes('brow')) return 'micropigmentation'
+    if (normalized.includes('pelu') || normalized.includes('pelo') || normalized.includes('cabello') || normalized.includes('hair') || normalized.includes('corte') || normalized.includes('color')) return 'hair'
+    
     return 'others'
   }, [])
 
   // ============================================================
-  // FILTRADO ESTRICTO DE SERVICIOS POR PROFESIONAL
+  // FILTRADO ROBUSTO Y FLEXIBLE DE SERVICIOS POR PROFESIONAL
   // ============================================================
   const servicesByCategory = useMemo(() => {
     if (!selectedProfessional) return { nails: [], micropigmentation: [], hair: [], others: [] }
 
-    const profSpecialty = selectedProfessional.specialty?.toLowerCase() || ''
+    const profSpecialty = selectedProfessional.specialty?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
     const profId = selectedProfessional.id
 
-    const baseServices = services.filter(service => {
+    // Paso A: Filtrar por vinculación directa o por la especialidad escrita textualmente
+    let baseServices = services.filter(service => {
       if (service.staff_id && service.staff_id !== profId) {
         return false
       }
 
-      const sCat = service.category?.toLowerCase() || ''
-      const sName = service.name?.toLowerCase() || ''
+      const sCat = service.category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
+      const sName = service.name?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
 
-      const isNailsProf = profSpecialty.includes('uña') || profSpecialty.includes('nail') || profSpecialty.includes('manicur')
-      const isMicroProf = profSpecialty.includes('micro') || profSpecialty.includes('ceja') || profSpecialty.includes('pigment')
-      const isHairProf = profSpecialty.includes('pelo') || profSpecialty.includes('pelu') || profSpecialty.includes('color') || profSpecialty.includes('hair')
+      const isNailsProf = profSpecialty.includes('una') || profSpecialty.includes('nail') || profSpecialty.includes('manicur') || profSpecialty.includes('pedicur')
+      const isMicroProf = profSpecialty.includes('micro') || profSpecialty.includes('ceja') || profSpecialty.includes('pigment') || profSpecialty.includes('brow')
+      const isHairProf = profSpecialty.includes('pelo') || profSpecialty.includes('pelu') || profSpecialty.includes('color') || profSpecialty.includes('hair') || profSpecialty.includes('estilista')
 
       if (isNailsProf) {
-        return sCat.includes('uña') || sCat.includes('nail') || sCat.includes('manicur') || sName.includes('uñas') || sName.includes('manicura')
+        return sCat.includes('una') || sCat.includes('nail') || sCat.includes('manicur') || sCat.includes('pedicur') || sName.includes('una') || sName.includes('manicura') || sName.includes('esmalte')
       }
       if (isMicroProf) {
-        return sCat.includes('micro') || sCat.includes('ceja') || sCat.includes('pigment') || sName.includes('microblading')
+        return sCat.includes('micro') || sCat.includes('ceja') || sCat.includes('pigment') || sCat.includes('brow') || sName.includes('micro') || sName.includes('cejas')
       }
       if (isHairProf) {
-        return sCat.includes('pelo') || sCat.includes('pelu') || sCat.includes('color') || sCat.includes('hair') || sName.includes('corte')
+        return sCat.includes('pelo') || sCat.includes('pelu') || sCat.includes('color') || sCat.includes('hair') || sName.includes('corte') || sName.includes('peinado')
       }
 
       return true
     })
 
+    // FALLBACK DE SEGURIDAD: Si el filtro por texto fue muy estricto y la dejó sin servicios, le asignamos todos los activos del salón para que el cliente pueda elegir
+    if (baseServices.length === 0) {
+      baseServices = services.filter(service => !service.staff_id || service.staff_id === profId)
+    }
+
+    // Paso B: Aplicar la query del buscador si existe
     const filtered = baseServices.filter(s => {
       if (!searchQuery) return true
-      const query = searchQuery.toLowerCase()
-      return s.name.toLowerCase().includes(query) || (s.description && s.description.toLowerCase().includes(query))
+      const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      const nameNorm = s.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      const descNorm = (s.description || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      return nameNorm.includes(query) || descNorm.includes(query)
     })
 
+    // Paso C: Organizar en los contenedores visuales definitivos
     const groups: Record<string, Service[]> = { nails: [], micropigmentation: [], hair: [], others: [] }
     filtered.forEach(s => {
       const cat = getServiceCategory(s.category)
@@ -404,19 +416,21 @@ function AgendaContent() {
           <p className="text-xs text-stone-400 mt-1">El catálogo se adaptará de forma automática al profesional que selecciones.</p>
         </div>
 
-        {/* PASOS DE PROGRESO */}
+        {/* PASOS DE PROGRESO TOTALMENTE ADAPTATIVOS SIN SCROLL */}
         {step < 5 && (
-          <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 overflow-x-auto ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white shadow-sm'}`}>
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} className="flex items-center gap-2 flex-shrink-0">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${step === num ? 'bg-rose-500 text-white' : step > num ? 'bg-emerald-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
-                  {step > num ? <Check className="w-3.5 h-3.5" /> : num}
+          <div className={`p-3 rounded-2xl border ${isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white shadow-sm'}`}>
+            <div className="grid grid-cols-4 gap-1 sm:gap-4 w-full justify-items-center">
+              {[1, 2, 3, 4].map((num) => (
+                <div key={num} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center sm:text-left">
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${step === num ? 'bg-rose-500 text-white' : step > num ? 'bg-emerald-500 text-white' : 'bg-stone-200 text-stone-400'}`}>
+                    {step > num ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : num}
+                  </div>
+                  <span className={`text-[9px] sm:text-xs tracking-tight transition-all ${step === num ? 'font-bold text-rose-500' : 'text-stone-400'}`}>
+                    {['Perfil', 'Servicios', 'Horario', 'Datos'][num - 1]}
+                  </span>
                 </div>
-                <span className={`text-xs ${step === num ? 'font-bold text-rose-500' : 'text-stone-400'}`}>
-                  {['Profesional', 'Servicios', 'Horario', 'Confirmación'][num - 1]}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
