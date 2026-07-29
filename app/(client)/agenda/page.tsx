@@ -184,7 +184,7 @@ function AgendaContent() {
         }
       } catch (err) {
         setError('No pudimos cargar la agenda correctamente. Por favor, refresca la página.')
-      } finaly {
+      } finally {
         if (isMounted) setLoading(false)
       }
     }
