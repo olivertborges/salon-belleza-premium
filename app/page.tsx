@@ -66,10 +66,10 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
         <Link href="/" className="flex flex-col tracking-widest group">
           <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
-            SALON FRESH
+            SALON FRESH NAILS
           </span>
           <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-            NAILS & BEAUTY ATELIER
+            NAILS & BEAUTY
           </span>
         </Link>
 
