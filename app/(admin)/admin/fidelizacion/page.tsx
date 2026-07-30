@@ -1,16 +1,15 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { 
-  Crown, Gift, Plus, Trash2, Sparkles, 
+  Crown, Gift, Plus, Trash2,
   Percent, Layers, Edit3, Check, X, RefreshCw,
-  Save, Users, Star, Award, Zap, AlertCircle,
-  TrendingUp, Calendar, Package, PlusCircle
+  AlertCircle, ChevronLeft
 } from 'lucide-react'
 
 interface Level {
@@ -43,6 +42,8 @@ const DEFAULT_LEVELS = [
   { name: 'Platino', emoji: '💎', min_points: 3000 }
 ]
 
+const GOLD_PALETTE = { primary: '#D4AF37', light: '#E8D5A0', dark: '#C9A96E' }
+
 export default function AdminVIPConfigPage() {
   const { tenantId, loading: authLoading } = useAuth()
   const { settings } = useSettings()
@@ -64,39 +65,19 @@ export default function AdminVIPConfigPage() {
   const [showLevelModal, setShowLevelModal] = useState(false)
   const [showRewardModal, setShowRewardModal] = useState(false)
 
+  // Memorización de estilos dinámicos de gradiente
+  const headerGradient = useMemo(() => ({
+    backgroundImage: `linear-gradient(135deg, ${GOLD_PALETTE.primary} 0%, ${GOLD_PALETTE.dark} 50%, ${GOLD_PALETTE.light} 100%)`
+  }), [])
+
   // ============================================================
-  // PALETA DE COLORES - DORADO PROTAGONISTA
+  // PETICIONES A SUPABASE OPTIMIZADAS
   // ============================================================
-  const gold = '#D4AF37'
-  const goldLight = '#E8D5A0'
-  const goldDark = '#C9A96E'
-  const pink = '#EC4899'
-  const blue = '#3B82F6'
-
-  const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold}, ${goldLight}, ${gold})`
-  }
-
-  const headerGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
-  }
-
-  const primaryBgStyle = { backgroundColor: gold }
-
-  useEffect(() => {
-    if (tenantId) {
-      fetchConfig()
-    } else if (authLoading === false || authLoading === undefined) {
-      setLoading(false)
-    }
-  }, [tenantId, authLoading])
-
-  const fetchConfig = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    } else {
-      setRefreshing(true)
-    }
+  const fetchConfig = useCallback(async (showLoading = true) => {
+    if (!tenantId) return
+    
+    if (showLoading) setLoading(true)
+    else setRefreshing(true)
     setError(null)
 
     try {
@@ -125,7 +106,9 @@ export default function AdminVIPConfigPage() {
         const { error: insertError } = await supabase
           .from('vip_levels')
           .insert(defaultLevels)
+        
         if (insertError) throw insertError
+        
         const { data: newLevels } = await supabase
           .from('vip_levels')
           .select('*')
@@ -144,12 +127,23 @@ export default function AdminVIPConfigPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [tenantId])
 
-  const handleRefresh = () => {
-    fetchConfig(true)
-  }
+  useEffect(() => {
+    if (tenantId) {
+      fetchConfig(true)
+    } else if (authLoading === false || authLoading === undefined) {
+      setLoading(false)
+    }
+  }, [tenantId, authLoading, fetchConfig])
 
+  const handleRefresh = useCallback(() => {
+    fetchConfig(false)
+  }, [fetchConfig])
+
+  // ============================================================
+  // CONTROLADORES DE EVENTOS
+  // ============================================================
   const handleAddLevel = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) return
@@ -292,8 +286,9 @@ export default function AdminVIPConfigPage() {
     }
   }
 
-  const totalLevels = levels.length
-  const totalRewards = rewards.length
+  // Memorización de Contadores Globales
+  const totalLevels = useMemo(() => levels.length, [levels])
+  const totalRewards = useMemo(() => rewards.length, [rewards])
 
   if (authLoading || (loading && tenantId)) {
     return (
@@ -313,12 +308,8 @@ export default function AdminVIPConfigPage() {
 
   if (!tenantId) {
     return (
-      <div className={`flex flex-col items-center justify-center h-96 text-center p-6 max-w-md mx-auto ${
-        isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
-      }`}>
-        <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-4 shadow-sm ${
-          isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
+      <div className={`flex flex-col items-center justify-center h-96 text-center p-6 max-w-md mx-auto ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+        <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-4 shadow-sm ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Crown className="w-5 h-5 text-[#D4AF37] stroke-[1.5]" />
         </div>
         <p className="text-xs font-mono uppercase tracking-[0.2em] font-bold text-[#D4AF37]">
@@ -335,15 +326,10 @@ export default function AdminVIPConfigPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-6">
 
-        {/* ============================================================ */}
-        {/* CABECERA — DORADO PROTAGONISTA */}
-        {/* ============================================================ */}
-        <div 
-          className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
-          style={headerGradient}
-        >
+        {/* CABECERA */}
+        <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10" style={headerGradient}>
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -374,9 +360,7 @@ export default function AdminVIPConfigPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* MENSAJES */}
-        {/* ============================================================ */}
+        {/* MENSAJES DE ESTADO */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -395,9 +379,7 @@ export default function AdminVIPConfigPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* KPIS */}
-        {/* ============================================================ */}
+        {/* TARGETAS DE CONTROL / KPIS */}
         <div className="grid grid-cols-2 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -424,14 +406,10 @@ export default function AdminVIPConfigPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* CONTENIDO PRINCIPAL */}
-        {/* ============================================================ */}
+        {/* DIVISION PRINCIPAL DE CONFIGURACION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* ============================================================ */}
-          {/* COLUMNA IZQUIERDA: NIVELES VIP */}
-          {/* ============================================================ */}
+          {/* COLUMNA IZQUIERDA: GESTIÓN DE RANGOS */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Layers className="w-4 h-4 text-[#D4AF37]" />
@@ -440,19 +418,14 @@ export default function AdminVIPConfigPage() {
               </h2>
             </div>
 
-            {/* Formulario Nuevo Nivel */}
-            <form onSubmit={handleAddLevel} className={`rounded-2xl p-5 space-y-4 border shadow-sm transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`}>
+            <form onSubmit={handleAddLevel} className={`rounded-2xl p-5 space-y-4 border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Nombre</label>
                   <select 
                     value={newLevel.name} 
-                    onChange={e => setNewLevel({...newLevel, name: e.target.value})}
-                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    onChange={e => setNewLevel(prev => ({ ...prev, name: e.target.value }))}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     required
                   >
                     <option value="">Seleccionar</option>
@@ -466,10 +439,8 @@ export default function AdminVIPConfigPage() {
                   <input 
                     type="number" 
                     value={newLevel.min_points} 
-                    onChange={e => setNewLevel({...newLevel, min_points: Number(e.target.value)})}
-                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    onChange={e => setNewLevel(prev => ({ ...prev, min_points: Number(e.target.value) }))}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     required
                   />
                 </div>
@@ -479,23 +450,16 @@ export default function AdminVIPConfigPage() {
               </button>
             </form>
 
-            {/* Lista de Niveles */}
             <div className="space-y-2.5">
               {levels.length === 0 ? (
-                <div className={`text-center py-6 border border-dashed rounded-2xl font-mono text-xs ${
-                  isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'
-                }`}>
+                <div className={`text-center py-6 border border-dashed rounded-2xl font-mono text-xs ${isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'}`}>
                   No hay rangos configurados
                 </div>
               ) : (
                 levels.map((l) => (
-                  <div key={l.id} className={`group flex items-center justify-between p-4 rounded-xl border shadow-sm transition-all hover:shadow-md ${
-                    isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
-                  }`}>
+                  <div key={l.id} className={`group flex items-center justify-between p-4 rounded-xl border shadow-sm transition-all hover:shadow-md ${isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'}`}>
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-sm ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xl shadow-sm ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
                         {l.emoji || '⭐'}
                       </div>
                       <div className="min-w-0">
@@ -509,18 +473,14 @@ export default function AdminVIPConfigPage() {
                       <button 
                         type="button" 
                         onClick={() => { setEditingLevel(l); setShowLevelModal(true); }}
-                        className={`p-1.5 rounded-xl border transition-colors ${
-                          isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
-                        }`}
+                        className={`p-1.5 rounded-xl border transition-colors ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'}`}
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         type="button" 
                         onClick={() => l.id && handleDeleteLevel(l.id)}
-                        className={`p-1.5 rounded-xl border transition-colors ${
-                          isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-rose-500' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-rose-500'
-                        }`}
+                        className={`p-1.5 rounded-xl border transition-colors ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-rose-500' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-rose-500'}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -531,9 +491,7 @@ export default function AdminVIPConfigPage() {
             </div>
           </div>
 
-          {/* ============================================================ */}
-          {/* COLUMNA DERECHA: PREMIOS */}
-          {/* ============================================================ */}
+          {/* COLUMNA DERECHA: CATÁLOGO DE PREMIOS */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Gift className="w-4 h-4 text-[#D4AF37]" />
@@ -542,28 +500,21 @@ export default function AdminVIPConfigPage() {
               </h2>
             </div>
 
-            {/* Formulario Nuevo Premio */}
-            <form onSubmit={handleAddReward} className={`rounded-2xl p-5 space-y-4 border shadow-sm transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`}>
+            <form onSubmit={handleAddReward} className={`rounded-2xl p-5 space-y-4 border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
               <div>
                 <label className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Nombre del Premio</label>
                 <input 
                   type="text" placeholder="Ej: Set Nail Care Premium" required
-                  value={newReward.name} onChange={e => setNewReward({...newReward, name: e.target.value})}
-                  className={`w-full px-3 py-2 text-xs rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                    isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#5C4A3E]'
-                  }`}
+                  value={newReward.name} onChange={e => setNewReward(prev => ({ ...prev, name: e.target.value }))}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#5C4A3E]'}`}
                 />
               </div>
               <div>
                 <label className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Descripción</label>
                 <textarea 
                   placeholder="Describe el premio o sus condiciones..." required
-                  value={newReward.description} onChange={e => setNewReward({...newReward, description: e.target.value})}
-                  className={`w-full px-3 py-2 text-xs rounded-xl border h-14 transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${
-                    isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#5C4A3E]'
-                  }`}
+                  value={newReward.description} onChange={e => setNewReward(prev => ({ ...prev, description: e.target.value }))}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border h-14 transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#5C4A3E]'}`}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -571,10 +522,8 @@ export default function AdminVIPConfigPage() {
                   <label className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Puntos Requeridos</label>
                   <input 
                     type="number" placeholder="1500" required
-                    value={newReward.points_required || ''} onChange={e => setNewReward({...newReward, points_required: Number(e.target.value)})}
-                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    value={newReward.points_required || ''} onChange={e => setNewReward(prev => ({ ...prev, points_required: Number(e.target.value) }))}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                   />
                 </div>
                 <div>
@@ -584,10 +533,8 @@ export default function AdminVIPConfigPage() {
                   <input 
                     type="number" placeholder="15"
                     value={newReward.discount_percentage || ''} 
-                    onChange={e => setNewReward({...newReward, discount_percentage: Number(e.target.value)})}
-                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    onChange={e => setNewReward(prev => ({ ...prev, discount_percentage: Number(e.target.value) }))}
+                    className={`w-full px-3 py-2 text-xs font-mono rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                   />
                 </div>
               </div>
@@ -596,43 +543,36 @@ export default function AdminVIPConfigPage() {
               </button>
             </form>
 
-            {/* Grid de Premios */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {rewards.length === 0 ? (
-                <div className={`col-span-full text-center py-8 border border-dashed rounded-2xl font-mono text-xs ${
-                  isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'
-                }`}>
+                <div className={`col-span-full text-center py-8 border border-dashed rounded-2xl font-mono text-xs ${isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'}`}>
                   No hay premios creados
                 </div>
               ) : (
                 rewards.map((r) => (
-                  <div key={r.id} className={`group p-4 rounded-xl border shadow-sm transition-all hover:shadow-md flex flex-col ${
-                    isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
-                  }`}>
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <h4 className={`text-sm font-medium truncate ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{r.name}</h4>
-                        <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{r.description}</p>
-                      </div>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <button 
-                          type="button" 
-                          onClick={() => { setEditingReward(r); setShowRewardModal(true); }}
-                          className={`p-1.5 rounded-xl border transition-colors ${
-                            isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
-                          }`}
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => r.id && handleDeleteReward(r.id)}
-                          className={`p-1.5 rounded-xl border transition-colors ${
-                            isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-rose-500' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-rose-500'
-                          }`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                  <div key={r.id} className={`group p-4 rounded-xl border shadow-sm transition-all hover:shadow-md flex flex-col justify-between ${isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'}`}>
+                    <div>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <h4 className={`text-sm font-medium truncate ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{r.name}</h4>
+                          <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{r.description}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button 
+                            type="button" 
+                            onClick={() => { setEditingReward(r); setShowRewardModal(true); }}
+                            className={`p-1.5 rounded-xl border transition-colors ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'}`}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => r.id && handleDeleteReward(r.id)}
+                            className={`p-1.5 rounded-xl border transition-colors ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-rose-500' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-rose-500'}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
@@ -652,17 +592,11 @@ export default function AdminVIPConfigPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* MODAL: EDITAR NIVEL — CON TEMA */}
-        {/* ============================================================ */}
+        {/* MODAL: EDITAR NIVEL */}
         {showLevelModal && editingLevel && (
-          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }}>
-            <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
-                isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'
-              }`}>
+          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }}>
+            <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'}`}>
                 <X className={`w-5 h-5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
               </button>
 
@@ -678,10 +612,8 @@ export default function AdminVIPConfigPage() {
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Nombre</label>
                   <select 
                     value={editingLevel.name} 
-                    onChange={e => setEditingLevel({...editingLevel, name: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    onChange={e => setEditingLevel(prev => ({ ...prev, name: e.target.value }))}
+                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                   >
                     {Object.keys(LEVEL_EMOJIS).map(name => (
                       <option key={name} value={name}>{LEVEL_EMOJIS[name]} {name}</option>
@@ -693,16 +625,12 @@ export default function AdminVIPConfigPage() {
                   <input 
                     type="number" 
                     value={editingLevel.min_points} 
-                    onChange={e => setEditingLevel({...editingLevel, min_points: Number(e.target.value)})}
-                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    onChange={e => setEditingLevel(prev => ({ ...prev, min_points: Number(e.target.value) }))}
+                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                   />
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${
-                    isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
-                  }`}>Cancelar</button>
+                  <button type="button" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'}`}>Cancelar</button>
                   <button type="button" onClick={handleUpdateLevel} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
                     <Check className="w-4 h-4" /> Guardar
                   </button>
@@ -712,17 +640,11 @@ export default function AdminVIPConfigPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* MODAL: EDITAR PREMIO — CON TEMA */}
-        {/* ============================================================ */}
+        {/* MODAL: EDITAR PREMIO */}
         {showRewardModal && editingReward && (
-          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowRewardModal(false); setEditingReward(null); }}>
-            <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
-                isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'
-              }`}>
+          <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowRewardModal(false); setEditingReward(null); }}>
+            <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'}`}>
                 <X className={`w-5 h-5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
               </button>
 
@@ -737,19 +659,15 @@ export default function AdminVIPConfigPage() {
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Nombre</label>
                   <input 
-                    type="text" value={editingReward.name} onChange={e => setEditingReward({...editingReward, name: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    type="text" value={editingReward.name} onChange={e => setEditingReward(prev => ({ ...prev, name: e.target.value }))}
+                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                   />
                 </div>
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Descripción</label>
                   <textarea 
-                    value={editingReward.description} onChange={e => setEditingReward({...editingReward, description: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    value={editingReward.description} onChange={e => setEditingReward(prev => ({ ...prev, description: e.target.value }))}
+                    className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     rows={2}
                   />
                 </div>
@@ -757,26 +675,20 @@ export default function AdminVIPConfigPage() {
                   <div>
                     <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Puntos</label>
                     <input 
-                      type="number" value={editingReward.points_required} onChange={e => setEditingReward({...editingReward, points_required: Number(e.target.value)})}
-                      className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                      }`}
+                      type="number" value={editingReward.points_required} onChange={e => setEditingReward(prev => ({ ...prev, points_required: Number(e.target.value) }))}
+                      className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     />
                   </div>
                   <div>
                     <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Descuento %</label>
                     <input 
-                      type="number" value={editingReward.discount_percentage} onChange={e => setEditingReward({...editingReward, discount_percentage: Number(e.target.value)})}
-                      className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                      }`}
+                      type="number" value={editingReward.discount_percentage} onChange={e => setEditingReward(prev => ({ ...prev, discount_percentage: Number(e.target.value) }))}
+                      className={`w-full px-4 py-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${
-                    isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
-                  }`}>Cancelar</button>
+                  <button type="button" onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'}`}>Cancelar</button>
                   <button type="button" onClick={handleUpdateReward} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
                     <Check className="w-4 h-4" /> Guardar
                   </button>
@@ -787,12 +699,6 @@ export default function AdminVIPConfigPage() {
         )}
 
       </div>
-
-      <style jsx global>{`
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-      `}</style>
-
     </div>
   )
 }
