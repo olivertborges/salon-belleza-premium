@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, UserCircle
+  Camera, Tag, Eye, Hand
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -20,7 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, signOut } = useAuth()
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const isDark = theme === 'dark'
 
@@ -39,30 +38,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
-  // Obtener la foto de perfil del cliente en tiempo real
-  useEffect(() => {
-    if (!user?.id) return
-
-    const fetchClientAvatar = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (error) throw error
-        if (data?.avatar_url) {
-          setAvatarUrl(data.avatar_url)
-        }
-      } catch (err) {
-        console.error('Error cargando avatar del cliente:', err)
-      }
-    }
-
-    fetchClientAvatar()
-  }, [user])
-
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -76,8 +51,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
+  // Extraemos los datos directamente del objeto 'user' de la sesión de Supabase
   const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
   const primerNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.split(' ')[0] : 'Clienta'
+  
+  // Aquí obtenemos la foto directamente de los metadatos guardados en la autenticación del cliente
+  const avatarUrl = user?.user_metadata?.avatar_url || null
 
   const handleLogoutClick = async () => {
     try {
@@ -130,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isDark ? 'bg-[#1E120C]/95 border-[#3D281E]' : 'bg-[#FFF9F6]/95 border-[#F0E4DA]'
         }`}
       >
-        {/* LOGO AREA - REDISEÑADO ELEGANTE Y FINO */}
+        {/* LOGO AREA */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
@@ -247,7 +226,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu className="w-5 h-5" />
             </button>
-            {/* Logo en versión móvil rediseñado elegante */}
             <div className="flex flex-col lg:hidden">
               <h1 className="text-base font-light tracking-[0.2em] uppercase leading-none">
                 <span className="font-serif italic text-[#D4AF37] text-lg tracking-normal normal-case font-medium mr-0.5">fresh</span>
@@ -262,7 +240,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className={`h-5 w-[1px] mx-1 hidden xs:block ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
 
-            {/* Perfil VIP — CLICKEABLE CON INTEGRACIÓN DE IMAGEN */}
+            {/* Perfil VIP — CLICKEABLE */}
             <Link 
               href="/perfil"
               className="flex items-center gap-3 pl-1 group cursor-pointer"
@@ -278,7 +256,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
               </div>
               
-              {/* Contenedor dinámico de la Foto de Perfil */}
+              {/* Contenedor dinámico del Avatar (Sin consultas lentas) */}
               <div className={`w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] ${
                 isDark
                   ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
