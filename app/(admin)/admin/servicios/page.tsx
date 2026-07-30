@@ -11,7 +11,7 @@ import {
   Layers, Edit, Trash2, CheckCircle2, 
   X, Save, Tag, Scissors, Star, Heart,
   RefreshCw, Package, Eye, Hand,
-  AlertCircle, ChevronDown
+  AlertCircle, ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react'
 
 type Servicio = {
@@ -45,6 +45,9 @@ const initialFormState = {
   category: 'Uñas'
 }
 
+// Configuración de paginación
+const ITEMS_PER_PAGE = 6
+
 export default function ServiciosPage() {
   const { settings } = useSettings()
   const { tenantId } = useAuth()
@@ -64,8 +67,10 @@ export default function ServiciosPage() {
   const [formData, setFormData] = useState(initialFormState)
 
   // ============================================================
-  // PALETA DE COLORES - DORADO PROTAGONISTA
+  // ESTADOS DE PAGINACIÓN
   // ============================================================
+  const [currentPage, setCurrentPage] = useState<number>(1)
+
   const gold = '#D4AF37'
   const goldLight = '#E8D5A0'
   const goldDark = '#C9A96E'
@@ -73,6 +78,11 @@ export default function ServiciosPage() {
   const headerGradient = {
     backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
   }
+
+  // Reiniciar a la página 1 cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedCategory])
 
   const fetchServicios = async (showLoading = true) => {
     if (!tenantId) {
@@ -212,12 +222,23 @@ export default function ServiciosPage() {
     }
   }
 
+  // ============================================================
+  // LOGICA DE FILTRADO Y PROCESAMIENTO DE PAGINACIÓN
+  // ============================================================
   const filtrados = servicios.filter((s: Servicio) => {
     const matchSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || 
                         s.description?.toLowerCase().includes(search.toLowerCase())
     const matchCategory = selectedCategory === 'Todos' || s.category === selectedCategory
     return matchSearch && matchCategory
   })
+
+  const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE)
+  
+  // Obtener sólo los servicios de la página actual
+  const serviciosPaginados = filtrados.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   const promedioPrecio = servicios.length > 0 ? servicios.reduce((sum, s) => sum + s.price, 0) / servicios.length : 0
   const totalServicios = servicios.length
@@ -245,9 +266,7 @@ export default function ServiciosPage() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-4">
 
-        {/* ============================================================ */}
         {/* CABECERA */}
-        {/* ============================================================ */}
         <div 
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
           style={headerGradient}
@@ -292,9 +311,7 @@ export default function ServiciosPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* NOTIFICACIONES FLOTANTES / AVISOS */}
-        {/* ============================================================ */}
+        {/* NOTIFICACIONES */}
         <div className="space-y-2">
           {error && (
             <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
@@ -315,9 +332,7 @@ export default function ServiciosPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
-        {/* KPIS METRICS */}
-        {/* ============================================================ */}
+        {/* METRICS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -356,9 +371,7 @@ export default function ServiciosPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* FILTROS Y BÚSQUEDA */}
-        {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
           <input 
@@ -378,7 +391,7 @@ export default function ServiciosPage() {
           )}
         </div>
 
-        {/* NAVEGACIÓN POR CATEGORÍAS */}
+        {/* CATEGORÍAS */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
           {categorias.map((cat) => {
             const IconComponent = cat.icon
@@ -421,10 +434,10 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* LISTADO DE TRATAMIENTOS (GRID) */}
+        {/* LISTADO DE TRATAMIENTOS CON SEGMENTO PAGINADO */}
         {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
-          {filtrados.map((servicio: Servicio) => (
+          {serviciosPaginados.map((servicio: Servicio) => (
             <div 
               key={servicio.id} 
               className={`rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group ${
@@ -500,8 +513,58 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* DIÁLOGO MODAL ABRE/CIERRA */}
+        {/* BARRAS DE CONTROLES DE PAGINACIÓN */}
         {/* ============================================================ */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 font-mono text-xs">
+            <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>
+              Mostrando <span className="font-bold text-[#D4AF37]">{serviciosPaginados.length}</span> de <span className="font-bold">{filtrados.length}</span> resultados
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                  isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => {
+                const esPaginaActual = currentPage === page
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-9 h-9 rounded-xl border text-[10px] font-bold transition-all ${
+                      esPaginaActual
+                        ? 'bg-[#D4AF37] border-[#D4AF37] text-[#1A0E0A]'
+                        : isDark
+                          ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:border-[#D4AF37]/40'
+                          : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:border-[#D4AF37]/40'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              })}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                  isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* DIÁLOGO MODAL */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto transition-all duration-300 ${
