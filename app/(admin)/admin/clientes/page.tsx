@@ -49,7 +49,7 @@ export default function ClientesPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 🔥 DEPURACIÓN VISUAL
+  // Depuración visual
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
 
@@ -226,7 +226,7 @@ export default function ClientesPage() {
   }
 
   // ============================================================
-  // 🔥 GUARDAR CLIENTE CON DEPURACIÓN VISUAL
+  // 🔥 GUARDAR CLIENTE USANDO RPC (bypassea RLS)
   // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -252,23 +252,13 @@ export default function ClientesPage() {
       setDebugInfo('🔍 Verificando sesión...')
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      if (sessionError) {
-        setDebugInfo(`❌ Error de sesión: ${sessionError.message}`)
-        setShowDebug(true)
-        setFormError('Error de sesión. Re-inicia sesión.')
-        setSaving(false)
-        return
-      }
-
-      if (!session) {
-        setDebugInfo('❌ No hay sesión activa')
+      if (sessionError || !session) {
+        setDebugInfo('❌ Error de sesión')
         setShowDebug(true)
         setFormError('No hay sesión activa. Inicia sesión nuevamente.')
         setSaving(false)
         return
       }
-
-      setDebugInfo(`✅ Sesión activa: ${session.user.id.substring(0, 8)}...`)
 
       // ✅ 2. OBTENER TENANT_ID
       setDebugInfo('🔍 Obteniendo tenant_id...')
@@ -278,16 +268,8 @@ export default function ClientesPage() {
         .eq('id', session.user.id)
         .maybeSingle()
 
-      if (profileError) {
-        setDebugInfo(`❌ Error profile: ${profileError.message}`)
-        setShowDebug(true)
-        setFormError('Error al obtener el perfil.')
-        setSaving(false)
-        return
-      }
-
-      if (!profile || !profile.tenant_id) {
-        setDebugInfo('❌ No se encontró tenant_id en el perfil')
+      if (profileError || !profile?.tenant_id) {
+        setDebugInfo('❌ No se encontró tenant_id')
         setShowDebug(true)
         setFormError('No se encontró tenant_id. Contacta al administrador.')
         setSaving(false)
@@ -297,6 +279,7 @@ export default function ClientesPage() {
       const tenantId = profile.tenant_id
       setDebugInfo(`✅ Tenant ID: ${tenantId.substring(0, 8)}...`)
 
+      // ✅ 3. SUBIR AVATAR (si hay)
       let avatarUrl = formData.avatar_url.trim() || null
 
       if (avatarFile) {
@@ -304,62 +287,47 @@ export default function ClientesPage() {
         setDebugInfo('📤 Subiendo avatar...')
         avatarUrl = await uploadAvatar(avatarFile)
         setUploadingAvatar(false)
-        setDebugInfo(`✅ Avatar subido: ${avatarUrl.substring(0, 30)}...`)
+        setDebugInfo('✅ Avatar subido')
       }
 
-      // ✅ 3. CONSTRUIR DATOS
-      const newCliente = {
-        name: formData.name.trim(),
-        email: formData.email.trim() || null,
-        phone: formData.phone.trim() || null,
-        avatar_url: avatarUrl,
-        tenant_id: tenantId,
-        is_active: true,
-        created_at: new Date().toISOString()
-      }
+      // ✅ 4. 🔥 USAR RPC EN VEZ DE INSERT DIRECTO
+      setDebugInfo('📦 Insertando cliente via RPC...')
+      
+      const { data: clientId, error: rpcError } = await supabase.rpc('insert_client_secure', {
+        p_name: formData.name.trim(),
+        p_email: formData.email.trim() || null,
+        p_phone: formData.phone.trim() || null,
+        p_avatar_url: avatarUrl,
+        p_tenant_id: tenantId
+      })
 
-      setDebugInfo('📦 Insertando cliente...')
-
-      // ✅ 4. INTENTAR INSERTAR
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([newCliente])
-        .select()
-
-      if (error) {
-        // 🔥 MOSTRAR ERROR DETALLADO VISUALMENTE
-        let errorMsg = `❌ Error: ${error.message}`
-        if (error.code) errorMsg += `\nCódigo: ${error.code}`
-        if (error.details) errorMsg += `\nDetalle: ${error.details}`
-        if (error.hint) errorMsg += `\nSugerencia: ${error.hint}`
-        
-        setDebugInfo(errorMsg)
+      if (rpcError) {
+        setDebugInfo(`❌ Error RPC: ${rpcError.message}`)
         setShowDebug(true)
-        
-        if (error.code === '23505') {
-          setFormError('Ya existe un cliente con ese email o teléfono')
-        } else if (error.code === '42501') {
-          setFormError('⚠️ Error de permisos (RLS). Contacta al administrador.')
-        } else {
-          setFormError(`Error: ${error.message}`)
-        }
+        setFormError(`Error: ${rpcError.message}`)
         setSaving(false)
         return
       }
 
-      setDebugInfo('✅ Cliente insertado correctamente!')
+      setDebugInfo(`✅ Cliente insertado! ID: ${clientId}`)
       setShowDebug(true)
 
-      if (data && data.length > 0) {
-        setClientes(prev => [data[0] as Cliente, ...prev])
-        setSuccess('✅ Cliente agregado correctamente')
-        setTimeout(() => setSuccess(null), 3000)
-        setShowModal(false)
-        resetForm()
-      } else {
-        setFormError('No se recibieron datos del cliente')
-        setSaving(false)
+      // ✅ 5. OBTENER EL CLIENTE COMPLETO
+      const { data: clienteData, error: fetchError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', clientId)
+        .single()
+
+      if (!fetchError && clienteData) {
+        setClientes(prev => [clienteData as Cliente, ...prev])
       }
+
+      setSuccess('✅ Cliente agregado correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+      setShowModal(false)
+      resetForm()
+
     } catch (err: any) {
       setDebugInfo(`❌ Error inesperado: ${err.message}`)
       setShowDebug(true)
@@ -616,7 +584,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL: NUEVA CLIENTE CON DEPURACIÓN VISUAL */}
+        {/* MODAL: NUEVA CLIENTE CON RPC */}
         {/* ============================================================ */}
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -772,7 +740,7 @@ export default function ClientesPage() {
                   />
                 </div>
 
-                {/* 🔥 DEPURACIÓN VISUAL - MUESTRA EL ERROR EN PANTALLA */}
+                {/* DEPURACIÓN VISUAL */}
                 {showDebug && debugInfo && (
                   <div className={`p-3 rounded-xl border text-xs font-mono whitespace-pre-wrap break-all ${
                     debugInfo.includes('❌') 
