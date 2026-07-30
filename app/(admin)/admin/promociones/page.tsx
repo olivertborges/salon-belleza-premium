@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Crown, Percent, Calendar, ArrowRight, CheckCircle2, PlusCircle } from 'lucide-react'
+import { Sparkles, Percent, Calendar, ArrowRight, CheckCircle2, PlusCircle, Settings } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import Link from 'next/link'
 
@@ -13,7 +13,7 @@ export default function PromocionesPage() {
   // Simulación de promociones activas alineadas a la base de datos
   const [promociones] = useState([
     {
-      id: 1,
+      id: "1", // Cambiado a string para consistencia con UUIDs de Supabase
       titulo: "Nails VIP Season",
       descuento: "20% OFF",
       descripcion: "Aplica para sistemas de esculpidas completas y diseño premium los días martes y miércoles.",
@@ -21,7 +21,7 @@ export default function PromocionesPage() {
       badge: "POPULAR"
     },
     {
-      id: 2,
+      id: "2",
       titulo: "Glow Up Birthday",
       descuento: "Gift Card",
       descripcion: "Trae a una amiga en el mes de tu cumpleaños y ambas reciben un tratamiento de spa de manos gratis.",
@@ -31,7 +31,7 @@ export default function PromocionesPage() {
   ])
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 antialiased pb-12 relative overflow-hidden ${isDark ? 'bg-[#150D08] text-[#FFF9F6]' : 'bg-[#FDFBF9] text-[#1A0E0A]'}`}>
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-12 relative overflow-hidden ${isDark ? 'bg-[#150D08]' : 'bg-[#FDFBF9]'}`}>
       
       {/* Fondos Decorativos Orgánicos Coincidentes */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
@@ -40,7 +40,7 @@ export default function PromocionesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 relative z-10 pt-4">
 
-        {/* HEADER HERO BANNER (Copia exacta de tu diseño base) */}
+        {/* HEADER HERO BANNER — ¡RUTAS CORREGIDAS! */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
             ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
@@ -54,7 +54,7 @@ export default function PromocionesPage() {
               <div className="relative group shrink-0">
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#3B82F6] rounded-2xl blur-md opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative p-4 rounded-2xl shadow-xl bg-neutral-950 text-white flex items-center justify-center border border-white/10">
-                  <Percent className="w-7 h-7 text-[#D4AF37] animate-pulse" />
+                  <Percent className="w-7 h-7 text-[#D4AF37]" />
                 </div>
               </div>
 
@@ -72,13 +72,15 @@ export default function PromocionesPage() {
               </div>
             </div>
 
+            {/* ✅ CORRECCIÓN: BOTÓN CONECTADO A LA PÁGINA DE CREAR */}
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0 border-t pt-5 md:pt-0 md:border-t-0 border-[#EADED5] dark:border-[#3D281E]">
-              <button 
-                className={`w-full sm:w-auto px-5 py-3 rounded-xl text-neutral-950 font-black text-xs uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 shadow-xl shadow-[#D4AF37]/10 hover:shadow-[#D4AF37]/20 hover:scale-[1.03] active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E]`}
+              <Link 
+                href="/admin/promociones/crear" 
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-neutral-950 font-black text-xs uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 shadow-xl shadow-[#D4AF37]/10 hover:shadow-[#D4AF37]/20 hover:scale-[1.03] active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E]"
               >
                 <PlusCircle className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Nueva Promoción</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -97,45 +99,68 @@ export default function PromocionesPage() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#D4AF37]/10 to-transparent rounded-bl-full pointer-events-none transition-transform duration-500 group-hover:scale-110" />
               
               <div className="flex flex-col h-full justify-between space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                      isDark 
-                        ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#C9A96E]' 
-                        : 'bg-[#FAF6F2] border-[#EADED5] text-[#C9A96E]'
-                    }`}>
-                      {promo.badge}
-                    </span>
-                    <h3 className={`font-serif text-xl font-bold mt-2 ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                      {promo.titulo}
-                    </h3>
-                    <p className={`text-xs font-light mt-1 line-clamp-2 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                      {promo.descripcion}
-                    </p>
-                  </div>
+                
+                {/* Envolvemos la parte superior en un Link para poder VER el detalle directamente al clickear la tarjeta */}
+                <Link href={`/admin/promociones/${promo.id}`} className="block space-y-1 cursor-pointer">
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                    isDark 
+                      ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#C9A96E]' 
+                      : 'bg-[#FAF6F2] border-[#EADED5] text-[#C9A96E]'
+                  }`}>
+                    {promo.badge}
+                  </span>
+                  
+                  <div className="flex items-start justify-between gap-4 mt-2">
+                    <div>
+                      <h3 className={`font-serif text-xl font-bold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                        {promo.titulo}
+                      </h3>
+                      <p className={`text-xs font-light mt-1 line-clamp-2 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                        {promo.descripcion}
+                      </p>
+                    </div>
 
-                  {/* CORRECCIÓN AQUÍ: Letras blancas (text-white) sobre el gradiente dinámico */}
-                  <div className="p-4 rounded-xl shrink-0 shadow-xl bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#C9A96E] text-white flex flex-col items-center justify-center min-w-[85px] text-center border border-white/10">
-                    <span className="text-xs font-black uppercase tracking-tighter leading-none opacity-90">Valor</span>
-                    <span className="text-sm font-serif font-black tracking-tight leading-none mt-1 text-white">
-                      {promo.descuento}
-                    </span>
+                    <div className="p-4 rounded-xl shrink-0 shadow-xl bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#C9A96E] text-white flex flex-col items-center justify-center min-w-[85px] text-center border border-white/10">
+                      <span className="text-xs font-black uppercase tracking-tighter leading-none opacity-90 text-white">Valor</span>
+                      <span className="text-sm font-serif font-black tracking-tight leading-none mt-1 text-white">
+                        {promo.descuento}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
 
+                {/* BOTONES DE ACCIÓN DE LA PARTE INFERIOR */}
                 <div className="flex items-center justify-between pt-4 border-t border-dashed border-[#EADED5]/60 dark:border-[#3D281E]/60">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#C9A96E]">
                     <Calendar className="w-3.5 h-3.5" />
                     <span>{promo.validez}</span>
                   </div>
                   
-                  <button className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-300 ${
-                    isDark ? 'text-[#BCAEA5] bg-[#291A11] hover:text-[#D4AF37]' : 'text-[#6E5A4D] bg-[#FAF6F2] hover:text-[#D4AF37]'
-                  }`}>
-                    <span>Configurar</span>
-                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* ✅ BOTÓN EDITAR */}
+                    <Link 
+                      href={`/admin/promociones/editar/${promo.id}`}
+                      className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-300 ${
+                        isDark ? 'text-[#BCAEA5] bg-[#291A11] hover:text-[#D4AF37]' : 'text-[#6E5A4D] bg-[#FAF6F2] hover:text-[#D4AF37]'
+                      }`}
+                    >
+                      <Settings className="w-3 h-3" />
+                      <span>Editar</span>
+                    </Link>
+
+                    {/* ✅ BOTÓN VER DETALLE */}
+                    <Link 
+                      href={`/admin/promociones/${promo.id}`}
+                      className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-300 ${
+                        isDark ? 'text-white bg-[#3D281E] hover:bg-[#D4AF37] hover:text-neutral-950' : 'text-neutral-950 bg-[#EADED5] hover:bg-[#D4AF37] hover:text-neutral-950'
+                      }`}
+                    >
+                      <span>Ver</span>
+                      <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
                 </div>
+
               </div>
             </div>
           ))}
