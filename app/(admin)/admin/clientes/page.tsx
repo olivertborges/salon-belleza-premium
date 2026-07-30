@@ -50,20 +50,68 @@ export default function ClientesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ============================================================
-  // PALETA DE COLORES - DORADO PROTAGONISTA
+  // PALETA DE COLORES
   // ============================================================
   const gold = '#D4AF37'
   const goldLight = '#E8D5A0'
   const goldDark = '#C9A96E'
-  const pink = '#EC4899'
-  const blue = '#3B82F6'
-
-  const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold}, ${goldLight}, ${gold})`
-  }
 
   const headerGradient = {
     backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
+  }
+
+  // ============================================================
+  // 🔥 COMPRIMIR IMAGEN (500x500, calidad 80%)
+  // ============================================================
+  const compressImage = (file: File, maxWidth = 500, maxHeight = 500, quality = 0.8): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width)
+              width = maxWidth
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height)
+              height = maxHeight
+            }
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('No se pudo comprimir la imagen'))
+                return
+              }
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              })
+              resolve(compressedFile)
+            },
+            'image/jpeg',
+            quality
+          )
+        }
+        img.onerror = () => reject(new Error('Error al cargar la imagen'))
+      }
+      reader.onerror = () => reject(new Error('Error al leer el archivo'))
+    })
   }
 
   const fetchClientes = async (showLoading = true) => {
@@ -124,9 +172,9 @@ export default function ClientesPage() {
   }
 
   // ============================================================
-  // 🔥 SUBIR AVATAR DESDE DISPOSITIVO O CÁMARA
+  // 🔥 MANEJAR AVATAR CON COMPRESIÓN AUTOMÁTICA
   // ============================================================
-  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -136,18 +184,25 @@ export default function ClientesPage() {
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setFormError('⚠️ La imagen no debe superar los 2MB')
-      setTimeout(() => setFormError(null), 3000)
-      return
-    }
+    try {
+      setUploadingAvatar(true)
+      // ✅ COMPRIME AUTOMÁTICAMENTE A 500x500, calidad 80%
+      const compressedFile = await compressImage(file, 500, 500, 0.8)
+      setAvatarFile(compressedFile)
+      setUploadingAvatar(false)
 
-    setAvatarFile(file)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string)
+      }
+      reader.readAsDataURL(compressedFile)
+
+      setFormError(null)
+    } catch (err) {
+      setFormError('⚠️ Error al procesar la imagen. Intenta con otra.')
+      setUploadingAvatar(false)
+      setTimeout(() => setFormError(null), 3000)
     }
-    reader.readAsDataURL(file)
   }
 
   const uploadAvatar = async (file: File): Promise<string> => {
@@ -165,15 +220,11 @@ export default function ClientesPage() {
     return urlData.publicUrl
   }
 
-  // ============================================================
-  // 🔥 GUARDAR CLIENTE CON AVATAR
-  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
     setSaving(true)
 
-    // Validaciones
     if (!formData.name.trim()) {
       setFormError('El nombre es obligatorio')
       setSaving(false)
@@ -189,7 +240,6 @@ export default function ClientesPage() {
     try {
       let avatarUrl = formData.avatar_url.trim() || null
 
-      // Subir avatar si hay un archivo seleccionado
       if (avatarFile) {
         setUploadingAvatar(true)
         avatarUrl = await uploadAvatar(avatarFile)
@@ -272,9 +322,7 @@ export default function ClientesPage() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10">
 
-        {/* ============================================================ */}
-        {/* CABECERA — DORADO PROTAGONISTA */}
-        {/* ============================================================ */}
+        {/* CABECERA */}
         <div 
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
           style={headerGradient}
@@ -319,9 +367,7 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* MENSAJES */}
-        {/* ============================================================ */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -340,9 +386,7 @@ export default function ClientesPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* KPIS — DORADO PROTAGONISTA */}
-        {/* ============================================================ */}
+        {/* KPIS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -381,9 +425,7 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* BUSCADOR */}
-        {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
           <input 
@@ -403,9 +445,7 @@ export default function ClientesPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
         {/* GRID DE CLIENTES */}
-        {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {filtrados.map((cliente: Cliente) => (
             <div 
@@ -414,12 +454,10 @@ export default function ClientesPage() {
                 isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
               }`}
             >
-              {/* Línea decorativa superior */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
 
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar */}
                   {cliente.avatar_url ? (
                     <img src={cliente.avatar_url} alt={cliente.name} className={`w-11 h-11 rounded-xl object-cover border transition-transform group-hover:scale-105 ${
                       isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
@@ -430,7 +468,6 @@ export default function ClientesPage() {
                     </div>
                   )}
 
-                  {/* Nombre */}
                   <div className="min-w-0">
                     <h3 className={`font-medium text-sm truncate transition-colors ${isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'}`}>
                       {cliente.name}
@@ -441,7 +478,6 @@ export default function ClientesPage() {
                   </div>
                 </div>
 
-                {/* Acciones */}
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button className={`p-1.5 rounded-xl border transition-colors ${
                     isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
@@ -456,10 +492,8 @@ export default function ClientesPage() {
                 </div>
               </div>
 
-              {/* Separador */}
               <hr className={`my-3.5 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`} />
 
-              {/* Contacto */}
               <div className={`space-y-2 font-mono text-[11px] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <Mail className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
@@ -497,7 +531,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL: NUEVA CLIENTE CON AVATAR */}
+        {/* MODAL: NUEVA CLIENTE CON COMPRESIÓN AUTOMÁTICA */}
         {/* ============================================================ */}
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -526,12 +560,9 @@ export default function ClientesPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* ============================================================ */}
-                {/* AVATAR - CON OPCIÓN DE SUBIR FOTO O TOMAR FOTO */}
-                {/* ============================================================ */}
+                {/* AVATAR CON COMPRESIÓN */}
                 <div className="flex flex-col items-center">
                   <div className="relative">
-                    {/* Previsualización del avatar */}
                     <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${
                       isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
                     }`}>
@@ -542,9 +573,7 @@ export default function ClientesPage() {
                       )}
                     </div>
 
-                    {/* Botones para subir foto */}
                     <div className="absolute -bottom-1 -right-1 flex gap-1">
-                      {/* Botón: Subir desde dispositivo */}
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -555,7 +584,6 @@ export default function ClientesPage() {
                       >
                         <Upload className="w-3.5 h-3.5" />
                       </button>
-                      {/* Botón: Tomar foto con cámara */}
                       <button
                         type="button"
                         onClick={() => {
@@ -566,7 +594,6 @@ export default function ClientesPage() {
                           input.onchange = (e) => {
                             const target = e.target as HTMLInputElement
                             if (target.files && target.files.length > 0) {
-                              const file = target.files[0]
                               const fakeEvent = { target: { files: target.files } } as React.ChangeEvent<HTMLInputElement>
                               handleAvatarFileSelect(fakeEvent)
                             }
@@ -582,7 +609,6 @@ export default function ClientesPage() {
                       </button>
                     </div>
 
-                    {/* Input oculto para archivos */}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -595,7 +621,7 @@ export default function ClientesPage() {
                   {uploadingAvatar && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-[#D4AF37]">
                       <Loader2 className="w-3 h-3 animate-spin" />
-                      Subiendo avatar...
+                      Procesando imagen...
                     </div>
                   )}
 
