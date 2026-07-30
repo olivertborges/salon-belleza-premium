@@ -24,7 +24,8 @@ import {
   Flame,
   Copy,
   Check,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react'
 
 interface Promotion {
@@ -44,7 +45,7 @@ interface Promotion {
   image_url: string
 }
 
-const categories = [
+const baseCategories = [
   { value: 'all', label: 'Todas' },
   { value: 'flash', label: '⚡ Flash' },
   { value: 'welcome', label: '🎁 Welcome' },
@@ -144,6 +145,19 @@ export default function PromocionesPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  // Detectar categorías únicas presentes en las promociones para agregarlas dinámicamente si no están en la lista base
+  const dynamicCategories = React.useMemo(() => {
+    const catsMap = new Map(baseCategories.map(c => [c.value, c]))
+    promotions.forEach(p => {
+      if (p.category && !catsMap.has(p.category)) {
+        // Formatear la categoría detectada de forma limpia
+        const formattedLabel = p.category.charAt(0).toUpperCase() + p.category.slice(1)
+        catsMap.set(p.category, { value: p.category, label: `🏷️ ${formattedLabel}` })
+      }
+    })
+    return Array.from(catsMap.values())
+  }, [promotions])
+
   const filteredPromotions = promotions.filter(promo => {
     const matchesSearch = promo.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           promo.code?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -240,12 +254,12 @@ export default function PromocionesPage() {
         )}
 
         {/* ============================================================ */}
-        {/* FILTROS Y BÚSQUEDA */}
+        {/* FILTROS Y BÚSQUEDA (CORREGIDO PARA WRAP Y SIN SCROLL HORIZONTAL) */}
         {/* ============================================================ */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
           
           {/* Búsqueda */}
-          <div className={`w-full md:w-80 p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 ${
+          <div className={`w-full lg:w-80 p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 shrink-0 ${
             isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'
           }`}>
             <Search className="w-4 h-4 text-[#C9A96E] shrink-0" />
@@ -260,13 +274,13 @@ export default function PromocionesPage() {
             />
           </div>
 
-          {/* Categorías */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-            {categories.map(cat => (
+          {/* Categorías (Con flex-wrap para que bajen de línea ordenadamente sin requerir scroll horizontal) */}
+          <div className="flex flex-wrap items-center gap-2 w-full">
+            {dynamicCategories.map(cat => (
               <button
                 key={cat.value}
                 onClick={() => setSelectedCategory(cat.value)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
                   selectedCategory === cat.value
                     ? 'bg-gradient-to-r from-[#D4AF37] to-[#C9A96E] text-neutral-950 border-transparent shadow-md'
                     : isDark 
