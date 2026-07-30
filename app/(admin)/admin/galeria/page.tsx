@@ -81,11 +81,21 @@ export default function GaleriaAdminPage() {
     professional_id: ''
   })
 
-  const primaryColor = settings?.primary_color || '#DB5B9A'
-  const secondaryColor = settings?.secondary_color || '#E5A46E'
+  // ============================================================
+  // PALETA DE COLORES CONSISTENTE
+  // ============================================================
+  const primaryColor = '#D4AF37'      // Dorado
+  const secondaryColor = '#E8D5A0'    // Dorado claro
+  const accentPink = '#EC4899'        // Rosado
+  const accentBlue = '#3B82F6'        // Azul
+  const accentRose = '#F43F5E'        // Rosa fuerte
 
   const brandGradient = {
     backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+  }
+
+  const headerGradient = {
+    backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${accentPink} 50%, ${accentBlue} 100%)`
   }
 
   const primaryBgStyle = { backgroundColor: primaryColor }
@@ -430,32 +440,15 @@ export default function GaleriaAdminPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-amber-500/5 animate-pulse" />
-        <div className="absolute w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-[pulse_4s_ease-in-out_infinite]" />
-        <div className="absolute w-48 h-48 bg-amber-500/5 rounded-full blur-2xl animate-[pulse_6s_ease-in-out_infinite] delay-300" />
-        <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-pink-500/20 border-t-pink-500 animate-spin" />
-            <Camera className="w-6 h-6 text-pink-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${'bg-[#FFF9F6]'}`}>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-16 h-16">
+            <div className={`absolute inset-0 rounded-full border ${'border-[#D4AF37]/20'}`} />
+            <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
-          <div className="space-y-1.5 text-center">
-            <p className="text-sm font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 animate-pulse">
-              CARGANDO
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-              GALERÍA FRESH
-            </p>
-          </div>
-          <div className="flex gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <span 
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-pink-500/60 animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
+          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${'text-[#1A0E0A]/60'}`}>
+            Cargando galería...
+          </p>
         </div>
       </div>
     )
@@ -465,34 +458,29 @@ export default function GaleriaAdminPage() {
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
 
       {/* ============================================================ */}
-      {/* CABECERA PRINCIPAL — IDÉNTICA A LA DE AGENDA */}
+      {/* CABECERA — CON GRADIENTE DORADO + ROSADO + AZUL */}
       {/* ============================================================ */}
       <div 
         className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #EF4444 100%)`
-        }}
+        style={headerGradient}
       >
-        {/* Efecto de Luces y Brillos de Fondo */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          {/* Textos Principales */}
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-pink-100">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Portafolio del Salón
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
               Galería Fresh Nails
             </h1>
-            <p className="text-xs md:text-sm text-pink-50/80 font-medium max-w-md">
+            <p className="text-xs md:text-sm text-white/80 font-medium max-w-md">
               Administra el portafolio comercial del salón, organiza tus trabajos y destaca el arte de tu equipo.
             </p>
           </div>
 
-          {/* Acciones y Botones */}
           <div className="flex items-center gap-3 self-start md:self-center shrink-0">
             <button 
               onClick={() => fetchPhotos(false)} 
@@ -505,7 +493,7 @@ export default function GaleriaAdminPage() {
 
             <button 
               onClick={() => { resetForm(); setShowModal(true); }}
-              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-pink-50 hover:scale-105 active:scale-95 transition-all"
+              className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
             >
               <div className="p-1 rounded-md bg-stone-900 text-white">
                 <Plus className="w-3 h-3 stroke-[3]" />
@@ -520,11 +508,11 @@ export default function GaleriaAdminPage() {
       {/* MENSAJES */}
       {/* ============================================================ */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-pink-500/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-[#D4AF37]/5 border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4" />
           </div>
-          <p className="text-xs text-stone-700 dark:text-rose-400 font-medium min-w-0">{error}</p>
+          <p className="text-xs text-stone-700 font-medium min-w-0">{error}</p>
         </div>
       )}
 
@@ -533,84 +521,79 @@ export default function GaleriaAdminPage() {
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <p className="text-xs text-stone-700 dark:text-emerald-400 font-medium min-w-0">{success}</p>
+          <p className="text-xs text-stone-700 font-medium min-w-0">{success}</p>
         </div>
       )}
 
       {/* ============================================================ */}
-{/* ESTADÍSTICAS — RESPONSIVAS */}
-{/* ============================================================ */}
-<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-  {/* Total */}
-  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
-    <div className="p-1.5 sm:p-2 rounded-xl shrink-0" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
-      <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Total</p>
-      <h3 className="text-sm sm:text-base font-mono font-black text-stone-900 dark:text-pink-100">{stats.total}</h3>
-    </div>
-  </div>
+      {/* ESTADÍSTICAS — RESPONSIVAS */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#D4AF37]/10 text-[#D4AF37]">
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Total</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-stone-900">{stats.total}</h3>
+          </div>
+        </div>
 
-  {/* Salón */}
-  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
-    <div className="p-1.5 sm:p-2 rounded-xl bg-pink-500/10 text-pink-500 shrink-0">
-      <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Salón</p>
-      <h3 className="text-sm sm:text-base font-mono font-black text-pink-500">{stats.adminCount}</h3>
-    </div>
-  </div>
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#D4AF37]/10 text-[#D4AF37]">
+            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Salón</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-[#D4AF37]">{stats.adminCount}</h3>
+          </div>
+        </div>
 
-  {/* Clientes */}
-  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
-    <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
-      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Clientes</p>
-      <h3 className="text-sm sm:text-base font-mono font-black text-amber-500">{stats.clientCount}</h3>
-    </div>
-  </div>
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#EC4899]/10 text-[#EC4899]">
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Clientes</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-[#EC4899]">{stats.clientCount}</h3>
+          </div>
+        </div>
 
-  {/* Visibles */}
-  <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950 flex items-center gap-2 sm:gap-3 min-w-0">
-    <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-      <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 dark:text-stone-500 font-black truncate">Visibles</p>
-      <h3 className="text-sm sm:text-base font-mono font-black text-emerald-500">{stats.activeCount}</h3>
-    </div>
-  </div>
-</div>
+        <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#3B82F6]/10 text-[#3B82F6]">
+            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Visibles</p>
+            <h3 className="text-sm sm:text-base font-mono font-black text-[#3B82F6]">{stats.activeCount}</h3>
+          </div>
+        </div>
+      </div>
 
       {/* ============================================================ */}
       {/* FILTROS Y BÚSQUEDA */}
       {/* ============================================================ */}
-      <div className="flex flex-col md:flex-row gap-3 p-4 rounded-2xl border shadow-sm bg-white dark:bg-[#130f24] border-pink-100/60 dark:border-fuchsia-950">
+      <div className="flex flex-col md:flex-row gap-3 p-4 rounded-2xl border shadow-sm bg-white border-[#F0E4DA]">
         <div className="flex-1 flex items-center gap-3 min-w-0">
-          <Search className={`w-4 h-4 shrink-0 ${'text-stone-400'}`} />
+          <Search className="w-4 h-4 shrink-0 text-stone-400" />
           <input 
             type="text" 
             placeholder="Buscar por título, descripción o cliente..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none outline-none text-xs w-full font-medium text-stone-800 dark:text-white placeholder:text-stone-400"
+            className="bg-transparent border-none outline-none text-xs w-full font-medium text-stone-800 placeholder:text-stone-400"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {categories.map((cat) => (
+          {categories.map((cat, idx) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
                 categoryFilter === cat 
-                  ? 'text-white shadow-sm' 
-                  : 'bg-stone-100 dark:bg-[#0f0c1b] text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800'
+                  ? `text-white shadow-sm ${idx % 3 === 0 ? 'bg-[#D4AF37]' : idx % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`
+                  : 'bg-[#FFF9F6] border border-[#F0E4DA] text-stone-500 hover:bg-[#F0E4DA]'
               }`}
-              style={categoryFilter === cat ? brandGradient : {}}
             >
               {cat}
             </button>
@@ -622,14 +605,14 @@ export default function GaleriaAdminPage() {
       {/* GRID DE FOTOS */}
       {/* ============================================================ */}
       {filteredPhotos.length === 0 ? (
-        <div className="py-20 text-center border-2 border-dashed rounded-2xl bg-stone-50/50 dark:bg-[#130f24]/30 border-stone-200 dark:border-stone-800">
-          <ImageIcon className="w-10 h-10 mx-auto text-stone-300 dark:text-stone-600 mb-2" />
-          <p className="text-sm font-medium text-stone-500 dark:text-stone-400">No se encontraron fotos</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500">Sube tu primer trabajo al portafolio</p>
+        <div className="py-20 text-center border-2 border-dashed rounded-2xl bg-stone-50/50 border-stone-200">
+          <ImageIcon className="w-10 h-10 mx-auto text-stone-300 mb-2" />
+          <p className="text-sm font-medium text-stone-500">No se encontraron fotos</p>
+          <p className="text-xs text-stone-400">Sube tu primer trabajo al portafolio</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredPhotos.map((photo) => {
+          {filteredPhotos.map((photo, idx) => {
             const imageUrl = getImageUrl(photo)
             const isClient = photo.source === 'client'
             const isAdmin = photo.source === 'admin'
@@ -640,9 +623,9 @@ export default function GaleriaAdminPage() {
                 onClick={() => openLightbox(photo)}
                 onMouseEnter={() => setHoveredId(photo.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                className={`group relative rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-[#130f24] border shadow-sm transition-all aspect-square ${
+                className={`group relative rounded-2xl overflow-hidden cursor-pointer bg-white border shadow-sm transition-all aspect-square ${
                   !photo.is_active ? 'opacity-60 grayscale-[30%]' : ''
-                } hover:shadow-xl hover:-translate-y-1`}
+                } hover:shadow-xl hover:-translate-y-1 border-[#F0E4DA]`}
               >
                 {imageUrl ? (
                   <img 
@@ -651,14 +634,14 @@ export default function GaleriaAdminPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="w-full h-full bg-stone-200 dark:bg-stone-800 flex items-center justify-center">
+                  <div className="w-full h-full bg-stone-200 flex items-center justify-center">
                     <ImageIcon className="w-8 h-8 text-stone-400" />
                   </div>
                 )}
 
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
                   <span className={`text-[7px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${
-                    isClient ? 'bg-amber-500/95' : 'bg-pink-500/95'
+                    isClient ? 'bg-[#EC4899]/95' : 'bg-[#D4AF37]/95'
                   }`}>
                     {isClient ? `👤 ${photo.client_name || 'Cliente'}` : '👑 Studio'}
                   </span>
@@ -697,19 +680,19 @@ export default function GaleriaAdminPage() {
                               })
                               setShowModal(true)
                             }} 
-                            className="p-2 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/30 rounded-xl transition-all"
+                            className="p-2 bg-[#3B82F6]/20 hover:bg-[#3B82F6]/40 border border-[#3B82F6]/30 rounded-xl transition-all"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button 
                             onClick={(e) => toggleActive(photo.id, photo.is_active, e)} 
-                            className="p-2 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 rounded-xl transition-all"
+                            className="p-2 bg-[#EC4899]/20 hover:bg-[#EC4899]/40 border border-[#EC4899]/30 rounded-xl transition-all"
                           >
                             {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           </button>
                           <button 
                             onClick={(e) => deletePhoto(photo.id, e)} 
-                            className="p-2 bg-red-500/20 hover:bg-red-600 border border-red-500/30 rounded-xl transition-all"
+                            className="p-2 bg-rose-500/20 hover:bg-rose-600 border border-rose-500/30 rounded-xl transition-all"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -735,19 +718,17 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX CORREGIDO — Admin y Clientes se ven igual */}
+      {/* LIGHTBOX */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
         <div 
           className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" 
           onClick={closeLightbox}
         >
-          {/* Contenedor de la imagen */}
           <div 
             className="relative flex-1 flex items-center justify-center p-3 md:p-6 h-[50vh] md:h-full min-h-[200px]" 
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Botón cerrar (móvil) */}
             <button 
               onClick={closeLightbox} 
               className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 hover:bg-black/80 text-white z-50 md:hidden backdrop-blur-sm border border-white/10"
@@ -755,7 +736,6 @@ export default function GaleriaAdminPage() {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Navegación */}
             {filteredPhotos.length > 1 && (
               <>
                 <button 
@@ -773,12 +753,10 @@ export default function GaleriaAdminPage() {
               </>
             )}
 
-            {/* Contador */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/50 text-[9px] md:text-[10px] tracking-[0.2em] font-mono z-40 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
               {lightboxIndex + 1} / {filteredPhotos.length}
             </div>
 
-            {/* Imagen */}
             <img 
               src={getImageUrl(selectedPhoto)} 
               alt={selectedPhoto.title || ''} 
@@ -786,14 +764,14 @@ export default function GaleriaAdminPage() {
             />
           </div>
 
-          {/* Panel de información - SIEMPRE visible */}
           <div 
             className="w-full md:w-80 bg-stone-900/95 md:h-full overflow-y-auto p-4 md:p-6 flex flex-col text-stone-200 border-t md:border-t-0 md:border-l border-white/10" 
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header del panel */}
             <div className="flex justify-between items-center mb-4 md:mb-5">
-              <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-widest text-stone-400">
+              <span className={`text-[9px] md:text-[10px] font-mono uppercase tracking-widest ${
+                selectedPhoto.source === 'client' ? 'text-[#EC4899]' : 'text-[#D4AF37]'
+              }`}>
                 {selectedPhoto.source === 'client' ? '👤 Aporte de Cliente' : '👑 Trabajo del Salón'}
               </span>
               <button 
@@ -804,31 +782,26 @@ export default function GaleriaAdminPage() {
               </button>
             </div>
 
-            {/* Contenido del panel */}
             <div className="flex-1 overflow-y-auto space-y-4 md:space-y-5 pr-1">
-              {/* Categoría */}
               <div>
-                <span className="px-2.5 py-1 bg-white/10 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 bg-white/10 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-white">
                   {selectedPhoto.category || 'Sin categoría'}
                 </span>
                 {selectedPhoto.source === 'client' && (
-                  <span className="ml-2 px-2.5 py-1 bg-amber-500/20 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400">
+                  <span className="ml-2 px-2.5 py-1 bg-[#EC4899]/20 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-[#EC4899]">
                     Cliente
                   </span>
                 )}
               </div>
 
-              {/* Título */}
               <h3 className="text-lg md:text-xl font-serif font-bold text-white">
                 {selectedPhoto.title || 'Sin título'}
               </h3>
 
-              {/* Descripción */}
               <p className="text-xs md:text-sm text-stone-400 leading-relaxed">
                 {selectedPhoto.description || 'Sin descripción.'}
               </p>
 
-              {/* Detalles adicionales */}
               <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
                 {selectedPhoto.professional_id && professionalMap[selectedPhoto.professional_id] && (
                   <div className="flex items-center justify-between">
@@ -850,7 +823,7 @@ export default function GaleriaAdminPage() {
                   <span className="text-stone-400 flex items-center gap-1.5">
                     <Tag className="w-3.5 h-3.5" /> Origen:
                   </span>
-                  <span className={`font-medium ${selectedPhoto.source === 'client' ? 'text-amber-400' : 'text-pink-400'}`}>
+                  <span className={`font-medium ${selectedPhoto.source === 'client' ? 'text-[#EC4899]' : 'text-[#D4AF37]'}`}>
                     {selectedPhoto.source === 'client' ? '👤 Cliente' : '👑 Salón'}
                   </span>
                 </div>
@@ -860,11 +833,10 @@ export default function GaleriaAdminPage() {
                     <span className="text-stone-400 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5" /> Cliente:
                     </span>
-                    <span className="font-medium text-amber-400">{selectedPhoto.client_name}</span>
+                    <span className="font-medium text-[#EC4899]">{selectedPhoto.client_name}</span>
                   </div>
                 )}
 
-                {/* ✅ NUEVO: Mostrar vistas y likes para fotos de clientes */}
                 {selectedPhoto.source === 'client' && (
                   <div className="flex items-center gap-4 pt-1">
                     {selectedPhoto.views !== undefined && (
@@ -882,10 +854,8 @@ export default function GaleriaAdminPage() {
               </div>
             </div>
 
-            {/* ✅ ACCIONES - SIEMPRE VISIBLES */}
             <div className="pt-4 border-t border-white/10 flex gap-2 mt-4">
               {selectedPhoto.source === 'admin' ? (
-                // ✅ Botones para fotos de ADMIN
                 <>
                   <button 
                     onClick={() => {
@@ -902,19 +872,18 @@ export default function GaleriaAdminPage() {
                       })
                       setShowModal(true)
                     }}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                   >
                     <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Editar
                   </button>
                   <button 
                     onClick={() => deletePhoto(selectedPhoto.id)}
-                    className="p-2.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all"
+                    className="p-2.5 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-xl transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </>
               ) : (
-                // ✅ Botones para fotos de CLIENTES - Solo cerrar
                 <button 
                   onClick={closeLightbox}
                   className="flex-1 py-2.5 bg-stone-700 hover:bg-stone-600 text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
@@ -933,28 +902,28 @@ export default function GaleriaAdminPage() {
       {showModal && (
         <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
           <div 
-            className="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#130f24] border border-stone-200 dark:border-stone-800 p-6 shadow-2xl max-h-[92vh] overflow-y-auto"
+            className="relative w-full max-w-xl rounded-3xl bg-white border border-[#F0E4DA] p-6 shadow-2xl max-h-[92vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => { setShowModal(false); resetForm(); }} className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors">
+            <button onClick={() => { setShowModal(false); resetForm(); }} className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 transition-colors">
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="p-2.5 rounded-xl text-white shadow-md" style={primaryBgStyle}>
+              <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]">
                 <Layers className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-serif font-extrabold text-stone-900 dark:text-white">
+              <h3 className="text-lg font-serif font-extrabold text-stone-900">
                 {editingPhoto ? 'Editar Obra' : 'Subir Nueva Obra'}
               </h3>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 dark:text-stone-400 mb-1.5 font-mono">
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1.5 font-mono">
                   Imagen *
                 </label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 hover:bg-stone-100/50 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800 transition-colors">
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 border-stone-200 transition-colors">
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                   {previewUrl ? (
                     <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
@@ -963,7 +932,7 @@ export default function GaleriaAdminPage() {
                   ) : (
                     <div className="py-2">
                       <ImageIcon className="w-7 h-7 mx-auto text-stone-400 mb-1" />
-                      <p className="text-xs text-stone-600 dark:text-stone-300">Seleccionar imagen</p>
+                      <p className="text-xs text-stone-600">Seleccionar imagen</p>
                     </div>
                   )}
                 </div>
@@ -976,7 +945,7 @@ export default function GaleriaAdminPage() {
                     type="text" 
                     value={formData.title} 
                     onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                    className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-pink-500/50" 
+                    className="w-full px-4 py-2 rounded-xl border bg-white border-[#F0E4DA] text-xs focus:ring-2 focus:ring-[#D4AF37]/20" 
                     placeholder="Ej: Kapping Gel con Deco" 
                   />
                 </div>
@@ -985,7 +954,7 @@ export default function GaleriaAdminPage() {
                   <select 
                     value={formData.category} 
                     onChange={(e) => setFormData({...formData, category: e.target.value})} 
-                    className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-pink-500/50"
+                    className="w-full px-4 py-2 rounded-xl border bg-white border-[#F0E4DA] text-xs focus:ring-2 focus:ring-[#D4AF37]/20"
                   >
                     {categories.filter(c => c !== 'Todas').map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
@@ -998,7 +967,7 @@ export default function GaleriaAdminPage() {
                   <select 
                     value={formData.professional_id} 
                     onChange={(e) => setFormData({...formData, professional_id: e.target.value})} 
-                    className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-pink-500/50"
+                    className="w-full px-4 py-2 rounded-xl border bg-white border-[#F0E4DA] text-xs focus:ring-2 focus:ring-[#D4AF37]/20"
                   >
                     <option value="">No asignar</option>
                     {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
@@ -1010,7 +979,7 @@ export default function GaleriaAdminPage() {
                     type="number" 
                     value={formData.sort_order} 
                     onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})} 
-                    className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs focus:ring-1 focus:ring-pink-500/50"
+                    className="w-full px-4 py-2 rounded-xl border bg-white border-[#F0E4DA] text-xs focus:ring-2 focus:ring-[#D4AF37]/20"
                     placeholder="0"
                   />
                 </div>
@@ -1022,7 +991,7 @@ export default function GaleriaAdminPage() {
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                   rows={2} 
-                  className="w-full px-4 py-2 rounded-xl border bg-white dark:bg-[#0f0c1b] text-xs resize-none focus:ring-1 focus:ring-pink-500/50" 
+                  className="w-full px-4 py-2 rounded-xl border bg-white border-[#F0E4DA] text-xs resize-none focus:ring-2 focus:ring-[#D4AF37]/20" 
                   placeholder="Detalles técnicos del trabajo..."
                 />
               </div>
@@ -1032,24 +1001,23 @@ export default function GaleriaAdminPage() {
                   type="checkbox" 
                   checked={formData.is_active} 
                   onChange={(e) => setFormData({...formData, is_active: e.target.checked})} 
-                  className="w-4 h-4 rounded border-stone-300 text-pink-500 focus:ring-0" 
+                  className="w-4 h-4 rounded border-stone-300 text-[#D4AF37] focus:ring-0" 
                 />
-                <span className="text-xs font-medium text-stone-600 dark:text-stone-300">Visible en el catálogo</span>
+                <span className="text-xs font-medium text-stone-600">Visible en el catálogo</span>
               </div>
 
-              <div className="flex gap-3 pt-3 border-t dark:border-stone-800">
+              <div className="flex gap-3 pt-3 border-t border-[#F0E4DA]">
                 <button 
                   type="button" 
                   onClick={() => { setShowModal(false); resetForm(); }} 
-                  className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 dark:text-stone-300"
+                  className="flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase text-stone-600 border-[#F0E4DA] hover:bg-[#F0E4DA] transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
                   disabled={uploading} 
-                  className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all" 
-                  style={primaryBgStyle}
+                  className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]"
                 >
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   {uploading ? 'Guardando...' : 'Guardar'}
