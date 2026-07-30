@@ -188,6 +188,23 @@ export default function HistorialPage() {
     return { totalEventos, totalCitas, totalClientes, totalIngresos }
   }, [historial])
 
+  // ✅ ELIMINAR REGISTRO INDIVIDUAL
+  const eliminarIndividual = async (item: HistorialItem) => {
+    if (!confirm(`¿Eliminar "${item.title}"?`)) return
+    setDeleting(true)
+    try {
+      await supabase.from(item.table).delete().eq('id', item.id)
+      setSuccess('✅ Registro eliminado correctamente')
+      setTimeout(() => setSuccess(null), 3000)
+      await cargarHistorial(false)
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const eliminarSeleccionados = async () => {
     if (!confirm(`¿Estás seguro de eliminar ${selectedItems.size} registro(s) seleccionados?`)) return
     setDeleting(true)
@@ -245,15 +262,12 @@ export default function HistorialPage() {
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-hidden ${isDark ? 'bg-[#150D08] text-[#FFF9F6]' : 'bg-[#FDFBF9] text-[#1A0E0A]'}`}>
       
-      {/* Fondos Decorativos Orgánicos */}
       <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#EC4899]/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6 relative z-10 pt-4">
         
-        {/* ============================================================ */}
-        {/* CABECERA HERO BANNER */}
-        {/* ============================================================ */}
+        {/* CABECERA */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
             ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
@@ -303,9 +317,7 @@ export default function HistorialPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* MENSAJES DE ESTADO */}
-        {/* ============================================================ */}
+        {/* MENSAJES */}
         {success && (
           <div className={`p-4 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -320,9 +332,7 @@ export default function HistorialPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* KPIS — 4 columnas responsivas */}
-        {/* ============================================================ */}
+        {/* KPIS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
             <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#C9A96E] border border-[#D4AF37]/20 shrink-0">
@@ -366,13 +376,14 @@ export default function HistorialPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* FILTROS Y BÚSQUEDA (CON WRAP ORDENADO) */}
+        {/* FILTROS — RESPONSIVE (CON WRAP) */}
         {/* ============================================================ */}
-        <div className={`p-4 rounded-3xl border flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between ${
+        <div className={`p-4 rounded-3xl border flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between ${
           isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'
         }`}>
           
-          <div className={`w-full lg:w-80 p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 shrink-0 ${
+          {/* Buscador */}
+          <div className={`w-full xl:w-72 p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 shrink-0 ${
             isDark ? 'bg-[#150D08] border-[#3D281E]' : 'bg-[#FAF6F2] border-[#EADED5]'
           }`}>
             <Search className="w-4 h-4 text-[#C9A96E] shrink-0" />
@@ -390,64 +401,59 @@ export default function HistorialPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-[#C9A96E]" />
-              
-              {/* Tipo */}
-              <select 
-                value={filterType} 
-                onChange={(e) => setFilterType(e.target.value)} 
-                className={`px-3 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider outline-none cursor-pointer ${
-                  isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
-                }`}
-              >
-                <option value="todos">Todos los Tipos</option>
-                <option value="cita">Citas</option>
-                <option value="cliente">Clientes</option>
-              </select>
+          {/* Filtros */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-[#C9A96E] shrink-0" />
+            
+            <select 
+              value={filterType} 
+              onChange={(e) => setFilterType(e.target.value)} 
+              className={`px-3 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer ${
+                isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
+              }`}
+            >
+              <option value="todos">Tipos</option>
+              <option value="cita">Citas</option>
+              <option value="cliente">Clientes</option>
+            </select>
 
-              {/* Estado */}
-              <select 
-                value={filterStatus} 
-                onChange={(e) => setFilterStatus(e.target.value)} 
-                className={`px-3 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider outline-none cursor-pointer ${
-                  isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
-                }`}
-              >
-                <option value="todos">Todos los Estados</option>
-                {estadosDisponibles.map(est => <option key={est} value={est}>{est}</option>)}
-              </select>
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)} 
+              className={`px-3 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer ${
+                isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
+              }`}
+            >
+              <option value="todos">Estados</option>
+              {estadosDisponibles.map(est => <option key={est} value={est}>{est}</option>)}
+            </select>
 
-              {/* Mes */}
-              <select 
-                value={filterMonth} 
-                onChange={(e) => setFilterMonth(e.target.value)} 
-                className={`px-3 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-wider outline-none cursor-pointer ${
-                  isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
-                }`}
-              >
-                <option value="todos">Todos los Meses</option>
-                {mesesDisponibles.map(m => (
-                  <option key={m} value={m}>{format(new Date(m + '-01'), 'MMM yyyy', { locale: es })}</option>
-                ))}
-              </select>
-            </div>
+            <select 
+              value={filterMonth} 
+              onChange={(e) => setFilterMonth(e.target.value)} 
+              className={`px-3 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer ${
+                isDark ? 'bg-[#150D08] border-[#3D281E] text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#1A0E0A]'
+              }`}
+            >
+              <option value="todos">Meses</option>
+              {mesesDisponibles.map(m => (
+                <option key={m} value={m}>{format(new Date(m + '-01'), 'MMM yyyy', { locale: es })}</option>
+              ))}
+            </select>
 
             <button 
               onClick={toggleSelectAll} 
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all ${
+              className={`px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider border transition-all ${
                 isDark ? 'bg-[#291A11] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
               }`}
             >
-              {selectAll ? 'Deseleccionar Pág.' : 'Seleccionar Pág.'}
+              {selectAll ? 'Deseleccionar' : 'Seleccionar'}
             </button>
           </div>
-
         </div>
 
         {/* ============================================================ */}
-        {/* LISTA DE REGISTROS */}
+        {/* LISTA DE REGISTROS — CON ELIMINAR INDIVIDUAL */}
         {/* ============================================================ */}
         <div className="space-y-3">
           {paginatedItems.length === 0 ? (
@@ -468,7 +474,7 @@ export default function HistorialPage() {
               return (
                 <div 
                   key={`${item.id}-${index}`} 
-                  className={`group relative rounded-3xl border p-4 transition-all duration-300 flex items-center gap-4 ${
+                  className={`group relative rounded-3xl border p-4 transition-all duration-300 flex items-center gap-3 ${
                     isSelected 
                       ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-md' 
                       : isDark 
@@ -476,6 +482,7 @@ export default function HistorialPage() {
                         : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/40 shadow-sm'
                   }`}
                 >
+                  {/* Checkbox */}
                   <input 
                     type="checkbox" 
                     checked={isSelected} 
@@ -483,37 +490,53 @@ export default function HistorialPage() {
                     className="w-4 h-4 accent-[#D4AF37] cursor-pointer shrink-0" 
                   />
                   
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${config.bg} ${config.border}`}>
-                    <IconComponent className={`w-5 h-5 ${config.color}`} />
+                  {/* Icono */}
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${config.bg} ${config.border}`}>
+                    <IconComponent className={`w-4 h-4 ${config.color}`} />
                   </div>
                   
-                  <div className="flex-1 min-w-0 space-y-1">
+                  {/* Info */}
+                  <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                      <h4 className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
                         {item.title}
                       </h4>
-                      <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${config.bg} ${config.color} ${config.border}`}>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${config.bg} ${config.color} ${config.border}`}>
                         {config.label}
                       </span>
-                      <span className={`text-[10px] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
-                        {format(new Date(item.date), 'dd/MM/yyyy')}
+                      <span className={`text-[9px] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
+                        {format(new Date(item.date), 'dd/MM/yy')}
                       </span>
                       {item.type === 'cita' && item.amount !== undefined && item.amount > 0 && (
-                        <span className="text-xs font-mono font-bold text-[#D4AF37]">
+                        <span className="text-[10px] font-mono font-bold text-[#D4AF37]">
                           ${item.amount.toLocaleString()}
                         </span>
                       )}
                     </div>
-                    <p className={`text-xs truncate ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                    <p className={`text-[10px] truncate ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       {item.description}
                     </p>
                   </div>
 
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full border shrink-0 ${
+                  {/* Estado */}
+                  <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${
                     isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5]' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D]'
                   }`}>
                     {item.status}
                   </span>
+
+                  {/* ✅ BOTÓN ELIMINAR INDIVIDUAL */}
+                  <button 
+                    onClick={() => eliminarIndividual(item)} 
+                    className={`p-2 rounded-xl border transition-all shrink-0 ${
+                      isDark 
+                        ? 'bg-[#150D08] border-[#3D281E] text-[#8A766A] hover:text-rose-400 hover:border-rose-500/30' 
+                        : 'bg-[#FAF6F2] border-[#EADED5] text-[#A39081] hover:text-rose-500 hover:border-rose-500/30'
+                    }`}
+                    title="Eliminar este registro"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )
             })
@@ -521,14 +544,14 @@ export default function HistorialPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* PAGINADOR INFERIOR */}
+        {/* PAGINADOR */}
         {/* ============================================================ */}
         {totalPages > 1 && (
           <div className={`flex items-center justify-between p-4 rounded-3xl border ${
             isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'
           }`}>
             <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-              Página <span className="font-bold">{currentPage}</span> de <span className="font-bold">{totalPages}</span> ({filtered.length} ítems en total)
+              Página <span className="font-bold">{currentPage}</span> de <span className="font-bold">{totalPages}</span> ({filtered.length} ítems)
             </p>
             <div className="flex items-center gap-2">
               <button 
