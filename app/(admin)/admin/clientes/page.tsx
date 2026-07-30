@@ -49,8 +49,12 @@ export default function ClientesPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // 🔥 DEPURACIÓN VISUAL
+  const [debugInfo, setDebugInfo] = useState<string | null>(null)
+  const [showDebug, setShowDebug] = useState(false)
+
   // ============================================================
-  // PALETA DE COLORES - DORADO PROTAGONISTA
+  // PALETA DE COLORES
   // ============================================================
   const gold = '#D4AF37'
   const goldLight = '#E8D5A0'
@@ -61,7 +65,7 @@ export default function ClientesPage() {
   }
 
   // ============================================================
-  // 🔥 COMPRIMIR IMAGEN (500x500, calidad 80%)
+  // COMPRIMIR IMAGEN
   // ============================================================
   const compressImage = (file: File, maxWidth = 500, maxHeight = 500, quality = 0.8): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -169,10 +173,12 @@ export default function ClientesPage() {
     setAvatarPreview(null)
     setFormError(null)
     setUploadingAvatar(false)
+    setDebugInfo(null)
+    setShowDebug(false)
   }
 
   // ============================================================
-  // 🔥 MANEJAR AVATAR CON COMPRESIÓN AUTOMÁTICA
+  // MANEJAR AVATAR
   // ============================================================
   const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -186,7 +192,6 @@ export default function ClientesPage() {
 
     try {
       setUploadingAvatar(true)
-      // ✅ COMPRIME AUTOMÁTICAMENTE A 500x500, calidad 80%
       const compressedFile = await compressImage(file, 500, 500, 0.8)
       setAvatarFile(compressedFile)
       setUploadingAvatar(false)
@@ -221,12 +226,14 @@ export default function ClientesPage() {
   }
 
   // ============================================================
-  // 🔥 GUARDAR CLIENTE CON TENANT_ID (SOLUCIONA RLS)
+  // 🔥 GUARDAR CLIENTE CON DEPURACIÓN VISUAL
   // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
     setSaving(true)
+    setDebugInfo(null)
+    setShowDebug(false)
 
     if (!formData.name.trim()) {
       setFormError('El nombre es obligatorio')
@@ -241,40 +248,66 @@ export default function ClientesPage() {
     }
 
     try {
-      // ✅ OBTENER TENANT_ID DEL USUARIO AUTENTICADO
-      const { data: { session } } = await supabase.auth.getSession()
-      const userId = session?.user?.id
+      // ✅ 1. VERIFICAR SESIÓN
+      setDebugInfo('🔍 Verificando sesión...')
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) {
+        setDebugInfo(`❌ Error de sesión: ${sessionError.message}`)
+        setShowDebug(true)
+        setFormError('Error de sesión. Re-inicia sesión.')
+        setSaving(false)
+        return
+      }
 
-      if (!userId) {
+      if (!session) {
+        setDebugInfo('❌ No hay sesión activa')
+        setShowDebug(true)
         setFormError('No hay sesión activa. Inicia sesión nuevamente.')
         setSaving(false)
         return
       }
 
-      // ✅ OBTENER TENANT_ID DEL PERFIL DEL USUARIO
+      setDebugInfo(`✅ Sesión activa: ${session.user.id.substring(0, 8)}...`)
+
+      // ✅ 2. OBTENER TENANT_ID
+      setDebugInfo('🔍 Obteniendo tenant_id...')
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('tenant_id')
-        .eq('id', userId)
+        .eq('id', session.user.id)
         .maybeSingle()
 
-      if (profileError || !profile?.tenant_id) {
-        setFormError('No se pudo obtener el tenant. Contacta al administrador.')
+      if (profileError) {
+        setDebugInfo(`❌ Error profile: ${profileError.message}`)
+        setShowDebug(true)
+        setFormError('Error al obtener el perfil.')
+        setSaving(false)
+        return
+      }
+
+      if (!profile || !profile.tenant_id) {
+        setDebugInfo('❌ No se encontró tenant_id en el perfil')
+        setShowDebug(true)
+        setFormError('No se encontró tenant_id. Contacta al administrador.')
         setSaving(false)
         return
       }
 
       const tenantId = profile.tenant_id
+      setDebugInfo(`✅ Tenant ID: ${tenantId.substring(0, 8)}...`)
 
       let avatarUrl = formData.avatar_url.trim() || null
 
       if (avatarFile) {
         setUploadingAvatar(true)
+        setDebugInfo('📤 Subiendo avatar...')
         avatarUrl = await uploadAvatar(avatarFile)
         setUploadingAvatar(false)
+        setDebugInfo(`✅ Avatar subido: ${avatarUrl.substring(0, 30)}...`)
       }
 
-      // ✅ INCLUIR tenant_id EN LA INSERCIÓN (SOLUCIONA RLS)
+      // ✅ 3. CONSTRUIR DATOS
       const newCliente = {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
@@ -285,31 +318,51 @@ export default function ClientesPage() {
         created_at: new Date().toISOString()
       }
 
+      setDebugInfo('📦 Insertando cliente...')
+
+      // ✅ 4. INTENTAR INSERTAR
       const { data, error } = await supabase
         .from('clients')
         .insert([newCliente])
         .select()
 
       if (error) {
+        // 🔥 MOSTRAR ERROR DETALLADO VISUALMENTE
+        let errorMsg = `❌ Error: ${error.message}`
+        if (error.code) errorMsg += `\nCódigo: ${error.code}`
+        if (error.details) errorMsg += `\nDetalle: ${error.details}`
+        if (error.hint) errorMsg += `\nSugerencia: ${error.hint}`
+        
+        setDebugInfo(errorMsg)
+        setShowDebug(true)
+        
         if (error.code === '23505') {
           setFormError('Ya existe un cliente con ese email o teléfono')
+        } else if (error.code === '42501') {
+          setFormError('⚠️ Error de permisos (RLS). Contacta al administrador.')
         } else {
-          console.error('Error Supabase:', error)
-          setFormError(error.message || 'Error al guardar el cliente')
+          setFormError(`Error: ${error.message}`)
         }
         setSaving(false)
         return
       }
 
-      if (data) {
+      setDebugInfo('✅ Cliente insertado correctamente!')
+      setShowDebug(true)
+
+      if (data && data.length > 0) {
         setClientes(prev => [data[0] as Cliente, ...prev])
         setSuccess('✅ Cliente agregado correctamente')
         setTimeout(() => setSuccess(null), 3000)
         setShowModal(false)
         resetForm()
+      } else {
+        setFormError('No se recibieron datos del cliente')
+        setSaving(false)
       }
     } catch (err: any) {
-      console.error('Error inesperado:', err)
+      setDebugInfo(`❌ Error inesperado: ${err.message}`)
+      setShowDebug(true)
       setFormError(err.message || 'Error inesperado')
     } finally {
       setSaving(false)
@@ -354,9 +407,7 @@ export default function ClientesPage() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10">
 
-        {/* ============================================================ */}
-        {/* CABECERA — DORADO PROTAGONISTA */}
-        {/* ============================================================ */}
+        {/* CABECERA */}
         <div 
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
           style={headerGradient}
@@ -401,9 +452,7 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* MENSAJES */}
-        {/* ============================================================ */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -422,9 +471,7 @@ export default function ClientesPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* KPIS */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -463,9 +510,7 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* BUSCADOR */}
-        {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
           <input 
@@ -485,9 +530,7 @@ export default function ClientesPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
         {/* GRID DE CLIENTES */}
-        {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {filtrados.map((cliente: Cliente) => (
             <div 
@@ -573,7 +616,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL: NUEVA CLIENTE CON COMPRESIÓN AUTOMÁTICA + TENANT_ID */}
+        {/* MODAL: NUEVA CLIENTE CON DEPURACIÓN VISUAL */}
         {/* ============================================================ */}
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -728,6 +771,28 @@ export default function ClientesPage() {
                     placeholder="099123456"
                   />
                 </div>
+
+                {/* 🔥 DEPURACIÓN VISUAL - MUESTRA EL ERROR EN PANTALLA */}
+                {showDebug && debugInfo && (
+                  <div className={`p-3 rounded-xl border text-xs font-mono whitespace-pre-wrap break-all ${
+                    debugInfo.includes('❌') 
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+                      : debugInfo.includes('✅') 
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        : isDark 
+                          ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' 
+                          : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
+                  }`}>
+                    <p className="font-bold text-[10px] uppercase tracking-wider mb-1">🔍 Depuración:</p>
+                    <p className="text-[10px] leading-relaxed">{debugInfo}</p>
+                    <button 
+                      onClick={() => setShowDebug(false)}
+                      className="mt-2 text-[8px] font-black uppercase tracking-wider text-[#D4AF37] hover:text-[#E8D5A0]"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                )}
 
                 {formError && (
                   <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs">
