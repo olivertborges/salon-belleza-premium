@@ -188,7 +188,6 @@ export default function HistorialPage() {
     return { totalEventos, totalCitas, totalClientes, totalIngresos }
   }, [historial])
 
-  // ✅ ELIMINAR REGISTRO INDIVIDUAL
   const eliminarIndividual = async (item: HistorialItem) => {
     if (!confirm(`¿Eliminar "${item.title}"?`)) return
     setDeleting(true)
@@ -267,7 +266,9 @@ export default function HistorialPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6 relative z-10 pt-4">
         
-        {/* CABECERA */}
+        {/* ============================================================ */}
+        {/* CABECERA HERO BANNER CON COMPONENTES KPI INTEGRADOS */}
+        {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
             ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
@@ -276,44 +277,100 @@ export default function HistorialPage() {
           <div className="absolute -top-40 -right-40 w-[300px] h-[300px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[90px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent" />
 
-          <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[9px] font-black uppercase tracking-[0.25em] text-[#C9A96E]">
-                <Sparkles className="w-2.5 h-2.5" />
-                ✦ Registro General
+          <div className="relative z-10 p-6 md:p-8 space-y-6">
+            
+            {/* Fila del Título y Acciones */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[9px] font-black uppercase tracking-[0.25em] text-[#C9A96E]">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  ✦ Registro General
+                </div>
+                <h1 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                  Historial de Actividad
+                </h1>
+                <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                  Monitorea el flujo de citas y nuevos clientes registrados en el sistema.
+                </p>
               </div>
-              <h1 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                Historial de Actividad
-              </h1>
-              <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                Monitorea el flujo de citas y nuevos clientes registrados en el sistema.
-              </p>
-            </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <button 
-                onClick={() => cargarHistorial(false)} 
-                disabled={refreshing} 
-                className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all border flex items-center gap-2 ${
-                  isDark ? 'bg-[#291A11] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
-                }`}
-                title="Sincronizar historial"
-              >
-                <RefreshCw className={`w-4 h-4 text-[#C9A96E] ${refreshing ? 'animate-spin' : ''}`} />
-                <span>Actualizar</span>
-              </button>
-
-              {selectedItems.size > 0 && (
+              <div className="flex items-center gap-3 shrink-0">
                 <button 
-                  onClick={eliminarSeleccionados} 
-                  disabled={deleting} 
-                  className="px-5 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs uppercase tracking-[0.15em] transition-all shadow-xl flex items-center gap-2"
+                  onClick={() => cargarHistorial(false)} 
+                  disabled={refreshing} 
+                  className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all border flex items-center gap-2 ${
+                    isDark ? 'bg-[#291A11] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
+                  }`}
+                  title="Sincronizar historial"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Eliminar ({selectedItems.size})</span>
+                  <RefreshCw className={`w-4 h-4 text-[#C9A96E] ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>Actualizar</span>
                 </button>
-              )}
+
+                {selectedItems.size > 0 && (
+                  <button 
+                    onClick={eliminarSeleccionados} 
+                    disabled={deleting} 
+                    className="px-5 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs uppercase tracking-[0.15em] transition-all shadow-xl flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Eliminar ({selectedItems.size})</span>
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Fila de Contenedores de Estado (Incrustados e Indestructibles) */}
+            <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 p-3 rounded-2xl border ${
+              isDark ? 'bg-[#150D08]/60 border-[#3D281E]/70' : 'bg-[#FAF6F2]/60 border-[#EADED5]/70'
+            }`}>
+              
+              {/* Eventos */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-[#D4AF37]/10 text-[#C9A96E] border border-[#D4AF37]/20 shrink-0">
+                  <History className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Eventos</p>
+                  <h3 className={`text-sm md:text-base font-extrabold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalEventos}</h3>
+                </div>
+              </div>
+
+              {/* Citas */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Citas</p>
+                  <h3 className={`text-sm md:text-base font-extrabold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalCitas}</h3>
+                </div>
+              </div>
+
+              {/* Clientes */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 shrink-0">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Clientes</p>
+                  <h3 className={`text-sm md:text-base font-extrabold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalClientes}</h3>
+                </div>
+              </div>
+
+              {/* Ingresos */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Ingresos Totales</p>
+                  <h3 className={`text-sm md:text-base font-extrabold truncate text-emerald-500`}>${stats.totalIngresos.toLocaleString()}</h3>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </div>
 
@@ -331,49 +388,6 @@ export default function HistorialPage() {
             <p className="text-xs font-medium">{error}</p>
           </div>
         )}
-
-        {/* KPIS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
-            <div className="p-3 rounded-2xl bg-[#D4AF37]/10 text-[#C9A96E] border border-[#D4AF37]/20 shrink-0">
-              <History className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Eventos</p>
-              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalEventos}</h3>
-            </div>
-          </div>
-
-          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
-            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Citas</p>
-              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalCitas}</h3>
-            </div>
-          </div>
-
-          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
-            <div className="p-3 rounded-2xl bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20 shrink-0">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Clientes</p>
-              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalClientes}</h3>
-            </div>
-          </div>
-
-          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
-            <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Ingresos Totales</p>
-              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>${stats.totalIngresos.toLocaleString()}</h3>
-            </div>
-          </div>
-        </div>
 
         {/* ============================================================ */}
         {/* FILTROS — RESPONSIVE (CON WRAP) */}
@@ -453,7 +467,7 @@ export default function HistorialPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* LISTA DE REGISTROS — CON ELIMINAR INDIVIDUAL */}
+        {/* LISTA DE REGISTROS */}
         {/* ============================================================ */}
         <div className="space-y-3">
           {paginatedItems.length === 0 ? (
@@ -482,7 +496,6 @@ export default function HistorialPage() {
                         : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/40 shadow-sm'
                   }`}
                 >
-                  {/* Checkbox */}
                   <input 
                     type="checkbox" 
                     checked={isSelected} 
@@ -490,12 +503,10 @@ export default function HistorialPage() {
                     className="w-4 h-4 accent-[#D4AF37] cursor-pointer shrink-0" 
                   />
                   
-                  {/* Icono */}
                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${config.bg} ${config.border}`}>
                     <IconComponent className={`w-4 h-4 ${config.color}`} />
                   </div>
                   
-                  {/* Info */}
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
@@ -518,14 +529,12 @@ export default function HistorialPage() {
                     </p>
                   </div>
 
-                  {/* Estado */}
                   <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${
                     isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5]' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D]'
                   }`}>
                     {item.status}
                   </span>
 
-                  {/* ✅ BOTÓN ELIMINAR INDIVIDUAL */}
                   <button 
                     onClick={() => eliminarIndividual(item)} 
                     className={`p-2 rounded-xl border transition-all shrink-0 ${
