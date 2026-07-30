@@ -8,7 +8,7 @@ import {
   CheckCircle2, Play, Filter, DollarSign, Layers, Plus, Trash2, 
   X, Edit, FileText, Users, ChevronDown, Award, Ban, RefreshCw, 
   Loader2, Building2, CalendarDays, Check, TrendingUp, Save,
-  Eye, EyeOff, Circle, Sun, Moon, Cloud
+  Eye, EyeOff, Circle, Sun, Moon, Cloud, Search, User
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -43,7 +43,10 @@ export default function AdminAgendaPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [isStaff, setIsStaff] = useState(false)
   const [staffId, setStaffId] = useState<string | null>(null)
-  const [showStaffFilter, setShowStaffFilter] = useState(false)
+  
+  // Nuevo estado para el modal premium de profesionales
+  const [showStaffModal, setShowStaffModal] = useState(false)
+  const [searchStaff, setSearchStaff] = useState('')
 
   const [newCita, setNewCita] = useState({
     clientId: '',
@@ -143,7 +146,6 @@ export default function AdminAgendaPage() {
     try {
       let query = supabase.from('appointments').select('*')
 
-      // Si es un profesional logueado, forzar estrictamente su ID sin excepciones
       if (isStaff && staffId) {
         query = query.eq('professional_id', staffId)
       } else if (filtroStaff !== 'todos' && !isStaff) {
@@ -197,7 +199,7 @@ export default function AdminAgendaPage() {
     fetchData(false)
 
     const canalCitas = supabase
-      .channel('cambios-agenda-admin-v4')
+      .channel('cambios-agenda-admin-v5')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'appointments' },
@@ -242,12 +244,12 @@ export default function AdminAgendaPage() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string, color: string, bg: string, icon: any }> = {
-      pending: { label: 'Pendiente', color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10 border-[#D4AF37]/20', icon: Clock },
-      confirmed: { label: 'Confirmada', color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-      in_progress: { label: 'En curso', color: 'text-[#EC4899]', bg: 'bg-[#EC4899]/10 border-[#EC4899]/20', icon: Play },
-      completed: { label: 'Completada', color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/10 border-[#3B82F6]/20', icon: Award },
-      cancelled: { label: 'Cancelada', color: 'text-rose-500', bg: 'bg-rose-500/10 border-rose-500/20', icon: X },
-      blocked: { label: 'Bloqueado', color: 'text-stone-500', bg: 'bg-stone-500/10 border-stone-500/20', icon: Ban },
+      pending: { label: 'Pendiente', color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10 border-[#D4AF37]/25', icon: Clock },
+      confirmed: { label: 'Confirmada', color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/25', icon: CheckCircle2 },
+      in_progress: { label: 'En curso', color: 'text-[#EC4899]', bg: 'bg-[#EC4899]/10 border-[#EC4899]/25', icon: Play },
+      completed: { label: 'Completada', color: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/10 border-[#3B82F6]/25', icon: Award },
+      cancelled: { label: 'Cancelada', color: 'text-rose-500', bg: 'bg-rose-500/10 border-rose-500/25', icon: X },
+      blocked: { label: 'Bloqueado', color: 'text-stone-500', bg: 'bg-stone-500/10 border-stone-500/25', icon: Ban },
     }
     return config[status] || config.pending
   }
@@ -257,7 +259,6 @@ export default function AdminAgendaPage() {
     return citas.filter((c: any) => c.date === dateStr)
   }
 
-  // Métricas Calculadas
   const stats = useMemo(() => {
     const totalIngresos = citas
       .filter((c: any) => c.status === 'completed')
@@ -370,6 +371,11 @@ export default function AdminAgendaPage() {
     setFormError(null)
     setShowNewAppointment(true)
   }
+
+  // Filtrado de staff para el nuevo buscador del modal
+  const filteredStaffList = useMemo(() => {
+    return staff.filter(s => s.name?.toLowerCase().includes(searchStaff.toLowerCase()))
+  }, [staff, searchStaff])
 
   const renderListaCitas = (fecha: Date) => {
     const citasDelDia = getCitasDelDia(fecha)
@@ -505,63 +511,100 @@ export default function AdminAgendaPage() {
                 <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{franja.nombre}</span>
                 <div className={`flex-1 h-px ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
               </div>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-3">
                 {franja.horas.map((hora, index) => {
                   const cita = getCitaEnHora(hora)
                   const horaStr = String(hora).padStart(2, '0')
                   const isBlocked = cita?.status === 'blocked'
                   const statusInfo = getStatusBadge(cita?.status || 'pending')
 
+                  // Paleta dinámica y limpia para las reservas en lugar de colores chillones e invasivos
+                  const softBg = isDark 
+                    ? index % 3 === 0 ? 'bg-[#2E251B] border-[#D4AF37]/30 hover:bg-[#382D20]' : index % 3 === 1 ? 'bg-[#2E1E26] border-[#EC4899]/30 hover:bg-[#38252E]' : 'bg-[#1E2633] border-[#3B82F6]/30 hover:bg-[#253042]'
+                    : index % 3 === 0 ? 'bg-[#FCF9F2] border-[#D4AF37]/40 hover:bg-[#FAF2E3]' : index % 3 === 1 ? 'bg-[#FDF2F7] border-[#EC4899]/40 hover:bg-[#FBE5F0]' : 'bg-[#F2F7FF] border-[#3B82F6]/40 hover:bg-[#E5EFFF]'
+                  
+                  const activeLeftBorder = index % 3 === 0 ? 'border-l-[#D4AF37]' : index % 3 === 1 ? 'border-l-[#EC4899]' : 'border-l-[#3B82F6]'
+
                   return (
                     <div 
                       key={hora}
                       onClick={() => cita ? abrirDetalleCita(cita) : handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), horaStr)}
-                      className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      className={`group flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 ${
                         cita 
-                          ? isBlocked ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-70' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-70'
-                                      : isDark ? `bg-[#2A1B14] border-[#3D281E] cursor-pointer hover:border-[#D4AF37]/40` : `bg-white border-[#F0E4DA] cursor-pointer hover:border-[#D4AF37]/40`
-                          : isDark ? `bg-transparent border-dashed border-[#3D281E] hover:border-[#D4AF37]/20` : `bg-transparent border-dashed border-[#F0E4DA] hover:border-[#D4AF37]/20`
+                          ? isBlocked 
+                            ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-60' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-60'
+                            : `${softBg} ${activeLeftBorder} border-l-4 cursor-pointer shadow-sm hover:shadow-md`
+                          : isDark ? `bg-transparent border-dashed border-[#3D281E] hover:border-[#D4AF37]/20 hover:bg-[#2A1B14]/20` : `bg-transparent border-dashed border-[#F0E4DA] hover:border-[#D4AF37]/20 hover:bg-[#FFF9F6]/40`
                       }`}
                     >
-                      <div className={`w-14 text-xs font-mono font-bold shrink-0 ${cita ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#3D281E]' : 'text-[#F0E4DA]'}`}>
-                        {horaStr}:00
+                      {/* Línea de Hora a la izquierda */}
+                      <div className="flex flex-col items-center justify-center shrink-0">
+                        <span className={`text-sm font-mono font-black ${cita ? isDark ? 'text-white' : 'text-[#1A0E0A]' : isDark ? 'text-[#3D281E]' : 'text-[#C4B5A9]'}`}>
+                          {horaStr}:00
+                        </span>
+                        <span className={`text-[9px] font-mono ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
+                          60 min
+                        </span>
                       </div>
+
+                      {/* Contenido principal de la Celda */}
                       {cita ? (
-                        <div className="flex-1 flex items-center justify-between min-w-0">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-2 min-w-0">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
                             {!isBlocked ? (
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`}>
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0 shadow-sm ${
+                                index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'
+                              }`}>
                                 {cita.clients?.name?.charAt(0) || 'C'}
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-400 text-white shrink-0"><Ban className="w-4 h-4" /></div>
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-stone-500 text-white shrink-0 shadow-sm">
+                                <Ban className="w-4 h-4" />
+                              </div>
                             )}
-                            <div className="min-w-0 flex-1">
-                              <p className={`text-sm font-medium whitespace-normal break-words pr-2 ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                                {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
+
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <p className={`text-sm font-bold tracking-tight whitespace-normal break-words leading-tight ${
+                                isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-white' : 'text-[#1A0E0A]'
+                              }`}>
+                                {isBlocked ? 'Bloqueo Administrativo' : cita.clients?.name || 'Cliente sin registrar'}
                               </p>
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                <span className={`text-[10px] font-medium whitespace-normal break-words ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
-                                  {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
+                              
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className={`text-xs font-semibold whitespace-normal break-words ${
+                                  isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'
+                                }`}>
+                                  {isBlocked ? 'Horario reservado' : cita.services?.name || 'Servicio General'}
                                 </span>
+                                
                                 {!isBlocked && cita.staff && (
                                   <>
-                                    <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
-                                    <span className={`text-[9px] font-medium whitespace-normal break-words ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.staff.name}</span>
+                                    <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#4E392E]' : 'bg-[#EADED5]'}`} />
+                                    <span className={`text-[11px] font-medium flex items-center gap-1 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                                      <User className="w-3 h-3 text-[#C9A96E]" /> {cita.staff.name}
+                                    </span>
                                   </>
                                 )}
                               </div>
                             </div>
                           </div>
+
+                          {/* Precios e indicadores del estado de la reserva */}
                           {!isBlocked && (
-                            <div className="flex items-center gap-2 shrink-0 ml-2">
-                              <span className="text-xs font-mono font-bold text-[#D4AF37]">${Number(cita.services?.price || 0).toLocaleString()}</span>
-                              <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>{statusInfo.label}</span>
+                            <div className="flex items-center md:flex-col md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-black/5 dark:border-white/5">
+                              <span className="text-sm font-mono font-black text-[#D4AF37]">
+                                ${Number(cita.services?.price || 0).toLocaleString()}
+                              </span>
+                              <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border shadow-xs ${statusInfo.bg} ${statusInfo.color}`}>
+                                {statusInfo.label}
+                              </span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className={`flex-1 text-xs italic font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Sin turno — Haz clic para agendar</div>
+                        <div className={`flex-1 text-xs tracking-wide italic font-light py-1.5 transition-colors group-hover:text-[#D4AF37] ${isDark ? 'text-[#5C4A3E]' : 'text-[#C4B5A9]'}`}>
+                          Espacio disponible — Clic para agendar cita rápida
+                        </div>
                       )}
                     </div>
                   )
@@ -747,18 +790,14 @@ export default function AdminAgendaPage() {
 
       <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-4">
 
-        {/* ============================================================ */}
-        {/* HERO BANNER (GIRO) - CON CONTENEDORES KPI Y SELECTOR STAFF */}
-        {/* ============================================================ */}
+        {/* HERO BANNER - CON CONTENEDORES KPI */}
         <div className={`relative rounded-3xl border shadow-xl transition-all duration-300 ${
           isDark ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E]' : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5]'
         }`}>
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="relative z-10 p-6 md:p-8 space-y-6">
             
-            {/* Fila Principal de Título y Controles */}
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
               
               <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -779,52 +818,22 @@ export default function AdminAgendaPage() {
               {/* Botones de Operación y Filtro Administrador */}
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                 
-                {/* Selector de Agenda/Profesional - Oculto totalmente para Staff */}
+                {/* BOTÓN REVISADO: Lanza el modal completo para seleccionar al profesional de forma limpia */}
                 {!isStaff && staff.length > 0 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowStaffFilter(!showStaffFilter)}
-                      className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-                        showStaffFilter 
-                          ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37]' 
-                          : isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5]' : 'bg-white border-[#EADED5] text-[#6E5A4D]'
-                      }`}
-                    >
-                      <Users className="w-3.5 h-3.5" />
-                      <span>
-                        {filtroStaff !== 'todos' 
-                          ? staff.find((s: any) => s.id === filtroStaff)?.name || 'Agenda'
-                          : 'Todas las agendas'}
-                      </span>
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showStaffFilter ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {showStaffFilter && (
-                      <div className={`absolute right-0 top-full mt-1.5 w-60 rounded-xl border shadow-2xl z-[100] max-h-60 overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
-                        <button
-                          onClick={() => { setFiltroStaff('todos'); setShowStaffFilter(false) }}
-                          className={`w-full px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-[#D4AF37]/10 ${
-                            filtroStaff === 'todos' ? 'text-[#D4AF37]' : isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'
-                          }`}
-                        >
-                          Todas las agendas
-                        </button>
-                        {staff.map((s: any, idx: number) => (
-                          <button
-                            key={s.id}
-                            onClick={() => { setFiltroStaff(s.id); setShowStaffFilter(false) }}
-                            className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-[#D4AF37]/10 border-t ${isDark ? 'border-[#3D281E]' : 'border-[#EADED5]'} ${
-                              filtroStaff === s.id 
-                                ? idx % 3 === 0 ? 'text-[#D4AF37] font-bold' : idx % 3 === 1 ? 'text-[#EC4899] font-bold' : 'text-[#3B82F6] font-bold'
-                                : isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'
-                            }`}
-                          >
-                            Agenda: {s.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => { setSearchStaff(''); setShowStaffModal(true) }}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+                      isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5] hover:border-[#D4AF37]/50' : 'bg-white border-[#EADED5] text-[#6E5A4D] hover:border-[#D4AF37]/50'
+                    }`}
+                  >
+                    <Users className="w-4 h-4 text-[#D4AF37]" />
+                    <span>
+                      {filtroStaff !== 'todos' 
+                        ? `${staff.find((s: any) => s.id === filtroStaff)?.name || 'Profesional'}`
+                        : 'Filtrar por Profesional'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-[#A89588]" />
+                  </button>
                 )}
 
                 <button 
@@ -847,11 +856,10 @@ export default function AdminAgendaPage() {
               </div>
             </div>
 
-            {/* Fila de Componentes KPI Integrados en el Giro */}
+            {/* Fila de Componentes KPI */}
             <div className={`grid grid-cols-3 gap-3 p-3 rounded-2xl border ${
               isDark ? 'bg-[#150D08]/60 border-[#3D281E]/70' : 'bg-[#FAF6F2]/60 border-[#EADED5]/70'
             }`}>
-              {/* Turnos Totales */}
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="p-2 rounded-xl text-white bg-[#D4AF37] shrink-0">
                   <CalendarDays className="w-4 h-4" />
@@ -862,7 +870,6 @@ export default function AdminAgendaPage() {
                 </div>
               </div>
 
-              {/* En Espera / Pendientes */}
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="p-2 rounded-xl text-white bg-[#EC4899] shrink-0">
                   <Clock className="w-4 h-4" />
@@ -873,7 +880,6 @@ export default function AdminAgendaPage() {
                 </div>
               </div>
 
-              {/* Flujo de Caja */}
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="p-2 rounded-xl text-white bg-[#3B82F6] shrink-0">
                   <TrendingUp className="w-4 h-4" />
@@ -888,22 +894,21 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* MENSAJES DE NOTIFICACIÓN */}
+        {/* NOTIFICACIONES */}
         {error && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <X className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+          <div className={`flex items-start gap-4 border p-4 rounded-2xl text-rose-500 ${isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
+            <X className="w-4 h-4 shrink-0 mt-0.5" />
             <p className="text-sm font-light">{error}</p>
           </div>
         )}
-
         {success && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+          <div className={`flex items-start gap-4 border p-4 rounded-2xl text-emerald-500 ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
             <p className="text-sm font-light">{success}</p>
           </div>
         )}
 
-        {/* CONTROLES SECUNDARIOS Y NAVEGACIÓN (SELECTOR DÍA/SEMANA/MES AHORA CENTRADO Y CONTUNDENTE) */}
+        {/* NAVEGACIÓN Y SELECTOR DE VISTA VISTA CENTRADO */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className={`flex w-full sm:w-auto justify-center border rounded-xl p-1 shadow-sm ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
             {(['day', 'week', 'month'] as const).map((mode, idx) => (
@@ -934,16 +939,125 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* CONTENEDOR DE VISTAS DINÁMICAS */}
+        {/* COMPONENTE PRINCIPAL DE AGENDAS */}
         <div className="w-full">
           {viewMode === 'day' && renderVistaDia()}
           {viewMode === 'week' && renderVistaSemana()}
           {viewMode === 'month' && renderVistaMes()}
         </div>
 
+        {/* MODAL REMODELADO: FILTRO DE PROFESIONALES PREMIUM */}
+        {showStaffModal && !isStaff && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all">
+            <div className={`relative w-full max-w-lg rounded-3xl shadow-2xl border p-6 flex flex-col max-h-[85vh] transition-all duration-300 transform scale-100 ${
+              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+            }`}>
+              
+              {/* Botón de Cierre */}
+              <button 
+                onClick={() => setShowStaffModal(false)} 
+                className={`absolute top-5 right-5 p-2 rounded-xl transition-colors ${
+                  isDark ? 'text-[#A89588] hover:text-white hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Cabecera del Modal */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className={`text-xl font-serif font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>Seleccionar Agenda</h3>
+                  <p className={`text-xs ${isDark ? 'text-[#A89588]' : 'text-[#7C6A5E]'}`}>Elige de qué especialista deseas visualizar el flujo de trabajo.</p>
+                </div>
+              </div>
+
+              {/* Input buscador interno */}
+              <div className="relative mb-4">
+                <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-[#5C4A3E]' : 'text-[#C4B5A9]'}`} />
+                <input
+                  type="text"
+                  placeholder="Buscar profesional..."
+                  value={searchStaff}
+                  onChange={(e) => setSearchStaff(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 ${
+                    isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                />
+              </div>
+
+              {/* Lista Scrolleable de Tarjetas */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[45vh]">
+                
+                {/* Opción global "Todas las Agendas" */}
+                {searchStaff === '' && (
+                  <div
+                    onClick={() => { setFiltroStaff('todos'); setShowStaffModal(false) }}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      filtroStaff === 'todos'
+                        ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#D4AF37]'
+                        : isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#BCAEA5] hover:bg-[#3D281E]/40' : 'bg-[#FFF9F6] border-[#EADED5] text-[#6E5A4D] hover:bg-[#FFF9F6]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-[#D4AF37] text-[#1A0E0A] flex items-center justify-center font-black text-xs">ALL</div>
+                      <div>
+                        <p className="text-xs font-black tracking-wide">Todas las Agendas</p>
+                        <p className={`text-[10px] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Vista unificada del salón entero</p>
+                      </div>
+                    </div>
+                    {filtroStaff === 'todos' && <Check className="w-4 h-4 text-[#D4AF37] shrink-0" />}
+                  </div>
+                )}
+
+                {/* Mapeo de Profesionales Filtrados */}
+                {filteredStaffList.length > 0 ? (
+                  filteredStaffList.map((s: any, idx: number) => {
+                    const isSelected = filtroStaff === s.id
+                    const colorIndicator = idx % 3 === 0 ? 'bg-[#D4AF37]' : idx % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'
+                    
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => { setFiltroStaff(s.id); setShowStaffModal(false) }}
+                        className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-[#D4AF37]/10 border-[#D4AF37]'
+                            : isDark ? 'bg-[#1E120C] border-[#3D281E] hover:bg-[#3D281E]/40' : 'bg-white border-[#EADED5] hover:bg-[#FFF9F6]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-9 h-9 rounded-full ${colorIndicator} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs`}>
+                            {s.name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-xs font-bold truncate ${isSelected ? 'text-[#D4AF37]' : isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                              {s.name}
+                            </p>
+                            <p className={`text-[10px] truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
+                              {s.specialty || 'Especialista Fresh Nails'}
+                            </p>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-[#D4AF37] shrink-0" />}
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className={`text-center py-8 text-xs italic ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
+                    No se encontraron profesionales con ese nombre.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MODAL: REGISTRO DE TURNOS */}
         {showNewAppointment && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
               <button onClick={() => setShowNewAppointment(false)} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}>
                 <X className="w-5 h-5" />
@@ -980,7 +1094,6 @@ export default function AdminAgendaPage() {
                   </select>
                 </div>
 
-                {/* Sólo visible para administradores. Si es staff, hereda su staffId internamente en el handler */}
                 {!isStaff && staff.length > 0 && (
                   <div>
                     <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Profesional</label>
@@ -1035,7 +1148,7 @@ export default function AdminAgendaPage() {
 
         {/* MODAL: ACCIONES Y DETALLE */}
         {showDetailModal && selectedCita && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
               <button onClick={() => setShowDetailModal(false)} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}>
                 <X className="w-5 h-5" />
