@@ -7,8 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Users, Plus, Search, Edit, Trash2, 
   Mail, Phone, X, Save, UserPlus, 
-  Sparkles, Award, Tag, RefreshCw,
-  CheckCircle
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle
 } from 'lucide-react'
 
 interface StaffMember {
@@ -20,8 +19,7 @@ interface StaffMember {
   avatar_url: string
   specialty: string
   experience: string
-  is_active: boolean
-  created_at: string
+  created_at?: string
 }
 
 export default function StaffPage() {
@@ -58,26 +56,25 @@ export default function StaffPage() {
       setLoading(true)
       setError(null)
       
-      // Intentamos traer los activos. Si tu tabla no usa is_active, remueve el .eq('is_active', true)
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('staff')
         .select('*')
         .order('name', { ascending: true })
 
-      if (error) throw error
-
-      // Filtramos en cliente si la tabla maneja is_active, o mostramos todos
-      const activeStaff = data ? data.filter(item => item.is_active !== false) : []
-      setStaff(activeStaff)
+      if (fetchError) throw fetchError
+      setStaff(data || [])
     } catch (err: any) {
-      setError(err.message || 'Error al cargar el equipo')
+      console.error('Error fetching staff:', err)
+      setError(err.message || 'Error al cargar el equipo desde Supabase')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
   }
 
-  useEffect(() => { fetchStaff() }, [])
+  useEffect(() => { 
+    fetchStaff() 
+  }, [])
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -90,80 +87,80 @@ export default function StaffPage() {
     setSuccess(null)
 
     if (!formData.name || !formData.email) {
-      setError('Nombre y email son obligatorios')
+      setError('El nombre y el email son obligatorios.')
       return
     }
 
     try {
       if (editingId) {
-        // ACTUALIZAR REGISTRO EXISTENTE
+        // EDITAR REGISTRO
         const { error: updateError } = await supabase
           .from('staff')
           .update({
-            name: formData.name,
+            name: formData.name.trim(),
             role: formData.role,
-            email: formData.email,
-            phone: formData.phone,
-            specialty: formData.specialty,
-            experience: formData.experience,
-            avatar_url: formData.avatar_url
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            specialty: formData.specialty.trim(),
+            experience: formData.experience ? String(formData.experience) : '',
+            avatar_url: formData.avatar_url.trim()
           })
           .eq('id', editingId)
 
         if (updateError) throw updateError
-        setSuccess('Miembro actualizado correctamente')
+        setSuccess('Miembro actualizado correctamente.')
       } else {
-        // CREAR NUEVO REGISTRO
+        // CREAR REGISTRO
         const { error: insertError } = await supabase
           .from('staff')
-          .insert([{ 
-            ...formData, 
-            is_active: true 
+          .insert([{
+            name: formData.name.trim(),
+            role: formData.role,
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            specialty: formData.specialty.trim(),
+            experience: formData.experience ? String(formData.experience) : '',
+            avatar_url: formData.avatar_url.trim()
           }])
 
         if (insertError) throw insertError
-        setSuccess('Miembro agregado correctamente')
+        setSuccess('Miembro agregado correctamente.')
       }
 
       setShowModal(false)
       setEditingId(null)
       fetchStaff()
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error al guardar')
+      console.error('Error in handleSubmit:', err)
+      setError(err.message || 'Error de base de datos al guardar el registro.')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás segura de eliminar este miembro del staff?')) return
+    if (!confirm('¿Estás segura de eliminar permanentemente a este miembro?')) return
 
     try {
       setError(null)
       setSuccess(null)
 
-      // Intentamos borrado lógico primero (is_active: false)
-      const { error: updateError } = await supabase
+      const { error: deleteError } = await supabase
         .from('staff')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id)
 
-      if (updateError) {
-        // Si falla porque no existe la columna is_active, hacemos un DELETE físico
-        const { error: deleteError } = await supabase
-          .from('staff')
-          .delete()
-          .eq('id', id)
+      if (deleteError) throw deleteError
 
-        if (deleteError) throw deleteError
-      }
-
-      setSuccess('Miembro eliminado correctamente')
+      setSuccess('Miembro eliminado correctamente.')
       fetchStaff()
     } catch (err: any) {
-      setError(err.message || 'No se pudo eliminar el registro')
+      console.error('Error in handleDelete:', err)
+      setError(err.message || 'No se pudo eliminar el registro. Verifica las políticas de Supabase (RLS).')
     }
   }
 
   const handleOpenEdit = (member: StaffMember) => {
+    setError(null)
+    setSuccess(null)
     setEditingId(member.id)
     setFormData({
       name: member.name || '',
@@ -171,13 +168,15 @@ export default function StaffPage() {
       email: member.email || '',
       phone: member.phone || '',
       specialty: member.specialty || '',
-      experience: member.experience || '',
+      experience: member.experience ? String(member.experience) : '',
       avatar_url: member.avatar_url || ''
     })
     setShowModal(true)
   }
 
   const handleOpenCreate = () => {
+    setError(null)
+    setSuccess(null)
     setEditingId(null)
     setFormData({
       name: '',
@@ -244,9 +243,10 @@ export default function StaffPage() {
 
           <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
             <button 
+              type="button"
               onClick={handleRefresh} 
               disabled={refreshing} 
-              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 ${
+              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 cursor-pointer ${
                 isDark 
                   ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] hover:bg-[#3D281E]' 
                   : 'bg-white border-[#F0E4DA] text-[#D4AF37] hover:bg-[#FFF9F6]'
@@ -257,8 +257,9 @@ export default function StaffPage() {
               <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
             </button>
             <button 
+              type="button"
               onClick={handleOpenCreate}
-              className="px-3 py-2 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 shadow-md shadow-[#D4AF37]/20"
+              className="px-3 py-2 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 shadow-md shadow-[#D4AF37]/20 cursor-pointer"
               style={brandGradient}
             >
               <Plus className="w-3.5 h-3.5" />
@@ -284,8 +285,9 @@ export default function StaffPage() {
         />
         {search && (
           <button 
+            type="button"
             onClick={() => setSearch('')}
-            className={`p-1 rounded-lg transition-colors shrink-0 ${
+            className={`p-1 rounded-lg transition-colors shrink-0 cursor-pointer ${
               isDark ? 'hover:bg-[#3D281E] text-[#A89588]' : 'hover:bg-[#F0E4DA] text-[#5C4A3E]'
             }`}
           >
@@ -298,7 +300,7 @@ export default function StaffPage() {
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
-            <X className="w-4 h-4" />
+            <AlertTriangle className="w-4 h-4" />
           </div>
           <p className="text-xs text-rose-400 font-medium min-w-0">{error}</p>
         </div>
@@ -345,10 +347,11 @@ export default function StaffPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-0.5 shrink-0">
+                <div className="flex gap-1 shrink-0">
                   <button 
+                    type="button"
                     onClick={() => handleOpenEdit(member)} 
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg transition-colors cursor-pointer z-10 ${
                       isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
                     }`}
                     title="Editar"
@@ -356,8 +359,9 @@ export default function StaffPage() {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button 
+                    type="button"
                     onClick={() => handleDelete(member.id)} 
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-2 rounded-lg transition-colors cursor-pointer z-10 ${
                       isDark ? 'text-[#A89588] hover:text-rose-400 hover:bg-rose-950/30' : 'text-[#5C4A3E] hover:text-rose-500 hover:bg-rose-50'
                     }`}
                     title="Eliminar"
@@ -397,8 +401,9 @@ export default function StaffPage() {
             isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
           }`}>
             <button 
+              type="button"
               onClick={() => setShowModal(false)}
-              className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
+              className={`absolute top-4 right-4 p-2 rounded-xl transition-colors cursor-pointer ${
                 isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
               }`}
             >
@@ -450,7 +455,7 @@ export default function StaffPage() {
                   Rol
                 </label>
                 <select
-                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none ${
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none cursor-pointer ${
                     isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
                   }`}
                   value={formData.role}
@@ -506,7 +511,7 @@ export default function StaffPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest ${
+                  className={`flex-1 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest cursor-pointer ${
                     isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
                   }`}
                 >
@@ -514,7 +519,7 @@ export default function StaffPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-[#D4AF37]/20"
+                  className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-[#D4AF37]/20 cursor-pointer"
                   style={brandGradient}
                 >
                   <Save className="w-4 h-4" />
