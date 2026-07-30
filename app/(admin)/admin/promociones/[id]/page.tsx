@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Gift,
   Edit,
+  Trash2,
   Calendar,
   Clock,
   Users,
@@ -67,12 +68,12 @@ export default function DetallePromocionPage() {
   const { settings } = useSettings()
   const isDark = theme === 'dark'
   
-  // Respetamos tus colores dinámicos o caemos en la paleta premium base café/dorado
   const primaryColor = settings?.primary_color || '#D4AF37'
   const secondaryColor = settings?.secondary_color || '#EC4899'
 
   const [promo, setPromo] = useState<Promocion | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -98,6 +99,30 @@ export default function DetallePromocionPage() {
       setError('No se encontró la promoción')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ✅ ACCIÓN DE ELIMINACIÓN ASÍNCRONA CON SUPABASE
+  const handleDelete = async () => {
+    if (!promo) return
+    
+    const confirmDelete = window.confirm('¿Estás seguro de que deseas eliminar esta promoción de forma permanente? Esta acción no se puede deshacer.')
+    if (!confirmDelete) return
+
+    setDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .delete()
+        .eq('id', promo.id)
+
+      if (error) throw error
+      
+      router.push('/admin/promociones')
+    } catch (err) {
+      console.error('Error al eliminar promoción:', err)
+      alert('Hubo un error al intentar eliminar la promoción. Inténtalo de nuevo.')
+      setDeleting(false)
     }
   }
 
@@ -127,9 +152,9 @@ export default function DetallePromocionPage() {
   }
 
   // ============================================================ 
-  // ESTADO DE CARGA PREMIUM (Sincronizado con tus difuminados)
+  // ESTADO DE CARGA O ELIMINACIÓN
   // ============================================================ 
-  if (loading) {
+  if (loading || deleting) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden transition-colors duration-500 ${isDark ? 'bg-[#150D08]' : 'bg-[#FDFBF9]'}`}>
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
@@ -140,7 +165,7 @@ export default function DetallePromocionPage() {
           </div>
           <div className="space-y-1.5 text-center">
             <p className="text-xs font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#EC4899] to-[#C9A96E] animate-pulse">
-              CARGANDO DETALLES
+              {deleting ? 'ELIMINANDO PROMOCIÓN' : 'CARGANDO DETALLES'}
             </p>
           </div>
         </div>
@@ -180,7 +205,7 @@ export default function DetallePromocionPage() {
       <div className="max-w-4xl mx-auto px-4 space-y-6 relative z-10 pt-4">
 
         {/* ============================================================ */}
-        {/* CABECERA PRINCIPAL — INTEGRACIÓN COMPLETA A TU DASHBOARD */}
+        {/* CABECERA PRINCIPAL */}
         {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
@@ -206,13 +231,24 @@ export default function DetallePromocionPage() {
                   <Sparkles className="w-2.5 h-2.5" />
                   ✦ Vista Detallada
                 </div>
-                <h1 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight truncate max-w-[240px] md:max-w-[400px] ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                <h1 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight truncate max-w-[180px] md:max-w-[320px] ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
                   {promo.title}
                 </h1>
               </div>
             </div>
 
+            {/* BOTONERA ACCIONES DE CABECERA CON ELIMINAR INCLUIDO */}
             <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+              {/* 🗑️ BOTÓN ELIMINAR INTEGRADO */}
+              <button 
+                onClick={handleDelete}
+                className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em]"
+                title="Eliminar Promoción"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden md:inline">Eliminar</span>
+              </button>
+
               <Link 
                 href={`/admin/promociones/editar/${promo.id}`}
                 className={`p-3 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] ${
@@ -293,13 +329,13 @@ export default function DetallePromocionPage() {
             </h3>
             <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
               {promo.description || 'Esta promoción no cuenta con una descripción detallada en este momento.'}
-          </p>
+            </p>
           </div>
 
-          {/* GRID DE INFORMACIÓN (Métricas & Datos del Voucher) */}
+          {/* GRID DE INFORMACIÓN */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             
-            {/* Descuento - TEXT-WHITE EXPLICITO SOBRE GRADIENTE PREMIUM */}
+            {/* Descuento */}
             <div className="rounded-2xl p-4 shadow-xl border border-white/10 bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#C9A96E] text-white flex flex-col justify-between min-h-[105px]">
               <p className="text-[9px] text-white/80 font-black uppercase tracking-widest">Valor del Descuento</p>
               <div className="flex items-center justify-between mt-2">
