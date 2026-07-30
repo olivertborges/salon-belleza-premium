@@ -193,7 +193,7 @@ export default function AdminAgendaPage() {
     } catch (err: any) {
       console.error('Error al sincronizar datos:', err)
       setError(err.message || 'Error de conexión')
-    } fill {
+    } finally {
       setLoading(false)
       setRefreshing(false)
     }
