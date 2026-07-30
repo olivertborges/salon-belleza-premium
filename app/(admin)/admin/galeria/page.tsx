@@ -82,23 +82,22 @@ export default function GaleriaAdminPage() {
   })
 
   // ============================================================
-  // PALETA DE COLORES CONSISTENTE
+  // PALETA DE COLORES - DORADO PROTAGONISTA
   // ============================================================
-  const primaryColor = '#D4AF37'      // Dorado
-  const secondaryColor = '#E8D5A0'    // Dorado claro
-  const accentPink = '#EC4899'        // Rosado
-  const accentBlue = '#3B82F6'        // Azul
-  const accentRose = '#F43F5E'        // Rosa fuerte
+  const gold = '#D4AF37'
+  const goldLight = '#E8D5A0'
+  const goldDark = '#C9A96E'
+  const pink = '#EC4899'      // Acento sutil
+  const blue = '#3B82F6'      // Acento sutil
+  const rose = '#F43F5E'      // Solo para eliminar
 
   const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+    backgroundImage: `linear-gradient(135deg, ${gold}, ${goldLight}, ${gold})`
   }
 
   const headerGradient = {
-    backgroundImage: `linear-gradient(135deg, ${primaryColor} 0%, ${accentPink} 50%, ${accentBlue} 100%)`
+    backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
   }
-
-  const primaryBgStyle = { backgroundColor: primaryColor }
 
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
@@ -440,13 +439,13 @@ export default function GaleriaAdminPage() {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${'bg-[#FFF9F6]'}`}>
+      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 bg-[#FFF9F6]`}>
         <div className="flex flex-col items-center gap-6">
           <div className="relative w-16 h-16">
-            <div className={`absolute inset-0 rounded-full border ${'border-[#D4AF37]/20'}`} />
+            <div className="absolute inset-0 rounded-full border border-[#D4AF37]/20" />
             <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
-          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${'text-[#1A0E0A]/60'}`}>
+          <p className="text-[10px] tracking-[0.4em] uppercase font-light animate-pulse text-[#1A0E0A]/60">
             Cargando galería...
           </p>
         </div>
@@ -458,7 +457,7 @@ export default function GaleriaAdminPage() {
     <div className="space-y-6 p-1 max-w-7xl mx-auto">
 
       {/* ============================================================ */}
-      {/* CABECERA — CON GRADIENTE DORADO + ROSADO + AZUL */}
+      {/* CABECERA — DORADO PROTAGONISTA */}
       {/* ============================================================ */}
       <div 
         className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
@@ -470,7 +469,7 @@ export default function GaleriaAdminPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
               Portafolio del Salón
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
@@ -495,7 +494,7 @@ export default function GaleriaAdminPage() {
               onClick={() => { resetForm(); setShowModal(true); }}
               className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
             >
-              <div className="p-1 rounded-md bg-stone-900 text-white">
+              <div className="p-1 rounded-md bg-[#D4AF37] text-white">
                 <Plus className="w-3 h-3 stroke-[3]" />
               </div>
               <span>Nueva Foto</span>
@@ -526,7 +525,7 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* ESTADÍSTICAS — RESPONSIVAS */}
+      {/* ESTADÍSTICAS — DORADO PROTAGONISTA */}
       {/* ============================================================ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
@@ -550,22 +549,22 @@ export default function GaleriaAdminPage() {
         </div>
 
         <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#EC4899]/10 text-[#EC4899]">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#D4AF37]/10 text-[#D4AF37]">
             <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Clientes</p>
-            <h3 className="text-sm sm:text-base font-mono font-black text-[#EC4899]">{stats.clientCount}</h3>
+            <h3 className="text-sm sm:text-base font-mono font-black text-[#D4AF37]">{stats.clientCount}</h3>
           </div>
         </div>
 
         <div className="rounded-2xl p-2.5 sm:p-3 shadow-sm border bg-white border-[#F0E4DA] flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#3B82F6]/10 text-[#3B82F6]">
+          <div className="p-1.5 sm:p-2 rounded-xl shrink-0 bg-[#D4AF37]/10 text-[#D4AF37]">
             <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[7px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-400 font-black truncate">Visibles</p>
-            <h3 className="text-sm sm:text-base font-mono font-black text-[#3B82F6]">{stats.activeCount}</h3>
+            <h3 className="text-sm sm:text-base font-mono font-black text-[#D4AF37]">{stats.activeCount}</h3>
           </div>
         </div>
       </div>
@@ -585,13 +584,13 @@ export default function GaleriaAdminPage() {
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {categories.map((cat, idx) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
                 categoryFilter === cat 
-                  ? `text-white shadow-sm ${idx % 3 === 0 ? 'bg-[#D4AF37]' : idx % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`
+                  ? 'bg-[#D4AF37] text-white shadow-sm' 
                   : 'bg-[#FFF9F6] border border-[#F0E4DA] text-stone-500 hover:bg-[#F0E4DA]'
               }`}
             >
@@ -612,7 +611,7 @@ export default function GaleriaAdminPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredPhotos.map((photo, idx) => {
+          {filteredPhotos.map((photo) => {
             const imageUrl = getImageUrl(photo)
             const isClient = photo.source === 'client'
             const isAdmin = photo.source === 'admin'
@@ -641,7 +640,7 @@ export default function GaleriaAdminPage() {
 
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
                   <span className={`text-[7px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white shadow-xs ${
-                    isClient ? 'bg-[#EC4899]/95' : 'bg-[#D4AF37]/95'
+                    isClient ? 'bg-[#D4AF37]/90' : 'bg-[#D4AF37]'
                   }`}>
                     {isClient ? `👤 ${photo.client_name || 'Cliente'}` : '👑 Studio'}
                   </span>
@@ -680,13 +679,13 @@ export default function GaleriaAdminPage() {
                               })
                               setShowModal(true)
                             }} 
-                            className="p-2 bg-[#3B82F6]/20 hover:bg-[#3B82F6]/40 border border-[#3B82F6]/30 rounded-xl transition-all"
+                            className="p-2 bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 border border-[#D4AF37]/30 rounded-xl transition-all"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button 
                             onClick={(e) => toggleActive(photo.id, photo.is_active, e)} 
-                            className="p-2 bg-[#EC4899]/20 hover:bg-[#EC4899]/40 border border-[#EC4899]/30 rounded-xl transition-all"
+                            className="p-2 bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 border border-[#D4AF37]/30 rounded-xl transition-all"
                           >
                             {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           </button>
@@ -718,7 +717,7 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* LIGHTBOX */}
+      {/* LIGHTBOX — DORADO PROTAGONISTA */}
       {/* ============================================================ */}
       {showLightbox && selectedPhoto && (
         <div 
@@ -769,9 +768,7 @@ export default function GaleriaAdminPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4 md:mb-5">
-              <span className={`text-[9px] md:text-[10px] font-mono uppercase tracking-widest ${
-                selectedPhoto.source === 'client' ? 'text-[#EC4899]' : 'text-[#D4AF37]'
-              }`}>
+              <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-widest text-[#D4AF37]">
                 {selectedPhoto.source === 'client' ? '👤 Aporte de Cliente' : '👑 Trabajo del Salón'}
               </span>
               <button 
@@ -788,7 +785,7 @@ export default function GaleriaAdminPage() {
                   {selectedPhoto.category || 'Sin categoría'}
                 </span>
                 {selectedPhoto.source === 'client' && (
-                  <span className="ml-2 px-2.5 py-1 bg-[#EC4899]/20 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-[#EC4899]">
+                  <span className="ml-2 px-2.5 py-1 bg-[#D4AF37]/30 rounded-md text-[8px] md:text-[9px] font-mono font-bold uppercase tracking-wider text-[#D4AF37]">
                     Cliente
                   </span>
                 )}
@@ -823,7 +820,7 @@ export default function GaleriaAdminPage() {
                   <span className="text-stone-400 flex items-center gap-1.5">
                     <Tag className="w-3.5 h-3.5" /> Origen:
                   </span>
-                  <span className={`font-medium ${selectedPhoto.source === 'client' ? 'text-[#EC4899]' : 'text-[#D4AF37]'}`}>
+                  <span className="font-medium text-[#D4AF37]">
                     {selectedPhoto.source === 'client' ? '👤 Cliente' : '👑 Salón'}
                   </span>
                 </div>
@@ -833,7 +830,7 @@ export default function GaleriaAdminPage() {
                     <span className="text-stone-400 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5" /> Cliente:
                     </span>
-                    <span className="font-medium text-[#EC4899]">{selectedPhoto.client_name}</span>
+                    <span className="font-medium text-[#D4AF37]">{selectedPhoto.client_name}</span>
                   </div>
                 )}
 
@@ -872,7 +869,7 @@ export default function GaleriaAdminPage() {
                       })
                       setShowModal(true)
                     }}
-                    className="flex-1 py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-[#D4AF37] hover:bg-[#E8D5A0] text-[#1A0E0A] rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                   >
                     <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" /> Editar
                   </button>
@@ -897,7 +894,7 @@ export default function GaleriaAdminPage() {
       )}
 
       {/* ============================================================ */}
-      {/* MODAL: SUBIR/EDITAR FOTO */}
+      {/* MODAL: SUBIR/EDITAR FOTO — DORADO PROTAGONISTA */}
       {/* ============================================================ */}
       {showModal && (
         <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -923,7 +920,7 @@ export default function GaleriaAdminPage() {
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-500 mb-1.5 font-mono">
                   Imagen *
                 </label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 border-stone-200 transition-colors">
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer bg-stone-50/50 border-stone-200 transition-colors hover:border-[#D4AF37]/50">
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                   {previewUrl ? (
                     <img src={previewUrl} alt="" className="max-h-36 mx-auto rounded-xl object-contain" />
