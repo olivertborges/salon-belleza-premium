@@ -94,7 +94,7 @@ export default function GaleriaAdminPage() {
     backgroundImage: `linear-gradient(135deg, ${GOLD_PALETTE.primary} 0%, ${GOLD_PALETTE.dark} 50%, ${GOLD_PALETTE.light} 100%)`
   }), [])
 
-  // Recuperar Tenant ID de manera robusta
+  // Recuperar Tenant ID
   const getTenantId = useCallback(async (): Promise<string | null> => {
     if (tenantId) return tenantId
     const { data: { session } } = await supabase.auth.getSession()
@@ -140,7 +140,6 @@ export default function GaleriaAdminPage() {
         return
       }
 
-      // Ejecución en paralelo de catálogo y profesionales
       await Promise.all([
         fetchProfessionals(activeTenantId),
         (async () => {
@@ -196,7 +195,6 @@ export default function GaleriaAdminPage() {
     fetchPhotos(true)
   }, [fetchPhotos])
 
-  // Mapeos y estadísticas memorizadas
   const professionalMap = useMemo(() => {
     return professionals.reduce<Record<string, string>>((acc, p) => {
       acc[p.id] = p.full_name
@@ -226,7 +224,6 @@ export default function GaleriaAdminPage() {
     })
   }, [photos, categoryFilter, searchQuery])
 
-  // Storage Upload Handler
   const uploadFile = async (file: File, tId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop()
     const filePath = `gallery/${tId}/${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`
@@ -376,10 +373,9 @@ export default function GaleriaAdminPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
-      {/* Fondo decorativo */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-6">
         
         {/* Cabecera */}
         <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10" style={headerGradient}>
@@ -418,14 +414,14 @@ export default function GaleriaAdminPage() {
 
         {/* Notificaciones de Feedback */}
         {error && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+          <div className={`flex items-start gap-4 border p-4 rounded-2xl animate-fade-in ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <AlertCircle className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
             <p className="text-sm font-light">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+          <div className={`flex items-start gap-4 border p-4 rounded-2xl animate-fade-in ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
             <p className="text-sm font-light">{success}</p>
           </div>
@@ -484,13 +480,19 @@ export default function GaleriaAdminPage() {
           </div>
         </div>
 
-        {/* Galería / Grid de Imágenes */}
-        {filteredPhotos.length === 0 ? (
+        {/* Loader principal */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+            <p className="text-xs tracking-widest font-mono text-stone-400 uppercase">Sincronizando Portafolio...</p>
+          </div>
+        ) : filteredPhotos.length === 0 ? (
           <div className={`text-center py-20 border-2 border-dashed rounded-2xl ${isDark ? 'bg-[#2A1B14]/40 border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <ImageIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
-            <p className="text-sm font-medium">No se encontraron fotos</p>
+            <p className="text-sm font-medium">No se encontraron fotos en la galería</p>
           </div>
         ) : (
+          /* Grid de Fotos Comercial */
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredPhotos.map((photo) => {
               const isClient = photo.source === 'client'
@@ -500,138 +502,224 @@ export default function GaleriaAdminPage() {
                   onClick={() => openLightbox(photo)}
                   onMouseEnter={() => setHoveredId(photo.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  className={`group relative rounded-2xl overflow-hidden cursor-pointer border shadow-sm transition-all aspect-square ${
-                    !photo.is_active ? 'opacity-60 grayscale-[30%]' : ''
+                  className={`group relative rounded-2xl overflow-hidden cursor-pointer border shadow-md transition-all aspect-square transform hover:-translate-y-1 duration-300 ${
+                    !photo.is_active ? 'opacity-50 grayscale-[40%]' : ''
                   } ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}
                 >
                   <img src={photo.image_url || ''} alt={photo.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%]">
-                    <span className="text-[7px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md text-white bg-[#D4AF37]">
+                  {/* Tags flotantes superiores */}
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%] z-20">
+                    <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md text-white bg-[#D4AF37] shadow-sm">
                       {isClient ? `👤 ${photo.client_name}` : '👑 Studio'}
                     </span>
+                    {!photo.is_active && (
+                      <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md text-white bg-rose-600 shadow-sm">
+                        Oculto
+                      </span>
+                    )}
                   </div>
 
-                  {hoveredId === photo.id && (
-                    <div className="absolute inset-0 bg-stone-950/70 p-3 flex flex-col justify-between text-white">
-                      <div className="flex justify-end gap-1.5">
-                        <button onClick={(e) => { e.stopPropagation(); openLightbox(photo); }} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl"><ZoomIn className="w-3.5 h-3.5" /></button>
-                        {photo.source === 'admin' && (
-                          <>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingPhoto(photo)
-                                setFormData({ ...photo, title: photo.title || '', description: photo.description || '', professional_id: photo.professional_id || '' })
-                                setShowModal(true)
-                              }} 
-                              className="p-2 bg-[#D4AF37]/30 hover:bg-[#D4AF37]/50 border border-[#D4AF37]/30 rounded-xl"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={(e) => toggleActive(photo.id, photo.is_active, e)} className="p-2 bg-white/10 rounded-xl">
-                              {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={(e) => deletePhoto(photo.id, e)} className="p-2 bg-rose-500/20 hover:bg-rose-600 rounded-xl">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold truncate">{photo.title || 'Trabajo del Salón'}</h4>
-                        {photo.professional_id && professionalMap[photo.professional_id] && (
-                          <p className="text-[9px] text-stone-400 flex items-center gap-1 mt-0.5">
-                            <User className="w-2.5 h-2.5" /> {professionalMap[photo.professional_id]}
-                          </p>
-                        )}
-                      </div>
+                  {/* Capa Overlay interactiva en Hover */}
+                  <div className={`absolute inset-0 bg-stone-950/80 p-4 flex flex-col justify-between text-white transition-opacity duration-300 ${hoveredId === photo.id ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => openLightbox(photo)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                        <ZoomIn className="w-3.5 h-3.5" />
+                      </button>
+                      {photo.source === 'admin' && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setEditingPhoto(photo)
+                              setFormData({
+                                title: photo.title || '',
+                                category: photo.category || 'Uñas',
+                                description: photo.description || '',
+                                image_url: photo.image_url || '',
+                                is_active: photo.is_active,
+                                sort_order: photo.sort_order || 0,
+                                professional_id: photo.professional_id || ''
+                              })
+                              setShowModal(true)
+                            }} 
+                            className="p-2 bg-[#D4AF37]/20 hover:bg-[#D4AF37] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-stone-900 rounded-xl transition-all"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => toggleActive(photo.id, photo.is_active)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
+                            {photo.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          </button>
+                          <button onClick={() => deletePhoto(photo.id)} className="p-2 bg-rose-500/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-xl transition-all">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  )}
+
+                    <div className="space-y-1">
+                      <span className="text-[8px] font-mono tracking-widest text-[#D4AF37] uppercase">{photo.category}</span>
+                      <h4 className="text-xs font-bold truncate text-white">{photo.title || 'Trabajo del Salón'}</h4>
+                      {photo.professional_id && professionalMap[photo.professional_id] && (
+                        <p className="text-[9px] text-stone-400 flex items-center gap-1">
+                          <User className="w-2.5 h-2.5 text-[#D4AF37]" /> {professionalMap[photo.professional_id]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Modal de Lightbox */}
+        {/* Modal Lightbox */}
         {showLightbox && selectedPhoto && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
-            <div className="relative flex-1 flex items-center justify-center p-6 h-[50vh] md:h-full" onClick={(e) => e.stopPropagation()}>
-              <img src={selectedPhoto.image_url || ''} alt="" className="max-w-full max-h-[45vh] md:max-h-[80vh] object-contain rounded-xl" />
+            <div className="relative flex-1 flex items-center justify-center p-6 h-[60vh] md:h-full" onClick={(e) => e.stopPropagation()}>
+              <img src={selectedPhoto.image_url || ''} alt="" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
               {filteredPhotos.length > 1 && (
                 <>
-                  <button onClick={() => navigateLightbox('prev')} className="absolute left-4 p-2 rounded-xl bg-black/50 text-white"><ChevronLeft className="w-6 h-6" /></button>
-                  <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-2 rounded-xl bg-black/50 text-white"><ChevronRight className="w-6 h-6" /></button>
+                  <button onClick={() => navigateLightbox('prev')} className="absolute left-4 p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"><ChevronLeft className="w-6 h-6" /></button>
+                  <button onClick={() => navigateLightbox('next')} className="absolute right-4 p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"><ChevronRight className="w-6 h-6" /></button>
                 </>
               )}
             </div>
             
-            {/* Panel lateral del Lightbox */}
-            <div className="w-full md:w-80 bg-stone-900/95 p-6 flex flex-col text-stone-200 border-t md:border-t-0 md:border-l border-white/10" onClick={(e) => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-5">
-                <span className="text-[10px] font-mono tracking-widest text-[#D4AF37]">DETALLES DE LA OBRA</span>
-                <button onClick={closeLightbox} className="p-1.5 bg-white/5 rounded-xl"><X className="w-4 h-4" /></button>
+            <div className="w-full md:w-96 bg-stone-900 border-t md:border-t-0 md:border-l border-white/10 p-6 flex flex-col text-stone-200" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-[10px] font-mono tracking-widest text-[#D4AF37] font-black uppercase">Metadatos de Obra</span>
+                <button onClick={closeLightbox} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-stone-400 hover:text-white transition-all"><X className="w-4 h-4" /></button>
               </div>
-              <div className="flex-1 space-y-4 overflow-y-auto">
-                <h3 className="text-xl font-bold text-white">{selectedPhoto.title || 'Sin título'}</h3>
-                <p className="text-xs text-stone-400">{selectedPhoto.description || 'Sin descripción adicional.'}</p>
-                <div className="space-y-2 pt-3 border-t border-white/10 text-xs text-stone-300">
-                  <div className="flex justify-between"><span>Categoría:</span><span className="text-white font-bold">{selectedPhoto.category}</span></div>
-                  <div className="flex justify-between"><span>Fecha:</span><span>{new Date(selectedPhoto.created_at).toLocaleDateString()}</span></div>
+              <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+                <div>
+                  <span className="px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] font-mono text-[9px] font-bold uppercase tracking-wider">{selectedPhoto.source === 'client' ? 'Aporte Cliente' : 'Administrador'}</span>
+                  <h3 className="text-xl font-serif font-bold text-white mt-2">{selectedPhoto.title || 'Trabajo del Salón'}</h3>
+                </div>
+                <p className="text-xs text-stone-400 font-light leading-relaxed">{selectedPhoto.description || 'Sin descripción detallada por el momento.'}</p>
+                
+                <div className="space-y-2.5 pt-4 border-t border-white/5 text-xs">
+                  <div className="flex justify-between py-1 border-b border-white/5"><span className="text-stone-400">Categoría</span><span className="text-white font-semibold">{selectedPhoto.category}</span></div>
+                  {selectedPhoto.professional_id && professionalMap[selectedPhoto.professional_id] && (
+                    <div className="flex justify-between py-1 border-b border-white/5"><span className="text-stone-400">Especialista</span><span className="text-[#D4AF37] font-semibold">{professionalMap[selectedPhoto.professional_id]}</span></div>
+                  )}
+                  {selectedPhoto.source === 'client' && (
+                    <div className="flex justify-between py-1 border-b border-white/5"><span className="text-stone-400">Cliente</span><span className="text-white font-semibold">{selectedPhoto.client_name}</span></div>
+                  )}
+                  <div className="flex justify-between py-1"><span className="text-stone-400">Fecha de Registro</span><span className="text-stone-300 font-mono">{new Date(selectedPhoto.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span></div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Modal del Formulario */}
+        {/* Modal Formulario Inserción/Edición */}
         {showModal && (
-          <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
-            <div className={`relative w-full max-w-xl rounded-3xl border p-6 shadow-2xl transition-all ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setShowModal(false); resetForm(); }} className="absolute top-4 right-4 p-2"><X className="w-5 h-5" /></button>
+          <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
+            <div className={`relative w-full max-w-xl rounded-3xl border p-6 shadow-2xl transition-all max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setShowModal(false); resetForm(); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-all ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}><X className="w-5 h-5" /></button>
               
-              <h3 className="text-lg font-serif font-extrabold mb-4">{editingPhoto ? 'Editar Obra' : 'Subir Nueva Obra'}</h3>
+              <div className="mb-5">
+                <h3 className="text-xl font-serif font-black tracking-tight">{editingPhoto ? 'Editar Registro de Galería' : 'Agregar Arte Comercial'}</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Completa la ficha técnica para actualizar el portafolio público.</p>
+              </div>
               
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer">
+                {/* Zona de Carga/Preview */}
+                <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] ${isDark ? 'border-[#3D281E] bg-[#1E120C]/50 hover:bg-[#3D281E]/30' : 'border-[#F0E4DA] bg-[#FFF9F6]/50 hover:bg-[#F0E4DA]/50'}`}>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                   {previewUrl || formData.image_url ? (
-                    <img src={previewUrl || formData.image_url} alt="" className="max-h-36 mx-auto rounded-xl" />
+                    <div className="relative group">
+                      <img src={previewUrl || formData.image_url} alt="Preview" className="max-h-40 rounded-xl shadow-md object-contain" />
+                      <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs transition-opacity">Cambiar Imagen</div>
+                    </div>
                   ) : (
-                    <p className="text-xs text-stone-400">Presiona para cargar imagen</p>
+                    <div className="space-y-2">
+                      <UploadCloud className="w-8 h-8 text-[#D4AF37] mx-auto stroke-[1.5]" />
+                      <div>
+                        <p className="text-xs font-bold">Haz clic para buscar o arrastra una imagen</p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">Formatos soportados: JPG, PNG, WEBP</p>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <input 
-                    type="text" 
-                    placeholder="Título" 
-                    value={formData.title} 
-                    onChange={e => setFormData({...formData, title: e.target.value})}
-                    className={`px-3 py-2 text-sm rounded-xl border ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}
-                  />
+                {/* Título y Categoría */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Título Comercial</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. Uñas Acrílicas Gold Premium" 
+                      value={formData.title} 
+                      onChange={e => setFormData({...formData, title: e.target.value})}
+                      className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Línea de Servicio</label>
+                    <select 
+                      value={formData.category} 
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                    >
+                      {CATEGORIES.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Profesional */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Artista / Profesional Asignado</label>
                   <select 
-                    value={formData.category} 
-                    onChange={e => setFormData({...formData, category: e.target.value})}
-                    className={`px-3 py-2 text-sm rounded-xl border ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}
+                    value={formData.professional_id} 
+                    onChange={e => setFormData({...formData, professional_id: e.target.value})}
+                    className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
                   >
-                    {CATEGORIES.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="">Ninguno / Salón General</option>
+                    {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name} {p.role ? `(${p.role})` : ''}</option>)}
                   </select>
                 </div>
 
-                <textarea 
-                  placeholder="Descripción del servicio..." 
-                  value={formData.description} 
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className={`w-full px-3 py-2 text-sm rounded-xl border ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}
-                  rows={2}
-                />
+                {/* Descripción */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Descripción / Detalles del Diseño</label>
+                  <textarea 
+                    placeholder="Describe los materiales, el color o el tipo de técnica utilizada..." 
+                    value={formData.description} 
+                    onChange={e => setFormData({...formData, description: e.target.value})}
+                    className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                    rows={3}
+                  />
+                </div>
 
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2 bg-stone-200 text-stone-800 rounded-xl text-xs font-bold uppercase">Cancelar</button>
-                  <button type="submit" disabled={uploading} className="flex-1 py-2 bg-[#D4AF37] text-stone-900 rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2">
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Guardar
+                {/* Switches y Orden */}
+                <div className="grid grid-cols-2 gap-4 items-center pt-2">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox"
+                      id="is_active"
+                      checked={formData.is_active}
+                      onChange={e => setFormData({...formData, is_active: e.target.checked})}
+                      className="accent-[#D4AF37] w-4 h-4 cursor-pointer"
+                    />
+                    <label htmlFor="is_active" className="text-xs font-medium cursor-pointer">Visible al público</label>
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Prioridad:</label>
+                    <input 
+                      type="number"
+                      value={formData.sort_order}
+                      onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                      className={`w-20 px-2 py-1 text-center text-xs rounded-lg border outline-none ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Acciones */}
+                <div className="flex gap-3 pt-4 border-t border-stone-200/10">
+                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-black uppercase tracking-wider transition-all">Cancelar</button>
+                  <button type="submit" disabled={uploading} className="flex-1 py-3 bg-[#D4AF37] text-stone-900 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/10 hover:brightness-110 disabled:opacity-50">
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />} Guardar Cambios
                   </button>
                 </div>
               </form>
