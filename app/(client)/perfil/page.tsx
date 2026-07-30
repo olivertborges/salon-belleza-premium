@@ -92,7 +92,6 @@ export default function PerfilPage() {
       setLoading(true)
       setError(null)
 
-      // 1. Obtener datos del cliente
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*')
@@ -112,7 +111,6 @@ export default function PerfilPage() {
         return
       }
 
-      // 2. Obtener puntos de loyalty_wallets
       const { data: walletData, error: walletError } = await supabase
         .from('loyalty_wallets')
         .select('glow_points, hair_points, glow_level, hair_level')
@@ -123,7 +121,6 @@ export default function PerfilPage() {
         console.error('Error cargando wallet:', walletError)
       }
 
-      // 3. Contar citas totales del cliente
       const { count: appointmentsCount, error: countError } = await supabase
         .from('appointments')
         .select('id', { count: 'exact', head: true })
@@ -134,7 +131,6 @@ export default function PerfilPage() {
         console.error('Error contando citas:', countError)
       }
 
-      // 4. Construir perfil completo
       const fullProfile: ClientProfile = {
         id: clientData.id,
         name: clientData.name || '',
@@ -208,12 +204,15 @@ export default function PerfilPage() {
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
         const filePath = `avatars/${fileName}`
 
-        // Guardar la foto en el bucket 'packet-client'
+        // Intento de subida al bucket 'packet-client'
         const { error: uploadError } = await supabase.storage
           .from('packet-client')
           .upload(filePath, avatarFile)
 
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Error detallado de Storage:', uploadError)
+          throw new Error(`Error en Storage (${uploadError.message || JSON.stringify(uploadError)})`)
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('packet-client')
@@ -234,7 +233,10 @@ export default function PerfilPage() {
         })
         .eq('id', profile.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('Error detallado de Base de Datos:', updateError)
+        throw new Error(`Error en DB (${updateError.message || JSON.stringify(updateError)})`)
+      }
 
       setProfile(prev => ({
         ...prev!,
@@ -250,10 +252,10 @@ export default function PerfilPage() {
       setSuccess('✅ Perfil actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
 
-    } catch (error) {
-      console.error('Error guardando perfil:', error)
-      setError('Error al guardar los cambios')
-      setTimeout(() => setError(null), 3000)
+    } catch (err: any) {
+      console.error('Error general capturado:', err)
+      // Mostramos el error exacto directamente en la pantalla
+      setError(`⚠️ Detalle del error: ${err.message || err}`)
     } finally {
       setSaving(false)
     }
@@ -333,15 +335,15 @@ export default function PerfilPage() {
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
             isDark 
-              ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' 
-              : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
+              ? 'bg-[#3D281E]/40 border-red-500/50 text-[#FFF9F6]' 
+              : 'bg-red-50 border-red-300 text-red-900'
           }`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-              <AlertCircle className="w-5 h-5 text-[#D4AF37]" />
+            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-red-100'}`}>
+              <AlertCircle className="w-5 h-5 text-red-500" />
             </div>
-            <div>
-              <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Error</p>
-              <p className="text-sm font-light">{error}</p>
+            <div className="overflow-hidden">
+              <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-red-400' : 'text-red-700'}`}>Error detallado</p>
+              <p className="text-sm font-light break-words">{error}</p>
             </div>
           </div>
         )}
