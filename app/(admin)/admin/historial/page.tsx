@@ -80,7 +80,6 @@ export default function HistorialPage() {
     backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
   }
 
-  // Obtener meses disponibles
   const mesesDisponibles = () => {
     const meses = new Set<string>()
     historial.forEach(item => {
@@ -101,7 +100,6 @@ export default function HistorialPage() {
   const aplicarFiltros = () => {
     let result = [...historial]
 
-    // Buscar
     if (search.trim() !== '') {
       const q = search.toLowerCase().trim()
       result = result.filter(item => 
@@ -110,12 +108,10 @@ export default function HistorialPage() {
       )
     }
 
-    // Tipo
     if (filterType !== 'todos') {
       result = result.filter(item => item.type === filterType)
     }
 
-    // Mes
     if (filterMonth !== 'todos') {
       result = result.filter(item => {
         const fecha = new Date(item.date)
@@ -134,7 +130,6 @@ export default function HistorialPage() {
     try {
       const items: HistorialItem[] = []
 
-      // 1. ✅ TODAS LAS CITAS
       const { data: citas } = await supabase
         .from('appointments')
         .select(`
@@ -167,7 +162,6 @@ export default function HistorialPage() {
         })
       }
 
-      // 2. ✅ CLIENTES NUEVOS
       const { data: clientes } = await supabase
         .from('clients')
         .select('id, name, email, phone, created_at')
@@ -209,7 +203,6 @@ export default function HistorialPage() {
     cargarHistorial(true)
   }
 
-  // ✅ ELIMINAR REGISTROS SELECCIONADOS
   const eliminarSeleccionados = async () => {
     if (selectedItems.size === 0) {
       setError('No hay registros seleccionados')
@@ -225,7 +218,6 @@ export default function HistorialPage() {
     try {
       const ids = Array.from(selectedItems)
       
-      // Separar por tabla
       const citasIds = ids.filter(id => {
         const item = historial.find(h => h.id === id)
         return item?.table === 'appointments'
@@ -236,7 +228,6 @@ export default function HistorialPage() {
         return item?.table === 'clients'
       })
 
-      // Eliminar citas
       if (citasIds.length > 0) {
         const { error: err1 } = await supabase
           .from('appointments')
@@ -245,7 +236,6 @@ export default function HistorialPage() {
         if (err1) throw err1
       }
 
-      // Eliminar clientes
       if (clientesIds.length > 0) {
         const { error: err2 } = await supabase
           .from('clients')
@@ -256,8 +246,6 @@ export default function HistorialPage() {
 
       setSuccess(`✅ ${selectedItems.size} registro(s) eliminados`)
       setTimeout(() => setSuccess(null), 3000)
-      
-      // Recargar
       await cargarHistorial(false)
     } catch (err: any) {
       setError(err.message || 'Error al eliminar')
@@ -267,7 +255,6 @@ export default function HistorialPage() {
     }
   }
 
-  // ✅ ELIMINAR POR MES
   const eliminarMes = async (month: string) => {
     if (!confirm(`¿Eliminar TODOS los registros de ${format(new Date(month + '-01'), 'MMMM yyyy', { locale: es })}?`)) return
 
@@ -308,7 +295,6 @@ export default function HistorialPage() {
 
       setSuccess(`✅ ${itemsToDelete.length} registros de ${format(new Date(month + '-01'), 'MMMM yyyy', { locale: es })} eliminados`)
       setTimeout(() => setSuccess(null), 3000)
-      
       await cargarHistorial(false)
     } catch (err: any) {
       setError(err.message || 'Error al eliminar')
@@ -367,35 +353,35 @@ export default function HistorialPage() {
       <div className="max-w-6xl mx-auto px-4 space-y-5 relative z-10">
 
         {/* ============================================================ */}
-        {/* CABECERA — COMPACTA */}
+        {/* CABECERA — TÍTULO DENTRO DE LA TARJETA SIN DESBORDAR */}
         {/* ============================================================ */}
         <div 
-          className="relative overflow-hidden rounded-2xl p-4 md:p-5 shadow-xl text-white border border-white/10"
+          className="relative overflow-hidden rounded-2xl p-5 md:p-6 shadow-xl text-white border border-white/10"
           style={headerGradient}
         >
           <div className="absolute top-0 right-0 w-60 h-60 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
           <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/20 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shrink-0">
                 <History className="w-5 h-5" />
               </div>
-              <div>
-                <h1 className="text-lg md:text-xl font-serif font-black tracking-tight drop-shadow-sm">
-                  Historial
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-serif font-black tracking-tight truncate">
+                  Historial Fresh Nails
                 </h1>
-                <p className="text-[9px] text-white/70 font-medium hidden sm:block">
-                  {totalEventos} registros
+                <p className="text-[10px] text-white/70 font-medium">
+                  {totalEventos} registros • {totalCitas} citas • {totalClientes} clientes
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing} 
-                className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+                className="p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -404,9 +390,9 @@ export default function HistorialPage() {
                 <button 
                   onClick={eliminarSeleccionados}
                   disabled={deleting}
-                  className="px-3 py-1.5 rounded-xl bg-rose-500/80 hover:bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg"
+                  className="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                   {deleting ? '...' : `${selectedItems.size}`}
                 </button>
               )}
@@ -481,7 +467,7 @@ export default function HistorialPage() {
         {/* ============================================================ */}
         <div className={`flex flex-wrap items-center gap-2 p-2 rounded-xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           {/* Buscador */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+          <div className="flex items-center gap-1.5 flex-1 min-w-[100px]">
             <Search className={`w-3.5 h-3.5 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
             <input 
               type="text" 
