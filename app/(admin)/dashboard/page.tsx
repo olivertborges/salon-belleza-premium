@@ -153,9 +153,26 @@ export default function DashboardPage() {
       const completadas = appointments.filter((c: any) => c.status === 'completed').length
       const canceladas = appointments.filter((c: any) => c.status === 'cancelled').length
 
+      // ============================================================
+      // 🔥 CORREGIDO: Incluye citas de HOY
+      // ============================================================
+      const hoyInicio = new Date()
+      hoyInicio.setHours(0, 0, 0, 0)
+
       const proximas = appointments
-        .filter((c: any) => c.date && new Date(c.date) > new Date() && c.status !== 'cancelled')
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .filter((c: any) => {
+          if (!c.date) return false
+          const cDate = new Date(c.date)
+          cDate.setHours(0, 0, 0, 0)
+          // Incluye citas desde hoy en adelante (no canceladas)
+          return cDate >= hoyInicio && c.status !== 'cancelled'
+        })
+        .sort((a: any, b: any) => {
+          // Ordenar por fecha primero, luego por hora
+          const dateA = new Date(a.date + 'T' + (a.time || '00:00'))
+          const dateB = new Date(b.date + 'T' + (b.time || '00:00'))
+          return dateA.getTime() - dateB.getTime()
+        })
         .slice(0, 4)
 
       const citasProximas = proximas.map((cita: any) => {
@@ -233,9 +250,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10">
 
-        {/* ============================================================ */}
-        {/* HEADER - CON GRADIENTE DORADO + ROSADO + AZUL */}
-        {/* ============================================================ */}
+        {/* HEADER */}
         <div className={`relative overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'}`}>
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#EC4899]/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#3B82F6]/5 rounded-full blur-[100px] pointer-events-none" />
@@ -259,7 +274,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 border-[#F0E4DA] dark:border-[#3D281E]">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing} 
@@ -279,9 +294,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* MÉTRICAS PRINCIPALES - CADA UNA CON UN COLOR DIFERENTE */}
-        {/* ============================================================ */}
+        {/* MÉTRICAS PRINCIPALES */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className={`group relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'}`}>
             <div className="relative z-10 flex items-center justify-between">
@@ -323,11 +336,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* SECCIONES DETALLADAS */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Citas Próximas */}
+          {/* Citas Próximas - AHORA INCLUYE HOY */}
           <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -352,12 +363,21 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {stats.citasProximas.map((cita, idx) => {
                   const hoy = new Date()
+                  hoy.setHours(0, 0, 0, 0)
                   const citaDate = new Date(cita.date)
+                  citaDate.setHours(0, 0, 0, 0)
+                  
                   const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
                   let label = `En ${diffDias} d`
                   let color = 'text-[#A89588]'
-                  if (diffDias === 0) { label = 'Hoy'; color = 'text-[#D4AF37]' }
-                  else if (diffDias === 1) { label = 'Mañana'; color = 'text-[#EC4899]' }
+                  
+                  if (diffDias === 0) { 
+                    label = 'Hoy'; 
+                    color = 'text-[#D4AF37]' 
+                  } else if (diffDias === 1) { 
+                    label = 'Mañana'; 
+                    color = 'text-[#EC4899]' 
+                  }
 
                   return (
                     <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'}`}>
@@ -429,9 +449,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* ACCIONES RÁPIDAS */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Link href="/admin/agenda" className={`group relative overflow-hidden rounded-2xl border p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40 shadow-[0_10px_30px_rgba(240,228,218,0.5)]'}`}>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
