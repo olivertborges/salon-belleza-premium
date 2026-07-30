@@ -1,34 +1,31 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
-  Calendar as CalendarIcon, Clock, User, Sparkles, 
-  ChevronLeft, ChevronRight, CheckCircle2, 
-  Play, Filter, DollarSign, Layers, Plus, Trash2, 
-  X, Edit, FileText, Users, ChevronDown, 
-  Award, Ban, RefreshCw, Scissors, Loader2, Building2,
-  CalendarDays, Smartphone, Check, TrendingUp, Calendar as CalendarIconCheck, Save,
+  Calendar, Clock, Sparkles, ChevronLeft, ChevronRight, 
+  CheckCircle2, Play, Filter, DollarSign, Layers, Plus, Trash2, 
+  X, Edit, FileText, Users, ChevronDown, Award, Ban, RefreshCw, 
+  Loader2, Building2, CalendarDays, Smartphone, Check, TrendingUp, Save,
   Eye, EyeOff, Circle, Sun, Moon, Cloud
 } from 'lucide-react'
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay, addDays, isSameMonth } from 'date-fns'
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase/client'
 import { TimePicker } from '@/components/TimePicker'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import Link from 'next/link'
 
 type ViewMode = 'day' | 'week' | 'month'
 
 export default function AdminAgendaPage() {
   const { settings } = useSettings()
-  const { user, role } = useAuth()
+  const { user } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const [citas, setCitas] = useState<any>([])
+  const [citas, setCitas] = useState<any[]>([])
   const [staff, setStaff] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
@@ -42,7 +39,6 @@ export default function AdminAgendaPage() {
   const [selectedCita, setSelectedCita] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [isStaff, setIsStaff] = useState(false)
   const [staffId, setStaffId] = useState<string | null>(null)
@@ -56,23 +52,6 @@ export default function AdminAgendaPage() {
     time: '',
     notes: '',
   })
-
-  // ============================================================
-  // PALETA DE COLORES - DORADO PROTAGONISTA
-  // ============================================================
-  const gold = '#D4AF37'
-  const goldLight = '#E8D5A0'
-  const goldDark = '#C9A96E'
-  const pink = '#EC4899'
-  const blue = '#3B82F6'
-
-  const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold}, ${goldLight}, ${gold})`
-  }
-
-  const headerGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
-  }
 
   // Detectar si el usuario es staff
   useEffect(() => {
@@ -206,7 +185,7 @@ export default function AdminAgendaPage() {
         staff: staffRes.data?.find((s: any) => s.id === cita.professional_id) || null
       }))
 
-      setCitas(citasConRelaciones as any)
+      setCitas(citasConRelaciones)
       setStaff(staffRes.data || [])
       setServices(servicesRes.data || [])
       setClients(clientsRes.data || [])
@@ -214,7 +193,7 @@ export default function AdminAgendaPage() {
     } catch (err: any) {
       console.error('Error al sincronizar datos:', err)
       setError(err.message || 'Error de conexión')
-    } finally {
+    } fill {
       setLoading(false)
       setRefreshing(false)
     }
@@ -301,7 +280,6 @@ export default function AdminAgendaPage() {
 
   const abrirDetalleCita = (cita: any) => {
     setSelectedCita(cita)
-    setIsEditing(false)
     setShowDetailModal(true)
   }
 
@@ -408,9 +386,6 @@ export default function AdminAgendaPage() {
     setShowNewAppointment(true)
   }
 
-  // ============================================================
-  // COMPONENTE: Lista de Citas (con tema claro/oscuro)
-  // ============================================================
   const renderListaCitas = (fecha: Date) => {
     const citasDelDia = getCitasDelDia(fecha)
     const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
@@ -496,9 +471,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER VISTA DÍA (con tema claro/oscuro)
-  // ============================================================
   const renderVistaDia = () => {
     const citasDelDia = getCitasDelDia(fechaSeleccionada)
     const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
@@ -509,7 +481,6 @@ export default function AdminAgendaPage() {
     ]
 
     const getCitaEnHora = (hora: number) => {
-      const horaStr = String(hora).padStart(2, '0')
       return citasOrdenadas.find((c: any) => {
         const cHora = c.time ? parseInt(c.time.split(':')[0], 10) : -1
         return cHora === hora
@@ -520,13 +491,13 @@ export default function AdminAgendaPage() {
       <div className="space-y-4">
         <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${
           isToday(fechaSeleccionada) 
-            ? isDark ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30' : 'bg-[#D4AF37]/10 border-[#D4AF37]/30'
+            ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30'
             : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl text-white shadow-md bg-[#D4AF37]">
-                <CalendarIcon className="w-5 h-5" />
+                <Calendar className="w-5 h-5" />
               </div>
               <div>
                 <h3 className={`text-xl font-serif font-light ${
@@ -656,16 +627,13 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER VISTA SEMANA — RESPONSIVE (7 días SIN scroll)
-  // ============================================================
   const renderVistaSemana = () => {
     const weekStart = startOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
     const weekDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(fechaSeleccionada, { weekStartsOn: 1 }) })
 
     return (
       <div className="space-y-4">
-        {/* VERSIÓN MÓVIL - 7 días en grid con texto pequeño */}
+        {/* VERSIÓN MÓVIL */}
         <div className="md:hidden">
           <div className="grid grid-cols-7 gap-1">
             {weekDays.map((day) => {
@@ -675,13 +643,13 @@ export default function AdminAgendaPage() {
 
               return (
                 <button
-                  key={day.toString()}
+                  key={day.toISOString()}
                   onClick={() => setFechaSeleccionada(day)}
                   className={`flex flex-col items-center p-1.5 rounded-xl border transition-all ${
                     isSelected 
                       ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37]' 
                       : isTodayDate 
-                        ? isDark ? 'border-[#D4AF37]/30 bg-[#D4AF37]/10' : 'border-[#D4AF37]/30 bg-[#D4AF37]/10'
+                        ? 'border-[#D4AF37]/30 bg-[#D4AF37]/10'
                         : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
                   }`}
                 >
@@ -708,7 +676,7 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* VERSIÓN TABLET/DESKTOP - 7 columnas fijas SIN SCROLL */}
+        {/* VERSIÓN DESKTOP */}
         <div className="hidden md:block">
           <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day) => {
@@ -718,26 +686,24 @@ export default function AdminAgendaPage() {
 
               return (
                 <div 
-                  key={day.toString()}
+                  key={day.toISOString()}
                   onClick={() => setFechaSeleccionada(day)}
                   className={`rounded-2xl border p-2 transition-all cursor-pointer min-h-[180px] ${
                     isSelected 
                       ? 'border-[#D4AF37] shadow-lg scale-[1.02]' 
                       : isTodayDate 
-                        ? isDark ? 'border-[#D4AF37]/30 bg-[#D4AF37]/5' : 'border-[#D4AF37]/30 bg-[#D4AF37]/5'
+                        ? 'border-[#D4AF37]/30 bg-[#D4AF37]/5'
                         : isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                   }`}
                 >
                   <div className={`flex items-center justify-between mb-1.5 ${
-                    isSelected ? 'text-[#D4AF37]' : isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                    isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                   }`}>
-                    <span className={`text-[9px] font-black uppercase ${
-                      isSelected ? 'text-[#D4AF37]' : isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                    }`}>
+                    <span className="text-[9px] font-black uppercase">
                       {format(day, 'EEE', { locale: es })}
                     </span>
                     <span className={`text-base font-black ${
-                      isSelected ? 'text-[#D4AF37]' : isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                      isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                     }`}>
                       {format(day, 'd')}
                     </span>
@@ -795,10 +761,10 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* DETALLE DEL DÍA SELECCIONADO */}
+        {/* DETALLE SELECCIONADO */}
         <div className={`p-4 rounded-2xl border shadow-sm ${
           isToday(fechaSeleccionada) 
-            ? isDark ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30' : 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
+            ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
             : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
           <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${
@@ -813,9 +779,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER VISTA MES (con tema claro/oscuro)
-  // ============================================================
   const renderVistaMes = () => {
     const monthStart = startOfMonth(fechaSeleccionada)
     const daysInMonth = getDaysInMonth(fechaSeleccionada)
@@ -893,7 +856,7 @@ export default function AdminAgendaPage() {
 
         <div className={`p-4 rounded-2xl border shadow-sm ${
           isToday(fechaSeleccionada) 
-            ? isDark ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30' : 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
+            ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
             : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
           <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${
@@ -908,9 +871,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // LOADING
-  // ============================================================
   if (loading) {
     return (
       <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
@@ -927,9 +887,6 @@ export default function AdminAgendaPage() {
     )
   }
 
-  // ============================================================
-  // RENDER PRINCIPAL
-  // ============================================================
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
@@ -944,11 +901,11 @@ export default function AdminAgendaPage() {
           <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-start gap-4 min-w-0 w-full">
               <div className="p-3.5 rounded-2xl shadow-sm shrink-0 mt-0.5 bg-[#D4AF37] text-white">
-                <CalendarIcon className="w-6 h-6" />
+                <Calendar className="w-6 h-6" />
               </div>
 
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className={`text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]`}>✦ {settings?.business_name || 'Salón VIP'}</p>
+                <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]">✦ {settings?.business_name || 'Salón VIP'}</p>
                 <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   Agenda Fresh Nails
                 </h2>
@@ -973,11 +930,7 @@ export default function AdminAgendaPage() {
 
               <button 
                 onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '12:00')}
-                className={`px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
-                  isDark 
-                    ? 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]' 
-                    : 'bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]'
-                }`}
+                className="px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]"
               >
                 <Plus className="w-4 h-4" />
                 <span>Nuevo Turno</span>
@@ -1009,8 +962,8 @@ export default function AdminAgendaPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 text-white bg-[#D4AF37]`}>
-                <CalendarIconCheck className="w-4 h-4" />
+              <div className="p-2 rounded-xl shrink-0 text-white bg-[#D4AF37]">
+                <CalendarDays className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <p className={`text-[8px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Turnos</p>
@@ -1021,7 +974,7 @@ export default function AdminAgendaPage() {
 
           <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 text-white bg-[#EC4899]`}>
+              <div className="p-2 rounded-xl shrink-0 text-white bg-[#EC4899]">
                 <Clock className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -1033,7 +986,7 @@ export default function AdminAgendaPage() {
 
           <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 text-white bg-[#3B82F6]`}>
+              <div className="p-2 rounded-xl shrink-0 text-white bg-[#3B82F6]">
                 <TrendingUp className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -1186,7 +1139,8 @@ export default function AdminAgendaPage() {
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
                       isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
                     }`}
-                    required                  >
+                    required
+                  >
                     <option value="">Selecciona Servicio</option>
                     {services.map((s: any) => <option key={s.id} value={s.id}>{s.name} (${s.price})</option>)}
                   </select>
@@ -1328,7 +1282,7 @@ export default function AdminAgendaPage() {
                 </div>
                 <div className="flex justify-between py-2">
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Total</span>
-                  <span className={`font-bold text-[#D4AF37]`}>${Number(selectedCita.total_price || 0).toLocaleString()}</span>
+                  <span className="font-bold text-[#D4AF37]">${Number(selectedCita.total_price || 0).toLocaleString()}</span>
                 </div>
               </div>
 
@@ -1350,7 +1304,7 @@ export default function AdminAgendaPage() {
 
               <button 
                 onClick={() => { if(confirm('¿Eliminar esta cita?')) eliminarCita(selectedCita.id) }} 
-                className={`w-full mt-4 py-2.5 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all text-xs font-mono uppercase font-bold`}
+                className="w-full mt-4 py-2.5 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all text-xs font-mono uppercase font-bold"
               >
                 <Trash2 className="w-3.5 h-3.5 inline mr-2" />
                 Eliminar Turno
@@ -1360,13 +1314,6 @@ export default function AdminAgendaPage() {
         )}
 
       </div>
-
-      <style jsx global>{`
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
     </div>
   )
 }
