@@ -9,7 +9,7 @@ import {
   User, Search, Plus, Phone, Mail, Calendar, 
   UserCheck, Award, Trash2, Edit, Star, XCircle, Sparkles,
   RefreshCw, X, Users, TrendingUp, CheckCircle2,
-  AlertCircle, Crown, Gem
+  AlertCircle, Crown, Gem, Loader2, Save
 } from 'lucide-react'
 
 type Cliente = {
@@ -33,6 +33,17 @@ export default function ClientesPage() {
   const [refreshing, setRefreshing] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    avatar_url: ''
+  })
+  const [formError, setFormError] = useState<string | null>(null)
 
   // ============================================================
   // PALETA DE COLORES - DORADO PROTAGONISTA
@@ -86,6 +97,80 @@ export default function ClientesPage() {
 
   const handleRefresh = () => {
     fetchClientes(true)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      avatar_url: ''
+    })
+    setFormError(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+    setSaving(true)
+
+    // Validaciones
+    if (!formData.name.trim()) {
+      setFormError('El nombre es obligatorio')
+      setSaving(false)
+      return
+    }
+
+    if (!formData.email.trim() && !formData.phone.trim()) {
+      setFormError('Debes proporcionar al menos un email o teléfono')
+      setSaving(false)
+      return
+    }
+
+    try {
+      const newCliente = {
+        name: formData.name.trim(),
+        email: formData.email.trim() || null,
+        phone: formData.phone.trim() || null,
+        avatar_url: formData.avatar_url.trim() || null,
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([newCliente])
+        .select()
+
+      if (error) {
+        if (error.code === '23505') {
+          setFormError('Ya existe un cliente con ese email o teléfono')
+        } else {
+          setFormError(error.message || 'Error al guardar el cliente')
+        }
+        setSaving(false)
+        return
+      }
+
+      if (data) {
+        setClientes(prev => [data[0] as Cliente, ...prev])
+        setSuccess('✅ Cliente agregado correctamente')
+        setTimeout(() => setSuccess(null), 3000)
+        setShowModal(false)
+        resetForm()
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'Error inesperado')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const filtrados = clientes.filter((c: Cliente) => 
@@ -160,6 +245,7 @@ export default function ClientesPage() {
               </button>
 
               <button 
+                onClick={() => { resetForm(); setShowModal(true); }}
                 className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
               >
                 <div className="p-1 rounded-md bg-[#D4AF37] text-white">
@@ -234,7 +320,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* BUSCADOR — CON TEMA */}
+        {/* BUSCADOR */}
         {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
@@ -256,7 +342,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* GRID DE CLIENTES — CON TEMA */}
+        {/* GRID DE CLIENTES */}
         {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {filtrados.map((cliente: Cliente) => (
@@ -347,6 +433,131 @@ export default function ClientesPage() {
             </div>
           )}
         </div>
+
+        {/* ============================================================ */}
+        {/* MODAL: NUEVA CLIENTE */}
+        {/* ============================================================ */}
+        {showModal && (
+          <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
+            <div 
+              className={`relative w-full max-w-md rounded-2xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ${
+                isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => { setShowModal(false); resetForm(); }} 
+                className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
+                  isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]">
+                  <User className="w-5 h-5" />
+                </div>
+                <h3 className={`text-xl font-serif font-extrabold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                  Nueva Cliente
+                </h3>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Nombre Completo *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                    }`}
+                    placeholder="Ej: María González"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                    }`}
+                    placeholder="maria@correo.com"
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                    }`}
+                    placeholder="099123456"
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    URL de Avatar (opcional)
+                  </label>
+                  <input
+                    type="url"
+                    name="avatar_url"
+                    value={formData.avatar_url}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                    }`}
+                    placeholder="https://ejemplo.com/avatar.jpg"
+                  />
+                </div>
+
+                {formError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs">
+                    {formError}
+                  </div>
+                )}
+
+                <div className={`flex gap-3 pt-3 border-t ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowModal(false); resetForm(); }}
+                    className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${
+                      isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0] disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {saving ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       </div>
 
