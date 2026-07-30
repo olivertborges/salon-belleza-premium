@@ -31,7 +31,9 @@ import {
   Percent,
   Copy,
   Calendar,
-  PlusCircle
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface Promocion {
@@ -66,6 +68,9 @@ const styles = [
   { value: 'tarjeta', label: '💳 Tarjeta' },
   { value: 'flyer', label: '📋 Flyer' }
 ]
+
+// Limite de tarjetas por página
+const ITEMS_PER_PAGE = 6
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -112,6 +117,11 @@ export default function AdminPromocionesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
+  // ============================================================
+  // ESTADO DE PAGINACIÓN
+  // ============================================================
+  const [currentPage, setCurrentPage] = useState<number>(1)
+
   const brandGradient = {
     backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
   }
@@ -121,6 +131,11 @@ export default function AdminPromocionesPage() {
   useEffect(() => {
     loadPromociones()
   }, [tenantId])
+
+  // Resetear a la página 1 cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterCategory, filterActive])
 
   const loadPromociones = async () => {
     if (!tenantId) {
@@ -239,6 +254,15 @@ export default function AdminPromocionesPage() {
     }
     setFilteredPromociones(filtered)
   }, [searchTerm, filterCategory, filterActive, promociones])
+
+  // ============================================================
+  // CÁLCULOS LOGÍSTICOS DE PAGINACIÓN
+  // ============================================================
+  const totalPages = Math.ceil(filteredPromociones.length / ITEMS_PER_PAGE)
+  const paginatedPromociones = filteredPromociones.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -463,7 +487,7 @@ export default function AdminPromocionesPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* TARJETAS DE PROMOCIONES */}
+      {/* TARJETAS DE PROMOCIONES (PAGINADAS) */}
       {/* ============================================================ */}
       <motion.div
         variants={containerVariants}
@@ -484,7 +508,7 @@ export default function AdminPromocionesPage() {
             </Link>
           </div>
         ) : (
-          filteredPromociones.map((promo) => (
+          paginatedPromociones.map((promo) => (
             <motion.div
               key={promo.id}
               variants={itemVariants}
@@ -613,6 +637,59 @@ export default function AdminPromocionesPage() {
           ))
         )}
       </motion.div>
+
+      {/* ============================================================ */}
+      {/* CONTROLES DE PAGINACIÓN */}
+      {/* ============================================================ */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 font-mono text-xs">
+          <span className={isDark ? 'text-stone-400' : 'text-stone-500'}>
+            Mostrando <span className="font-bold" style={{ color: primaryColor }}>{paginatedPromociones.length}</span> de <span className="font-bold">{filteredPromociones.length}</span> resultados
+          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                isDark ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' : 'bg-white border-pink-100/60 text-stone-800'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => {
+              const esPaginaActual = currentPage === page
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-xl border text-[10px] font-bold transition-all ${
+                    esPaginaActual
+                      ? 'text-white'
+                      : isDark
+                        ? 'bg-[#130f24] border-fuchsia-950 text-stone-400 hover:border-fuchsia-800'
+                        : 'bg-white border-pink-100/60 text-stone-500 hover:border-pink-300'
+                  }`}
+                  style={esPaginaActual ? primaryBgStyle : {}}
+                >
+                  {page}
+                </button>
+              )
+            })}
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
+                isDark ? 'bg-[#130f24] border-fuchsia-950 text-pink-100' : 'bg-white border-pink-100/60 text-stone-800'
+              }`}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ============================================================ */}
       {/* STYLES GLOBALES */}
