@@ -6,11 +6,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import {
   User,
-  Mail,
-  Phone,
   Calendar,
   Camera,
   Edit2,
@@ -24,9 +21,7 @@ import {
   UserCircle,
   BadgeCheck,
   Loader2,
-  ArrowLeft,
-  Building,
-  Clock
+  ArrowLeft
 } from 'lucide-react'
 
 interface AdminProfile {
@@ -42,7 +37,7 @@ interface AdminProfile {
 }
 
 export default function AdminPerfilPage() {
-  const { user, role } = useAuth()
+  const { user } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -112,6 +107,11 @@ export default function AdminPerfilPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (file.size > 2 * 1024 * 1024) {
+      setError('La imagen es muy pesada. Máximo 2MB.')
+      return
+    }
+
     setAvatarFile(file)
     const reader = new FileReader()
     reader.onloadend = () => {
@@ -129,24 +129,32 @@ export default function AdminPerfilPage() {
 
     try {
       let avatarUrl = profile.avatar_url
+
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `avatars/${fileName}`
+        const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`
 
+        // 1. Subida al bucket 'clients'
         const { error: uploadError } = await supabase.storage
-          .from('profiles')
-          .upload(filePath, avatarFile)
+          .from('clients')
+          .upload(filePath, avatarFile, {
+            cacheControl: '3600',
+            upsert: true
+          })
 
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          throw new Error(`Error en Storage (bucket clients): ${uploadError.message}`)
+        }
 
+        // 2. Obtener la URL pública desde 'clients'
         const { data: { publicUrl } } = supabase.storage
-          .from('profiles')
+          .from('clients')
           .getPublicUrl(filePath)
 
         avatarUrl = publicUrl
       }
 
+      // 3. Actualizar base de datos
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -157,7 +165,9 @@ export default function AdminPerfilPage() {
         })
         .eq('id', profile.id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        throw new Error(`Error en Base de Datos: ${updateError.message}`)
+      }
 
       setProfile(prev => ({
         ...prev!,
@@ -168,13 +178,12 @@ export default function AdminPerfilPage() {
 
       setAvatarFile(null)
       setEditing(false)
-      setSuccess('✅ Perfil actualizado correctamente')
+      setSuccess('✅ Perfil y foto actualizados correctamente')
       setTimeout(() => setSuccess(null), 3000)
 
-    } catch (error) {
-      console.error('Error guardando perfil:', error)
-      setError('Error al guardar los cambios')
-      setTimeout(() => setError(null), 3000)
+    } catch (err: any) {
+      console.error('Error guardando perfil:', err)
+      setError(err.message || 'Error al guardar los cambios')
     } finally {
       setSaving(false)
     }
@@ -211,12 +220,8 @@ export default function AdminPerfilPage() {
 
   if (!profile) {
     return (
-      <div className={`flex flex-col items-center justify-center min-h-[60vh] ${
-        isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
-      }`}>
-        <div className={`rounded-2xl p-8 max-w-md text-center border ${
-          isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
+      <div className={`flex flex-col items-center justify-center min-h-[60vh] ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+        <div className={`rounded-2xl p-8 max-w-md text-center border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <AlertCircle className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
           <p className={`text-lg font-bold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
             No se encontró tu perfil
@@ -247,12 +252,10 @@ export default function AdminPerfilPage() {
 
       <div className="max-w-3xl mx-auto px-4 space-y-8 relative z-10">
 
-        {/* ERROR / SUCCESS */}
+        {/* MENSAGES DE RESPUESTA */}
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
-            isDark 
-              ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' 
-              : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
+            isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
           }`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
               <AlertCircle className="w-5 h-5 text-[#D4AF37]" />
@@ -266,9 +269,7 @@ export default function AdminPerfilPage() {
 
         {success && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
-            isDark 
-              ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' 
-              : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
+            isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
           }`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
               <CheckCircle2 className="w-5 h-5 text-[#D4AF37]" />
@@ -280,9 +281,7 @@ export default function AdminPerfilPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* HERO DEL PERFIL */}
-        {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-2xl border p-7 md:p-10 shadow-lg transition-all duration-300 mt-4 ${
           isDark 
             ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
@@ -294,24 +293,18 @@ export default function AdminPerfilPage() {
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
             {/* Avatar */}
             <div className="relative group">
-              <div className={`w-28 h-28 rounded-2xl overflow-hidden border-2 ${
-                isDark ? 'border-[#D4AF37]/40' : 'border-[#D4AF37]/40'
-              } shadow-lg`}>
+              <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#D4AF37]/40 shadow-lg relative">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className={`w-full h-full flex items-center justify-center ${
-                    isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
-                  }`}>
+                  <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
                     <UserCircle className="w-16 h-16 text-[#A89588]" />
                   </div>
                 )}
               </div>
 
               {editing && (
-                <label className={`absolute bottom-0 right-0 p-2 rounded-xl cursor-pointer transition-all duration-300 hover:scale-110 ${
-                  isDark ? 'bg-[#D4AF37] text-[#1A0E0A]' : 'bg-[#D4AF37] text-[#1A0E0A]'
-                }`}>
+                <label className="absolute -bottom-2 -right-2 p-2 rounded-xl cursor-pointer transition-all duration-300 hover:scale-110 shadow-md bg-[#D4AF37] text-[#1A0E0A]">
                   <Camera className="w-4 h-4" />
                   <input
                     type="file"
@@ -326,9 +319,7 @@ export default function AdminPerfilPage() {
             {/* Info */}
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                <h1 className={`font-serif text-3xl font-light ${
-                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                }`}>
+                <h1 className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   {profile.full_name || 'Administrador'}
                 </h1>
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
@@ -337,17 +328,13 @@ export default function AdminPerfilPage() {
                 </span>
               </div>
 
-              <p className={`text-sm font-light mt-1 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
+              <p className={`text-sm font-light mt-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Shield className="w-4 h-4 inline mr-1 text-[#D4AF37]" />
                 Cuenta de administrador
               </p>
 
               <div className="flex flex-wrap items-center gap-4 mt-3">
-                <div className={`flex items-center gap-1.5 text-xs ${
-                  isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                }`}>
+                <div className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   <Calendar className="w-4 h-4 text-[#D4AF37]" />
                   Miembro desde {new Date(profile.created_at).toLocaleDateString('es-ES', {
                     day: 'numeric',
@@ -358,7 +345,7 @@ export default function AdminPerfilPage() {
               </div>
             </div>
 
-            {/* Botones */}
+            {/* Botones de acción */}
             <div className="flex flex-col gap-2 shrink-0">
               {editing ? (
                 <>
@@ -404,9 +391,7 @@ export default function AdminPerfilPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* INFORMACIÓN DEL PERFIL */}
-        {/* ============================================================ */}
+        {/* INFORMACIÓN DETALLADA */}
         <div className={`border rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 ${
           isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
@@ -419,9 +404,7 @@ export default function AdminPerfilPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Nombre */}
             <div>
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <User className="w-3.5 h-3.5 inline mr-1.5" /> Nombre completo
               </label>
               {editing ? (
@@ -446,9 +429,7 @@ export default function AdminPerfilPage() {
 
             {/* Email */}
             <div>
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <AtSign className="w-3.5 h-3.5 inline mr-1.5" /> Correo electrónico
               </label>
               <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
@@ -458,9 +439,7 @@ export default function AdminPerfilPage() {
 
             {/* Teléfono */}
             <div>
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Smartphone className="w-3.5 h-3.5 inline mr-1.5" /> Teléfono
               </label>
               {editing ? (
@@ -485,14 +464,10 @@ export default function AdminPerfilPage() {
 
             {/* Rol */}
             <div>
-              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
+              <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Shield className="w-3.5 h-3.5 inline mr-1.5" /> Rol
               </label>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
-                isDark ? 'border-[#D4AF37]/30 text-[#D4AF37]' : 'border-[#D4AF37]/30 text-[#D4AF37]'
-              }`}>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#D4AF37]/30 text-[#D4AF37]">
                 <BadgeCheck className="w-4 h-4" />
                 <span className="text-sm font-bold uppercase tracking-wider">
                   {profile.role || 'Administrador'}
@@ -502,12 +477,8 @@ export default function AdminPerfilPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* BOTÓN DE NAVEGACIÓN */}
-        {/* ============================================================ */}
-        <div className={`border-t pt-6 ${
-          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-        }`}>
+        {/* NAVEGACIÓN INFERIOR */}
+        <div className={`border-t pt-6 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
           <Link
             href="/dashboard"
             className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${
