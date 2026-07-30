@@ -312,16 +312,18 @@ export default function ClientesPage() {
       setDebugInfo(`✅ Cliente insertado! ID: ${clientId}`)
       setShowDebug(true)
 
-      // ✅ 5. OBTENER EL CLIENTE COMPLETO
-      const { data: clienteData, error: fetchError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', clientId)
-        .single()
-
-      if (!fetchError && clienteData) {
-        setClientes(prev => [clienteData as Cliente, ...prev])
+      // ✅ 5. OPTIMIZACIÓN LADO DEL CLIENTE (Evita error RLS de select inmediato)
+      const nuevoClienteLocal: Cliente = {
+        id: clientId,
+        name: formData.name.trim(),
+        email: formData.email.trim() || null,
+        phone: formData.phone.trim() || null,
+        avatar_url: avatarUrl || '',
+        is_active: true,
+        created_at: new Date().toISOString()
       }
+
+      setClientes(prev => [nuevoClienteLocal, ...prev])
 
       setSuccess('✅ Cliente agregado correctamente')
       setTimeout(() => setSuccess(null), 3000)
