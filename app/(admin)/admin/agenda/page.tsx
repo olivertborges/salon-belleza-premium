@@ -1,12 +1,13 @@
+// app/(admin)/agenda/page.tsx
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   Calendar, Clock, Sparkles, ChevronLeft, ChevronRight, 
   CheckCircle2, Play, Filter, DollarSign, Layers, Plus, Trash2, 
   X, Edit, FileText, Users, ChevronDown, Award, Ban, RefreshCw, 
-  Loader2, Building2, CalendarDays, Smartphone, Check, TrendingUp, Save,
+  Loader2, Building2, CalendarDays, Check, TrendingUp, Save,
   Eye, EyeOff, Circle, Sun, Moon, Cloud
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, startOfMonth, endOfMonth, getDaysInMonth, isSameDay } from 'date-fns'
@@ -53,7 +54,7 @@ export default function AdminAgendaPage() {
     notes: '',
   })
 
-  // Detectar si el usuario es staff
+  // Detectar si el usuario es staff y bloquear accesos cruzados
   useEffect(() => {
     const checkUserRole = async () => {
       if (!user?.id) return
@@ -118,7 +119,6 @@ export default function AdminAgendaPage() {
     `
 
     document.body.appendChild(toast)
-
     document.getElementById('btn-cerrar-toast')?.addEventListener('click', () => toast.remove())
     document.getElementById('btn-ir-toast')?.addEventListener('click', () => {
       if (nuevaCita.date) {
@@ -126,7 +126,6 @@ export default function AdminAgendaPage() {
         setFechaSeleccionada(fechaCita)
       }
       setViewMode('day')
-      if (!isStaff) setFiltroStaff('todos')
       toast.remove()
     })
 
@@ -136,19 +135,19 @@ export default function AdminAgendaPage() {
   }
 
   // Sincronización e Ingesta de Datos
-  const fetchData = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true)
-    } else {
-      setRefreshing(true)
-    }
+  const fetchData = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true)
+    else setRefreshing(true)
     setError(null)
 
     try {
       let query = supabase.from('appointments').select('*')
 
+      // Si es un profesional logueado, forzar estrictamente su ID sin excepciones
       if (isStaff && staffId) {
         query = query.eq('professional_id', staffId)
+      } else if (filtroStaff !== 'todos' && !isStaff) {
+        query = query.eq('professional_id', filtroStaff)
       }
 
       if (viewMode === 'day') {
@@ -164,12 +163,7 @@ export default function AdminAgendaPage() {
         query = query.gte('date', format(monthStart, 'yyyy-MM-dd')).lte('date', format(monthEnd, 'yyyy-MM-dd'))
       }
 
-      if (filtroStaff !== 'todos' && !isStaff) {
-        query = query.eq('professional_id', filtroStaff)
-      }
-
       const { data: citasData, error: citasError } = await query.order('time', { ascending: true })
-
       if (citasError) throw citasError
 
       const [staffRes, servicesRes, clientsRes] = await Promise.all([
@@ -193,17 +187,17 @@ export default function AdminAgendaPage() {
     } catch (err: any) {
       console.error('Error al sincronizar datos:', err)
       setError(err.message || 'Error de conexión')
-    } finally {
+    } finaly {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [fechaSeleccionada, filtroStaff, viewMode, isStaff, staffId])
 
   useEffect(() => {
     fetchData(false)
 
     const canalCitas = supabase
-      .channel('cambios-agenda-admin-v3')
+      .channel('cambios-agenda-admin-v4')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'appointments' },
@@ -214,22 +208,14 @@ export default function AdminAgendaPage() {
           fetchData(false)
         }
       )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'appointments' },
-        () => fetchData(false)
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'appointments' },
-        () => fetchData(false)
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'appointments' }, () => fetchData(false))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'appointments' }, () => fetchData(false))
       .subscribe()
 
     return () => {
       supabase.removeChannel(canalCitas)
     }
-  }, [fechaSeleccionada, filtroStaff, viewMode, isStaff, staffId])
+  }, [fetchData])
 
   const cargarDatos = () => {
     setRefreshing(true)
@@ -271,12 +257,15 @@ export default function AdminAgendaPage() {
     return citas.filter((c: any) => c.date === dateStr)
   }
 
-  const totalIngresos = citas
-    .filter((c: any) => c.status === 'completed')
-    .reduce((sum: number, c: any) => sum + Number(c.services?.price || 0), 0)
-
-  const citasPendientes = citas.filter((c: any) => c.status === 'pending').length
-  const totalCitasVista = citas.filter((c: any) => c.status !== 'blocked' && c.status !== 'cancelled').length
+  // Métricas Calculadas
+  const stats = useMemo(() => {
+    const totalIngresos = citas
+      .filter((c: any) => c.status === 'completed')
+      .reduce((sum: number, c: any) => sum + Number(c.services?.price || 0), 0)
+    const citasPendientes = citas.filter((c: any) => c.status === 'pending').length
+    const totalCitasVista = citas.filter((c: any) => c.status !== 'blocked' && c.status !== 'cancelled').length
+    return { totalIngresos, citasPendientes, totalCitasVista }
+  }, [citas])
 
   const abrirDetalleCita = (cita: any) => {
     setSelectedCita(cita)
@@ -296,7 +285,6 @@ export default function AdminAgendaPage() {
       setSuccess('Estado actualizado correctamente')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      console.error('Error actualizando estado:', err)
       setError('Error al actualizar estado')
       setTimeout(() => setError(null), 3000)
     }
@@ -316,7 +304,6 @@ export default function AdminAgendaPage() {
       setSuccess('Cita eliminada correctamente')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      console.error('Error al eliminar:', err)
       setError('Error al eliminar la cita')
       setTimeout(() => setError(null), 3000)
     }
@@ -324,16 +311,17 @@ export default function AdminAgendaPage() {
 
   const handleAgendarCita = async () => {
     setFormError(null)
-
     if (!newCita.clientId || !newCita.serviceId || !newCita.date || !newCita.time) {
       setFormError('Completa todos los campos obligatorios')
       return
     }
 
     try {
+      const selectedStaffId = isStaff && staffId ? staffId : newCita.staffId
+
       const appointmentData = {
         client_id: newCita.clientId,
-        professional_id: newCita.staffId || null,
+        professional_id: selectedStaffId || null,
         service_id: newCita.serviceId,
         date: newCita.date,
         time: newCita.time,
@@ -350,8 +338,7 @@ export default function AdminAgendaPage() {
 
       if (error) {
         if (error.code === '23505' || error.code === '409') {
-          const profesional = staff.find((s: any) => s.id === newCita.staffId)?.name || 'el profesional'
-          setFormError(`⚠️ Conflicto de horario para ${profesional} en este horario.`)
+          setFormError(`⚠️ Conflicto de horario para el profesional en este horario.`)
           return
         }
         throw error
@@ -363,12 +350,10 @@ export default function AdminAgendaPage() {
 
       setShowNewAppointment(false)
       setNewCita({ clientId: '', serviceId: '', staffId: '', date: '', time: '', notes: '' })
-      setFormError(null)
       setSuccess('Cita agendada correctamente')
       setTimeout(() => setSuccess(null), 3000)
       await fetchData(false)
     } catch (err: any) {
-      console.error('Error al agendar:', err)
       setFormError(err.message || 'Error al agendar el turno')
     }
   }
@@ -411,9 +396,7 @@ export default function AdminAgendaPage() {
         {citasOrdenadas.map((cita: any, index: number) => {
           const statusInfo = getStatusBadge(cita.status)
           const isBlocked = cita.status === 'blocked'
-          const borderColor = index % 3 === 0 ? 'border-l-[#D4AF37]' : 
-                             index % 3 === 1 ? 'border-l-[#EC4899]' : 
-                             'border-l-[#3B82F6]'
+          const borderColor = index % 3 === 0 ? 'border-l-[#D4AF37]' : index % 3 === 1 ? 'border-l-[#EC4899]' : 'border-l-[#3B82F6]'
 
           return (
             <div 
@@ -434,16 +417,12 @@ export default function AdminAgendaPage() {
                 </div>
                 <div className="min-w-0">
                   <p className={`text-sm font-medium truncate ${
-                    isBlocked 
-                      ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                      : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                    isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                   }`}>
                     {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-medium truncate ${
-                      isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'
-                    }`}>
+                    <span className={`text-[10px] font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
                       {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
                     </span>
                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
@@ -453,7 +432,6 @@ export default function AdminAgendaPage() {
                   </div>
                 </div>
               </div>
-
               {!isBlocked && (
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs font-mono font-bold text-[#D4AF37]">
@@ -474,12 +452,10 @@ export default function AdminAgendaPage() {
   const renderVistaDia = () => {
     const citasDelDia = getCitasDelDia(fechaSeleccionada)
     const citasOrdenadas = [...citasDelDia].sort((a: any, b: any) => (a.time || '').localeCompare(b.time || ''))
-
     const franjas = [
       { nombre: '🌅 Mañana', horas: Array.from({ length: 5 }, (_, i) => i + 8) },
       { nombre: '☀️ Tarde', horas: Array.from({ length: 6 }, (_, i) => i + 13) },
     ]
-
     const getCitaEnHora = (hora: number) => {
       return citasOrdenadas.find((c: any) => {
         const cHora = c.time ? parseInt(c.time.split(':')[0], 10) : -1
@@ -490,9 +466,7 @@ export default function AdminAgendaPage() {
     return (
       <div className="space-y-4">
         <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${
-          isToday(fechaSeleccionada) 
-            ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30'
-            : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+          isToday(fechaSeleccionada) ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30' : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-4">
@@ -500,9 +474,7 @@ export default function AdminAgendaPage() {
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <h3 className={`text-xl font-serif font-light ${
-                  isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                }`}>
+                <h3 className={`text-xl font-serif font-light ${isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}
                 </h3>
                 <div className="flex items-center gap-3 mt-0.5">
@@ -530,12 +502,9 @@ export default function AdminAgendaPage() {
           {franjas.map((franja) => (
             <div key={franja.nombre} className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                  {franja.nombre}
-                </span>
+                <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{franja.nombre}</span>
                 <div className={`flex-1 h-px ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
               </div>
-
               <div className="grid grid-cols-1 gap-2">
                 {franja.horas.map((hora, index) => {
                   const cita = getCitaEnHora(hora)
@@ -549,52 +518,36 @@ export default function AdminAgendaPage() {
                       onClick={() => cita ? abrirDetalleCita(cita) : handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), horaStr)}
                       className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
                         cita 
-                          ? isBlocked
-                            ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-70' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-70'
-                            : isDark ? `bg-[#2A1B14] border-[#3D281E] cursor-pointer hover:border-[#D4AF37]/40` : `bg-white border-[#F0E4DA] cursor-pointer hover:border-[#D4AF37]/40`
+                          ? isBlocked ? isDark ? 'bg-[#1E120C] border-[#3D281E] opacity-70' : 'bg-[#FFF9F6] border-[#F0E4DA] opacity-70'
+                                      : isDark ? `bg-[#2A1B14] border-[#3D281E] cursor-pointer hover:border-[#D4AF37]/40` : `bg-white border-[#F0E4DA] cursor-pointer hover:border-[#D4AF37]/40`
                           : isDark ? `bg-transparent border-dashed border-[#3D281E] hover:border-[#D4AF37]/20` : `bg-transparent border-dashed border-[#F0E4DA] hover:border-[#D4AF37]/20`
                       }`}
                     >
-                      <div className={`w-14 text-xs font-mono font-bold shrink-0 ${
-                        cita ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#3D281E]' : 'text-[#F0E4DA]'
-                      }`}>
+                      <div className={`w-14 text-xs font-mono font-bold shrink-0 ${cita ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#3D281E]' : 'text-[#F0E4DA]'}`}>
                         {horaStr}:00
                       </div>
-
                       {cita ? (
                         <div className="flex-1 flex items-center justify-between min-w-0">
                           <div className="flex items-center gap-3 min-w-0">
                             {!isBlocked ? (
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                                index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'
-                              }`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`}>
                                 {cita.clients?.name?.charAt(0) || 'C'}
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-400 text-white shrink-0">
-                                <Ban className="w-4 h-4" />
-                              </div>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-400 text-white shrink-0"><Ban className="w-4 h-4" /></div>
                             )}
                             <div className="min-w-0">
-                              <p className={`text-sm font-medium truncate ${
-                                isBlocked 
-                                  ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                                  : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                              }`}>
+                              <p className={`text-sm font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                                 {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
                               </p>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-medium truncate ${
-                                  isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'
-                                }`}>
+                                <span className={`text-[10px] font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
                                   {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
                                 </span>
                                 {!isBlocked && cita.staff && (
                                   <>
                                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
-                                    <span className={`text-[9px] font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                                      {cita.staff.name}
-                                    </span>
+                                    <span className={`text-[9px] font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.staff.name}</span>
                                   </>
                                 )}
                               </div>
@@ -602,19 +555,13 @@ export default function AdminAgendaPage() {
                           </div>
                           {!isBlocked && (
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs font-mono font-bold text-[#D4AF37]">
-                                ${Number(cita.services?.price || 0).toLocaleString()}
-                              </span>
-                              <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>
-                                {statusInfo.label}
-                              </span>
+                              <span className="text-xs font-mono font-bold text-[#D4AF37]">${Number(cita.services?.price || 0).toLocaleString()}</span>
+                              <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>{statusInfo.label}</span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className={`flex-1 text-xs italic font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                          Sin turno — Haz clic para agendar
-                        </div>
+                        <div className={`flex-1 text-xs italic font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Sin turno — Haz clic para agendar</div>
                       )}
                     </div>
                   )
@@ -633,7 +580,6 @@ export default function AdminAgendaPage() {
 
     return (
       <div className="space-y-4">
-        {/* VERSIÓN MÓVIL */}
         <div className="md:hidden">
           <div className="grid grid-cols-7 gap-1">
             {weekDays.map((day) => {
@@ -646,29 +592,13 @@ export default function AdminAgendaPage() {
                   key={day.toISOString()}
                   onClick={() => setFechaSeleccionada(day)}
                   className={`flex flex-col items-center p-1.5 rounded-xl border transition-all ${
-                    isSelected 
-                      ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37]' 
-                      : isTodayDate 
-                        ? 'border-[#D4AF37]/30 bg-[#D4AF37]/10'
-                        : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+                    isSelected ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37]' : isTodayDate ? 'border-[#D4AF37]/30 bg-[#D4AF37]/10' : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
                   }`}
                 >
-                  <span className={`text-[6px] font-black uppercase tracking-wider ${
-                    isSelected ? 'text-[#1A0E0A]/70' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                  }`}>
-                    {format(day, 'EEE', { locale: es })}
-                  </span>
-                  <span className={`text-sm font-black ${
-                    isSelected ? 'text-[#1A0E0A]' : isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                  }`}>
-                    {format(day, 'd')}
-                  </span>
+                  <span className={`text-[6px] font-black uppercase tracking-wider ${isSelected ? 'text-[#1A0E0A]/70' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{format(day, 'EEE', { locale: es })}</span>
+                  <span className={`text-sm font-black ${isSelected ? 'text-[#1A0E0A]' : isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{format(day, 'd')}</span>
                   {citasDelDia.length > 0 && (
-                    <span className={`text-[6px] font-mono font-bold mt-0.5 px-1 py-0.5 rounded-full ${
-                      isSelected ? 'bg-[#1A0E0A]/20 text-[#1A0E0A]' : 'bg-[#D4AF37]/20 text-[#D4AF37]'
-                    }`}>
-                      {citasDelDia.length}
-                    </span>
+                    <span className={`text-[6px] font-mono font-bold mt-0.5 px-1 py-0.5 rounded-full ${isSelected ? 'bg-[#1A0E0A]/20 text-[#1A0E0A]' : 'bg-[#D4AF37]/20 text-[#D4AF37]'}`}>{citasDelDia.length}</span>
                   )}
                 </button>
               )
@@ -676,7 +606,6 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        {/* VERSIÓN DESKTOP */}
         <div className="hidden md:block">
           <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day) => {
@@ -689,89 +618,45 @@ export default function AdminAgendaPage() {
                   key={day.toISOString()}
                   onClick={() => setFechaSeleccionada(day)}
                   className={`rounded-2xl border p-2 transition-all cursor-pointer min-h-[180px] ${
-                    isSelected 
-                      ? 'border-[#D4AF37] shadow-lg scale-[1.02]' 
-                      : isTodayDate 
-                        ? 'border-[#D4AF37]/30 bg-[#D4AF37]/5'
-                        : isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+                    isSelected ? 'border-[#D4AF37] shadow-lg scale-[1.02]' : isTodayDate ? 'border-[#D4AF37]/30 bg-[#D4AF37]/5' : isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                   }`}
                 >
-                  <div className={`flex items-center justify-between mb-1.5 ${
-                    isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                  }`}>
-                    <span className="text-[9px] font-black uppercase">
-                      {format(day, 'EEE', { locale: es })}
-                    </span>
-                    <span className={`text-base font-black ${
-                      isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                    }`}>
-                      {format(day, 'd')}
-                    </span>
+                  <div className={`flex items-center justify-between mb-1.5 ${isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <span className="text-[9px] font-black uppercase">{format(day, 'EEE', { locale: es })}</span>
+                    <span className={`text-base font-black ${isSelected || isTodayDate ? 'text-[#D4AF37]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{format(day, 'd')}</span>
                   </div>
-
                   <div className="space-y-1 max-h-[140px] overflow-y-auto">
                     {citasDelDia.slice(0, 3).map((cita: any) => (
                       <div 
                         key={cita.id}
                         onClick={(e) => { e.stopPropagation(); abrirDetalleCita(cita) }}
                         className={`p-1.5 rounded-lg text-[10px] cursor-pointer transition-all hover:shadow-md ${
-                          cita.status === 'blocked' 
-                            ? isDark ? 'bg-[#1E120C] border border-[#3D281E]' : 'bg-[#FFF9F6] border border-[#F0E4DA]'
-                            : isDark ? `bg-[#2A1B14] border border-[#3D281E] hover:border-[#D4AF37]/40` : `bg-white border border-[#F0E4DA] hover:border-[#D4AF37]/40`
+                          cita.status === 'blocked' ? isDark ? 'bg-[#1E120C] border border-[#3D281E]' : 'bg-[#FFF9F6] border border-[#F0E4DA]' : isDark ? `bg-[#2A1B14] border border-[#3D281E] hover:border-[#D4AF37]/40` : `bg-white border border-[#F0E4DA] hover:border-[#D4AF37]/40`
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`font-mono font-bold ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                            {cita.time?.slice(0,5) || '--:--'}
-                          </span>
-                          {cita.status === 'blocked' && (
-                            <Ban className="w-2.5 h-2.5 text-stone-400" />
-                          )}
+                          <span className={`font-mono font-bold ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.time?.slice(0,5) || '--:--'}</span>
+                          {cita.status === 'blocked' && <Ban className="w-2.5 h-2.5 text-stone-400" />}
                         </div>
-                        <p className={`font-medium truncate text-[9px] ${
-                          cita.status === 'blocked' 
-                            ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                            : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-                        }`}>
-                          {cita.status === 'blocked' ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
-                        </p>
+                        <p className={`font-medium truncate text-[9px] ${cita.status === 'blocked' ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{cita.status === 'blocked' ? 'Bloqueado' : cita.clients?.name || 'Cliente'}</p>
                       </div>
                     ))}
-                    {citasDelDia.length > 3 && (
-                      <p className={`text-[8px] font-medium text-center ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                        +{citasDelDia.length - 3} más
-                      </p>
-                    )}
-                    {citasDelDia.length === 0 && (
-                      <p className={`text-[9px] text-center italic py-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                        Sin turnos
-                      </p>
-                    )}
+                    {citasDelDia.length > 3 && <p className={`text-[8px] font-medium text-center ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>+{citasDelDia.length - 3} más</p>}
+                    {citasDelDia.length === 0 && <p className={`text-[9px] text-center italic py-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Sin turnos</p>}
                   </div>
-
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleSlotClick(format(day, 'yyyy-MM-dd'), '11:00') }}
                     className={`w-full mt-1.5 p-0.5 rounded-lg text-[7px] font-black uppercase tracking-wider border border-dashed ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]/30' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]/30'}`}
-                  >
-                    + Agregar
-                  </button>
+                  >+ Agregar</button>
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* DETALLE SELECCIONADO */}
-        <div className={`p-4 rounded-2xl border shadow-sm ${
-          isToday(fechaSeleccionada) 
-            ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
-            : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
-          <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${
-            isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}
-            {isToday(fechaSeleccionada) && ' ✦ Hoy'}
+        <div className={`p-4 rounded-2xl border shadow-sm ${isToday(fechaSeleccionada) ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30' : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+          <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+            {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}{isToday(fechaSeleccionada) && ' ✦ Hoy'}
           </h4>
           {renderListaCitas(fechaSeleccionada)}
         </div>
@@ -800,11 +685,9 @@ export default function AdminAgendaPage() {
               <span key={idx} className={idx % 3 === 0 ? 'text-[#D4AF37]' : idx % 3 === 1 ? 'text-[#EC4899]' : 'text-[#3B82F6]'}>{d}</span>
             ))}
           </div>
-
           <div className={`grid grid-cols-7 gap-px ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`}>
             {days.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} className="bg-stone-50/10 min-h-[40px] md:min-h-[60px]" />
-
               const isSelected = isSameDay(day, fechaSeleccionada)
               const isTodayDate = isToday(day)
               const citasDelDia = getCitasDelDia(day)
@@ -814,38 +697,18 @@ export default function AdminAgendaPage() {
                   key={idx} 
                   onClick={() => setFechaSeleccionada(day)}
                   className={`p-1 md:p-1.5 min-h-[40px] md:min-h-[60px] flex flex-col justify-between cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'bg-[#D4AF37]/20 border border-[#D4AF37]/40' 
-                      : isTodayDate 
-                        ? 'bg-[#D4AF37]/10'
-                        : isDark ? 'bg-[#2A1B14]' : 'bg-white'
+                    isSelected ? 'bg-[#D4AF37]/20 border border-[#D4AF37]/40' : isTodayDate ? 'bg-[#D4AF37]/10' : isDark ? 'bg-[#2A1B14]' : 'bg-white'
                   } hover:bg-[#D4AF37]/5`}
                 >
                   <span className={`text-xs font-mono font-black flex items-center justify-center rounded-lg w-5 h-5 ${
-                    isSelected 
-                      ? 'bg-[#D4AF37] text-[#1A0E0A]' 
-                      : isTodayDate 
-                        ? 'border border-[#D4AF37] text-[#D4AF37]' 
-                        : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                  }`}>
-                    {format(day, 'd')}
-                  </span>
-
+                    isSelected ? 'bg-[#D4AF37] text-[#1A0E0A]' : isTodayDate ? 'border border-[#D4AF37] text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>{format(day, 'd')}</span>
                   {citasDelDia.length > 0 && (
                     <div className="flex flex-wrap justify-center gap-0.5 mt-0.5">
                       {citasDelDia.slice(0, 2).map((cita: any, i: number) => (
-                        <div 
-                          key={i} 
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            cita.status === 'blocked' 
-                              ? 'bg-stone-400' 
-                              : i % 3 === 0 ? 'bg-[#D4AF37]' : i % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'
-                          }`} 
-                        />
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${cita.status === 'blocked' ? 'bg-stone-400' : i % 3 === 0 ? 'bg-[#D4AF37]' : i % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`} />
                       ))}
-                      {citasDelDia.length > 2 && (
-                        <span className={`text-[6px] font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>+{citasDelDia.length - 2}</span>
-                      )}
+                      {citasDelDia.length > 2 && <span className={`text-[6px] font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>+{citasDelDia.length - 2}</span>}
                     </div>
                   )}
                 </div>
@@ -854,16 +717,9 @@ export default function AdminAgendaPage() {
           </div>
         </div>
 
-        <div className={`p-4 rounded-2xl border shadow-sm ${
-          isToday(fechaSeleccionada) 
-            ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30'
-            : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
-          <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${
-            isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}
-            {isToday(fechaSeleccionada) && ' ✦ Hoy'}
+        <div className={`p-4 rounded-2xl border shadow-sm ${isToday(fechaSeleccionada) ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30' : isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+          <h4 className={`text-xs font-black uppercase tracking-wider mb-3 ${isToday(fechaSeleccionada) ? 'text-[#D4AF37]' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+            {format(fechaSeleccionada, "EEEE d 'de' MMMM", { locale: es })}{isToday(fechaSeleccionada) && ' ✦ Hoy'}
           </h4>
           {renderListaCitas(fechaSeleccionada)}
         </div>
@@ -879,9 +735,7 @@ export default function AdminAgendaPage() {
             <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
             <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
-          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
-            Cargando agenda...
-          </p>
+          <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>Cargando agenda...</p>
         </div>
       </div>
     )
@@ -891,113 +745,165 @@ export default function AdminAgendaPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-4">
 
-        {/* HEADER */}
-        <div className={`relative overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'}`}>
+        {/* ============================================================ */}
+        {/* HERO BANNER (GIRO) - CON CONTENEDORES KPI Y SELECTOR STAFF */}
+        {/* ============================================================ */}
+        <div className={`relative overflow-hidden rounded-3xl border shadow-xl transition-all duration-300 ${
+          isDark ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E]' : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5]'
+        }`}>
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
 
-          <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div className="flex items-start gap-4 min-w-0 w-full">
-              <div className="p-3.5 rounded-2xl shadow-sm shrink-0 mt-0.5 bg-[#D4AF37] text-white">
-                <Calendar className="w-6 h-6" />
+          <div className="relative z-10 p-6 md:p-8 space-y-6">
+            
+            {/* Fila Principal de Título y Controles */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+              
+              <div className="flex items-start gap-4 min-w-0 flex-1">
+                <div className="p-3.5 rounded-2xl shadow-sm shrink-0 bg-[#D4AF37] text-white">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]">✦ {settings?.business_name || 'Salón VIP'}</p>
+                  <h2 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                    Agenda Fresh Nails
+                  </h2>
+                  <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                    Control absoluto de disponibilidad, reservas activas y administración del flujo de trabajo diario.
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]">✦ {settings?.business_name || 'Salón VIP'}</p>
-                <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  Agenda Fresh Nails
-                </h2>
-                <p className={`text-sm font-light ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                  Gestiona tus turnos, controla la disponibilidad y optimiza las reservas.
-                </p>
+              {/* Botones de Operación y Filtro Administrador */}
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                
+                {/* Selector de Agenda/Profesional - Oculto totalmente para Staff */}
+                {!isStaff && staff.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowStaffFilter(!showStaffFilter)}
+                      className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                        showStaffFilter 
+                          ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37]' 
+                          : isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5]' : 'bg-white border-[#EADED5] text-[#6E5A4D]'
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>
+                        {filtroStaff !== 'todos' 
+                          ? staff.find((s: any) => s.id === filtroStaff)?.name || 'Agenda'
+                          : 'Todas las agendas'}
+                      </span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showStaffFilter ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showStaffFilter && (
+                      <div className={`absolute right-0 top-full mt-1.5 w-60 rounded-xl border shadow-2xl z-50 overflow-hidden ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+                        <button
+                          onClick={() => { setFiltroStaff('todos'); setShowStaffFilter(false) }}
+                          className={`w-full px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-[#D4AF37]/10 ${
+                            filtroStaff === 'todos' ? 'text-[#D4AF37]' : isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'
+                          }`}
+                        >
+                          Todas las agendas
+                        </button>
+                        {staff.map((s: any, idx: number) => (
+                          <button
+                            key={s.id}
+                            onClick={() => { setFiltroStaff(s.id); setShowStaffFilter(false) }}
+                            className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-[#D4AF37]/10 border-t ${isDark ? 'border-[#3D281E]' : 'border-[#EADED5]'} ${
+                              filtroStaff === s.id 
+                                ? idx % 3 === 0 ? 'text-[#D4AF37] font-bold' : idx % 3 === 1 ? 'text-[#EC4899] font-bold' : 'text-[#3B82F6] font-bold'
+                                : isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'
+                            }`}
+                          >
+                            Agenda: {s.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => cargarDatos()} 
+                  className={`px-3.5 py-2.5 rounded-xl border transition-all text-xs font-black uppercase tracking-[0.15em] flex items-center gap-2 ${
+                    isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-white border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
+                  }`}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#C9A96E] ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>Sincronizar</span>
+                </button>
+
+                <button 
+                  onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '12:00')}
+                  className="px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-lg flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Nuevo Turno</span>
+                </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0 border-t pt-4 md:pt-0 md:border-t-0 border-[#F0E4DA] dark:border-[#3D281E]">
-              <button 
-                onClick={() => cargarDatos()} 
-                className={`px-4 py-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 ${
-                  isDark 
-                    ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#FFF9F6] hover:border-[#D4AF37]/40' 
-                    : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#1A0E0A] hover:border-[#D4AF37]/40'
-                }`}
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>Actualizar</span>
-              </button>
+            {/* Fila de Componentes KPI Integrados en el Giro */}
+            <div className={`grid grid-cols-3 gap-3 p-3 rounded-2xl border ${
+              isDark ? 'bg-[#150D08]/60 border-[#3D281E]/70' : 'bg-[#FAF6F2]/60 border-[#EADED5]/70'
+            }`}>
+              {/* Turnos Totales */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl text-white bg-[#D4AF37] shrink-0">
+                  <CalendarDays className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Turnos Vista</p>
+                  <h3 className={`text-sm md:text-base font-extrabold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.totalCitasVista}</h3>
+                </div>
+              </div>
 
-              <button 
-                onClick={() => handleSlotClick(format(fechaSeleccionada, 'yyyy-MM-dd'), '12:00')}
-                className="px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 bg-[#D4AF37] hover:bg-[#E8D5A0] shadow-[0_4px_15px_rgba(212,175,55,0.3)]"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo Turno</span>
-              </button>
+              {/* En Espera / Pendientes */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl text-white bg-[#EC4899] shrink-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>En Espera</p>
+                  <h3 className="text-sm md:text-base font-extrabold truncate text-[#EC4899]">{stats.citasPendientes}</h3>
+                </div>
+              </div>
+
+              {/* Flujo de Caja */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl text-white bg-[#3B82F6] shrink-0">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[9px] font-black uppercase tracking-wider truncate ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Caja Cierre</p>
+                  <h3 className="text-sm md:text-base font-extrabold truncate text-[#3B82F6]">${stats.totalIngresos.toLocaleString()}</h3>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 
-        {/* MENSAJES */}
+        {/* MENSAJES DE NOTIFICACIÓN */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-              <X className="w-4 h-4 text-[#D4AF37]" />
-            </div>
+            <X className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
             <p className="text-sm font-light">{error}</p>
           </div>
         )}
 
         {success && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-              <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
-            </div>
+            <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
             <p className="text-sm font-light">{success}</p>
           </div>
         )}
 
-        {/* KPIS */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl shrink-0 text-white bg-[#D4AF37]">
-                <CalendarDays className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-[8px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Turnos</p>
-                <p className={`text-sm font-black ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{totalCitasVista}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl shrink-0 text-white bg-[#EC4899]">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-[8px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Espera</p>
-                <p className={`text-sm font-black text-[#EC4899]`}>{citasPendientes}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={`rounded-2xl p-3 shadow-sm border ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl shrink-0 text-white bg-[#3B82F6]">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-[8px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Caja</p>
-                <p className={`text-sm font-black text-[#3B82F6]`}>${totalIngresos.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SELECTORES */}
+        {/* CONTROLES SECUNDARIOS Y NAVEGACIÓN */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className={`flex border rounded-xl p-1 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
             {(['day', 'week', 'month'] as const).map((mode, idx) => (
@@ -1016,112 +922,44 @@ export default function AdminAgendaPage() {
           </div>
 
           <div className={`flex items-center justify-between border rounded-xl px-2 py-1 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <button 
-              onClick={() => cambiarDia(-1)} 
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}
-            >
+            <button onClick={() => cambiarDia(-1)} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}>
               <ChevronLeft className="w-4 h-4 text-[#D4AF37]" />
             </button>
             <span className={`text-xs font-serif font-extrabold px-4 capitalize ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
               {formatFechaTitulo()}
             </span>
-            <button 
-              onClick={() => cambiarDia(1)} 
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}
-            >
+            <button onClick={() => cambiarDia(1)} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}>
               <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
             </button>
           </div>
         </div>
 
-        {/* FILTRO STAFF */}
-        {!isStaff && staff.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setShowStaffFilter(!showStaffFilter)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all w-full sm:w-auto ${
-                showStaffFilter 
-                  ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37] shadow-sm' 
-                  : isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span className="text-xs font-medium">
-                {filtroStaff !== 'todos' 
-                  ? staff.find((s: any) => s.id === filtroStaff)?.name || 'Filtrar'
-                  : 'Todos los profesionales'}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showStaffFilter ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showStaffFilter && (
-              <div className={`absolute top-full left-0 mt-1.5 w-full sm:w-64 rounded-xl border shadow-lg z-20 overflow-hidden ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-                <button
-                  onClick={() => { setFiltroStaff('todos'); setShowStaffFilter(false) }}
-                  className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-[#D4AF37]/10 ${
-                    filtroStaff === 'todos' 
-                      ? 'text-[#D4AF37] font-bold' 
-                      : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                  }`}
-                >
-                  Todos los profesionales
-                </button>
-                {staff.map((s: any, idx: number) => (
-                  <button
-                    key={s.id}
-                    onClick={() => { setFiltroStaff(s.id); setShowStaffFilter(false) }}
-                    className={`w-full px-4 py-2.5 text-left text-xs font-medium transition-colors hover:bg-[#D4AF37]/10 border-t ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'} ${
-                      filtroStaff === s.id 
-                        ? idx % 3 === 0 ? 'text-[#D4AF37] font-bold' : idx % 3 === 1 ? 'text-[#EC4899] font-bold' : 'text-[#3B82F6] font-bold'
-                        : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-                    }`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* VISTAS */}
+        {/* CONTENEDOR DE VISTAS DINÁMICAS */}
         <div className="w-full">
           {viewMode === 'day' && renderVistaDia()}
           {viewMode === 'week' && renderVistaSemana()}
           {viewMode === 'month' && renderVistaMes()}
         </div>
 
-        {/* MODAL: NUEVA CITA */}
+        {/* MODAL: REGISTRO DE TURNOS */}
         {showNewAppointment && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-              <button 
-                onClick={() => setShowNewAppointment(false)}
-                className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}
-              >
+              <button onClick={() => setShowNewAppointment(false)} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}>
                 <X className="w-5 h-5" />
               </button>
-
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]">
-                  <Plus className="w-5 h-5" />
-                </div>
-                <h3 className={`text-xl font-serif font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  Nuevo Turno
-                </h3>
+                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]"><Plus className="w-5 h-5" /></div>
+                <h3 className={`text-xl font-serif font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>Nuevo Turno</h3>
               </div>
 
               <form onSubmit={(e) => { e.preventDefault(); handleAgendarCita() }} className="space-y-4">
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    Clienta *
-                  </label>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Clienta *</label>
                   <select
                     value={newCita.clientId}
                     onChange={(e) => setNewCita({...newCita, clientId: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     required
                   >
                     <option value="">Selecciona Clienta</option>
@@ -1130,15 +968,11 @@ export default function AdminAgendaPage() {
                 </div>
 
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    Servicio *
-                  </label>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Servicio *</label>
                   <select
                     value={newCita.serviceId}
                     onChange={(e) => setNewCita({...newCita, serviceId: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     required
                   >
                     <option value="">Selecciona Servicio</option>
@@ -1146,17 +980,14 @@ export default function AdminAgendaPage() {
                   </select>
                 </div>
 
+                {/* Sólo visible para administradores. Si es staff, hereda su staffId internamente en el handler */}
                 {!isStaff && staff.length > 0 && (
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      Profesional
-                    </label>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Profesional</label>
                     <select
                       value={newCita.staffId}
                       onChange={(e) => setNewCita({...newCita, staffId: e.target.value})}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     >
                       <option value="">Sin asignar</option>
                       {staff.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1166,91 +997,52 @@ export default function AdminAgendaPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      Fecha *
-                    </label>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Fecha *</label>
                     <input
                       type="date"
                       value={newCita.date}
                       onChange={(e) => setNewCita({...newCita, date: e.target.value})}
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                      }`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                       required
                     />
                   </div>
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      Hora *
-                    </label>
-                    <TimePicker 
-                      value={newCita.time} 
-                      onChange={(time) => setNewCita({...newCita, time})} 
-                    />
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Hora *</label>
+                    <TimePicker value={newCita.time} onChange={(time) => setNewCita({...newCita, time})} />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    Notas
-                  </label>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Notas</label>
                   <textarea
                     value={newCita.notes}
                     onChange={(e) => setNewCita({...newCita, notes: e.target.value})}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                    }`}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'}`}
                     rows={2}
                   />
                 </div>
 
-                {formError && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs">
-                    {formError}
-                  </div>
-                )}
+                {formError && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs">{formError}</div>}
 
                 <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowNewAppointment(false)}
-                    className={`flex-1 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest ${
-                      isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
-                    }`}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#E8D5A0]"
-                  >
-                    <Save className="w-4 h-4" />
-                    Agendar
-                  </button>
+                  <button type="button" onClick={() => setShowNewAppointment(false)} className={`flex-1 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'}`}>Cancelar</button>
+                  <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl text-white hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#E8D5A0]"><Save className="w-4 h-4" />Agendar</button>
                 </div>
               </form>
             </div>
           </div>
         )}
 
-        {/* MODAL: DETALLE */}
+        {/* MODAL: ACCIONES Y DETALLE */}
         {showDetailModal && selectedCita && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-              <button 
-                onClick={() => setShowDetailModal(false)}
-                className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}
-              >
+              <button onClick={() => setShowDetailModal(false)} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'}`}>
                 <X className="w-5 h-5" />
               </button>
-
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className={`text-xl font-serif font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  Detalle de Cita
-                </h3>
+                <div className="p-2.5 rounded-xl text-white shadow-md bg-[#D4AF37]"><FileText className="w-5 h-5" /></div>
+                <h3 className={`text-xl font-serif font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>Detalle de Cita</h3>
               </div>
 
               <div className="space-y-3 text-sm">
@@ -1306,8 +1098,7 @@ export default function AdminAgendaPage() {
                 onClick={() => { if(confirm('¿Eliminar esta cita?')) eliminarCita(selectedCita.id) }} 
                 className="w-full mt-4 py-2.5 rounded-xl border border-rose-500/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all text-xs font-mono uppercase font-bold"
               >
-                <Trash2 className="w-3.5 h-3.5 inline mr-2" />
-                Eliminar Turno
+                <Trash2 className="w-3.5 h-3.5 inline mr-2" />Eliminar Turno
               </button>
             </div>
           </div>
