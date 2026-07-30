@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient' // Ajusta la ruta a tu cliente de Supabase
 
