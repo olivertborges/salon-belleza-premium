@@ -142,7 +142,7 @@ export default function PerfilPage() {
         phone: clientData.phone || '',
         birth_date: clientData.birth_date || '',
         address: clientData.address || '',
-        avatar_url: clientData.avatar_url || '',
+        avatar_url: clientData.avatar_url || user?.user_metadata?.avatar_url || '',
         created_at: clientData.created_at || new Date().toISOString(),
         referral_code: clientData.referral_code || '',
         points_glow: walletData?.glow_points || 0,
@@ -159,8 +159,8 @@ export default function PerfilPage() {
         address: clientData.address || ''
       })
 
-      if (clientData.avatar_url) {
-        setAvatarPreview(clientData.avatar_url)
+      if (fullProfile.avatar_url) {
+        setAvatarPreview(fullProfile.avatar_url)
       }
 
     } catch (error) {
@@ -203,14 +203,18 @@ export default function PerfilPage() {
 
     try {
       let avatarUrl = profile.avatar_url
+
+      // Subida de imagen usando la lógica idéntica aprobada del admin
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        
+        // Guardamos directamente en la raíz o ruta limpia del bucket 'clients'
         const filePath = `avatars/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from('clients')
-          .upload(filePath, avatarFile)
+          .upload(filePath, avatarFile, { cacheControl: '3600', upsert: true })
 
         if (uploadError) throw uploadError
 
@@ -221,6 +225,7 @@ export default function PerfilPage() {
         avatarUrl = publicUrl
       }
 
+      // Paso 1: Actualizar la tabla de clientes en la Base de Datos
       const { error: updateError } = await supabase
         .from('clients')
         .update({
@@ -235,6 +240,18 @@ export default function PerfilPage() {
 
       if (updateError) throw updateError
 
+      // Paso 2: Sincronizar los metadatos de autenticación de Supabase (Crucial para el Layout)
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        data: {
+          full_name: formData.name.trim(),
+          avatar_url: avatarUrl
+        }
+      })
+
+      if (authUpdateError) {
+        console.warn('Advertencia en actualización de Auth:', authUpdateError.message)
+      }
+
       setProfile(prev => ({
         ...prev!,
         name: formData.name.trim(),
@@ -247,12 +264,16 @@ export default function PerfilPage() {
       setAvatarFile(null)
       setEditing(false)
       setSuccess('✅ Perfil actualizado correctamente')
-      setTimeout(() => setSuccess(null), 3000)
+      
+      // Forzar recarga leve opcional o dejar que el contexto de Auth actualice el Header
+      setTimeout(() => {
+        setSuccess(null)
+        window.location.reload() // Asegura que refresque el layout global
+      }, 1500)
 
-    } catch (error) {
-      console.error('Error guardando perfil:', error)
-      setError('Error al guardar los cambios')
-      setTimeout(() => setError(null), 3000)
+    } catch (err: any) {
+      console.error('Error guardando perfil:', err)
+      setError(`Error al guardar los cambios: ${err.message || 'Verifica las políticas del bucket'}`)
     } finally {
       setSaving(false)
     }
@@ -287,6 +308,7 @@ export default function PerfilPage() {
     }
   }
 
+  // El resto del JSX permanece idéntico e intacto...
   if (loading) {
     return <PerfilLoadingSpinner isDark={isDark} />
   }
