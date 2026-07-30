@@ -91,12 +91,12 @@ export default function PerfilPage() {
       setLoading(true)
       setError(null)
 
-      // 1. Obtener datos del cliente
+      // 1. Obtener datos del cliente (Casting as any para evitar restricciones estrictas de tipo en build)
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*')
         .eq('auth_user_id', user.id)
-        .maybeSingle()
+        .maybeSingle() as any
 
       if (clientError) {
         console.error('Error cargando cliente:', clientError)
@@ -111,15 +111,12 @@ export default function PerfilPage() {
         return
       }
 
-      // Asegurar tipado correcto para TypeScript asignando un alias tipado
-      const actualClient = clientData as any
-
       // 2. Obtener puntos de loyalty_wallets
       const { data: walletData, error: walletError } = await supabase
         .from('loyalty_wallets')
         .select('glow_points, hair_points, glow_level, hair_level')
-        .eq('client_id', actualClient.id)
-        .maybeSingle()
+        .eq('client_id', clientData.id)
+        .maybeSingle() as any
 
       if (walletError) {
         console.error('Error cargando wallet:', walletError)
@@ -129,7 +126,7 @@ export default function PerfilPage() {
       const { count: appointmentsCount, error: countError } = await supabase
         .from('appointments')
         .select('id', { count: 'exact', head: true })
-        .eq('client_id', actualClient.id)
+        .eq('client_id', clientData.id)
         .neq('status', 'cancelled')
 
       if (countError) {
@@ -138,15 +135,15 @@ export default function PerfilPage() {
 
       // 4. Construir perfil completo
       const fullProfile: ClientProfile = {
-        id: actualClient.id,
-        name: actualClient.name || '',
-        email: actualClient.email || '',
-        phone: actualClient.phone || '',
-        birth_date: actualClient.birth_date || '',
-        address: actualClient.address || '',
-        avatar_url: actualClient.avatar_url || user?.user_metadata?.avatar_url || '',
-        created_at: actualClient.created_at || new Date().toISOString(),
-        referral_code: actualClient.referral_code || '',
+        id: clientData.id,
+        name: clientData.name || '',
+        email: clientData.email || '',
+        phone: clientData.phone || '',
+        birth_date: clientData.birth_date || '',
+        address: clientData.address || '',
+        avatar_url: clientData.avatar_url || user?.user_metadata?.avatar_url || '',
+        created_at: clientData.created_at || new Date().toISOString(),
+        referral_code: clientData.referral_code || '',
         points_glow: walletData?.glow_points || 0,
         points_hair: walletData?.hair_points || 0,
         total_appointments: appointmentsCount || 0,
@@ -155,10 +152,10 @@ export default function PerfilPage() {
 
       setProfile(fullProfile)
       setFormData({
-        name: actualClient.name || '',
-        phone: actualClient.phone || '',
-        birth_date: actualClient.birth_date || '',
-        address: actualClient.address || ''
+        name: clientData.name || '',
+        phone: clientData.phone || '',
+        birth_date: clientData.birth_date || '',
+        address: clientData.address || ''
       })
 
       if (fullProfile.avatar_url) {
@@ -225,7 +222,7 @@ export default function PerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // Actualizar la TABLA 'clients' de la Base de Datos (SIN la columna address)
+      // CORRECCIÓN AQUÍ: Guardamos los datos omitiendo por completo la columna 'address'
       const { error: updateError } = await supabase
         .from('clients')
         .update({
