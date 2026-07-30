@@ -204,9 +204,9 @@ export default function PerfilPage() {
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
         const filePath = `avatars/${fileName}`
 
-        // Intento de subida al bucket 'packet-client'
+        // Subida al bucket correcto 'clients'
         const { error: uploadError } = await supabase.storage
-          .from('packet-client')
+          .from('clients')
           .upload(filePath, avatarFile)
 
         if (uploadError) {
@@ -215,7 +215,7 @@ export default function PerfilPage() {
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('packet-client')
+          .from('clients')
           .getPublicUrl(filePath)
 
         avatarUrl = publicUrl
@@ -254,7 +254,6 @@ export default function PerfilPage() {
 
     } catch (err: any) {
       console.error('Error general capturado:', err)
-      // Mostramos el error exacto directamente en la pantalla
       setError(`⚠️ Detalle del error: ${err.message || err}`)
     } finally {
       setSaving(false)
