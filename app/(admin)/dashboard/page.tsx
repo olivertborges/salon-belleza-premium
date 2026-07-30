@@ -40,20 +40,6 @@ export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const isDark = theme === 'dark'
 
-  // Paleta de colores
-  const colors = {
-    gold: '#D4AF37',
-    goldLight: '#E8D5A0',
-    pink: '#EC4899',
-    pinkLight: '#F9A8D4',
-    blue: '#3B82F6',
-    blueLight: '#93C5FD',
-  }
-
-  const headerGradient = {
-    backgroundImage: `linear-gradient(135deg, ${colors.gold} 0%, ${colors.pink} 50%, ${colors.blue} 100%)`
-  }
-
   useEffect(() => {
     setAuthorized(true)
     cargarEstadisticas()
@@ -102,7 +88,13 @@ export default function DashboardPage() {
         return
       }
 
-      const hoy = new Date().toISOString().split('T')[0]
+      // Obtener fecha actual en formato local
+      const hoy = new Date()
+      const year = hoy.getFullYear()
+      const month = String(hoy.getMonth() + 1).padStart(2, '0')
+      const day = String(hoy.getDate()).padStart(2, '0')
+      const hoyStr = `${year}-${month}-${day}`
+
       const hoyDate = new Date()
       const inicioSemana = new Date(hoyDate)
       inicioSemana.setDate(hoyDate.getDate() - hoyDate.getDay() + 1)
@@ -129,13 +121,17 @@ export default function DashboardPage() {
         .eq('tenant_id', activeTenantId)
       const services = servicesData || []
 
-      const citasHoy = appointments.filter((c: any) => c.date?.startsWith(hoy))
+      // Citas de HOY - usando string exacto
+      const citasHoy = appointments.filter((c: any) => c.date === hoyStr)
       const citasHoyCount = citasHoy.length
+
+      // Citas de la semana
+      const inicioSemanaStr = `${inicioSemana.getFullYear()}-${String(inicioSemana.getMonth() + 1).padStart(2, '0')}-${String(inicioSemana.getDate()).padStart(2, '0')}`
+      const finSemanaStr = `${finSemana.getFullYear()}-${String(finSemana.getMonth() + 1).padStart(2, '0')}-${String(finSemana.getDate()).padStart(2, '0')}`
 
       const citasSemana = appointments.filter((c: any) => {
         if (!c.date) return false
-        const cDate = new Date(c.date)
-        return cDate >= inicioSemana && cDate <= finSemana
+        return c.date >= inicioSemanaStr && c.date <= finSemanaStr
       }).length
 
       const totalClientas = clients.length
@@ -153,25 +149,16 @@ export default function DashboardPage() {
       const completadas = appointments.filter((c: any) => c.status === 'completed').length
       const canceladas = appointments.filter((c: any) => c.status === 'cancelled').length
 
-      // ============================================================
-      // 🔥 CORREGIDO: Incluye citas de HOY
-      // ============================================================
-      const hoyInicio = new Date()
-      hoyInicio.setHours(0, 0, 0, 0)
-
+      // 🔥 CITAS PRÓXIMAS - desde HOY
       const proximas = appointments
         .filter((c: any) => {
           if (!c.date) return false
-          const cDate = new Date(c.date)
-          cDate.setHours(0, 0, 0, 0)
-          // Incluye citas desde hoy en adelante (no canceladas)
-          return cDate >= hoyInicio && c.status !== 'cancelled'
+          if (c.status === 'cancelled') return false
+          return c.date >= hoyStr
         })
         .sort((a: any, b: any) => {
-          // Ordenar por fecha primero, luego por hora
-          const dateA = new Date(a.date + 'T' + (a.time || '00:00'))
-          const dateB = new Date(b.date + 'T' + (b.time || '00:00'))
-          return dateA.getTime() - dateB.getTime()
+          if (a.date !== b.date) return a.date.localeCompare(b.date)
+          return (a.time || '00:00').localeCompare(b.time || '00:00')
         })
         .slice(0, 4)
 
@@ -257,12 +244,12 @@ export default function DashboardPage() {
 
           <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-start gap-4 min-w-0 w-full">
-              <div className={`p-3.5 rounded-2xl shadow-sm shrink-0 mt-0.5 text-white bg-gradient-to-br from-[#D4AF37] to-[#EC4899]`}>
+              <div className="p-3.5 rounded-2xl shadow-sm shrink-0 mt-0.5 text-white bg-gradient-to-br from-[#D4AF37] to-[#EC4899]">
                 <Crown className="w-6 h-6" />
               </div>
 
               <div className="min-w-0 flex-1 space-y-0.5">
-                <p className={`text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]`}>
+                <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[#D4AF37]">
                   ✦ {settings?.business_name || 'Salón VIP'}
                 </p>
                 <h2 className={`font-serif text-2xl md:text-3xl font-light tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
@@ -285,7 +272,7 @@ export default function DashboardPage() {
 
               <Link 
                 href="/admin/agenda"
-                className={`px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto hover:scale-105 active:scale-95 bg-gradient-to-r from-[#D4AF37] to-[#EC4899] hover:opacity-90`}
+                className="px-4 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto hover:scale-105 active:scale-95 bg-gradient-to-r from-[#D4AF37] to-[#EC4899] hover:opacity-90"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Ver Agenda</span>
@@ -338,7 +325,7 @@ export default function DashboardPage() {
 
         {/* SECCIONES DETALLADAS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Citas Próximas - AHORA INCLUYE HOY */}
+          {/* Citas Próximas */}
           <div className={`lg:col-span-2 rounded-2xl border p-6 shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
