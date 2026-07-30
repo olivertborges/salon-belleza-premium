@@ -9,9 +9,9 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Sparkles, Plus, Search, Clock, DollarSign, 
   Layers, Edit, Trash2, CheckCircle2, 
-  X, Save, Tag, Scissors, Star, Heart, Flame,
-  RefreshCw, TrendingUp, Package, Eye, Hand,
-  AlertCircle, Crown, Gem, PlusCircle
+  X, Save, Tag, Scissors, Star, Heart,
+  RefreshCw, Package, Eye, Hand,
+  AlertCircle, ChevronDown
 } from 'lucide-react'
 
 type Servicio = {
@@ -36,6 +36,15 @@ const categorias = [
   { name: 'Estética', icon: Sparkles }
 ]
 
+const initialFormState = {
+  name: '',
+  description: '',
+  price: '',
+  duration: '',
+  badge: '',
+  category: 'Uñas'
+}
+
 export default function ServiciosPage() {
   const { settings } = useSettings()
   const { tenantId } = useAuth()
@@ -52,14 +61,7 @@ export default function ServiciosPage() {
   const [showModal, setShowModal] = useState<boolean>(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    duration: '',
-    badge: '',
-    category: 'Uñas'
-  })
+  const [formData, setFormData] = useState(initialFormState)
 
   // ============================================================
   // PALETA DE COLORES - DORADO PROTAGONISTA
@@ -67,18 +69,10 @@ export default function ServiciosPage() {
   const gold = '#D4AF37'
   const goldLight = '#E8D5A0'
   const goldDark = '#C9A96E'
-  const pink = '#EC4899'
-  const blue = '#3B82F6'
-
-  const brandGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold}, ${goldLight}, ${gold})`
-  }
 
   const headerGradient = {
     backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
   }
-
-  const primaryBgStyle = { backgroundColor: gold }
 
   const fetchServicios = async (showLoading = true) => {
     if (!tenantId) {
@@ -94,7 +88,7 @@ export default function ServiciosPage() {
     setError(null)
 
     try {
-      const { data, error } = await supabase
+      const { data, error: sbError } = await supabase
         .from('services')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -102,14 +96,11 @@ export default function ServiciosPage() {
         .order('category', { ascending: true })
         .order('name', { ascending: true })
 
-      if (error) throw error
+      if (sbError) throw sbError
       if (data) setServicios(data as Servicio[])
-      setSuccess('Catálogo actualizado correctamente')
-      setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
       console.error('Error al cargar servicios de Supabase:', err)
       setError(err.message || 'Error al cargar los servicios')
-      setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -120,14 +111,16 @@ export default function ServiciosPage() {
     fetchServicios()
   }, [tenantId])
 
-  const handleRefresh = () => {
-    fetchServicios(true)
+  const handleRefresh = async () => {
+    await fetchServicios(false)
+    setSuccess('Catálogo actualizado')
+    setTimeout(() => setSuccess(null), 2500)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) {
-      setError('No hay tenant disponible')
+      setError('Sesión inválida o sin identificador comercial')
       return
     }
 
@@ -136,40 +129,43 @@ export default function ServiciosPage() {
 
     const payload = {
       tenant_id: tenantId,
-      name: formData.name,
-      description: formData.description || '',
+      name: formData.name.trim(),
+      description: formData.description.trim() || '',
       price: parseFloat(formData.price) || 0,
       duration: parseInt(formData.duration) || 60,
-      badge: formData.badge || '',
-      category: formData.category || 'Uñas',
+      badge: formData.badge.trim().toLowerCase(),
+      category: formData.category,
       is_active: true
     }
 
     try {
       if (editingId) {
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('services')
           .update(payload)
           .eq('id', editingId)
-        if (error) throw error
+        if (updateError) throw updateError
         setSuccess('Servicio actualizado correctamente')
       } else {
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('services')
           .insert([payload])
-        if (error) throw error
+        if (insertError) throw insertError
         setSuccess('Servicio creado correctamente')
       }
 
       setShowModal(false)
       setEditingId(null)
-      setFormData({ name: '', description: '', price: '', duration: '', badge: '', category: 'Uñas' })
-      setTimeout(() => setSuccess(null), 3000)
+      setFormData(initialFormState)
       fetchServicios(false)
     } catch (err: any) {
       console.error('Error guardando servicio:', err)
-      setError(err.message || 'Error al guardar el servicio')
-      setTimeout(() => setError(null), 3000)
+      setError(err.message || 'Error al procesar la solicitud')
+    } finally {
+      setTimeout(() => {
+        setSuccess(null)
+        setError(null)
+      }, 3000)
     }
   }
 
@@ -186,24 +182,33 @@ export default function ServiciosPage() {
     setShowModal(true)
   }
 
+  const handleCreateNew = () => {
+    setEditingId(null)
+    setFormData(initialFormState)
+    setShowModal(true)
+  }
+
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este servicio?')) return
+    if (!confirm('¿Estás seguro de que deseas eliminar permanentemente este tratamiento del catálogo comercial?')) return
     setError(null)
     setSuccess(null)
 
     try {
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('services')
         .update({ is_active: false })
         .eq('id', id)
-      if (error) throw error
-      setSuccess('Servicio eliminado correctamente')
-      setTimeout(() => setSuccess(null), 3000)
+      if (deleteError) throw deleteError
+      setSuccess('Servicio removido del catálogo')
       fetchServicios(false)
     } catch (err: any) {
       console.error('Error eliminando servicio:', err)
-      setError(err.message || 'Error al eliminar el servicio')
-      setTimeout(() => setError(null), 3000)
+      setError(err.message || 'No se pudo eliminar el servicio')
+    } finally {
+      setTimeout(() => {
+        setSuccess(null)
+        setError(null)
+      }, 3000)
     }
   }
 
@@ -227,7 +232,7 @@ export default function ServiciosPage() {
             <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
           <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
-            Cargando servicios...
+            Sincronizando Catálogo...
           </p>
         </div>
       </div>
@@ -238,10 +243,10 @@ export default function ServiciosPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-4">
 
         {/* ============================================================ */}
-        {/* CABECERA — DORADO PROTAGONISTA */}
+        {/* CABECERA */}
         {/* ============================================================ */}
         <div 
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
@@ -254,7 +259,7 @@ export default function ServiciosPage() {
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Catálogo de Servicios
+                Catálogo Operativo
               </div>
               <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
                 Servicios Fresh Nails
@@ -269,13 +274,13 @@ export default function ServiciosPage() {
                 onClick={handleRefresh} 
                 disabled={refreshing} 
                 className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
-                title="Actualizar Servicios"
+                title="Actualizar Catálogo"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
 
               <button 
-                onClick={() => { setEditingId(null); setFormData({ name: '', description: '', price: '', duration: '', badge: '', category: 'Uñas' }); setShowModal(true) }}
+                onClick={handleCreateNew}
                 className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
               >
                 <div className="p-1 rounded-md bg-[#D4AF37] text-white">
@@ -288,45 +293,47 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MENSAJES */}
+        {/* NOTIFICACIONES FLOTANTES / AVISOS */}
         {/* ============================================================ */}
-        {error && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-              <AlertCircle className="w-4 h-4 text-[#D4AF37]" />
+        <div className="space-y-2">
+          {error && (
+            <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+              <div className="p-2 rounded-xl shrink-0 bg-red-500/10">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+              </div>
+              <p className="text-sm font-light self-center">{error}</p>
             </div>
-            <p className="text-sm font-light">{error}</p>
-          </div>
-        )}
+          )}
 
-        {success && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-              <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
+          {success && (
+            <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+              <div className="p-2 rounded-xl shrink-0 bg-emerald-500/10">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-sm font-light self-center">{success}</p>
             </div>
-            <p className="text-sm font-light">{success}</p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ============================================================ */}
-        {/* KPIS — DORADO PROTAGONISTA */}
+        {/* KPIS METRICS */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
+              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
                 <Package className="w-4 h-4 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
-                <p className={`text-[8px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Servicios</p>
-                <p className={`text-lg font-black ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{totalServicios}</p>
+                <p className={`text-[8px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Servicios Totales</p>
+                <p className="text-lg font-black">{totalServicios}</p>
               </div>
             </div>
           </div>
 
-          <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
+              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
                 <DollarSign className="w-4 h-4 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
@@ -336,9 +343,9 @@ export default function ServiciosPage() {
             </div>
           </div>
 
-          <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
+              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
                 <Layers className="w-4 h-4 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
@@ -350,7 +357,7 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* BÚSQUEDA — CON TEMA */}
+        {/* FILTROS Y BÚSQUEDA */}
         {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
@@ -371,14 +378,11 @@ export default function ServiciosPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
-        {/* CATEGORÍAS — CON TEMA */}
-        {/* ============================================================ */}
+        {/* NAVEGACIÓN POR CATEGORÍAS */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
-          {categorias.map((cat, idx) => {
+          {categorias.map((cat) => {
             const IconComponent = cat.icon
             const esActivo = selectedCategory === cat.name
-            const color = idx % 3 === 0 ? 'text-[#D4AF37]' : idx % 3 === 1 ? 'text-[#EC4899]' : 'text-[#3B82F6]'
 
             return (
               <button
@@ -386,9 +390,7 @@ export default function ServiciosPage() {
                 onClick={() => setSelectedCategory(cat.name)}
                 className={`relative p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border shadow-sm ${
                   esActivo 
-                    ? isDark 
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_4px_15px_rgba(212,175,55,0.15)]' 
-                      : 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_4px_15px_rgba(212,175,55,0.15)]'
+                    ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_4px_15px_rgba(212,175,55,0.15)]' 
                     : isDark 
                       ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' 
                       : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
@@ -396,7 +398,7 @@ export default function ServiciosPage() {
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
                   esActivo 
-                    ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-xs scale-105' 
+                    ? 'bg-[#D4AF37] text-[#1A0E0A] scale-105' 
                     : isDark 
                       ? 'bg-[#1E120C] border border-[#3D281E] text-[#A89588]' 
                       : 'bg-[#FFF9F6] border border-[#F0E4DA] text-[#5C4A3E]'
@@ -419,7 +421,7 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* GRID DE SERVICIOS — CON TEMA */}
+        {/* LISTADO DE TRATAMIENTOS (GRID) */}
         {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {filtrados.map((servicio: Servicio) => (
@@ -451,37 +453,39 @@ export default function ServiciosPage() {
                 </p>
               </div>
 
-              <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
-                <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{servicio.duration || 60} min</span>
+              <div>
+                <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
+                  <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{servicio.duration || 60} min</span>
+                  </div>
+                  <div className="font-mono font-extrabold text-sm text-[#D4AF37]">
+                    ${servicio.price?.toLocaleString()}
+                  </div>
                 </div>
-                <div className="font-mono font-extrabold text-sm text-[#D4AF37]">
-                  ${servicio.price?.toLocaleString()}
-                </div>
-              </div>
 
-              <div className="flex gap-2 pt-3.5 mt-1">
-                <button 
-                  onClick={() => handleEdit(servicio)} 
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-                    isDark 
-                      ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
-                      : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
-                  }`}
-                >
-                  <Edit className="w-3.5 h-3.5" /> Editar
-                </button>
-                <button 
-                  onClick={() => handleDelete(servicio.id)} 
-                  className={`px-3 py-2 rounded-xl border transition-all ${
-                    isDark 
-                      ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-rose-500 hover:border-rose-500/30' 
-                      : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-rose-500 hover:border-rose-500/30'
-                  }`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex gap-2 pt-3.5 mt-1">
+                  <button 
+                    onClick={() => handleEdit(servicio)} 
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+                      isDark 
+                        ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
+                        : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
+                    }`}
+                  >
+                    <Edit className="w-3.5 h-3.5" /> Editar
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(servicio.id)} 
+                    className={`px-3 py-2 rounded-xl border transition-all ${
+                      isDark 
+                        ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-red-500 hover:border-red-500/30' 
+                        : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-red-500 hover:border-red-500/30'
+                    }`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -496,10 +500,10 @@ export default function ServiciosPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL — CON TEMA */}
+        {/* DIÁLOGO MODAL ABRE/CIERRA */}
         {/* ============================================================ */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto transition-all duration-300 ${
               isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
             }`}>
@@ -507,7 +511,7 @@ export default function ServiciosPage() {
                 onClick={() => setShowModal(false)}
                 className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
                   isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'
-                } text-[#A89588] hover:text-[#FFF9F6] dark:hover:text-[#FFF9F6]`}
+                } text-[#A89588] hover:text-red-400`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -591,27 +595,27 @@ export default function ServiciosPage() {
                     <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                       Categoría *
                     </label>
-                    <select 
-                      value={formData.category} 
-                      onChange={(e) => setFormData({...formData, category: e.target.value})} 
-                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 appearance-none ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
-                      }`}
-                    >
-                      <option value="Uñas">💅 Uñas</option>
-                      <option value="Micropigmentación">👁️ Micropigmentación</option>
-                      <option value="Cejas">✨ Cejas</option>
-                      <option value="Peluquería">✂️ Peluquería</option>
-                      <option value="Depilación">💖 Depilación</option>
-                      <option value="Estética">🌟 Estética</option>
-                    </select>
-                    <p className={`text-[8px] mt-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      La categoría determina dónde aparece el servicio
-                    </p>
+                    <div className="relative w-full">
+                      <select 
+                        value={formData.category} 
+                        onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                        className={`w-full px-4 py-2.5 pr-10 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 appearance-none bg-transparent ${
+                          isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
+                        }`}
+                      >
+                        <option value="Uñas" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>💅 Uñas</option>
+                        <option value="Micropigmentación" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>👁️ Micropigmentación</option>
+                        <option value="Cejas" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>✨ Cejas</option>
+                        <option value="Peluquería" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>✂️ Peluquería</option>
+                        <option value="Depilación" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>💖 Depilación</option>
+                        <option value="Estética" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>🌟 Estética</option>
+                      </select>
+                      <ChevronDown className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+                    </div>
                   </div>
                   <div>
                     <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                      Badge
+                      Etiqueta destacada
                     </label>
                     <input 
                       type="text" 
@@ -646,14 +650,7 @@ export default function ServiciosPage() {
             </div>
           </div>
         )}
-
       </div>
-
-      <style jsx global>{`
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-      `}</style>
-
     </div>
   )
 }
