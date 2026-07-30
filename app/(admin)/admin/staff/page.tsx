@@ -57,14 +57,18 @@ export default function StaffPage() {
     try {
       setLoading(true)
       setError(null)
+      
+      // Intentamos traer los activos. Si tu tabla no usa is_active, remueve el .eq('is_active', true)
       const { data, error } = await supabase
         .from('staff')
         .select('*')
-        .eq('is_active', true)
         .order('name', { ascending: true })
 
       if (error) throw error
-      setStaff(data || [])
+
+      // Filtramos en cliente si la tabla maneja is_active, o mostramos todos
+      const activeStaff = data ? data.filter(item => item.is_active !== false) : []
+      setStaff(activeStaff)
     } catch (err: any) {
       setError(err.message || 'Error al cargar el equipo')
     } finally {
@@ -92,23 +96,99 @@ export default function StaffPage() {
 
     try {
       if (editingId) {
-        await supabase.from('staff').update(formData).eq('id', editingId)
+        // ACTUALIZAR REGISTRO EXISTENTE
+        const { error: updateError } = await supabase
+          .from('staff')
+          .update({
+            name: formData.name,
+            role: formData.role,
+            email: formData.email,
+            phone: formData.phone,
+            specialty: formData.specialty,
+            experience: formData.experience,
+            avatar_url: formData.avatar_url
+          })
+          .eq('id', editingId)
+
+        if (updateError) throw updateError
         setSuccess('Miembro actualizado correctamente')
       } else {
-        await supabase.from('staff').insert([{ ...formData, is_active: true }])
+        // CREAR NUEVO REGISTRO
+        const { error: insertError } = await supabase
+          .from('staff')
+          .insert([{ 
+            ...formData, 
+            is_active: true 
+          }])
+
+        if (insertError) throw insertError
         setSuccess('Miembro agregado correctamente')
       }
+
       setShowModal(false)
+      setEditingId(null)
       fetchStaff()
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Ocurrió un error al guardar')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar permanentemente?')) return
-    await supabase.from('staff').update({ is_active: false }).eq('id', id)
-    fetchStaff()
+    if (!confirm('¿Estás segura de eliminar este miembro del staff?')) return
+
+    try {
+      setError(null)
+      setSuccess(null)
+
+      // Intentamos borrado lógico primero (is_active: false)
+      const { error: updateError } = await supabase
+        .from('staff')
+        .update({ is_active: false })
+        .eq('id', id)
+
+      if (updateError) {
+        // Si falla porque no existe la columna is_active, hacemos un DELETE físico
+        const { error: deleteError } = await supabase
+          .from('staff')
+          .delete()
+          .eq('id', id)
+
+        if (deleteError) throw deleteError
+      }
+
+      setSuccess('Miembro eliminado correctamente')
+      fetchStaff()
+    } catch (err: any) {
+      setError(err.message || 'No se pudo eliminar el registro')
+    }
+  }
+
+  const handleOpenEdit = (member: StaffMember) => {
+    setEditingId(member.id)
+    setFormData({
+      name: member.name || '',
+      role: member.role || 'Especialista',
+      email: member.email || '',
+      phone: member.phone || '',
+      specialty: member.specialty || '',
+      experience: member.experience || '',
+      avatar_url: member.avatar_url || ''
+    })
+    setShowModal(true)
+  }
+
+  const handleOpenCreate = () => {
+    setEditingId(null)
+    setFormData({
+      name: '',
+      role: 'Especialista',
+      email: '',
+      phone: '',
+      specialty: '',
+      experience: '',
+      avatar_url: ''
+    })
+    setShowModal(true)
   }
 
   const filtrados = staff.filter(m =>
@@ -133,7 +213,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
 
-      {/* HEADER CON GRADIENTE CORPORATIVO */}
+      {/* HEADER */}
       <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl ${
         isDark ? 'border border-[#3D281E]' : 'border border-[#F0E4DA]'
       }`}>
@@ -177,7 +257,7 @@ export default function StaffPage() {
               <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
             </button>
             <button 
-              onClick={() => { setEditingId(null); setFormData({ name: '', role: 'Especialista', email: '', phone: '', specialty: '', experience: '', avatar_url: '' }); setShowModal(true); }}
+              onClick={handleOpenCreate}
               className="px-3 py-2 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 shadow-md shadow-[#D4AF37]/20"
               style={brandGradient}
             >
@@ -214,7 +294,7 @@ export default function StaffPage() {
         )}
       </div>
 
-      {/* ERROR/SUCCESS MESSAGES */}
+      {/* MENSAJES DE ERROR / ÉXITO */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-xs">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
@@ -267,10 +347,11 @@ export default function StaffPage() {
                 </div>
                 <div className="flex gap-0.5 shrink-0">
                   <button 
-                    onClick={() => { setEditingId(member.id); setFormData(member); setShowModal(true) }} 
+                    onClick={() => handleOpenEdit(member)} 
                     className={`p-2 rounded-lg transition-colors ${
                       isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
                     }`}
+                    title="Editar"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -279,6 +360,7 @@ export default function StaffPage() {
                     className={`p-2 rounded-lg transition-colors ${
                       isDark ? 'text-[#A89588] hover:text-rose-400 hover:bg-rose-950/30' : 'text-[#5C4A3E] hover:text-rose-500 hover:bg-rose-50'
                     }`}
+                    title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -308,7 +390,7 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* MODAL */}
+      {/* MODAL CREAR / EDITAR */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${
