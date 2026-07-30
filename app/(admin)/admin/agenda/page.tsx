@@ -409,20 +409,20 @@ export default function AdminAgendaPage() {
                            : `bg-white border-[#F0E4DA] ${borderColor} cursor-pointer hover:bg-[#FFF9F6]`
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 ${
                   isBlocked ? 'bg-stone-400' : index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'
                 }`}>
                   {isBlocked ? <Ban className="w-4 h-4" /> : cita.clients?.name?.charAt(0) || 'C'}
                 </div>
-                <div className="min-w-0">
-                  <p className={`text-sm font-medium truncate ${
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-medium whitespace-normal break-words pr-2 ${
                     isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                   }`}>
                     {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
                   </p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className={`text-[10px] font-medium whitespace-normal break-words ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
                       {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
                     </span>
                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
@@ -433,7 +433,7 @@ export default function AdminAgendaPage() {
                 </div>
               </div>
               {!isBlocked && (
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 ml-2">
                   <span className="text-xs font-mono font-bold text-[#D4AF37]">
                     ${Number(cita.services?.price || 0).toLocaleString()}
                   </span>
@@ -528,7 +528,7 @@ export default function AdminAgendaPage() {
                       </div>
                       {cita ? (
                         <div className="flex-1 flex items-center justify-between min-w-0">
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             {!isBlocked ? (
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${index % 3 === 0 ? 'bg-[#D4AF37]' : index % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}`}>
                                 {cita.clients?.name?.charAt(0) || 'C'}
@@ -536,25 +536,25 @@ export default function AdminAgendaPage() {
                             ) : (
                               <div className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-400 text-white shrink-0"><Ban className="w-4 h-4" /></div>
                             )}
-                            <div className="min-w-0">
-                              <p className={`text-sm font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-sm font-medium whitespace-normal break-words pr-2 ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                                 {isBlocked ? 'Bloqueado' : cita.clients?.name || 'Cliente'}
                               </p>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-medium truncate ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                <span className={`text-[10px] font-medium whitespace-normal break-words ${isBlocked ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : 'text-[#D4AF37]'}`}>
                                   {isBlocked ? 'Sin servicio' : cita.services?.name || 'Servicio'}
                                 </span>
                                 {!isBlocked && cita.staff && (
                                   <>
                                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
-                                    <span className={`text-[9px] font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.staff.name}</span>
+                                    <span className={`text-[9px] font-medium whitespace-normal break-words ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.staff.name}</span>
                                   </>
                                 )}
                               </div>
                             </div>
                           </div>
                           {!isBlocked && (
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
                               <span className="text-xs font-mono font-bold text-[#D4AF37]">${Number(cita.services?.price || 0).toLocaleString()}</span>
                               <span className={`text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusInfo.bg} ${statusInfo.color}`}>{statusInfo.label}</span>
                             </div>
@@ -638,7 +638,7 @@ export default function AdminAgendaPage() {
                           <span className={`font-mono font-bold ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{cita.time?.slice(0,5) || '--:--'}</span>
                           {cita.status === 'blocked' && <Ban className="w-2.5 h-2.5 text-stone-400" />}
                         </div>
-                        <p className={`font-medium truncate text-[9px] ${cita.status === 'blocked' ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{cita.status === 'blocked' ? 'Bloqueado' : cita.clients?.name || 'Cliente'}</p>
+                        <p className={`font-medium whitespace-normal break-words text-[9px] ${cita.status === 'blocked' ? isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]' : isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{cita.status === 'blocked' ? 'Bloqueado' : cita.clients?.name || 'Cliente'}</p>
                       </div>
                     ))}
                     {citasDelDia.length > 3 && <p className={`text-[8px] font-medium text-center ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>+{citasDelDia.length - 3} más</p>}
@@ -750,7 +750,7 @@ export default function AdminAgendaPage() {
         {/* ============================================================ */}
         {/* HERO BANNER (GIRO) - CON CONTENEDORES KPI Y SELECTOR STAFF */}
         {/* ============================================================ */}
-        <div className={`relative overflow-hidden rounded-3xl border shadow-xl transition-all duration-300 ${
+        <div className={`relative rounded-3xl border shadow-xl transition-all duration-300 ${
           isDark ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E]' : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5]'
         }`}>
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
@@ -800,7 +800,7 @@ export default function AdminAgendaPage() {
                     </button>
 
                     {showStaffFilter && (
-                      <div className={`absolute right-0 top-full mt-1.5 w-60 rounded-xl border shadow-2xl z-50 overflow-hidden ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+                      <div className={`absolute right-0 top-full mt-1.5 w-60 rounded-xl border shadow-2xl z-[100] max-h-60 overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
                         <button
                           onClick={() => { setFiltroStaff('todos'); setShowStaffFilter(false) }}
                           className={`w-full px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-[#D4AF37]/10 ${
@@ -903,16 +903,16 @@ export default function AdminAgendaPage() {
           </div>
         )}
 
-        {/* CONTROLES SECUNDARIOS Y NAVEGACIÓN */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className={`flex border rounded-xl p-1 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
+        {/* CONTROLES SECUNDARIOS Y NAVEGACIÓN (SELECTOR DÍA/SEMANA/MES AHORA CENTRADO Y CONTUNDENTE) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className={`flex w-full sm:w-auto justify-center border rounded-xl p-1 shadow-sm ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
             {(['day', 'week', 'month'] as const).map((mode, idx) => (
               <button 
                 key={mode} 
                 onClick={() => setViewMode(mode)} 
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-mono uppercase font-black transition-all ${
+                className={`flex-1 sm:flex-initial text-center px-6 py-2 rounded-lg text-xs font-mono uppercase font-black tracking-wider transition-all duration-200 ${
                   viewMode === mode 
-                    ? `text-white shadow-sm ${idx % 3 === 0 ? 'bg-[#D4AF37]' : idx % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}` 
+                    ? `text-white shadow-md ${idx % 3 === 0 ? 'bg-[#D4AF37]' : idx % 3 === 1 ? 'bg-[#EC4899]' : 'bg-[#3B82F6]'}` 
                     : isDark ? 'text-[#A89588] hover:text-[#FFF9F6]' : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
                 }`}
               >
@@ -1048,15 +1048,15 @@ export default function AdminAgendaPage() {
               <div className="space-y-3 text-sm">
                 <div className={`flex justify-between py-2 border-b ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Clienta</span>
-                  <span className={`font-bold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.clients?.name || 'No asignado'}</span>
+                  <span className={`font-bold whitespace-normal break-words text-right max-w-[70%] ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.clients?.name || 'No asignado'}</span>
                 </div>
                 <div className={`flex justify-between py-2 border-b ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Servicio</span>
-                  <span className={`font-bold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.services?.name || 'No asignado'}</span>
+                  <span className={`font-bold whitespace-normal break-words text-right max-w-[70%] ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.services?.name || 'No asignado'}</span>
                 </div>
                 <div className={`flex justify-between py-2 border-b ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Profesional</span>
-                  <span className={`font-bold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.staff?.name || 'Sin asignar'}</span>
+                  <span className={`font-bold whitespace-normal break-words text-right max-w-[70%] ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{selectedCita.staff?.name || 'Sin asignar'}</span>
                 </div>
                 <div className={`flex justify-between py-2 border-b ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Fecha</span>
