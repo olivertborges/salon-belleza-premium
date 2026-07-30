@@ -1,168 +1,150 @@
-// app/(admin)/promociones/page.tsx
+// app/(admin)/citas/canceladas/page.tsx
 // @ts-nocheck
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { supabase } from '@/lib/supabase/client'
-import Link from 'next/link'
 import { 
-  Plus, 
-  Search, 
-  Tag, 
-  Percent, 
-  Calendar, 
-  Trash2, 
-  Edit, 
-  Star, 
-  Sparkles, 
-  Gift, 
-  AlertCircle, 
-  CheckCircle2, 
-  Users,
-  Flame,
-  Copy,
-  Check,
-  TrendingUp,
-  Zap
+  XCircle, Calendar, User, Scissors, Search, 
+  Clock, DollarSign, Trash2,
+  RefreshCw, CheckCircle2, Users,
+  AlertCircle, Sparkles
 } from 'lucide-react'
 
-interface Promotion {
+interface CitaCancelada {
   id: string
-  title: string
-  description: string
-  discount_percent: number
-  code: string
-  valid_until: string
-  category: 'flash' | 'welcome' | 'referral' | 'special'
-  style: 'volante' | 'tarjeta' | 'flyer'
-  featured: boolean
-  is_active: boolean
-  uses_limit: number | null
-  current_uses: number
-  terms: string
-  image_url: string
+  client_id: string
+  professional_id: string
+  service_id: string
+  date: string
+  time: string
+  status: string
+  notes: string
+  total_price: number
+  cancelled_at: string
+  clients: { name: string; email: string; phone: string }
+  services: { name: string; price: number; duration: number }
+  staff: { name: string } | null
 }
 
-const baseCategories = [
-  { value: 'all', label: 'Todas' },
-  { value: 'flash', label: '⚡ Flash' },
-  { value: 'welcome', label: '🎁 Welcome' },
-  { value: 'referral', label: '🔗 Referral' },
-  { value: 'special', label: '⭐ Special' }
-]
-
-const categoryColors = {
-  flash: 'bg-red-500/10 text-red-500 border-red-500/20',
-  welcome: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  referral: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  special: 'bg-[#D4AF37]/10 text-[#C9A96E] border-[#D4AF37]/30'
-}
-
-export default function PromocionesPage() {
+export default function CancelacionesPage() {
   const { tenantId } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [citas, setCitas] = useState<CitaCancelada[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [refreshing, setRefreshing] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filterDate, setFilterDate] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadPromotions()
-  }, [tenantId])
-
-  const loadPromotions = async () => {
+  const fetchCancelaciones = async (showLoading = true) => {
     if (!tenantId) {
       setLoading(false)
       return
     }
 
+    if (showLoading) {
+      setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
+    setError(null)
+
     try {
       const { data, error } = await supabase
-        .from('promotions')
-        .select('*')
+        .from('appointments')
+        .select(`
+          *,
+          clients:client_id (id, name, email, phone),
+          services:service_id (id, name, price, duration)
+        `)
         .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
+        .eq('status', 'cancelled')
+        .order('date', { ascending: false })
 
       if (error) throw error
-      setPromotions(data || [])
+
+      let citasConStaff: any[] = []
+
+      if (data && data.length > 0) {
+        const staffIds = data
+          .map((c: any) => c.professional_id)
+          .filter((id: any) => id)
+
+        let staffMap: Record<string, { name: string }> = {}
+        if (staffIds.length > 0) {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('id, name')
+            .in('id', staffIds)
+
+          if (staffData) {
+            staffMap = (staffData as any[]).reduce((acc: any, s: any) => ({ ...acc, [s.id]: { name: s.name } }), {})
+          }
+        }
+
+        citasConStaff = data.map((cita: any) => ({
+          ...cita,
+          staff: cita.professional_id ? staffMap[cita.professional_id] || null : null
+        }))
+      }
+
+      setCitas(citasConStaff)
     } catch (err: any) {
-      console.error('Error cargando promociones:', err)
-      setError(err.message || 'Error al cargar las promociones')
+      console.error('Error cargando cancelaciones:', err)
+      setError(err.message || 'Error al cargar las cancelaciones')
       setTimeout(() => setError(null), 3000)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta promoción?')) return
+  useEffect(() => {
+    fetchCancelaciones()
+  }, [tenantId])
+
+  const handleRefresh = () => {
+    fetchCancelaciones(false)
+  }
+
+  const eliminarCita = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar permanentemente esta cita cancelada?')) return
 
     try {
       const { error } = await supabase
-        .from('promotions')
+        .from('appointments')
         .delete()
         .eq('id', id)
 
       if (error) throw error
 
-      setPromotions(prev => prev.filter(p => p.id !== id))
-      setSuccess('Promoción eliminada correctamente')
+      setCitas(prev => prev.filter(c => c.id !== id))
+      setSuccess('Cita eliminada permanentemente')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
-      console.error('Error eliminando promoción:', err)
-      setError(err.message || 'Error al eliminar la promoción')
+      console.error('Error eliminando cita:', err)
+      setError(err.message || 'Error al eliminar la cita')
       setTimeout(() => setError(null), 3000)
     }
   }
 
-  const handleToggleActive = async (id: string, currentState: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('promotions')
-        .update({ is_active: !currentState })
-        .eq('id', id)
-
-      if (error) throw error
-
-      setPromotions(prev => prev.map(p => p.id === id ? { ...p, is_active: !currentState } : p))
-    } catch (err: any) {
-      console.error('Error actualizando estado:', err)
-      setError('Error al actualizar el estado')
-      setTimeout(() => setError(null), 3000)
-    }
-  }
-
-  const copyCode = (code: string, id: string) => {
-    navigator.clipboard.writeText(code)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
-  // Detectar categorías únicas presentes en las promociones para agregarlas dinámicamente si no están en la lista base
-  const dynamicCategories = React.useMemo(() => {
-    const catsMap = new Map(baseCategories.map(c => [c.value, c]))
-    promotions.forEach(p => {
-      if (p.category && !catsMap.has(p.category)) {
-        const formattedLabel = p.category.charAt(0).toUpperCase() + p.category.slice(1)
-        catsMap.set(p.category, { value: p.category, label: `🏷️ ${formattedLabel}` })
-      }
-    })
-    return Array.from(catsMap.values())
-  }, [promotions])
-
-  const filteredPromotions = promotions.filter(promo => {
-    const matchesSearch = promo.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          promo.code?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || promo.category === selectedCategory
-    return matchesSearch && matchesCategory
+  const citasFiltradas = citas.filter(c => {
+    const matchSearch = c.clients?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                        c.services?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                        c.id?.toLowerCase().includes(search.toLowerCase())
+    const matchDate = filterDate ? c.date === filterDate : true
+    return matchSearch && matchDate
   })
+
+  const totalCanceladas = citas.length
+  const totalPerdido = citas.reduce((sum, c) => sum + (c.total_price || 0), 0)
+  const clientesAfectados = new Set(citas.map(c => c.client_id)).size
 
   if (loading) {
     return (
@@ -171,7 +153,7 @@ export default function PromocionesPage() {
         <div className="relative flex flex-col items-center justify-center gap-5 bg-white/5 backdrop-blur-2xl px-12 py-10 rounded-3xl border border-[#D4AF37]/20 shadow-2xl">
           <div className="w-12 h-12 rounded-full border-2 border-[#D4AF37]/20 border-t-[#D4AF37] animate-spin" />
           <p className="text-xs font-black tracking-[0.2em] text-[#C9A96E] uppercase animate-pulse">
-            Cargando promociones...
+            Cargando cancelaciones...
           </p>
         </div>
       </div>
@@ -183,54 +165,47 @@ export default function PromocionesPage() {
       
       {/* Fondos Decorativos Orgánicos */}
       <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#EC4899]/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-rose-500/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6 relative z-10 pt-4">
 
         {/* ============================================================ */}
-        {/* CABECERA HERO BANNER CON ACCESO A CREAR Y USO */}
+        {/* CABECERA HERO BANNER */}
         {/* ============================================================ */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
             ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
             : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5] shadow-[0_25px_50px_-15px_rgba(225,208,195,0.4)]'
         }`}>
-          <div className="absolute -top-40 -right-40 w-[300px] h-[300px] bg-gradient-to-br from-[#EC4899]/10 to-[#D4AF37]/10 rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute -top-40 -right-40 w-[300px] h-[300px] bg-gradient-to-br from-rose-500/10 to-[#D4AF37]/10 rounded-full blur-[90px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent" />
 
           <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[9px] font-black uppercase tracking-[0.25em] text-[#C9A96E]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-[9px] font-black uppercase tracking-[0.25em] text-rose-500">
                 <Sparkles className="w-2.5 h-2.5" />
-                ✦ Panel de Control
+                ✦ Historial de Citas
               </div>
               <h1 className={`font-serif text-2xl md:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                Gestión de Promociones
+                Citas Canceladas
               </h1>
               <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                Administra cupones, descuentos y ofertas especiales para tus clientes.
+                {totalCanceladas} citas canceladas registradas en el sistema.
               </p>
             </div>
 
-            {/* BOTONES DE ACCIÓN (CREAR + USO) */}
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <Link
-                href="/admin/promociones/uso"
-                className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all border flex items-center gap-2 ${
+            <div className="flex items-center gap-3 shrink-0">
+              <button 
+                onClick={handleRefresh} 
+                disabled={refreshing} 
+                className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all border flex items-center gap-2 ${
                   isDark ? 'bg-[#291A11] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
                 }`}
+                title="Actualizar Cancelaciones"
               >
-                <Users className="w-4 h-4 text-[#C9A96E]" />
-                <span>Ver Usos</span>
-              </Link>
-
-              <Link
-                href="/admin/promociones/crear"
-                className="px-6 py-3 rounded-xl text-neutral-950 font-black text-xs uppercase tracking-[0.15em] transition-all duration-300 shadow-xl bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E] hover:scale-[1.02] active:scale-95 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nueva Promoción</span>
-              </Link>
+                <RefreshCw className={`w-4 h-4 text-[#C9A96E] ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Actualizar</span>
+              </button>
             </div>
           </div>
         </div>
@@ -253,205 +228,170 @@ export default function PromocionesPage() {
         )}
 
         {/* ============================================================ */}
-        {/* FILTROS Y BÚSQUEDA (CORREGIDO: WRAP Y CATEGORÍAS COMPLETAS) */}
+        {/* KPIS — 3 columnas responsivas */}
+        {/* ============================================================ */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
+            <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 shrink-0">
+              <XCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Total Canceladas</p>
+              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{totalCanceladas}</h3>
+            </div>
+          </div>
+
+          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
+            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Ingresos Perdidos</p>
+              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>${totalPerdido.toLocaleString()}</h3>
+            </div>
+          </div>
+
+          <div className={`p-5 rounded-3xl border flex items-center gap-4 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'}`}>
+            <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>Clientes Afectados</p>
+              <h3 className={`text-xl font-extrabold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{clientesAfectados}</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* FILTROS Y BÚSQUEDA (CON WRAP ORDENADO) */}
         {/* ============================================================ */}
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
           
-          {/* Búsqueda */}
           <div className={`w-full lg:w-80 p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 shrink-0 ${
             isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5] shadow-sm'
           }`}>
             <Search className="w-4 h-4 text-[#C9A96E] shrink-0" />
             <input 
               type="text" 
-              placeholder="Buscar por título o código..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por cliente o servicio..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className={`bg-transparent border-none outline-none text-xs w-full ${
                 isDark ? 'text-white placeholder-[#8A766A]' : 'text-[#1A0E0A] placeholder-[#A39081]'
               }`}
             />
+            {search && (
+              <button onClick={() => setSearch('')} className="text-xs text-[#C9A96E] hover:underline">Limpiar</button>
+            )}
           </div>
 
-          {/* Categorías con flex-wrap para evitar scroll horizontal y asegurar visualización completa */}
-          <div className="flex flex-wrap items-center gap-2 w-full">
-            {/* Opción adicional para filtrar rápidamente las que están activas */}
-            <button
-              onClick={() => setSelectedCategory('active_only')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                selectedCategory === 'active_only'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-transparent shadow-md'
-                  : isDark 
-                    ? 'bg-[#1E120C] border-[#3D281E] text-emerald-400 hover:text-white' 
-                    : 'bg-white border-emerald-200 text-emerald-700 hover:text-black'
+          <div className="flex flex-wrap items-center gap-3">
+            <input 
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className={`px-4 py-3 rounded-2xl border text-xs font-bold outline-none transition-all ${
+                isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-white border-[#EADED5] text-[#1A0E0A] shadow-sm'
               }`}
-            >
-              🟢 Activas Ahora
-            </button>
-
-            {dynamicCategories.map(cat => (
-              <button
-                key={cat.value}
-                onClick={() => setSelectedCategory(cat.value)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                  selectedCategory === cat.value
-                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#C9A96E] text-neutral-950 border-transparent shadow-md'
-                    : isDark 
-                      ? 'bg-[#1E120C] border-[#3D281E] text-[#BCAEA5] hover:text-white' 
-                      : 'bg-white border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
+            />
+            {filterDate && (
+              <button 
+                onClick={() => setFilterDate('')}
+                className={`px-4 py-3 rounded-2xl border text-xs font-bold uppercase tracking-wider transition-all ${
+                  isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-white border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
                 }`}
               >
-                {cat.label}
+                Limpiar Fecha
               </button>
-            ))}
+            )}
           </div>
 
         </div>
 
         {/* ============================================================ */}
-        {/* GRID DE PROMOCIONES */}
+        {/* LISTA DE CANCELACIONES */}
         {/* ============================================================ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPromotions.length === 0 ? (
-            <div className={`col-span-full text-center py-16 border border-dashed rounded-3xl ${
+        <div className={`space-y-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
+          {citasFiltradas.length === 0 ? (
+            <div className={`text-center py-16 border border-dashed rounded-3xl ${
               isDark ? 'border-[#3D281E] bg-[#1E120C]/30 text-[#BCAEA5]' : 'border-[#EADED5] bg-white/50 text-[#6E5A4D]'
             }`}>
               <div className="flex flex-col items-center gap-3">
-                <Gift className="w-10 h-10 text-[#C9A96E]/60" />
-                <p className="text-xs font-bold uppercase tracking-wider">No se encontraron promociones</p>
-                <Link
-                  href="/admin/promociones/crear"
-                  className="mt-2 text-xs font-bold text-[#C9A96E] hover:underline"
-                >
-                  Crear tu primera promoción
-                </Link>
+                <XCircle className="w-10 h-10 text-rose-500/60" />
+                <p className="text-xs font-bold uppercase tracking-wider">
+                  {search || filterDate ? 'No hay cancelaciones con esos filtros' : 'No hay citas canceladas registradas'}
+                </p>
               </div>
             </div>
           ) : (
-            filteredPromotions.map((promo) => {
-              const catStyle = categoryColors[promo.category] || categoryColors.special
+            citasFiltradas.map((cita) => (
+              <div 
+                key={cita.id} 
+                className={`group relative rounded-3xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                  isDark 
+                    ? 'bg-[#1E120C] border-[#3D281E] hover:border-rose-500/40' 
+                    : 'bg-white border-[#EADED5] hover:border-rose-300 shadow-sm'
+                }`}
+              >
+                <div className="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-full bg-rose-500" />
 
-              return (
-                <div 
-                  key={promo.id}
-                  className={`group relative rounded-3xl border overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl flex flex-col ${
-                    isDark 
-                      ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50' 
-                      : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/50 shadow-md'
-                  }`}
-                >
-                  {/* Imagen opcional si existe */}
-                  {promo.image_url && (
-                    <div className="relative h-48 w-full overflow-hidden border-b border-[#3D281E]/20">
-                      <img 
-                        src={promo.image_url} 
-                        alt={promo.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="pl-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+                      <XCircle className="w-5 h-5 text-rose-500" />
                     </div>
-                  )}
-
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${catStyle}`}>
-                          {promo.category}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                          {cita.clients?.name || 'Cliente'}
+                        </h4>
+                        <span className="text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full text-rose-500 uppercase bg-rose-500/10 border border-rose-500/20">
+                          Cancelada
                         </span>
-
-                        {promo.featured && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-400/10 text-amber-400 border border-amber-400/20">
-                            <Star className="w-3 h-3 fill-current" /> Destacada
-                          </span>
-                        )}
+                      </div>
+                      
+                      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                        <span className="flex items-center gap-1">
+                          <Scissors className="w-3.5 h-3.5 text-[#C9A96E]" />
+                          {cita.services?.name || 'N/A'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-[#C9A96E]" />
+                          {cita.date}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-[#C9A96E]" />
+                          {cita.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <User className="w-3.5 h-3.5 text-[#C9A96E]" />
+                          {cita.staff?.name || 'Sin asignar'}
+                        </span>
                       </div>
 
-                      <h3 className={`font-serif text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                        {promo.title}
-                      </h3>
-
-                      {promo.description && (
-                        <p className={`text-xs line-clamp-2 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                          {promo.description}
+                      {cita.notes && (
+                        <p className={`text-xs italic mt-1 line-clamp-1 ${isDark ? 'text-[#8A766A]' : 'text-[#A39081]'}`}>
+                          "{cita.notes}"
                         </p>
                       )}
                     </div>
+                  </div>
 
-                    <div className="space-y-4 pt-4 border-t border-[#3D281E]/30">
-                      
-                      {/* Descuento y Código */}
-                      <div className="flex items-center justify-between gap-2">
-                        {promo.discount_percent > 0 && (
-                          <div className="flex items-center gap-1 text-emerald-500 font-bold text-sm">
-                            <Percent className="w-4 h-4" />
-                            <span>{promo.discount_percent}% OFF</span>
-                          </div>
-                        )}
-
-                        {promo.code && (
-                          <button
-                            onClick={() => copyCode(promo.code, promo.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all ${
-                              isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] hover:border-[#D4AF37]' : 'bg-[#FAF8F5] border-[#EADED5] text-[#1A0E0A] hover:border-[#D4AF37]'
-                            }`}
-                            title="Copiar código"
-                          >
-                            <Tag className="w-3 h-3 text-[#C9A96E]" />
-                            <span>{promo.code}</span>
-                            {copiedId === promo.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 opacity-60" />}
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Fecha de expiración */}
-                      {promo.valid_until && (
-                        <div className={`flex items-center gap-1.5 text-[10px] ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                          <Calendar className="w-3 h-3 text-[#C9A96E]" />
-                          <span>Válido hasta: {new Date(promo.valid_until).toLocaleDateString()}</span>
-                        </div>
-                      )}
-
-                      {/* Acciones de la tarjeta */}
-                      <div className="flex items-center justify-between pt-2">
-                        <button
-                          onClick={() => handleToggleActive(promo.id, promo.is_active)}
-                          className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${
-                            promo.is_active 
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                              : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                          }`}
-                        >
-                          {promo.is_active ? '● Activa' : '○ Inactiva'}
-                        </button>
-
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/admin/promociones/editar/${promo.id}`}
-                            className={`p-2 rounded-xl border transition-all ${
-                              isDark ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5] hover:text-white' : 'bg-[#FAF6F2] border-[#EADED5] text-[#6E5A4D] hover:text-[#1A0E0A]'
-                            }`}
-                            title="Editar"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Link>
-
-                          <button
-                            onClick={() => handleDelete(promo.id)}
-                            className="p-2 rounded-xl border bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20 transition-all"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                    </div>
-
+                  <div className="flex items-center gap-4 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#3D281E]/20 w-full md:w-auto justify-between md:justify-end">
+                    <span className="text-sm font-mono font-bold text-rose-500">
+                      ${cita.total_price?.toLocaleString() || 0}
+                    </span>
+                    <button 
+                      onClick={() => eliminarCita(cita.id)}
+                      className="p-2 rounded-xl border bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500/20 transition-all"
+                      title="Eliminar permanentemente"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              )
-            })
+              </div>
+            ))
           )}
         </div>
 
