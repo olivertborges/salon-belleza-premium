@@ -50,7 +50,7 @@ export default function ClientesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ============================================================
-  // PALETA DE COLORES
+  // PALETA DE COLORES - DORADO PROTAGONISTA
   // ============================================================
   const gold = '#D4AF37'
   const goldLight = '#E8D5A0'
@@ -220,6 +220,9 @@ export default function ClientesPage() {
     return urlData.publicUrl
   }
 
+  // ============================================================
+  // 🔥 GUARDAR CLIENTE CON TENANT_ID (SOLUCIONA RLS)
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
@@ -238,6 +241,31 @@ export default function ClientesPage() {
     }
 
     try {
+      // ✅ OBTENER TENANT_ID DEL USUARIO AUTENTICADO
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+
+      if (!userId) {
+        setFormError('No hay sesión activa. Inicia sesión nuevamente.')
+        setSaving(false)
+        return
+      }
+
+      // ✅ OBTENER TENANT_ID DEL PERFIL DEL USUARIO
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (profileError || !profile?.tenant_id) {
+        setFormError('No se pudo obtener el tenant. Contacta al administrador.')
+        setSaving(false)
+        return
+      }
+
+      const tenantId = profile.tenant_id
+
       let avatarUrl = formData.avatar_url.trim() || null
 
       if (avatarFile) {
@@ -246,11 +274,13 @@ export default function ClientesPage() {
         setUploadingAvatar(false)
       }
 
+      // ✅ INCLUIR tenant_id EN LA INSERCIÓN (SOLUCIONA RLS)
       const newCliente = {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
         avatar_url: avatarUrl,
+        tenant_id: tenantId,
         is_active: true,
         created_at: new Date().toISOString()
       }
@@ -264,6 +294,7 @@ export default function ClientesPage() {
         if (error.code === '23505') {
           setFormError('Ya existe un cliente con ese email o teléfono')
         } else {
+          console.error('Error Supabase:', error)
           setFormError(error.message || 'Error al guardar el cliente')
         }
         setSaving(false)
@@ -278,6 +309,7 @@ export default function ClientesPage() {
         resetForm()
       }
     } catch (err: any) {
+      console.error('Error inesperado:', err)
       setFormError(err.message || 'Error inesperado')
     } finally {
       setSaving(false)
@@ -322,7 +354,9 @@ export default function ClientesPage() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10">
 
-        {/* CABECERA */}
+        {/* ============================================================ */}
+        {/* CABECERA — DORADO PROTAGONISTA */}
+        {/* ============================================================ */}
         <div 
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
           style={headerGradient}
@@ -367,7 +401,9 @@ export default function ClientesPage() {
           </div>
         </div>
 
+        {/* ============================================================ */}
         {/* MENSAJES */}
+        {/* ============================================================ */}
         {error && (
           <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
             <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -386,7 +422,9 @@ export default function ClientesPage() {
           </div>
         )}
 
+        {/* ============================================================ */}
         {/* KPIS */}
+        {/* ============================================================ */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -425,7 +463,9 @@ export default function ClientesPage() {
           </div>
         </div>
 
+        {/* ============================================================ */}
         {/* BUSCADOR */}
+        {/* ============================================================ */}
         <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
           <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
           <input 
@@ -445,7 +485,9 @@ export default function ClientesPage() {
           )}
         </div>
 
+        {/* ============================================================ */}
         {/* GRID DE CLIENTES */}
+        {/* ============================================================ */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {filtrados.map((cliente: Cliente) => (
             <div 
@@ -531,7 +573,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL: NUEVA CLIENTE CON COMPRESIÓN AUTOMÁTICA */}
+        {/* MODAL: NUEVA CLIENTE CON COMPRESIÓN AUTOMÁTICA + TENANT_ID */}
         {/* ============================================================ */}
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -560,7 +602,7 @@ export default function ClientesPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* AVATAR CON COMPRESIÓN */}
+                {/* AVATAR */}
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${
