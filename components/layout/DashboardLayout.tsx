@@ -21,6 +21,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Estados locales para el nombre y avatar sincronizados con la BD
+  const [dbName, setDbName] = useState('')
+  const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
+
   const isDark = theme === 'dark'
 
   useEffect(() => {
@@ -38,6 +42,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
+  // Cargar perfil real desde la tabla 'clients' para asegurar la foto actualizada
+  useEffect(() => {
+    const fetchClientHeaderProfile = async () => {
+      if (!user?.id) return
+
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('name, avatar_url')
+          .eq('auth_user_id', user.id)
+          .maybeSingle()
+
+        if (!error && data) {
+          if (data.name) setDbName(data.name)
+          if (data.avatar_url) setDbAvatarUrl(data.avatar_url)
+        }
+      } catch (err) {
+        console.error('Error cargando datos del header:', err)
+      }
+    }
+
+    fetchClientHeaderProfile()
+  }, [user])
+
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -51,12 +79,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
-  // Extraemos los datos directamente del objeto 'user' de la sesión de Supabase
-  const inicialNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'C'
-  const primerNombre = user?.user_metadata?.full_name ? user.user_metadata.full_name.split(' ')[0] : 'Clienta'
+  // Respaldo por si aún no cargó la BD usando los metadatos de auth
+  const finalName = dbName || user?.user_metadata?.full_name || 'Clienta'
+  const inicialNombre = finalName.charAt(0).toUpperCase()
+  const primerNombre = finalName.split(' ')[0]
   
-  // Aquí obtenemos la foto directamente de los metadatos guardados en la autenticación del cliente
-  const avatarUrl = user?.user_metadata?.avatar_url || null
+  const avatarUrl = dbAvatarUrl || user?.user_metadata?.avatar_url || null
 
   const handleLogoutClick = async () => {
     try {
@@ -256,7 +284,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
               </div>
               
-              {/* Contenedor dinámico del Avatar (Sin consultas lentas) */}
+              {/* Contenedor del Avatar sincronizado con la Base de Datos */}
               <div className={`w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] ${
                 isDark
                   ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
