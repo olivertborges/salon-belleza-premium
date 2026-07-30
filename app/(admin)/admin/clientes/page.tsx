@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -9,7 +9,7 @@ import {
   User, Search, Plus, Phone, Mail, Calendar, 
   UserCheck, Award, Trash2, Edit, Star, XCircle, Sparkles,
   RefreshCw, X, Users, TrendingUp, CheckCircle2,
-  AlertCircle, Crown, Gem, Loader2, Save
+  AlertCircle, Crown, Gem, Loader2, Save, Camera, Upload
 } from 'lucide-react'
 
 type Cliente = {
@@ -44,6 +44,10 @@ export default function ClientesPage() {
     avatar_url: ''
   })
   const [formError, setFormError] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ============================================================
   // PALETA DE COLORES - DORADO PROTAGONISTA
@@ -113,9 +117,57 @@ export default function ClientesPage() {
       phone: '',
       avatar_url: ''
     })
+    setAvatarFile(null)
+    setAvatarPreview(null)
     setFormError(null)
+    setUploadingAvatar(false)
   }
 
+  // ============================================================
+  // 🔥 SUBIR AVATAR DESDE DISPOSITIVO O CÁMARA
+  // ============================================================
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setFormError('⚠️ Selecciona un formato de imagen válido (JPG, PNG, etc.)')
+      setTimeout(() => setFormError(null), 3000)
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setFormError('⚠️ La imagen no debe superar los 2MB')
+      setTimeout(() => setFormError(null), 3000)
+      return
+    }
+
+    setAvatarFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const uploadAvatar = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `avatar-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`
+    const filePath = `avatars/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('clients')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    const { data: urlData } = supabase.storage.from('clients').getPublicUrl(filePath)
+    return urlData.publicUrl
+  }
+
+  // ============================================================
+  // 🔥 GUARDAR CLIENTE CON AVATAR
+  // ============================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
@@ -135,11 +187,20 @@ export default function ClientesPage() {
     }
 
     try {
+      let avatarUrl = formData.avatar_url.trim() || null
+
+      // Subir avatar si hay un archivo seleccionado
+      if (avatarFile) {
+        setUploadingAvatar(true)
+        avatarUrl = await uploadAvatar(avatarFile)
+        setUploadingAvatar(false)
+      }
+
       const newCliente = {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
-        avatar_url: formData.avatar_url.trim() || null,
+        avatar_url: avatarUrl,
         is_active: true,
         created_at: new Date().toISOString()
       }
@@ -170,6 +231,7 @@ export default function ClientesPage() {
       setFormError(err.message || 'Error inesperado')
     } finally {
       setSaving(false)
+      setUploadingAvatar(false)
     }
   }
 
@@ -435,7 +497,7 @@ export default function ClientesPage() {
         </div>
 
         {/* ============================================================ */}
-        {/* MODAL: NUEVA CLIENTE */}
+        {/* MODAL: NUEVA CLIENTE CON AVATAR */}
         {/* ============================================================ */}
         {showModal && (
           <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
@@ -464,6 +526,92 @@ export default function ClientesPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* ============================================================ */}
+                {/* AVATAR - CON OPCIÓN DE SUBIR FOTO O TOMAR FOTO */}
+                {/* ============================================================ */}
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    {/* Previsualización del avatar */}
+                    <div className={`w-24 h-24 rounded-full overflow-hidden border-2 flex items-center justify-center ${
+                      isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+                    }`}>
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className={`w-10 h-10 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+                      )}
+                    </div>
+
+                    {/* Botones para subir foto */}
+                    <div className="absolute -bottom-1 -right-1 flex gap-1">
+                      {/* Botón: Subir desde dispositivo */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-1.5 rounded-full shadow-md border transition-all hover:scale-110 ${
+                          isDark ? 'bg-[#3D281E] border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#4A3227]' : 'bg-white border-[#F0E4DA] text-[#D4AF37] hover:bg-[#FFF9F6]'
+                        }`}
+                        title="Subir foto desde dispositivo"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                      </button>
+                      {/* Botón: Tomar foto con cámara */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const input = document.createElement('input')
+                          input.type = 'file'
+                          input.accept = 'image/*'
+                          input.capture = 'environment'
+                          input.onchange = (e) => {
+                            const target = e.target as HTMLInputElement
+                            if (target.files && target.files.length > 0) {
+                              const file = target.files[0]
+                              const fakeEvent = { target: { files: target.files } } as React.ChangeEvent<HTMLInputElement>
+                              handleAvatarFileSelect(fakeEvent)
+                            }
+                          }
+                          input.click()
+                        }}
+                        className={`p-1.5 rounded-full shadow-md border transition-all hover:scale-110 ${
+                          isDark ? 'bg-[#3D281E] border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#4A3227]' : 'bg-white border-[#F0E4DA] text-[#D4AF37] hover:bg-[#FFF9F6]'
+                        }`}
+                        title="Tomar foto con cámara"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Input oculto para archivos */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {uploadingAvatar && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-[#D4AF37]">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Subiendo avatar...
+                    </div>
+                  )}
+
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
+                      className={`mt-1 text-[8px] font-black uppercase tracking-wider transition-colors ${
+                        isDark ? 'text-[#A89588] hover:text-rose-400' : 'text-[#5C4A3E] hover:text-rose-500'
+                      }`}
+                    >
+                      Eliminar foto
+                    </button>
+                  )}
+                </div>
+
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                     Nombre Completo *
@@ -513,22 +661,6 @@ export default function ClientesPage() {
                   />
                 </div>
 
-                <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 font-mono ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    URL de Avatar (opcional)
-                  </label>
-                  <input
-                    type="url"
-                    name="avatar_url"
-                    value={formData.avatar_url}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
-                    }`}
-                    placeholder="https://ejemplo.com/avatar.jpg"
-                  />
-                </div>
-
                 {formError && (
                   <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs">
                     {formError}
@@ -547,11 +679,11 @@ export default function ClientesPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || uploadingAvatar}
                     className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0] disabled:opacity-50"
                   >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? 'Guardando...' : 'Guardar'}
+                    {saving || uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {saving || uploadingAvatar ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
               </form>
