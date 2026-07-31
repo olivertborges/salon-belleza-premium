@@ -12,11 +12,13 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  // 1. Cambiamos el estado inicial por defecto a 'light'
+  const [theme, setTheme] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme
+    
     if (savedTheme) {
       setTheme(savedTheme)
       if (savedTheme === 'dark') {
@@ -25,7 +27,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.remove('dark')
       }
     } else {
-      document.documentElement.classList.add('dark')
+      // 2. Si no hay nada guardado, nos aseguramos de quitar 'dark' 
+      // para que quede el tema claro por defecto.
+      document.documentElement.classList.remove('dark')
     }
     setMounted(true)
   }, [])
