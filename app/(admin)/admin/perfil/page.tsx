@@ -39,7 +39,7 @@ interface AdminProfile {
 }
 
 export default function AdminPerfilPage() {
-  const { user } = useAuth()
+  const { user, tenantId } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -150,25 +150,58 @@ export default function AdminPerfilPage() {
       const nameCol = getNameColumn()
 
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop()
-        const filePath = `${user.id}-${Date.now()}.${fileExt}`
+        // ✅ OBTENER TENANT_ID (si no viene de useAuth, obtenerlo de otra forma)
+        const activeTenantId = tenantId || user?.user_metadata?.tenant_id || null
+        
+        if (!activeTenantId) {
+          throw new Error('No se encontró el tenant_id. Contacta al administrador.')
+        }
 
+        // ✅ RUTA CORRECTA CON TENANT_ID Y USER_ID
+        const fileExt = avatarFile.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        const filePath = `staff/${activeTenantId}/${fileName}`
+
+        console.log('📤 Subiendo avatar a:', filePath)
+
+        // ✅ USAR EL BUCKET CORRECTO PARA STAFF
         const { error: uploadError } = await supabase.storage
-          .from('clients')
+          .from('staff') // ✅ BUCKET PARA STAFF
           .upload(filePath, avatarFile, {
             cacheControl: '3600',
             upsert: true
           })
 
         if (uploadError) {
-          throw new Error(`Error en Storage: ${uploadError.message}`)
+          // Si falla, intentar con el bucket 'avatars' como fallback
+          const fallbackPath = `avatars/${user.id}/${fileName}`
+          console.log('⚠️ Fallback: intentando con bucket avatars')
+          
+          const { error: fallbackError } = await supabase.storage
+            .from('avatars')
+            .upload(fallbackPath, avatarFile, {
+              cacheControl: '3600',
+              upsert: true
+            })
+          
+          if (fallbackError) {
+            throw new Error(`Error al subir la imagen: ${fallbackError.message}`)
+          }
+          
+          const { data: fallbackUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fallbackPath)
+          
+          avatarUrl = fallbackUrlData.publicUrl
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('staff')
+            .getPublicUrl(filePath)
+          
+          avatarUrl = urlData.publicUrl
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('clients')
-          .getPublicUrl(filePath)
-
-        avatarUrl = publicUrl
+        console.log('✅ Avatar subido:', avatarUrl)
       }
 
       const updatePayload: any = {
