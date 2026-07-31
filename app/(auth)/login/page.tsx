@@ -14,7 +14,7 @@ import {
   Flower2, Waves, Palette, Gift
 } from 'lucide-react'
 
-// ===== ANIMACIONES =====
+// ===== ANIMACIONES ORIGINALES =====
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
@@ -107,7 +107,7 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ===== CORRECCIÓN Y VERIFICACIÓN DE ACCESO DE STAFF EN TIEMPO REAL =====
+  // ===== CORRECCIÓN DE REDIRECCIÓN Y ACCESO (TABLA staff -> COLUMNA auth_role) =====
   useEffect(() => {
     if (!mounted || authLoading) return
     if (!user) return
@@ -117,7 +117,7 @@ export default function AuthMobilDefinitivo() {
       setIsRedirecting(true)
       
       try {
-        // Consultamos la columna exacta 'auth_role' ocupando el user_id
+        // Consultamos la tabla 'staff' pidiendo explícitamente la columna 'auth_role'
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
           .select('auth_role')
@@ -128,21 +128,21 @@ export default function AuthMobilDefinitivo() {
 
         let targetPath = '/portal' // Por defecto: Clientes normales
 
-        // Si existe en la tabla staff, comprobamos su nivel de sistema
-        if (staffMember) {
-          const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
+        if (staffMember && staffMember.auth_role) {
+          const rol = staffMember.auth_role.toLowerCase().trim()
           
-          if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
+          // Si el valor en auth_role coincide con permisos de equipo, enviamos al dashboard
+          if (rol === 'admin' || rol === 'staff' || rol === 'owner') {
             targetPath = '/dashboard'
           }
         } 
         
-        // Salvaguarda histórica del hook useAuth por si falla la lectura de la tabla o es Admin maestro
+        // Resguardo histórico por si el hook useAuth ya traía el rol desde metadatos
         if (targetPath !== '/dashboard' && (role === 'admin' || role === 'owner')) {
           targetPath = '/dashboard'
         }
 
-        // Si viene con una redirección explícita válida externa (que no sea portal/login), la respetamos
+        // Respetamos cualquier redirect explícito de la URL que no cree bucles en login
         const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
           ? redirectPath 
           : targetPath
@@ -268,7 +268,7 @@ export default function AuthMobilDefinitivo() {
     )
   }
 
-  // ===== DECORACIONES DE FONDO =====
+  // ===== ELEMENTOS DE INTERFAZ Y RENDERIZADO =====
   const BackgroundDecorations = () => (
     <>
       <motion.div 
@@ -305,7 +305,6 @@ export default function AuthMobilDefinitivo() {
     </>
   )
 
-  // ===== TABS =====
   const Tabs = () => (
     <div className="flex gap-1 p-1 rounded-2xl border mb-6 bg-[#FFF9F6] border-[#F0E4DA]">
       {[
@@ -374,9 +373,7 @@ export default function AuthMobilDefinitivo() {
             <Sparkles className="w-8 h-8" />
           </motion.div>
 
-          <motion.h2 
-            className="text-3xl font-serif font-extrabold text-[#1A0E0A] tracking-tight"
-          >
+          <motion.h2 className="text-3xl font-serif font-extrabold text-[#1A0E0A] tracking-tight">
             Fresh Nails
           </motion.h2>
           <motion.p className="text-[10px] font-mono tracking-[0.3em] text-[#5C4A3E] font-bold uppercase mt-1">
@@ -391,7 +388,7 @@ export default function AuthMobilDefinitivo() {
           <Tabs />
         </motion.div>
 
-        {/* MENSAJES */}
+        {/* MENSAJES DE ESTADO */}
         <AnimatePresence mode="wait">
           {error && (
             <motion.div 
@@ -417,7 +414,7 @@ export default function AuthMobilDefinitivo() {
           )}
         </AnimatePresence>
 
-        {/* CONTENIDO */}
+        {/* FORMULARIOS ACTIVOS */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeTab}-content`}
@@ -715,11 +712,8 @@ export default function AuthMobilDefinitivo() {
           </motion.div>
         </AnimatePresence>
 
-        {/* FOOTER DECORATIVO */}
-        <motion.div 
-          variants={itemVariants}
-          className="mt-6 pt-4 border-t border-[#F0E4DA] text-center"
-        >
+        {/* FOOTER */}
+        <motion.div variants={itemVariants} className="mt-6 pt-4 border-t border-[#F0E4DA] text-center">
           <p className="text-[8px] font-mono uppercase tracking-[0.3em] text-[#A89588]">
             <span className="text-[#D4AF37]">✦</span> Fresh Nails Studio <span className="text-[#D4AF37]">✦</span>
           </p>
