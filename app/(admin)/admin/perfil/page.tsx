@@ -221,54 +221,44 @@ export default function AdminPerfilPage() {
 
     try {
       let avatarUrl = profile.avatar_url
-      
-      const isProfiles = activeTable === 'profiles'
-      const idColumn = isProfiles ? 'id' : 'user_id'
-      const nameCol = isProfiles ? 'full_name' : (profile.name !== undefined ? 'name' : 'full_name')
 
-      // Si seleccionó un archivo nuevo, subirlo al Bucket de Supabase
+      // Si seleccionó un archivo nuevo, lo subimos exactamente igual usando el bucket compartido (ej. 'avatars')
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
-        const fileName = `${user.id}-${Math.random()}.${fileExt}`
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
         const filePath = `${fileName}`
 
-        // Nota: Asegúrate de que el bucket se llame 'staff' o 'avatars' según tu configuración
-        const bucketName = activeTable === 'staff' ? 'staff' : 'avatars'
-
         const { error: uploadError } = await supabase.storage
-          .from(bucketName)
+          .from('avatars')
           .upload(filePath, avatarFile, { upsert: true })
 
         if (uploadError) {
-          // Fallback por si el bucket 'staff' no existe, probar con 'avatars'
-          const { error: fallbackError, data: fallbackData } = await supabase.storage
-            .from('avatars')
-            .upload(filePath, avatarFile, { upsert: true })
-
-          if (fallbackError) {
-            throw new Error(`Error al subir la imagen al bucket: ${uploadError.message}`)
-          } else {
-            const { data: publicUrlData } = supabase.storage
-              .from('avatars')
-              .getPublicUrl(filePath)
-            avatarUrl = publicUrlData.publicUrl
-          }
-        } else {
-          const { data: publicUrlData } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(filePath)
-          avatarUrl = publicUrlData.publicUrl
+          throw new Error(`Error al subir la imagen: ${uploadError.message}`)
         }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath)
+
+        avatarUrl = publicUrlData.publicUrl
       }
 
+      // Preparamos el payload unificado garantizando que se guarden los campos de texto correspondientes
+      const isProfiles = activeTable === 'profiles'
+      const idColumn = isProfiles ? 'id' : 'user_id'
+      
       const updatePayload: any = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
       }
-      updatePayload[nameCol] = formData.full_name.trim()
 
       if (isProfiles) {
+        updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
+      } else {
+        // En staff cubrimos tanto si usa 'name' como 'full_name' para que funcione siempre idéntico a admin
+        updatePayload.name = formData.full_name.trim()
+        updatePayload.full_name = formData.full_name.trim()
       }
 
       let { error: updateError } = await supabase
@@ -291,7 +281,8 @@ export default function AdminPerfilPage() {
 
       setProfile(prev => ({
         ...prev!,
-        [nameCol]: formData.full_name.trim(),
+        full_name: formData.full_name.trim(),
+        name: formData.full_name.trim(),
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl
       }))
