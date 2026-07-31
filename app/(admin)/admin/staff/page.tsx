@@ -7,7 +7,8 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Users, Plus, Search, Edit, Trash2, 
   Mail, Phone, X, Save, UserPlus, Eye, EyeOff,
-  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck,
+  Bug
 } from 'lucide-react'
 
 interface StaffMember {
@@ -38,6 +39,7 @@ export default function StaffPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -95,14 +97,15 @@ export default function StaffPage() {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+    setDebugInfo(null)
 
     if (!formData.name || !formData.email) {
-      setError('El nombre y el email son obligatorios.')
+      setError('❌ El nombre y el email son obligatorios.')
       return
     }
 
     if (!editingId && !formData.password) {
-      setError('La contraseña es obligatoria para nuevos miembros.')
+      setError('❌ La contraseña es obligatoria para nuevos miembros.')
       return
     }
 
@@ -111,46 +114,38 @@ export default function StaffPage() {
       setRefreshing(true)
 
       if (editingId) {
-        // ACTUALIZAR - Obtener user_id del registro existente
-        const { data: existingStaff, error: fetchError } = await supabase
-          .from('staff')
-          .select('user_id')
-          .eq('id', editingId)
-          .single()
+        // Mostrar qué estamos actualizando
+        setDebugInfo(`📝 Actualizando ID: ${editingId}\nNombre: ${formData.name}\nEmail: ${formData.email}`)
 
-        if (fetchError) throw fetchError
-
-        // Actualizar el registro en staff
-        const { error: updateError } = await supabase
-          .from('staff')
-          .update({
-            name: formData.name.trim(),
-            role: formData.role,
-            auth_role: formData.auth_role,
-            email: formData.email.trim(),
-            phone: formData.phone.trim(),
-            specialty: formData.specialty.trim(),
-            experience: formData.experience ? String(formData.experience) : '',
-            avatar_url: formData.avatar_url.trim()
-          })
-          .eq('id', editingId)
-
-        if (updateError) throw updateError
-
-        // Si el email cambió, actualizar también en auth
-        if (existingStaff?.user_id) {
-          const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-            existingStaff.user_id,
-            { email: formData.email.trim() }
-          )
-          if (authUpdateError) {
-            console.warn('Error actualizando email en auth:', authUpdateError)
-          }
+        // INTENTAR ACTUALIZAR DIRECTAMENTE CON SUPABASE (sin API)
+        const updateData = {
+          name: formData.name.trim(),
+          role: formData.role,
+          auth_role: formData.auth_role,
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          specialty: formData.specialty.trim(),
+          experience: formData.experience ? String(formData.experience) : '',
+          avatar_url: formData.avatar_url.trim()
         }
 
-        setSuccess('Miembro actualizado correctamente.')
+        setDebugInfo(prev => prev + `\n📦 Datos a actualizar: ${JSON.stringify(updateData, null, 2)}`)
+
+        const { data: updatedData, error: updateError } = await supabase
+          .from('staff')
+          .update(updateData)
+          .eq('id', editingId)
+          .select()
+
+        if (updateError) {
+          setDebugInfo(prev => prev + `\n❌ Error de Supabase: ${updateError.message}`)
+          throw updateError
+        }
+
+        setDebugInfo(prev => prev + `\n✅ Actualizado exitosamente: ${JSON.stringify(updatedData, null, 2)}`)
+        setSuccess('✅ Miembro actualizado correctamente.')
       } else {
-        // CREAR NUEVO - Usando el endpoint
+        // CREAR NUEVO
         const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -170,10 +165,12 @@ export default function StaffPage() {
         const resData = await response.json()
         
         if (!response.ok || !resData.success) {
+          setDebugInfo(`❌ Error API: ${JSON.stringify(resData, null, 2)}`)
           throw new Error(resData.error || 'No se pudo crear el staff.')
         }
 
-        setSuccess('¡Miembro del Staff creado con éxito!')
+        setDebugInfo(`✅ Creado: ${JSON.stringify(resData.data, null, 2)}`)
+        setSuccess('✅ ¡Miembro del Staff creado con éxito!')
       }
 
       setShowModal(false)
@@ -182,7 +179,8 @@ export default function StaffPage() {
       
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
-      setError(err.message || 'Error al guardar el registro.')
+      setError(`❌ ${err.message || 'Error al guardar el registro.'}`)
+      setDebugInfo(prev => prev + `\n❌ Error capturado: ${err.message}`)
     } finally {
       setIsSubmitting(false)
       setRefreshing(false)
@@ -196,32 +194,12 @@ export default function StaffPage() {
       setError(null)
       setSuccess(null)
 
-      // Primero obtener el user_id
-      const { data: staffMember, error: fetchError } = await supabase
-        .from('staff')
-        .select('user_id')
-        .eq('id', id)
-        .single()
-
-      if (fetchError) throw fetchError
-
-      // Eliminar de staff
       const { error: deleteError } = await supabase
         .from('staff')
         .delete()
         .eq('id', id)
 
       if (deleteError) throw deleteError
-
-      // Eliminar el usuario de auth también
-      if (staffMember?.user_id) {
-        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
-          staffMember.user_id
-        )
-        if (authDeleteError) {
-          console.warn('Error eliminando usuario de auth:', authDeleteError)
-        }
-      }
 
       setSuccess('Miembro eliminado correctamente.')
       fetchStaff()
@@ -234,6 +212,7 @@ export default function StaffPage() {
   const handleOpenEdit = (member: StaffMember) => {
     setError(null)
     setSuccess(null)
+    setDebugInfo(null)
     setEditingId(member.id)
     setFormData({
       name: member.name || '',
@@ -252,6 +231,7 @@ export default function StaffPage() {
   const handleOpenCreate = () => {
     setError(null)
     setSuccess(null)
+    setDebugInfo(null)
     setEditingId(null)
     setFormData({
       name: '',
@@ -375,11 +355,13 @@ export default function StaffPage() {
 
       {/* MENSAJES DE ERROR / ÉXITO */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-sm">
-          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-start gap-3 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 mt-0.5">
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <p className="text-xs text-rose-400 font-medium min-w-0">{error}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-rose-400 font-medium whitespace-pre-wrap break-words">{error}</p>
+          </div>
         </div>
       )}
 
@@ -389,6 +371,26 @@ export default function StaffPage() {
             <CheckCircle className="w-4 h-4" />
           </div>
           <p className="text-xs text-emerald-400 font-medium min-w-0">{success}</p>
+        </div>
+      )}
+
+      {/* DEBUG INFO - Solo visible cuando hay debug */}
+      {debugInfo && (
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 flex items-start gap-3 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
+            <Bug className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-mono text-blue-400 whitespace-pre-wrap break-words leading-relaxed">
+              {debugInfo}
+            </p>
+          </div>
+          <button
+            onClick={() => setDebugInfo(null)}
+            className="shrink-0 text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -504,6 +506,14 @@ export default function StaffPage() {
                 {editingId ? 'Editar Miembro' : 'Nuevo Miembro Premium'}
               </h3>
             </div>
+
+            {editingId && (
+              <div className="mb-4 p-3 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20">
+                <p className="text-[10px] text-[#D4AF37] font-mono">
+                  Editando ID: {editingId}
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
