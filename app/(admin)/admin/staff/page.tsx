@@ -12,6 +12,7 @@ import {
 
 interface StaffMember {
   id: string
+  user_id: string
   name: string
   role: string
   auth_role: string
@@ -110,7 +111,16 @@ export default function StaffPage() {
       setRefreshing(true)
 
       if (editingId) {
-        // ACTUALIZAR - CORREGIDO: la coma faltante
+        // ACTUALIZAR - Obtener user_id del registro existente
+        const { data: existingStaff, error: fetchError } = await supabase
+          .from('staff')
+          .select('user_id')
+          .eq('id', editingId)
+          .single()
+
+        if (fetchError) throw fetchError
+
+        // Actualizar el registro en staff
         const { error: updateError } = await supabase
           .from('staff')
           .update({
@@ -118,7 +128,7 @@ export default function StaffPage() {
             role: formData.role,
             auth_role: formData.auth_role,
             email: formData.email.trim(),
-            phone: formData.phone.trim(), // ← COMA CORREGIDA
+            phone: formData.phone.trim(),
             specialty: formData.specialty.trim(),
             experience: formData.experience ? String(formData.experience) : '',
             avatar_url: formData.avatar_url.trim()
@@ -126,28 +136,49 @@ export default function StaffPage() {
           .eq('id', editingId)
 
         if (updateError) throw updateError
+
+        // Si el email cambió, actualizar también en auth
+        if (existingStaff?.user_id) {
+          const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+            existingStaff.user_id,
+            { email: formData.email.trim() }
+          )
+          if (authUpdateError) {
+            console.warn('Error actualizando email en auth:', authUpdateError)
+          }
+        }
+
         setSuccess('Miembro actualizado correctamente.')
       } else {
         // CREAR NUEVO - Usando el endpoint
         const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+            role: formData.role,
+            auth_role: formData.auth_role,
+            phone: formData.phone.trim(),
+            specialty: formData.specialty.trim(),
+            experience: formData.experience ? String(formData.experience) : '',
+            avatar_url: formData.avatar_url.trim()
+          })
         })
 
         const resData = await response.json()
         
         if (!response.ok || !resData.success) {
-          throw new Error(resData.error || 'No se pudo crear el staff automatizado.')
+          throw new Error(resData.error || 'No se pudo crear el staff.')
         }
 
         setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
-      // Cerrar modal y recargar
       setShowModal(false)
       setEditingId(null)
-      await fetchStaff() 
+      await fetchStaff()
       
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
@@ -165,12 +196,32 @@ export default function StaffPage() {
       setError(null)
       setSuccess(null)
 
+      // Primero obtener el user_id
+      const { data: staffMember, error: fetchError } = await supabase
+        .from('staff')
+        .select('user_id')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Eliminar de staff
       const { error: deleteError } = await supabase
         .from('staff')
         .delete()
         .eq('id', id)
 
       if (deleteError) throw deleteError
+
+      // Eliminar el usuario de auth también
+      if (staffMember?.user_id) {
+        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
+          staffMember.user_id
+        )
+        if (authDeleteError) {
+          console.warn('Error eliminando usuario de auth:', authDeleteError)
+        }
+      }
 
       setSuccess('Miembro eliminado correctamente.')
       fetchStaff()
