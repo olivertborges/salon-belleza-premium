@@ -161,7 +161,6 @@ export default function AdminPerfilPage() {
           })
 
         if (uploadError) {
-          console.error('Error detallado de Storage:', uploadError)
           throw new Error(`Error en Storage: ${uploadError.message}`)
         }
 
@@ -188,7 +187,6 @@ export default function AdminPerfilPage() {
         .eq(idColumn, user.id)
 
       if (updateError) {
-        console.error('Error detallado de Base de Datos:', updateError)
         throw new Error(`Error en Base de Datos (${targetTable}): ${updateError.message}`)
       }
 
@@ -205,7 +203,7 @@ export default function AdminPerfilPage() {
       setTimeout(() => setSuccess(null), 3000)
 
     } catch (err: any) {
-      console.error('Error general en handleSave:', err)
+      console.error('Error guardando perfil:', err)
       setError(err.message || 'Error al guardar los cambios')
     } finally {
       setSaving(false)
