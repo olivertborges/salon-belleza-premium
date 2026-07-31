@@ -52,11 +52,106 @@ export default function AdminPerfilPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [activeTable, setActiveTable] = useState<string>('profiles')
+  const [tenantId, setTenantId] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const [formData, setFormData] = useState({
     full_name: '',
     phone: ''
   })
+
+  // ============================================================
+  // ✅ FUNCIÓN PARA OBTENER TENANT_ID
+  // ============================================================
+  const getTenantId = async (): Promise<string | null> => {
+    // 1. De user_metadata
+    if (user?.user_metadata?.tenant_id) {
+      return user.user_metadata.tenant_id
+    }
+    
+    // 2. De app_metadata
+    if (user?.app_metadata?.tenant_id) {
+      return user.app_metadata.tenant_id
+    }
+
+    // 3. De profiles
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user?.id)
+      .maybeSingle()
+    
+    if (profileData?.tenant_id) {
+      return profileData.tenant_id
+    }
+
+    // 4. De staff
+    const { data: staffData } = await supabase
+      .from('staff')
+      .select('tenant_id')
+      .eq('user_id', user?.id)
+      .maybeSingle()
+    
+    if (staffData?.tenant_id) {
+      return staffData.tenant_id
+    }
+
+    return null
+  }
+
+  // ============================================================
+  // ✅ FUNCIÓN PARA SUBIR AVATAR
+  // ============================================================
+  const uploadAvatar = async (file: File, tenantId: string): Promise<string> => {
+    setUploadingAvatar(true)
+    
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`
+    
+    // Intentar con diferentes buckets
+    const buckets = [
+      { name: 'staff', path: `staff/${tenantId}/${fileName}` },
+      { name: 'avatars', path: `avatars/${tenantId}/${fileName}` },
+      { name: 'profiles', path: `profiles/${tenantId}/${fileName}` }
+    ]
+
+    let lastError = null
+
+    for (const bucket of buckets) {
+      try {
+        console.log(`📤 Intentando subir a bucket: ${bucket.name}, ruta: ${bucket.path}`)
+        
+        const { error: uploadError } = await supabase.storage
+          .from(bucket.name)
+          .upload(bucket.path, file, {
+            cacheControl: '3600',
+            upsert: true
+          })
+
+        if (uploadError) {
+          console.log(`⚠️ Error en bucket ${bucket.name}:`, uploadError.message)
+          lastError = uploadError
+          continue
+        }
+
+        // Si subió correctamente, obtener URL pública
+        const { data: urlData } = supabase.storage
+          .from(bucket.name)
+          .getPublicUrl(bucket.path)
+
+        console.log(`✅ Avatar subido en bucket: ${bucket.name}`)
+        setUploadingAvatar(false)
+        return urlData.publicUrl
+
+      } catch (err) {
+        console.log(`❌ Error en bucket ${bucket.name}:`, err)
+        lastError = err
+      }
+    }
+
+    setUploadingAvatar(false)
+    throw new Error(`No se pudo subir la imagen a ningún bucket. Último error: ${lastError?.message || 'Error desconocido'}`)
+  }
 
   const loadProfile = async () => {
     if (!user?.id) return
@@ -65,7 +160,12 @@ export default function AdminPerfilPage() {
       setLoading(true)
       setError(null)
 
-      // Intentar primero en la tabla 'profiles' (Admin)
+      // ✅ OBTENER TENANT_ID
+      const tid = await getTenantId()
+      setTenantId(tid)
+      console.log('✅ Tenant ID obtenido:', tid)
+
+      // Intentar primero en 'profiles'
       let { data, error: errProfiles } = await supabase
         .from('profiles')
         .select('*')
@@ -85,7 +185,7 @@ export default function AdminPerfilPage() {
         return
       }
 
-      // Si no está en 'profiles', buscar en la tabla 'staff'
+      // Si no está en 'profiles', buscar en 'staff'
       let { data: dataStaff, error: errStaff } = await supabase
         .from('staff')
         .select('*')
@@ -130,8 +230,8 @@ export default function AdminPerfilPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError('La imagen es muy pesada. Máximo 2MB.')
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen es muy pesada. Máximo 5MB.')
       return
     }
 
@@ -155,30 +255,21 @@ export default function AdminPerfilPage() {
       const idColumn = activeTable === 'profiles' ? 'id' : 'user_id'
       const nameCol = activeTable === 'profiles' ? 'full_name' : 'name'
 
-      // 1. Subir foto a Storage si se seleccionó una nueva
+      // ✅ SUBIR AVATAR CON TENANT_ID
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop()
-        const filePath = `${user.id}-${Date.now()}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('staff')
-          .upload(filePath, avatarFile, {
-            cacheControl: '3600',
-            upsert: true
-          })
-
-        if (uploadError) {
-          throw new Error(`Error al subir imagen al Storage: ${uploadError.message}`)
+        if (!tenantId) {
+          const tid = await getTenantId()
+          if (!tid) {
+            throw new Error('No se encontró tenant_id. Contacta al administrador.')
+          }
+          setTenantId(tid)
         }
 
-        const { data: urlData } = supabase.storage
-          .from('staff')
-          .getPublicUrl(filePath)
-
-        avatarUrl = urlData.publicUrl
+        avatarUrl = await uploadAvatar(avatarFile, tenantId)
+        console.log('✅ URL final del avatar:', avatarUrl)
       }
 
-      // 2. Preparar datos a actualizar
+      // ✅ PREPARAR DATOS PARA ACTUALIZAR
       const updatePayload: any = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
@@ -189,7 +280,7 @@ export default function AdminPerfilPage() {
         updatePayload.updated_at = new Date().toISOString()
       }
 
-      // 3. Ejecutar actualización en la tabla detectada
+      // ✅ EJECUTAR ACTUALIZACIÓN
       const { error: updateError } = await supabase
         .from(activeTable)
         .update(updatePayload)
@@ -199,7 +290,7 @@ export default function AdminPerfilPage() {
         throw new Error(`Error al guardar en tabla ${activeTable}: ${updateError.message}`)
       }
 
-      // 4. Actualizar estado local
+      // ✅ ACTUALIZAR ESTADO LOCAL
       setProfile(prev => ({
         ...prev!,
         [nameCol]: formData.full_name.trim(),
@@ -217,6 +308,7 @@ export default function AdminPerfilPage() {
       setError(err.message || 'Error desconocido al guardar los cambios')
     } finally {
       setSaving(false)
+      setUploadingAvatar(false)
     }
   }
 
@@ -380,14 +472,14 @@ export default function AdminPerfilPage() {
                 <>
                   <button
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || uploadingAvatar}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
                       isDark 
                         ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
                         : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
                     }`}
                   >
-                    {saving ? (
+                    {saving || uploadingAvatar ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Guardando</>
                     ) : (
                       <><Save className="w-4 h-4" /> Guardar</>
