@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase/client'
@@ -105,6 +105,19 @@ export default function AuthMobilDefinitivo() {
   useEffect(() => {
     setMounted(true)
     addDebugLog('✅ Componente montado')
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const redirect = searchParams.get('redirect');
+    if (redirect) {
+      setRedirectPath(redirect)
+      addDebugLog(`📌 Redirect param: ${redirect}`)
+    }
+
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setReferralCode(ref)
+      addDebugLog(`📌 Código de referencia: ${ref}`)
+    }
   }, [])
 
   // ===== FUNCIÓN DE VERIFICACIÓN DE ROL =====
@@ -140,9 +153,8 @@ export default function AuthMobilDefinitivo() {
 
       addDebugLog(`📊 Resultado staff: ${JSON.stringify(staffMember)}`)
 
-      let targetPath = '/portal' // Por defecto: Clientes normales
+      let targetPath = '/portal'
 
-      // Si existe en la tabla staff, comprobamos su nivel de sistema
       if (staffMember) {
         const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
         addDebugLog(`👤 Rol encontrado: ${systemRole}`)
@@ -157,7 +169,6 @@ export default function AuthMobilDefinitivo() {
         addDebugLog('⚠️ Usuario NO encontrado en staff, redirigiendo a PORTAL')
       }
 
-      // Si viene con una redirección explícita válida externa
       const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
         ? redirectPath 
         : targetPath
@@ -166,7 +177,6 @@ export default function AuthMobilDefinitivo() {
       
       setShowDebug(true)
       
-      // Redirigir después de 1 segundo
       setTimeout(() => {
         router.replace(finalPath)
       }, 1000)
@@ -191,10 +201,10 @@ export default function AuthMobilDefinitivo() {
     }
     
     if (user) {
-      addDebugLog(`👤 Usuario detectado: ${user.email}`)
+      addDebugLog(`👤 Usuario detectado en useEffect: ${user.email}`)
       verificarRolYRedirigir(user)
     } else {
-      addDebugLog('👤 No hay usuario logueado')
+      addDebugLog('👤 No hay usuario logueado en useEffect')
     }
   }, [user, authLoading, mounted])
 
@@ -208,47 +218,26 @@ export default function AuthMobilDefinitivo() {
     addDebugLog('🔐 Intentando login...')
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-
-      const data = await response.json()
+      // === ESTRATEGIA 1: Usar el hook signIn ===
+      const { error: signInError } = await signIn(email, password)
       
-      if (!response.ok || data.error) {
-        addDebugLog(`❌ Error login: ${data.error}`)
-        throw new Error(data.error || 'Error al iniciar sesión')
+      if (signInError) {
+        addDebugLog(`❌ Error signIn: ${signInError.message}`)
+        throw signInError
       }
 
-      addDebugLog('✅ Login exitoso!')
+      addDebugLog('✅ Login exitoso con signIn!')
       setSuccess('✅ ¡Ingreso correcto!')
       setLoginSuccess(true)
 
-      // OBTENER LA SESIÓN ACTUALIZADA
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      // === ESTRATEGIA 2: Esperar a que el useEffect detecte el usuario ===
+      // El useEffect se encargará de verificar y redirigir
+      // Pero como fallback, forzamos una recarga después de 2 segundos
       
-      if (sessionError) {
-        addDebugLog(`❌ Error obteniendo sesión: ${sessionError.message}`)
-        throw sessionError
-      }
-
-      const usuario = sessionData?.session?.user
-      addDebugLog(`🔄 Sesión recargada: ${usuario?.email || 'sin usuario'}`)
-
-      if (usuario) {
-        addDebugLog('👤 Usuario obtenido de sesión, verificando...')
-        // Esperar un momento para que el estado se actualice
-        setTimeout(() => {
-          verificarRolYRedirigir(usuario)
-        }, 300)
-      } else {
-        addDebugLog('⚠️ No se pudo obtener usuario de la sesión')
-        // Forzar recarga de la página para que el useEffect se ejecute
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
-      }
+      setTimeout(() => {
+        addDebugLog('🔄 Forzando recarga de página como fallback...')
+        window.location.reload()
+      }, 1500)
 
     } catch (err: any) {
       addDebugLog(`❌ Error: ${err.message}`)
@@ -291,29 +280,21 @@ export default function AuthMobilDefinitivo() {
       addDebugLog('✅ Registro exitoso!')
       setSuccess('✅ ¡Registro exitoso!')
 
-      const loginResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-
-      const loginData = await loginResponse.json()
-      if (!loginResponse.ok || loginData.error) {
-        addDebugLog(`❌ Error login post-registro: ${loginData.error}`)
-        throw new Error(loginData.error || 'Error al iniciar sesión')
+      // Usar signIn del hook
+      const { error: signInError } = await signIn(email, password)
+      
+      if (signInError) {
+        addDebugLog(`❌ Error login post-registro: ${signInError.message}`)
+        throw signInError
       }
 
       addDebugLog('✅ Login post-registro exitoso!')
       setLoginSuccess(true)
-
-      const { data: sessionData } = await supabase.auth.getSession()
-      const usuario = sessionData?.session?.user
       
-      if (usuario) {
-        setTimeout(() => {
-          verificarRolYRedirigir(usuario)
-        }, 300)
-      }
+      setTimeout(() => {
+        addDebugLog('🔄 Forzando recarga de página...')
+        window.location.reload()
+      }, 1500)
 
     } catch (err: any) {
       addDebugLog(`❌ Error: ${err.message}`)
