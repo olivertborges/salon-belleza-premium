@@ -406,7 +406,7 @@ function AgendaContent() {
 
   return (
     <div className={`min-h-screen pb-32 transition-colors duration-500 antialiased ${
-      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+      isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
       {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
@@ -1045,7 +1045,7 @@ function AgendaContent() {
               )}
 
               {selectedServices.length > 0 && (
-                <div className={`pt-3 border-t flex justify-between items-center font-bold ${
+                <div className={`pt-3 border-t flex justify-between items-center font-bold mb-2 ${
                   isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                 }`}>
                   <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${
@@ -1057,6 +1057,20 @@ function AgendaContent() {
                     ${totalPrice.toLocaleString()}
                   </span>
                 </div>
+              )}
+
+              {/* BOTÓN PARA ESCRITORIO / PANTALLAS GRANDES */}
+              {step === 2 && selectedServices.length > 0 && (
+                <button 
+                  onClick={() => setStep(3)} 
+                  className={`hidden lg:flex w-full mt-4 px-5 py-3 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md items-center justify-center gap-2 transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                  }`}
+                >
+                  Elegir Horario <ChevronRight className="w-4 h-4" />
+                </button>
               )}
             </div>
           )}
