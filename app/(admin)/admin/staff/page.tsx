@@ -114,10 +114,29 @@ export default function StaffPage() {
       setRefreshing(true)
 
       if (editingId) {
-        // Mostrar qué estamos actualizando
-        setDebugInfo(`📝 Actualizando ID: ${editingId}\nNombre: ${formData.name}\nEmail: ${formData.email}`)
+        // 1. Obtener el user_id del registro
+        setDebugInfo(`📝 Buscando registro con ID: ${editingId}`)
+        
+        const { data: staffRecord, error: fetchError } = await supabase
+          .from('staff')
+          .select('user_id')
+          .eq('id', editingId)
+          .single()
 
-        // INTENTAR ACTUALIZAR DIRECTAMENTE CON SUPABASE (sin API)
+        if (fetchError) {
+          setDebugInfo(prev => prev + `\n❌ Error obteniendo user_id: ${fetchError.message}`)
+          throw fetchError
+        }
+
+        if (!staffRecord?.user_id) {
+          setDebugInfo(prev => prev + `\n❌ No se encontró user_id para el staff ID: ${editingId}`)
+          throw new Error('El registro no tiene user_id vinculado')
+        }
+
+        setDebugInfo(prev => prev + `\n🔑 User ID encontrado: ${staffRecord.user_id}`)
+        setDebugInfo(prev => prev + `\n📝 Nombre a actualizar: ${formData.name}`)
+
+        // 2. Actualizar usando el user_id
         const updateData = {
           name: formData.name.trim(),
           role: formData.role,
@@ -129,20 +148,20 @@ export default function StaffPage() {
           avatar_url: formData.avatar_url.trim()
         }
 
-        setDebugInfo(prev => prev + `\n📦 Datos a actualizar: ${JSON.stringify(updateData, null, 2)}`)
+        setDebugInfo(prev => prev + `\n📦 Datos: ${JSON.stringify(updateData, null, 2)}`)
 
         const { data: updatedData, error: updateError } = await supabase
           .from('staff')
           .update(updateData)
-          .eq('id', editingId)
+          .eq('user_id', staffRecord.user_id) // ← USAR user_id
           .select()
 
         if (updateError) {
-          setDebugInfo(prev => prev + `\n❌ Error de Supabase: ${updateError.message}`)
+          setDebugInfo(prev => prev + `\n❌ Error Supabase: ${updateError.message}`)
           throw updateError
         }
 
-        setDebugInfo(prev => prev + `\n✅ Actualizado exitosamente: ${JSON.stringify(updatedData, null, 2)}`)
+        setDebugInfo(prev => prev + `\n✅ Actualizado: ${JSON.stringify(updatedData, null, 2)}`)
         setSuccess('✅ Miembro actualizado correctamente.')
       } else {
         // CREAR NUEVO
@@ -353,7 +372,7 @@ export default function StaffPage() {
         )}
       </div>
 
-      {/* MENSAJES DE ERROR / ÉXITO */}
+      {/* MENSAJES */}
       {error && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-start gap-3 shadow-sm">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 mt-0.5">
@@ -374,7 +393,7 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* DEBUG INFO - Solo visible cuando hay debug */}
+      {/* DEBUG */}
       {debugInfo && (
         <div className="rounded-2xl p-4 bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 flex items-start gap-3 shadow-sm">
           <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
@@ -482,7 +501,7 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* MODAL CREAR / EDITAR */}
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${
