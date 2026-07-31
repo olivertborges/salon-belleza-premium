@@ -13,8 +13,7 @@ import {
 interface StaffMember {
   id: string
   user_id?: string
-  name?: string
-  nombre?: string // Por si la base de datos lo devuelve en español
+  name: string
   role: string
   auth_role: string
   email: string
@@ -39,7 +38,6 @@ export default function StaffPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  // ESTADO PARA LOGS VISUALES EN EL TELÉFONO
   const [debugLogs, setDebugLogs] = useState<string[]>([])
 
   const addLog = (message: string) => {
@@ -73,20 +71,17 @@ export default function StaffPage() {
     try {
       setLoading(true)
       setError(null)
-      addLog("Iniciando carga de miembros...")
+      addLog("Cargando miembros del staff...")
       
       const { data, error: fetchError } = await supabase
         .from('staff')
         .select('*')
-        .order('id', { ascending: true })
+        .order('name', { ascending: true })
 
       if (fetchError) throw fetchError
       
       setStaff(data || [])
-      addLog(`Carga exitosa: ${data?.length || 0} filas obtenidas.`)
-      if (data && data.length > 0) {
-        addLog(`Estructura del primer registro: ${JSON.stringify(Object.keys(data[0]))}`)
-      }
+      addLog(`Éxito: ${data?.length || 0} profesionales cargados.`)
     } catch (err: any) {
       setError(err.message || 'Error al cargar el equipo')
       addLog(`❌ ERROR BD: ${err.message}`)
@@ -111,7 +106,7 @@ export default function StaffPage() {
     setError(null)
     setSuccess(null)
 
-    addLog(`➡️ INTENTO DE GUARDAR. Tipo: ${editingId ? 'EDICIÓN' : 'CREACIÓN'}`)
+    addLog(`➡️ PROCESANDO: ${editingId ? 'EDICIÓN' : 'CREACIÓN'}`)
 
     if (!formData.name || !formData.email) {
       setError('Nombre y email requeridos.')
@@ -121,12 +116,11 @@ export default function StaffPage() {
     try {
       setRefreshing(true)
       if (editingId) {
-        addLog(`Enviando UPDATE para ID interno: "${editingId}"`)
+        addLog(`Ejecutando UPDATE en la BD usando ID: "${editingId}"`)
         
-        // Enviamos tanto 'name' como 'nombre' para asegurar compatibilidad total con tu BD
+        // CORREGIDO: Únicamente mandamos 'name', removiendo por completo la columna 'nombre'
         const payload = {
           name: formData.name.trim(),
-          nombre: formData.name.trim(), 
           role: formData.role,
           auth_role: formData.auth_role,
           email: formData.email.trim(),
@@ -143,20 +137,19 @@ export default function StaffPage() {
           .select()
 
         if (updateError) {
-          addLog(`❌ SUPABASE ERROR: ${updateError.message}`)
+          addLog(`❌ ERROR DE CONEXIÓN BD: ${updateError.message}`)
           throw updateError
         }
         
-        addLog(`Respuesta exitosa de BD -> Filas devueltas: ${JSON.stringify(data)}`)
+        addLog(`Respuesta: Filas devueltas por Supabase -> ${JSON.stringify(data)}`)
         
         if (!data || data.length === 0) {
-          addLog("⚠️ ALERTA: ¡0 filas afectadas! El ID enviado no existe en la columna 'id' de la tabla staff.")
+          addLog("⚠️ ALERTA: 0 filas modificadas. Verifica el ID.")
         } else {
-          addLog(`¡Confirmado! Fila alterada en BD: ${data[0].name || data[0].nombre}`)
+          addLog(`¡LOGRADO! Base de datos actualizada para: ${data[0].name}`)
         }
 
-        setSuccess('¡Cambios guardados en base de datos! Comprueba el log negro arriba.')
-        // IMPORTANTE: Ya NO cerramos el modal automáticamente para que puedas leer el cuadro negro.
+        setSuccess('¡Miembro actualizado con éxito!')
         await fetchStaff()
       } else {
         const response = await fetch('/app/api/staff/create', {
@@ -174,7 +167,7 @@ export default function StaffPage() {
       }
     } catch (err: any) {
       setError(err.message || 'Error al guardar.')
-      addLog(`❌ EXCEPCIÓN: ${err.message}`)
+      addLog(`❌ FALLO: ${err.message}`)
     } finally {
       setRefreshing(false)
     }
@@ -197,11 +190,10 @@ export default function StaffPage() {
     setDebugLogs([])
     setEditingId(member.id)
     
-    const nombreReal = member.name || member.nombre || ''
-    addLog(`Abriendo edición. ID: "${member.id}", Nombre cargado: "${nombreReal}"`)
+    addLog(`Abriendo formulario para: "${member.name}" (ID: ${member.id})`)
 
     setFormData({
-      name: nombreReal,
+      name: member.name || '',
       role: member.role || 'Especialista',
       auth_role: member.auth_role || 'staff',
       email: member.email || '',
@@ -225,10 +217,10 @@ export default function StaffPage() {
     setShowModal(true)
   }
 
-  const filtrados = staff.filter(m => {
-    const n = (m.name || m.nombre || '').toLowerCase()
-    return n.includes(search.toLowerCase()) || m.role?.toLowerCase().includes(search.toLowerCase())
-  })
+  const filtrados = staff.filter(m =>
+    m.name?.toLowerCase().includes(search.toLowerCase()) || 
+    m.role?.toLowerCase().includes(search.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -278,8 +270,7 @@ export default function StaffPage() {
           <div key={member.id} className={`rounded-2xl p-4 border relative ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex justify-between items-start">
               <div>
-                {/* BLINDAJE: Si 'name' no viene, lee 'nombre' */}
-                <h3 className="font-bold text-sm text-[#FFF9F6]">{member.name || member.nombre || 'Sin nombre'}</h3>
+                <h3 className="font-bold text-sm text-[#FFF9F6]">{member.name || 'Sin nombre'}</h3>
                 <span className="text-[9px] uppercase font-bold text-[#D4AF37] bg-[#D4AF37]/10 px-2 py-0.5 rounded-full">{member.role}</span>
               </div>
               <div className="flex gap-1">
@@ -295,7 +286,7 @@ export default function StaffPage() {
         ))}
       </div>
 
-      {/* MODAL EDITAR CON LOGS BLOQUEADOS */}
+      {/* MODAL EDITAR */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className={`w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto border ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
@@ -340,7 +331,7 @@ export default function StaffPage() {
                 />
               </div>
 
-              {/* TERMINAL DE LOGS VISUALES: Ideal para tu teléfono */}
+              {/* TERMINAL DE LOGS VISUALES */}
               <div className="rounded-xl border border-zinc-700 bg-black p-3 font-mono text-[10px] text-emerald-400">
                 <div className="flex items-center gap-1.5 border-b border-zinc-800 pb-1.5 mb-2 text-zinc-500 font-bold">
                   <Terminal className="w-3.5 h-3.5 text-[#D4AF37]" /> TERMINAL DE RASTREO MÓVIL
