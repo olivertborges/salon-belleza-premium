@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter, usePathname } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client' // Hacemos la importación de Supabase
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import AdminHeader from '@/components/layout/AdminHeader'
 
@@ -12,7 +13,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { role, loading, session, user } = useAuth()
+  const { role, loading, user } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -20,42 +21,71 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
-  // ✅ PROTEGER RUTAS DE ADMIN
+  // ✅ PROTEGER RUTAS DE ADMIN CON CONSULTA A BASE DE DATOS
   useEffect(() => {
-    // Si está cargando, esperar
+    // Si está cargando la autenticación inicial, esperamos
     if (loading) return
 
-    // Si no hay usuario, redirigir al login
+    // Si ni siquiera hay un usuario logueado, directo al login
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
       setIsAuthorized(false)
       return
     }
 
-    // Si el usuario no es admin, staff o owner, redirigir al portal
-    if (role !== 'admin' && role !== 'staff' && role !== 'owner') {
-      router.push('/portal')
-      setIsAuthorized(false)
-      return
+    const verificarAccesoReal = async () => {
+      try {
+        // 1. Verificación rápida: Si el contexto ya dice que es apto, autorizamos
+        if (role === 'admin' || role === 'staff' || role === 'owner') {
+          setIsAuthorized(true)
+          return
+        }
+
+        // 2. Si el contexto no lo tiene (tu caso actual), buscamos en la verdad absoluta: la tabla 'staff'
+        const { data: staffMember, error: dbError } = await supabase
+          .from('staff')
+          .select('auth_role')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (dbError) throw dbError
+
+        // Si existe en la tabla y tiene un rol permitido, le damos acceso
+        if (staffMember && staffMember.auth_role) {
+          const rolLimpio = staffMember.auth_role.toLowerCase().trim()
+          if (rolLimpio === 'admin' || rolLimpio === 'staff' || rolLimpio === 'owner') {
+            setIsAuthorized(true)
+            return
+          }
+        }
+
+        // 3. Si no cumple ninguna condición, se va redirigido al portal
+        router.push('/portal')
+        setIsAuthorized(false)
+
+      } catch (error) {
+        console.error('Error verificando permisos en AdminLayout:', error)
+        router.push('/portal')
+        setIsAuthorized(false)
+      }
     }
 
-    // Si todo está bien, autorizar
-    setIsAuthorized(true)
+    verificarAccesoReal()
   }, [user, role, loading, router, pathname])
 
-  // ✅ Mostrar loader mientras carga o verifica permisos
+  // ✅ Mostrar loader estético mientras verifica los permisos en la BD
   if (loading || isAuthorized === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0908]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-2 border-[#C9A96E]/20 border-t-[#C9A96E] rounded-full animate-spin" />
-          <p className="text-xs text-stone-400 animate-pulse">Verificando acceso...</p>
+          <p className="text-xs text-stone-400 animate-pulse">Verificando credenciales de Staff...</p>
         </div>
       </div>
     )
   }
 
-  // ✅ Si no está autorizado, no renderizar nada (la redirección ya se activó)
+  // Si no está autorizado, no renderizamos nada mientras se ejecuta el redireccionamiento
   if (!isAuthorized) {
     return null
   }
