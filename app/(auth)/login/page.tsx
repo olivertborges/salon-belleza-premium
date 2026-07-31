@@ -57,7 +57,7 @@ export default function AuthMobilDefinitivo() {
     if (redirect) setRedirectPath(redirect)
   }, [])
 
-  // GESTIÓN MANUAL DE LOGIN (Evita redirecciones fantasmas y asegura cookies)
+  // GESTIÓN MANUAL DE LOGIN CON DIAGNÓSTICO AVANZADO
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading || isRedirecting) return
@@ -68,72 +68,80 @@ export default function AuthMobilDefinitivo() {
     setSuccess('')
     setDebugLog('1. Enviando credenciales directamente a Supabase Auth...')
 
-    try {
-      // Autenticación usando el cliente del navegador
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password
-      })
+  try {
+    // 1. Autenticación directa
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password
+    })
 
-      if (authError) throw authError
-      
-      const loggedUser = authData?.user
-      if (!loggedUser) throw new Error("Sesión iniciada pero no se retornó información de usuario.")
+    if (authError) throw authError
+    
+    const loggedUser = authData?.user
+    if (!loggedUser) throw new Error("Sesión iniciada pero no se retornó información de usuario.")
 
-      setDebugLog(`2. Login correcto. UUID Auth: ${loggedUser.id}. Buscando en tabla 'staff'...`)
+    setDebugLog(`2. Login correcto. UUID Auth: ${loggedUser.id}. Buscando en tabla 'staff'...`)
 
-      // Consulta exacta vinculando por user_id físico de la base de datos
-      const { data: staffMember, error: staffError } = await supabase
-        .from('staff')
-        .select('role')
-        .eq('user_id', loggedUser.id)
-        .maybeSingle()
+    // 2. Consulta exacta vinculando por user_id físico de la base de datos
+    const { data: staffMember, error: staffError } = await supabase
+      .from('staff')
+      .select('role')
+      .eq('user_id', loggedUser.id)
+      .maybeSingle()
 
-      if (staffError) {
-        setDebugLog(`❌ Error Supabase al leer staff: ${staffError.message}`)
-        throw staffError
-      }
-
-      // Si no es un miembro de staff
-      if (!staffMember) {
-        setDebugLog(`ℹ️ El UUID no está en la tabla staff. Redirigiendo a /portal (Área de clientes)`)
-        setTimeout(() => {
-          router.replace('/portal')
-          router.refresh()
-        }, 2500)
-        return
-      }
-
-      // Si es staff, evaluamos el rol administrativo
-      const systemRole = staffMember.role ? staffMember.role.toLowerCase().trim() : 'staff'
-      setDebugLog(`3. ¡Usuario hallado en staff! Rol detectado: "${systemRole}"`)
-
-      let targetPath = '/portal'
-      if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
-        targetPath = '/dashboard'
-        setDebugLog(`🎯 Rol autorizado para administración. Destino: /dashboard`)
-      } else {
-        setDebugLog(`⚠️ Rol "${systemRole}" no administrativo. Destino: /portal`)
-      }
-
-      const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
-        ? redirectPath 
-        : targetPath
-
-      setDebugLog(`4. Procesando redirección final hacia: ${finalPath}`)
-      
-      setTimeout(() => {
-        router.replace(finalPath)
-        router.refresh()
-      }, 2000)
-
-    } catch (err: any) {
-      setError(err.message || 'Error en el proceso de autenticación.')
-      setDebugLog(`❌ Fallo en el proceso: ${err.message || err}`)
-      setIsRedirecting(false)
-      setLoading(false)
+    if (staffError) {
+      setDebugLog(`❌ Error Supabase al leer staff: ${staffError.message}`)
+      throw staffError
     }
+
+    // 🔍 DIAGNÓSTICO EN VIVO: Si no encuentra la fila por user_id
+    if (!staffMember) {
+      setDebugLog(`⚠️ ALERTA: El UUID [${loggedUser.id}] NO existe en la columna 'user_id' de tu tabla staff en Supabase. Revisa tu base de datos.`);
+      setTimeout(() => {
+        router.replace('/portal')
+        router.refresh()
+      }, 8000) // Se congela 8 segundos para que puedas leer y copiar el ID
+      return
+    }
+
+    // 🔍 DIAGNÓSTICO EN VIVO: Si encuentra al usuario pero analiza su rol
+    const systemRole = staffMember.role ? staffMember.role.toLowerCase().trim() : 'ninguno'
+    setDebugLog(`3. ¡Usuario hallado! Tu rol guardado en la BD es: "${staffMember.role}"`)
+
+    let targetPath = '/portal'
+    
+    // Validamos e incluimos variantes comunes por si está escrito distinto (ej: "Administrador")
+    if (
+      systemRole === 'admin' || 
+      systemRole === 'staff' || 
+      systemRole === 'owner' || 
+      systemRole === 'administrador' || 
+      systemRole === 'empleado'
+    ) {
+      targetPath = '/dashboard'
+      setDebugLog(`🎯 ¡Rol autorizado para administración! Cambiando destino a: /dashboard`)
+    } else {
+      setDebugLog(`⚠️ El rol "${systemRole}" no coincide con las credenciales de acceso administrativo (admin/staff/owner). Destino: /portal`)
+    }
+
+    const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+      ? redirectPath 
+      : targetPath
+
+    setDebugLog(`4. Procesando redirección final hacia: ${finalPath}`)
+    
+    setTimeout(() => {
+      router.replace(finalPath)
+      router.refresh()
+    }, 3000) // 3 segundos para confirmar la ruta final en pantalla
+
+  } catch (err: any) {
+    setError(err.message || 'Error en el proceso de autenticación.')
+    setDebugLog(`❌ Fallo en el proceso: ${err.message || err}`)
+    setIsRedirecting(false)
+    setLoading(false)
   }
+}
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -198,8 +206,8 @@ export default function AuthMobilDefinitivo() {
           Sincronizando Seguridad...
         </p>
         
-        <div className="w-full max-w-sm bg-black/80 border border-[#D4AF37]/40 rounded-xl p-4 text-left shadow-2xl">
-          <p className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mb-2 font-bold">📋 Traza del Sistema:</p>
+        <div className="w-full max-w-sm bg-black/90 border border-[#D4AF37]/50 rounded-xl p-4 text-left shadow-2xl">
+          <p className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mb-2 font-bold">📋 Traza analítica de la Base de Datos:</p>
           <p className="font-mono text-xs text-white/95 break-words leading-relaxed">
             {debugLog}
           </p>
