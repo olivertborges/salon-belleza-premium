@@ -117,7 +117,7 @@ export default function AuthMobilDefinitivo() {
       setIsRedirecting(true)
       
       try {
-        // Forzar bypass de caché pidiendo directamente la fila del staff logueado
+        // Consultamos la columna exacta 'auth_role' ocupando el user_id
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
           .select('auth_role')
@@ -130,14 +130,15 @@ export default function AuthMobilDefinitivo() {
 
         // Si existe en la tabla staff, comprobamos su nivel de sistema
         if (staffMember) {
-          // Si el auth_role viene en blanco o no existe, pero la fila está en staff, le asignamos acceso por defecto
           const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
           
           if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
             targetPath = '/dashboard'
           }
-        } else if (role === 'admin' || role === 'owner') {
-          // Salvaguarda histórica del hook useAuth
+        } 
+        
+        // Salvaguarda histórica del hook useAuth por si falla la lectura de la tabla o es Admin maestro
+        if (targetPath !== '/dashboard' && (role === 'admin' || role === 'owner')) {
           targetPath = '/dashboard'
         }
 
@@ -147,7 +148,7 @@ export default function AuthMobilDefinitivo() {
           : targetPath
 
         router.replace(finalPath)
-        router.refresh() // Forzamos refresco para limpiar estados de sesión viejos
+        router.refresh() 
       } catch (err) {
         console.error("Error al verificar nivel de acceso:", err)
         router.replace('/portal')
@@ -336,8 +337,6 @@ export default function AuthMobilDefinitivo() {
       })}
     </div>
   )
-
-  const isDark = false // Forzamos light para la página de auth como estaba en tu diseño original
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-[#FFF9F6] via-white to-[#FFF9F6]/50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
