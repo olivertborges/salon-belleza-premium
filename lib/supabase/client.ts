@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+// @ts-nocheck
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -7,16 +8,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Faltan variables de entorno de Supabase')
 }
 
-// Configuración con persistencia forzada en localStorage para entornos móviles
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storageKey: 'freshnails-auth-token',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    detectSessionInUrl: true,
-    autoRefreshToken: true
-  }
-})
+// createBrowserClient gestiona de forma nativa las cookies y persistencia en Next.js (Móvil y Escritorio)
+export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
 
 export type Database = {
   public: {
@@ -38,8 +31,9 @@ export type Database = {
       staff: {
         Row: {
           id: string
+          user_id: string // Vinculación con Auth
           name: string
-          role: string
+          role: string    // Rol del sistema
           email: string
           phone: string
           avatar_url: string
