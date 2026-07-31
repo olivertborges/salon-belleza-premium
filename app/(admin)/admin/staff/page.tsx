@@ -7,11 +7,12 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Users, Plus, Search, Edit, Trash2, 
   Mail, Phone, X, Save, UserPlus, Eye, EyeOff,
-  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck, Terminal
 } from 'lucide-react'
 
 interface StaffMember {
   id: string
+  user_id?: string
   name: string
   role: string
   auth_role: string
@@ -36,6 +37,14 @@ export default function StaffPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+
+  // ESTADO PARA LOGS VISUALES EN EL TELÉFONO
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setDebugLogs(prev => [`[${timestamp}] ${message}`, ...prev])
+  }
 
   const [formData, setFormData] = useState({
     name: '',
@@ -63,6 +72,7 @@ export default function StaffPage() {
     try {
       setLoading(true)
       setError(null)
+      addLog("Iniciando carga de miembros de la base de datos...")
       
       const { data, error: fetchError } = await supabase
         .from('staff')
@@ -70,10 +80,13 @@ export default function StaffPage() {
         .order('name', { ascending: true })
 
       if (fetchError) throw fetchError
+      
       setStaff(data || [])
+      addLog(`Carga exitosa: ${data?.length || 0} miembros encontrados.`)
     } catch (err: any) {
       console.error('Error fetching staff:', err)
-      setError(err.message || 'Error al cargar el equipo desde Supabase')
+      setError(err.message || 'Error al cargar el equipo')
+      addLog(`❌ ERROR AL CARGAR BD: ${err.message}`)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -86,6 +99,8 @@ export default function StaffPage() {
 
   const handleRefresh = () => {
     setRefreshing(true)
+    setDebugLogs([]) // Limpia logs viejos
+    addLog("Refrescando datos manual...")
     fetchStaff()
   }
 
@@ -94,38 +109,55 @@ export default function StaffPage() {
     setError(null)
     setSuccess(null)
 
+    addLog(`➡️ INTENTO DE GUARDAR INICIADO. Tipo: ${editingId ? 'EDICIÓN' : 'CREACIÓN'}`)
+    addLog(`Datos formulario -> Name: "${formData.name}", Email: "${formData.email}", Phone: "${formData.phone}"`)
+
     if (!formData.name || !formData.email) {
       setError('El nombre y el email son obligatorios.')
-      return
-    }
-
-    if (!editingId && !formData.password) {
-      setError('La contraseña es obligatoria para nuevos miembros.')
+      addLog("❌ VALIDACIÓN FALLIDA: Falta nombre o email.")
       return
     }
 
     try {
       setRefreshing(true)
       if (editingId) {
-        // ACTUALIZACIÓN CORREGIDA CON LOS CAMPOS EXACTOS DE LA BD (name y phone)
-        const { error: updateError } = await supabase
-          .from('staff')
-          .update({
-            name: formData.name.trim(),
-            role: formData.role,
-            auth_role: formData.auth_role,
-            email: formData.email.trim(),
-            phone: formData.phone.trim(), 
-            specialty: formData.specialty.trim(),
-            experience: formData.experience ? String(formData.experience) : '',
-            avatar_url: formData.avatar_url.trim()
-          })
-          .eq('id', editingId)
+        addLog(`Ejecutando UPDATE en Supabase para el registro con id de tabla: "${editingId}"`)
+        
+        const payload = {
+          name: formData.name.trim(),
+          role: formData.role,
+          auth_role: formData.auth_role,
+          email: formData.email.trim(),
+          phone: formData.phone.trim(), 
+          specialty: formData.specialty.trim(),
+          experience: formData.experience ? String(formData.experience) : '',
+          avatar_url: formData.avatar_url.trim()
+        }
+        
+        addLog(`Objeto enviado a la BD: ${JSON.stringify(payload)}`)
 
-        if (updateError) throw updateError
+        const { data, count, error: updateError } = await supabase
+          .from('staff')
+          .update(payload)
+          .eq('id', editingId)
+          .select() // Forzamos retorno para ver si Supabase realmente modificó algo
+
+        if (updateError) {
+          addLog(`❌ SUPABASE ERROR DETECTADO: ${updateError.message} (Código: ${updateError.code})`)
+          throw updateError
+        }
+        
+        addLog(`Respuesta Supabase -> Datos devueltos: ${JSON.stringify(data)}`)
+        
+        if (!data || data.length === 0) {
+          addLog("⚠️ ADVERTENCIA CRÍTICA: Supabase respondió éxito, ¡pero devolvió 0 filas afectadas! Esto suele ser problema de RLS o porque el ID no existe en la BD.")
+        } else {
+          addLog(`¡Éxito total! Fila actualizada correctamente en la BD: ${data[0].name}`)
+        }
+
         setSuccess('Miembro actualizado correctamente.')
       } else {
-        // CREACIÓN MAESTRA
+        addLog("Enviando petición a la API interna para crear nuevo usuario Auth + Base de datos...")
         const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,19 +165,26 @@ export default function StaffPage() {
         })
 
         const resData = await response.json()
+        addLog(`Respuesta API /create: ${JSON.stringify(resData)}`)
+
         if (!response.ok || !resData.success) {
-          throw new Error(resData.error || 'No se pudo crear el staff automatizado.')
+          throw new Error(resData.error || 'No se pudo crear el staff.')
         }
 
         setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
-      setShowModal(false)
-      setEditingId(null)
-      await fetchStaff() 
+      // Dejamos el modal abierto un segundo si hay logs críticos para que dé tiempo a leerlos en el teléfono
+      setTimeout(async () => {
+        setShowModal(false)
+        setEditingId(null)
+        await fetchStaff() 
+      }, 1500)
+
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
       setError(err.message || 'Error al guardar el registro.')
+      addLog(`❌ EXCEPCIÓN CAPTURADA: ${err.message}`)
     } finally {
       setRefreshing(false)
     }
@@ -157,6 +196,7 @@ export default function StaffPage() {
     try {
       setError(null)
       setSuccess(null)
+      addLog(`Eliminando miembro con ID: ${id}`)
 
       const { error: deleteError } = await supabase
         .from('staff')
@@ -166,18 +206,23 @@ export default function StaffPage() {
       if (deleteError) throw deleteError
 
       setSuccess('Miembro eliminado correctamente.')
+      addLog("Miembro eliminado con éxito.")
       fetchStaff()
     } catch (err: any) {
-      console.error('Error in handleDelete:', err)
+      addLog(`❌ ERROR AL ELIMINAR: ${err.message}`)
       setError(err.message || 'No se pudo eliminar el registro.')
     }
   }
 
-  // ¡AQUÍ ESTABA EL ERROR CORREGIDO! Mapeamos directamente member.name y member.phone
   const handleOpenEdit = (member: StaffMember) => {
     setError(null)
     setSuccess(null)
+    setDebugLogs([])
     setEditingId(member.id)
+    
+    addLog(`Cargando formulario de edición para: "${member.name}"`)
+    addLog(`Valores recibidos de la lista -> ID Interno: "${member.id}", User_ID Auth: "${member.user_id || 'N/A'}", Email: "${member.email}", Phone: "${member.phone}"`)
+
     setFormData({
       name: member.name || '',
       role: member.role || 'Especialista',
@@ -195,7 +240,9 @@ export default function StaffPage() {
   const handleOpenCreate = () => {
     setError(null)
     setSuccess(null)
+    setDebugLogs([])
     setEditingId(null)
+    addLog("Abriendo formulario para NUEVO miembro.")
     setFormData({
       name: '',
       role: 'Especialista',
@@ -576,6 +623,24 @@ export default function StaffPage() {
                   value={formData.experience}
                   onChange={(e) => setFormData({...formData, experience: e.target.value})}
                 />
+              </div>
+
+              {/* PANTALLA DE CONTROL LOG INTERNA (SÚPER ÚTIL PARA EL TELÉFONO) */}
+              <div className="mt-4 rounded-xl border border-zinc-700 bg-black p-3 font-mono text-[10px] text-emerald-400 shadow-inner">
+                <div className="flex items-center gap-1.5 border-b border-zinc-800 pb-1.5 mb-2 text-zinc-400 font-bold uppercase tracking-widest">
+                  <Terminal className="w-3.5 h-3.5 text-[#D4AF37]" /> Terminal de Depuración Móvil
+                </div>
+                <div className="max-h-36 overflow-y-auto space-y-1 select-text">
+                  {debugLogs.length === 0 ? (
+                    <span className="text-zinc-600 animate-pulse">Esperando acciones para analizar...</span>
+                  ) : (
+                    debugLogs.map((log, index) => (
+                      <div key={index} className="leading-relaxed whitespace-pre-wrap break-all border-b border-zinc-900/50 pb-0.5">
+                        {log}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
