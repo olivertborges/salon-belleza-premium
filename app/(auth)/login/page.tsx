@@ -106,23 +106,49 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
+  // useEffect con validación estricta de auth_role en tiempo real
   useEffect(() => {
     if (!mounted || authLoading) return
-    if (!user || !role) return
+    if (!user) return
     if (isRedirecting) return
 
-    setIsRedirecting(true)
+    const verificarRolYRedirigir = async () => {
+      setIsRedirecting(true)
+      
+      try {
+        // Consultamos el auth_role en la tabla staff para este usuario
+        const { data: staffMember, error: staffError } = await supabase
+          .from('staff')
+          .select('auth_role')
+          .eq('user_id', user.id)
+          .maybeSingle()
 
-    let targetPath = '/portal'
-    if (role === 'admin' || role === 'staff' || role === 'owner') {
-      targetPath = '/dashboard'
+        let targetPath = '/portal' // Por defecto, zona de clientes
+
+        // Si lo encuentra en staff, validamos su nivel de acceso del sistema
+        if (staffMember && staffMember.auth_role) {
+          const systemRole = staffMember.auth_role.toLowerCase().trim()
+          
+          if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
+            targetPath = '/dashboard'
+          }
+        } else if (role === 'admin' || role === 'owner') {
+          // Salvaguarda global por si el hook ya lo detectaba
+          targetPath = '/dashboard'
+        }
+
+        const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+          ? redirectPath 
+          : targetPath
+
+        router.replace(finalPath)
+      } catch (err) {
+        console.error("Error al verificar nivel de acceso:", err)
+        router.replace('/portal')
+      }
     }
 
-    const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
-      ? redirectPath 
-      : targetPath
-
-    router.replace(finalPath)
+    verificarRolYRedirigir()
   }, [user, role, authLoading, mounted, redirectPath, router, isRedirecting])
 
   const handleLogin = async (e: React.FormEvent) => {
