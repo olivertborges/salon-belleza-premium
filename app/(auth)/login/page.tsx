@@ -30,7 +30,7 @@ const itemVariants = {
 
 export default function AuthMobilDefinitivo() {
   const router = useRouter()
-  const { role } = useAuth() // Conservamos solo el rol por si acaso
+  const { role } = useAuth() 
 
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'recover'>('login')
@@ -57,19 +57,19 @@ export default function AuthMobilDefinitivo() {
     if (redirect) setRedirectPath(redirect)
   }, [])
 
-  // FUNCIÓN CRÍTICA: GESTIÓN MANUAL DEL LOGIN Y CONTROL DE FLUJO
+  // GESTIÓN MANUAL DE LOGIN (Evita redirecciones fantasmas y asegura cookies)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading || isRedirecting) return
 
     setLoading(true)
-    setIsRedirecting(true) // Mostramos el panel de logs de inmediato
+    setIsRedirecting(true) 
     setError('')
     setSuccess('')
     setDebugLog('1. Enviando credenciales directamente a Supabase Auth...')
 
     try {
-      // Usamos el cliente nativo para evitar que el hook useAuth dispare su redirección oculta
+      // Autenticación usando el cliente del navegador
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
@@ -80,12 +80,12 @@ export default function AuthMobilDefinitivo() {
       const loggedUser = authData?.user
       if (!loggedUser) throw new Error("Sesión iniciada pero no se retornó información de usuario.")
 
-      setDebugLog(`2. Login correcto. ID de Usuario: ${loggedUser.id}. Buscando en tabla 'staff'...`)
+      setDebugLog(`2. Login correcto. UUID Auth: ${loggedUser.id}. Buscando en tabla 'staff'...`)
 
-      // Consulta directa a la tabla staff filtrando por la columna user_id
+      // Consulta exacta vinculando por user_id físico de la base de datos
       const { data: staffMember, error: staffError } = await supabase
         .from('staff')
-        .select('auth_role')
+        .select('role')
         .eq('user_id', loggedUser.id)
         .maybeSingle()
 
@@ -94,23 +94,26 @@ export default function AuthMobilDefinitivo() {
         throw staffError
       }
 
+      // Si no es un miembro de staff
       if (!staffMember) {
-        setDebugLog(`⚠️ Alerta: El user_id no existe en la tabla 'staff'. Destino asignado por defecto: /portal`)
+        setDebugLog(`ℹ️ El UUID no está en la tabla staff. Redirigiendo a /portal (Área de clientes)`)
         setTimeout(() => {
           router.replace('/portal')
-        }, 3500) // Tiempo extendido para que puedas leer el log en el móvil
+          router.refresh()
+        }, 2500)
         return
       }
 
-      const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
-      setDebugLog(`3. ¡Usuario hallado en staff! Rol detectado en BD: "${systemRole}"`)
+      // Si es staff, evaluamos el rol administrativo
+      const systemRole = staffMember.role ? staffMember.role.toLowerCase().trim() : 'staff'
+      setDebugLog(`3. ¡Usuario hallado en staff! Rol detectado: "${systemRole}"`)
 
       let targetPath = '/portal'
       if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
         targetPath = '/dashboard'
         setDebugLog(`🎯 Rol autorizado para administración. Destino: /dashboard`)
       } else {
-        setDebugLog(`⚠️ Rol "${systemRole}" no pertenece a administración. Destino: /portal`)
+        setDebugLog(`⚠️ Rol "${systemRole}" no administrativo. Destino: /portal`)
       }
 
       const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
@@ -122,7 +125,7 @@ export default function AuthMobilDefinitivo() {
       setTimeout(() => {
         router.replace(finalPath)
         router.refresh()
-      }, 2500)
+      }, 2000)
 
     } catch (err: any) {
       setError(err.message || 'Error en el proceso de autenticación.')
@@ -156,7 +159,6 @@ export default function AuthMobilDefinitivo() {
       if (!res.ok || !data.success) throw new Error(data.error || 'No se pudo crear la cuenta')
 
       setSuccess('✅ ¡Registro exitoso!')
-      // Forzamos el flujo de login manual tras el registro
       handleLogin(e)
     } catch (err: any) {
       setError(err.message || 'Error inesperado')
@@ -179,12 +181,12 @@ export default function AuthMobilDefinitivo() {
       setSuccess('📧 Enlace enviado a tu correo.')
     } catch (err: any) {
       setError(err.message || 'Error al enviar recuperación.')
-    } finally {
+    } fillalmente {
       setLoading(false)
     }
   }
 
-  // PANTALLA DE CARGA CON EL REGISTRO VISUAL FORZADO
+  // TERMINAL DE DIAGNÓSTICO EN VIVO
   if (isRedirecting) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#1E120C] p-6 text-center">
@@ -193,11 +195,11 @@ export default function AuthMobilDefinitivo() {
           <div className="absolute inset-0 w-16 h-16 rounded-full animate-ping opacity-20 bg-[#D4AF37]" />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest text-[#D4AF37] font-bold mb-4">
-          Ejecutando Flujo de Control...
+          Sincronizando Seguridad...
         </p>
         
         <div className="w-full max-w-sm bg-black/80 border border-[#D4AF37]/40 rounded-xl p-4 text-left shadow-2xl">
-          <p className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mb-2 font-bold">📋 Registro de eventos en vivo:</p>
+          <p className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mb-2 font-bold">📋 Traza del Sistema:</p>
           <p className="font-mono text-xs text-white/95 break-words leading-relaxed">
             {debugLog}
           </p>
@@ -235,7 +237,7 @@ export default function AuthMobilDefinitivo() {
           </p>
         </motion.div>
 
-        {/* Pestañas */}
+        {/* Selector de Pestañas */}
         <div className="flex gap-1 p-1 rounded-2xl border mb-6 bg-[#FFF9F6] border-[#F0E4DA]">
           {['login', 'register', 'recover'].map((tabId) => (
             <button
