@@ -61,16 +61,20 @@ export default function AdminPerfilPage() {
   })
 
   // ============================================================
-  // ✅ FUNCIÓN PARA OBTENER TENANT_ID
+  // ✅ FUNCIÓN PARA OBTENER TENANT_ID (MÁS COMPLETA)
   // ============================================================
   const getTenantId = async (): Promise<string | null> => {
+    console.log('🔍 Buscando tenant_id...')
+    
     // 1. De user_metadata
     if (user?.user_metadata?.tenant_id) {
+      console.log('✅ Tenant encontrado en user_metadata:', user.user_metadata.tenant_id)
       return user.user_metadata.tenant_id
     }
     
     // 2. De app_metadata
     if (user?.app_metadata?.tenant_id) {
+      console.log('✅ Tenant encontrado en app_metadata:', user.app_metadata.tenant_id)
       return user.app_metadata.tenant_id
     }
 
@@ -82,10 +86,11 @@ export default function AdminPerfilPage() {
       .maybeSingle()
     
     if (profileData?.tenant_id) {
+      console.log('✅ Tenant encontrado en profiles:', profileData.tenant_id)
       return profileData.tenant_id
     }
 
-    // 4. De staff
+    // 4. De staff (usando user_id)
     const { data: staffData } = await supabase
       .from('staff')
       .select('tenant_id')
@@ -93,14 +98,52 @@ export default function AdminPerfilPage() {
       .maybeSingle()
     
     if (staffData?.tenant_id) {
+      console.log('✅ Tenant encontrado en staff:', staffData.tenant_id)
       return staffData.tenant_id
     }
 
+    // 5. De staff (usando auth_user_id como fallback)
+    const { data: staffData2 } = await supabase
+      .from('staff')
+      .select('tenant_id')
+      .eq('auth_user_id', user?.id)
+      .maybeSingle()
+    
+    if (staffData2?.tenant_id) {
+      console.log('✅ Tenant encontrado en staff (auth_user_id):', staffData2.tenant_id)
+      return staffData2.tenant_id
+    }
+
+    // 6. Buscar en appointments (primer tenant con citas)
+    const { data: appData } = await supabase
+      .from('appointments')
+      .select('tenant_id')
+      .limit(1)
+      .maybeSingle()
+    
+    if (appData?.tenant_id) {
+      console.log('✅ Tenant encontrado en appointments:', appData.tenant_id)
+      return appData.tenant_id
+    }
+
+    // 7. Buscar en clients (primer tenant con clientes)
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('tenant_id')
+      .limit(1)
+      .maybeSingle()
+    
+    if (clientData?.tenant_id) {
+      console.log('✅ Tenant encontrado en clients:', clientData.tenant_id)
+      return clientData.tenant_id
+    }
+
+    console.log('❌ No se encontró tenant_id en ninguna fuente')
     return null
   }
 
   // ============================================================
-  // ✅ FUNCIÓN PARA SUBIR AVATAR
+  // ✅ FUNCIÓN PARA SUBIR AVATAR (CON TENANT_ID)
   // ============================================================
   const uploadAvatar = async (file: File, tenantId: string): Promise<string> => {
     setUploadingAvatar(true)
@@ -134,7 +177,6 @@ export default function AdminPerfilPage() {
           continue
         }
 
-        // Si subió correctamente, obtener URL pública
         const { data: urlData } = supabase.storage
           .from(bucket.name)
           .getPublicUrl(bucket.path)
@@ -150,7 +192,7 @@ export default function AdminPerfilPage() {
     }
 
     setUploadingAvatar(false)
-    throw new Error(`No se pudo subir la imagen a ningún bucket. Último error: ${lastError?.message || 'Error desconocido'}`)
+    throw new Error(`No se pudo subir la imagen. Último error: ${lastError?.message || 'Error desconocido'}`)
   }
 
   const loadProfile = async () => {
@@ -163,7 +205,12 @@ export default function AdminPerfilPage() {
       // ✅ OBTENER TENANT_ID
       const tid = await getTenantId()
       setTenantId(tid)
-      console.log('✅ Tenant ID obtenido:', tid)
+      
+      if (!tid) {
+        setError('⚠️ No se encontró tenant_id. Contacta al administrador.')
+        setLoading(false)
+        return
+      }
 
       // Intentar primero en 'profiles'
       let { data, error: errProfiles } = await supabase
@@ -201,9 +248,42 @@ export default function AdminPerfilPage() {
           phone: dataStaff.phone || ''
         })
         if (dataStaff.avatar_url) setAvatarPreview(dataStaff.avatar_url)
-      } else {
-        setError('No se encontró tu registro en la base de datos (ni en profiles ni en staff).')
+        setLoading(false)
+        return
       }
+
+      // Si no está en ninguna, crear perfil en staff
+      const newStaff = {
+        user_id: user.id,
+        auth_user_id: user.id,
+        tenant_id: tid,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Staff',
+        email: user.email,
+        role: 'staff',
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+
+      const { data: createdStaff, error: createError } = await supabase
+        .from('staff')
+        .insert([newStaff])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creando staff:', createError)
+        setError('No se pudo crear tu perfil de staff.')
+        setLoading(false)
+        return
+      }
+
+      setActiveTable('staff')
+      setProfile(createdStaff)
+      setFormData({
+        full_name: createdStaff.name || '',
+        phone: createdStaff.phone || ''
+      })
+      if (createdStaff.avatar_url) setAvatarPreview(createdStaff.avatar_url)
 
     } catch (err: any) {
       console.error('Error cargando perfil:', err)
