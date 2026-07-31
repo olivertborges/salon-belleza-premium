@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Inicializamos Supabase con la clave de servicio (maestra) para poder gestionar credenciales de otros
+// Inicializamos Supabase con la clave de servicio
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Asegúrate de tener esta variable en tu .env
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(request: Request) {
@@ -12,35 +12,36 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, email, password, role, auth_role, phone, specialty, experience, avatar_url } = body
 
+    // Validar datos requeridos
     if (!email || !password || !name) {
       return NextResponse.json(
-        { success: false, error: 'Nombre, email y contraseña son obligatorios.' }, 
+        { success: false, error: 'Nombre, email y contraseña son obligatorios.' },
         { status: 400 }
       )
     }
 
-    // 1. Crear el usuario directamente en el sistema de Autenticación de Supabase
+    // 1. Crear el usuario en Autenticación
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim(),
       password: password,
-      email_confirm: true // Se auto-confirma inmediatamente sin mandar correos de validación
+      email_confirm: true
     })
 
     if (authError) {
       return NextResponse.json(
-        { success: false, error: `Error en Auth: ${authError.message}` }, 
+        { success: false, error: `Error en Auth: ${authError.message}` },
         { status: 400 }
       )
     }
 
     const userId = authUser.user?.id
 
-    // 2. Insertar los datos en tu tabla pública con el ID del usuario como clave primaria
+    // 2. Insertar en staff con user_id (NO id)
     const { data: staffData, error: staffError } = await supabaseAdmin
       .from('staff')
       .insert([
         {
-          id: userId, // ← CORREGIDO: usamos 'id' que es la clave primaria, no 'user_id'
+          user_id: userId,        // ← CORREGIDO: usar user_id
           name: name.trim(),
           email: email.trim().toLowerCase(),
           role: role || 'Especialista',
@@ -55,10 +56,10 @@ export async function POST(request: Request) {
       .single()
 
     if (staffError) {
-      // Limpieza preventiva: Si falla la tabla pública, removemos el usuario de auth para no dejar datos huérfanos
+      // Rollback: eliminar usuario de auth
       await supabaseAdmin.auth.admin.deleteUser(userId)
       return NextResponse.json(
-        { success: false, error: `Error en Tabla Staff: ${staffError.message}` }, 
+        { success: false, error: `Error en Tabla Staff: ${staffError.message}` },
         { status: 400 }
       )
     }
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('API Error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Error interno del servidor' }, 
+      { success: false, error: error.message || 'Error interno del servidor' },
       { status: 500 }
     )
   }
