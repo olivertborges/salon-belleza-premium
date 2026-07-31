@@ -114,29 +114,10 @@ export default function StaffPage() {
       setRefreshing(true)
 
       if (editingId) {
-        // 1. Obtener el user_id del registro
-        setDebugInfo(`📝 Buscando registro con ID: ${editingId}`)
-        
-        const { data: staffRecord, error: fetchError } = await supabase
-          .from('staff')
-          .select('user_id')
-          .eq('id', editingId)
-          .single()
+        setDebugInfo(`📝 Actualizando ID: ${editingId}`)
+        setDebugInfo(prev => prev + `\n📝 Nuevo nombre: "${formData.name}"`)
 
-        if (fetchError) {
-          setDebugInfo(prev => prev + `\n❌ Error obteniendo user_id: ${fetchError.message}`)
-          throw fetchError
-        }
-
-        if (!staffRecord?.user_id) {
-          setDebugInfo(prev => prev + `\n❌ No se encontró user_id para el staff ID: ${editingId}`)
-          throw new Error('El registro no tiene user_id vinculado')
-        }
-
-        setDebugInfo(prev => prev + `\n🔑 User ID encontrado: ${staffRecord.user_id}`)
-        setDebugInfo(prev => prev + `\n📝 Nombre a actualizar: ${formData.name}`)
-
-        // 2. Actualizar usando el user_id
+        // Actualizar usando el ID directamente (más confiable)
         const updateData = {
           name: formData.name.trim(),
           role: formData.role,
@@ -148,12 +129,27 @@ export default function StaffPage() {
           avatar_url: formData.avatar_url.trim()
         }
 
-        setDebugInfo(prev => prev + `\n📦 Datos: ${JSON.stringify(updateData, null, 2)}`)
+        setDebugInfo(prev => prev + `\n📦 Datos a enviar: ${JSON.stringify(updateData, null, 2)}`)
 
+        // PRIMERO: Verificar que el registro existe
+        const { data: checkRecord, error: checkError } = await supabase
+          .from('staff')
+          .select('id, name')
+          .eq('id', editingId)
+          .single()
+
+        if (checkError) {
+          setDebugInfo(prev => prev + `\n❌ Error verificando existencia: ${checkError.message}`)
+          throw new Error(`No se encontró el registro con ID: ${editingId}`)
+        }
+
+        setDebugInfo(prev => prev + `\n✅ Registro encontrado: "${checkRecord.name}"`)
+
+        // SEGUNDO: Actualizar
         const { data: updatedData, error: updateError } = await supabase
           .from('staff')
           .update(updateData)
-          .eq('user_id', staffRecord.user_id) // ← USAR user_id
+          .eq('id', editingId) // ← USAR id, NO user_id
           .select()
 
         if (updateError) {
@@ -161,7 +157,13 @@ export default function StaffPage() {
           throw updateError
         }
 
-        setDebugInfo(prev => prev + `\n✅ Actualizado: ${JSON.stringify(updatedData, null, 2)}`)
+        setDebugInfo(prev => prev + `\n✅ Resultado: ${JSON.stringify(updatedData, null, 2)}`)
+        
+        if (!updatedData || updatedData.length === 0) {
+          setDebugInfo(prev => prev + `\n⚠️ No se actualizó ningún registro (array vacío)`)
+          throw new Error('La actualización no afectó a ningún registro')
+        }
+
         setSuccess('✅ Miembro actualizado correctamente.')
       } else {
         // CREAR NUEVO
