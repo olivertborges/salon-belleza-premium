@@ -11,7 +11,7 @@ import {
   User, LogIn, Shield, Crown, Gem, 
   ArrowRight, CheckCircle2, XCircle,
   Heart, Star, Zap, Fingerprint, 
-  Flower2, Waves, Palette, Gift, AlertTriangle
+  Flower2, Waves, Palette, Gift
 } from 'lucide-react'
 
 // ===== ANIMACIONES ORIGINALES =====
@@ -86,10 +86,6 @@ export default function AuthMobilDefinitivo() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [loginSuccess, setLoginSuccess] = useState(false)
 
-  // ESTADOS DE DIAGNÓSTICO EN PANTALLA PARA MÓVIL
-  const [debugLog, setDebugLog] = useState('Iniciando sistema...')
-  const [dbData, setDbData] = useState<any>(null)
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -111,57 +107,34 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // ===== DIAGNÓSTICO Y REDIRECCIÓN INYECTADA EN LA PANTALLA =====
+  // ===== VERIFICACIÓN AUTOMÁTICA Y REDIRECCIÓN LIMPIA =====
   useEffect(() => {
     if (!mounted || authLoading) return
-    if (!user) {
-      setDebugLog('Esperando inicio de sesión (Sin usuario detectado)...')
-      return
-    }
+    if (!user) return
     if (isRedirecting) return
 
     const verificarRolYRedirigir = async () => {
       setIsRedirecting(true)
-      setDebugLog(`Buscando UID: "${user.id}" en la tabla 'staff'...`)
       
       try {
-        // Consultamos toda la fila para ver qué devuelve
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
-          .select('*')
+          .select('auth_role')
           .eq('user_id', user.id)
           .maybeSingle()
 
-        if (staffError) {
-          setDebugLog(`❌ Error de Supabase: ${staffError.message}`)
-          throw staffError
-        }
-
-        setDbData(staffMember)
+        if (staffError) throw staffError
 
         let targetPath = '/portal' 
 
-        if (staffMember) {
-          setDebugLog(`Fila encontrada. Leyendo columna 'auth_role'...`)
-          
-          if (staffMember.auth_role) {
-            const rol = staffMember.auth_role.toLowerCase().trim()
-            setDebugLog(`Valor de auth_role en BD: "${rol}"`)
-            
-            if (rol === 'admin' || rol === 'staff' || rol === 'owner') {
-              targetPath = '/dashboard'
-            } else {
-              setDebugLog(`El rol "${rol}" no coincide con admin/staff/owner. Desvío a /portal.`)
-            }
-          } else {
-            setDebugLog(`⚠️ Alerta: El registro existe pero la columna 'auth_role' está VACÍA (null).`)
+        if (staffMember && staffMember.auth_role) {
+          const rol = staffMember.auth_role.toLowerCase().trim()
+          if (rol === 'admin' || rol === 'staff' || rol === 'owner') {
+            targetPath = '/dashboard'
           }
-        } else {
-          setDebugLog(`❌ Cero resultados: Tu UID no existe en la tabla 'staff'.`)
         } 
         
         if (targetPath !== '/dashboard' && (role === 'admin' || role === 'owner')) {
-          setDebugLog(`Acceso forzado por Hook useAuth global (${role})`)
           targetPath = '/dashboard'
         }
 
@@ -169,19 +142,12 @@ export default function AuthMobilDefinitivo() {
           ? redirectPath 
           : targetPath
 
-        setDebugLog(`Redirigiendo a: ${finalPath} en 3 segundos...`)
-        
-        // Retrasamos el desvío 3 segundos para que te dé tiempo a leer los datos en el móvil
-        setTimeout(() => {
-          router.replace(finalPath)
-          router.refresh() 
-        }, 3000)
+        router.replace(finalPath)
+        router.refresh() 
 
-      } catch (err: any) {
-        setDebugLog(`🚨 Fallo crítico: ${err.message || err}`)
-        setTimeout(() => {
-          router.replace('/portal')
-        }, 3000)
+      } catch (err) {
+        console.error(err)
+        router.replace('/portal')
       }
     }
 
@@ -268,42 +234,6 @@ export default function AuthMobilDefinitivo() {
     } finally {
       setLoading(false)
     }
-  }
-
-  // PANTALLA DE REDIRECCIÓN CON DIAGNÓSTICO EN VIVO (IDEAL PARA MÓVIL)
-  if (isRedirecting) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#1E120C] p-6 text-center">
-        <div className="relative mb-6">
-          <div className="w-12 h-12 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto" />
-          <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20 bg-[#D4AF37]" />
-        </div>
-        
-        <div className="w-full max-w-sm bg-black/40 border border-[#D4AF37]/30 rounded-2xl p-4 font-mono text-left text-xs text-[#FFF9F6] space-y-3 shadow-xl">
-          <div className="flex items-center gap-2 text-[#D4AF37] border-b border-[#D4AF37]/20 pb-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="font-bold uppercase tracking-wider">Inspector de Rol Móvil</span>
-          </div>
-          
-          <p className="text-[11px] leading-relaxed">
-            <span className="text-[#A89588]">Estado:</span> <span className="text-[#E8D5A0]">{debugLog}</span>
-          </p>
-
-          {dbData && (
-            <div className="bg-white/5 p-2 rounded border border-white/10 text-[10px] space-y-1 overflow-x-auto">
-              <p className="text-emerald-400 font-bold">✓ Registro de Staff Encontrado:</p>
-              <pre className="text-white text-[9px]">
-                {JSON.stringify(dbData, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-        
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#D4AF37]/60 mt-6 animate-pulse">
-          Procesando ruta de seguridad...
-        </p>
-      </div>
-    )
   }
 
   if (!mounted) return null
