@@ -1,4 +1,4 @@
-//@ts-nocheck
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -107,7 +107,7 @@ export default function AuthMobilDefinitivo() {
     }
   }, [])
 
-  // useEffect con validación estricta de auth_role en tiempo real
+  // ===== CORRECCIÓN Y VERIFICACIÓN DE ACCESO DE STAFF EN TIEMPO REAL =====
   useEffect(() => {
     if (!mounted || authLoading) return
     if (!user) return
@@ -117,32 +117,37 @@ export default function AuthMobilDefinitivo() {
       setIsRedirecting(true)
       
       try {
-        // Consultamos el auth_role en la tabla staff para este usuario
+        // Forzar bypass de caché pidiendo directamente la fila del staff logueado
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
           .select('auth_role')
           .eq('user_id', user.id)
           .maybeSingle()
 
-        let targetPath = '/portal' // Por defecto, zona de clientes
+        if (staffError) throw staffError
 
-        // Si lo encuentra en staff, validamos su nivel de acceso del sistema
-        if (staffMember && staffMember.auth_role) {
-          const systemRole = staffMember.auth_role.toLowerCase().trim()
+        let targetPath = '/portal' // Por defecto: Clientes normales
+
+        // Si existe en la tabla staff, comprobamos su nivel de sistema
+        if (staffMember) {
+          // Si el auth_role viene en blanco o no existe, pero la fila está en staff, le asignamos acceso por defecto
+          const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
           
           if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
             targetPath = '/dashboard'
           }
         } else if (role === 'admin' || role === 'owner') {
-          // Salvaguarda global por si el hook ya lo detectaba
+          // Salvaguarda histórica del hook useAuth
           targetPath = '/dashboard'
         }
 
+        // Si viene con una redirección explícita válida externa (que no sea portal/login), la respetamos
         const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
           ? redirectPath 
           : targetPath
 
         router.replace(finalPath)
+        router.refresh() // Forzamos refresco para limpiar estados de sesión viejos
       } catch (err) {
         console.error("Error al verificar nivel de acceso:", err)
         router.replace('/portal')
@@ -242,7 +247,7 @@ export default function AuthMobilDefinitivo() {
           <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20 bg-[#D4AF37]" />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-[#D4AF37] mt-4">
-          Redirigiendo...
+          Comprobando accesos...
         </p>
       </div>
     )
@@ -301,11 +306,7 @@ export default function AuthMobilDefinitivo() {
 
   // ===== TABS =====
   const Tabs = () => (
-    <div className={`flex gap-1 p-1 rounded-2xl border mb-6 ${
-      isDark 
-        ? 'bg-[#1E120C] border-[#3D281E]' 
-        : 'bg-[#FFF9F6] border-[#F0E4DA]'
-    }`}>
+    <div className="flex gap-1 p-1 rounded-2xl border mb-6 bg-[#FFF9F6] border-[#F0E4DA]">
       {[
         { id: 'login', label: 'Ingresar', icon: LogIn },
         { id: 'register', label: 'Registro', icon: User },
@@ -324,12 +325,8 @@ export default function AuthMobilDefinitivo() {
             }}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all duration-300 hover:scale-[1.02] active:scale-[0.96] ${
               isActive
-                ? isDark 
-                  ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-lg shadow-[#D4AF37]/25' 
-                  : 'bg-[#1A0E0A] text-[#FFF9F6] shadow-lg shadow-[#1A0E0A]/25'
-                : isDark 
-                  ? 'text-[#A89588] hover:text-[#FFF9F6]' 
-                  : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
+                ? 'bg-[#1A0E0A] text-[#FFF9F6] shadow-lg shadow-[#1A0E0A]/25'
+                : 'text-[#5C4A3E] hover:text-[#1A0E0A]'
             }`}
           >
             <Icon className={`w-3.5 h-3.5 ${isActive ? 'opacity-80' : ''}`} />
@@ -340,7 +337,7 @@ export default function AuthMobilDefinitivo() {
     </div>
   )
 
-  const isDark = false // Forzamos light para la página de auth
+  const isDark = false // Forzamos light para la página de auth como estaba en tu diseño original
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-[#FFF9F6] via-white to-[#FFF9F6]/50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
