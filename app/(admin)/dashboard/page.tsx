@@ -40,46 +40,77 @@ export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const isDark = theme === 'dark'
 
+  // ✅ CONTROL DE ACCESO CORREGIDO DIRECTO A LA TABLA STAFF
   useEffect(() => {
-    setAuthorized(true)
-    cargarEstadisticas()
-    verificarAdmin()
-  }, [user, role, authLoading])
+    if (authLoading) return
+    
+    const validarAccesoPanel = async () => {
+      if (!user) {
+        setAuthorized(false)
+        return
+      }
 
-  const verificarAdmin = async () => {
-    if (!user) return
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      setIsAdmin(data?.role === 'admin')
-    } catch (error) {
-      console.error('Error verifying admin:', error)
+      try {
+        // Consultamos la tabla correcta 'staff'
+        const { data: staffData, error } = await supabase
+          .from('staff')
+          .select('auth_role')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (error) throw error
+
+        if (staffData && staffData.auth_role) {
+          const rolLimpio = staffData.auth_role.toLowerCase().trim()
+          // Validamos si tiene permisos para estar aquí
+          if (rolLimpio === 'admin' || rolLimpio === 'staff' || rolLimpio === 'owner') {
+            setIsAdmin(rolLimpio === 'admin' || rolLimpio === 'owner')
+            setAuthorized(true)
+            cargarEstadisticas()
+            return
+          }
+        }
+
+        // Respaldo por si el contexto global ya lo trae verificado
+        if (role === 'admin' || role === 'owner' || role === 'staff') {
+          setIsAdmin(role === 'admin' || role === 'owner')
+          setAuthorized(true)
+          cargarEstadisticas()
+          return
+        }
+
+        setAuthorized(false)
+
+      } catch (err) {
+        console.error('Error verificando permisos en el dashboard interno:', err)
+        setAuthorized(false)
+      }
     }
-  }
+
+    validarAccesoPanel()
+  }, [user, role, authLoading])
 
   const cargarEstadisticas = async () => {
     try {
       let activeTenantId = tenantId
 
       if (!activeTenantId && user) {
-        const { data: prof } = await supabase
-          .from('profiles')
+        // Buscamos el tenant_id prioritariamente desde la tabla staff
+        const { data: staffTenant } = await supabase
+          .from('staff')
           .select('tenant_id')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .maybeSingle()
 
-        if (prof?.tenant_id) {
-          activeTenantId = prof.tenant_id
+        if (staffTenant?.tenant_id) {
+          activeTenantId = staffTenant.tenant_id
         } else {
-          const { data: firstTenant } = await supabase
-            .from('appointments')
+          const { data: prof } = await supabase
+            .from('profiles')
             .select('tenant_id')
-            .limit(1)
+            .eq('id', user.id)
             .maybeSingle()
-          activeTenantId = firstTenant?.tenant_id || null
+          if (prof?.tenant_id) activeTenantId = prof.tenant_id
         }
       }
 
@@ -180,7 +211,7 @@ export default function DashboardPage() {
           return { nombre: servicio?.name || 'Servicio', count, price: servicio?.price || 0 }
         })
         .sort((a, b) => b.count - a.count)
-        .slice(0, 4) // Ajustado a 4 para balancear visualmente la columna
+        .slice(0, 4)
 
       setStats({
         citasHoy: citasHoyCount,
@@ -224,7 +255,7 @@ export default function DashboardPage() {
             </p>
             <p className={`text-[9px] tracking-[0.2em] font-light animate-pulse ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
               Orquestando su panel de control ejecutivo...
-              </p>
+            </p>
           </div>
         </div>
       </div>
@@ -237,15 +268,12 @@ export default function DashboardPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-12 relative overflow-hidden ${isDark ? 'bg-[#150D08] text-[#FFF9F6]' : 'bg-[#FDFBF9] text-[#1A0E0A]'}`}>
-      
-      {/* Fondos Decorativos Orgánicos de Lujo */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-[#EC4899]/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-[#3B82F6]/5 to-transparent rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute inset-0 pointer-events-none z-0 opacity-15 mix-blend-overlay bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 relative z-10 pt-4">
-
         {/* HEADER HERO BANNER */}
         <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
           isDark 
@@ -303,350 +331,83 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* TARJETAS DE MÉTRICAS PRINCIPALES */}
+        {/* TARJETAS DE MÉTRICAS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {/* Citas de Hoy */}
-          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${
-            isDark 
-              ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.6)]' 
-              : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/50 shadow-[0_15px_40px_-20px_rgba(225,208,195,0.5)]'
-          }`}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#D4AF37]/10 to-transparent rounded-bl-full pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50' : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/50'}`}>
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div>
                 <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Citas Agendadas</p>
-                <p className={`text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#D4AF37]/10 text-[#C9A96E] inline-block`}>HOY</p>
-                <h4 className={`font-serif text-5xl font-black mt-2 tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.citasHoy}</h4>
-                <div className="flex items-center gap-1.5 text-[11px] mt-2 font-medium text-[#C9A96E]">
-                  <Zap className="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]" />
-                  <span>+{stats.citasSemana} planeadas esta semana</span>
-                </div>
+                <h4 className={`font-serif text-5xl font-black mt-2 ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.citasHoy}</h4>
+                <p className="text-[11px] mt-2 text-[#C9A96E]">+{stats.citasSemana} esta semana</p>
               </div>
-              <div className={`p-4 rounded-xl border shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-inner ${
-                isDark ? 'bg-[#291A11] border-[#3D281E] text-[#D4AF37]' : 'bg-[#FAF6F2] border-[#EADED5] text-[#D4AF37]'
-              }`}>
-                <Calendar className="w-6 h-6 stroke-[1.75]" />
-              </div>
+              <div className={`p-4 rounded-xl border text-[#D4AF37] ${isDark ? 'bg-[#291A11] border-[#3D281E]' : 'bg-[#FAF6F2] border-[#EADED5]'}`}><Calendar className="w-6 h-6" /></div>
             </div>
           </div>
 
-          {/* Citas Pendientes */}
-          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${
-            isDark 
-              ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#EC4899]/50 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.6)]' 
-              : 'bg-white border-[#EADED5] hover:border-[#EC4899]/50 shadow-[0_15px_40px_-20px_rgba(225,208,195,0.5)]'
-          }`}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#EC4899]/10 to-transparent rounded-bl-full pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#EC4899]/50' : 'bg-white border-[#EADED5] hover:border-[#EC4899]/50'}`}>
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div>
                 <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Por Confirmar</p>
-                <p className={`text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#EC4899]/10 text-[#EC4899] inline-block`}>PENDIENTES</p>
-                <h4 className={`font-serif text-5xl font-black mt-2 tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.pendientes}</h4>
-                <p className={`text-[11px] mt-2 font-medium text-[#EC4899] flex items-center gap-1`}>
-                  <Clock className="w-3 h-3 text-[#EC4899]" />
-                  {stats.pendientes > 0 ? 'Requieren tu aprobación' : 'Todo al día y ordenado'}
-                </p>
+                <h4 className={`font-serif text-5xl font-black mt-2 ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>{stats.pendientes}</h4>
+                <p className="text-[11px] mt-2 text-[#EC4899]">Requieren atención turno</p>
               </div>
-              <div className={`p-4 rounded-xl border shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-inner ${
-                isDark ? 'bg-[#291A11] border-[#3D281E] text-[#EC4899]' : 'bg-[#FAF6F2] border-[#EADED5] text-[#EC4899]'
-              }`}>
-                <Clock className="w-6 h-6 stroke-[1.75]" />
-              </div>
+              <div className={`p-4 rounded-xl border text-[#EC4899] ${isDark ? 'bg-[#291A11] border-[#3D281E]' : 'bg-[#FAF6F2] border-[#EADED5]'}`}><Clock className="w-6 h-6" /></div>
             </div>
           </div>
 
-          {/* Ingresos del Día */}
-          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${
-            isDark 
-              ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#3B82F6]/50 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.6)]' 
-              : 'bg-white border-[#EADED5] hover:border-[#3B82F6]/50 shadow-[0_15px_40px_-20px_rgba(225,208,195,0.5)]'
-          }`}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#3B82F6]/10 to-transparent rounded-bl-full pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+          <div className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 hover:shadow-2xl ${isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#3B82F6]/50' : 'bg-white border-[#EADED5] hover:border-[#3B82F6]/50'}`}>
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
+              <div>
                 <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Flujo de Caja</p>
-                <p className={`text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#3B82F6]/10 text-[#3B82F6] inline-block`}>INGRESOS TOTALES</p>
-                <h4 className="font-serif text-4xl font-black mt-2 tracking-tight text-[#3B82F6]">
-                  {currencySymbol}{stats.ingresos.toLocaleString()}
-                </h4>
-                <div className="flex items-center gap-1.5 text-[11px] mt-3 font-medium text-[#3B82F6]">
-                  <TrendingUp className="w-3 h-3 text-[#3B82F6]" />
-                  <span>Facturación acumulada registrada</span>
-                </div>
+                <h4 className="font-serif text-4xl font-black mt-2 text-[#3B82F6]">{currencySymbol}{stats.ingresos.toLocaleString()}</h4>
+                <p className="text-[11px] mt-2 text-[#3B82F6]">Facturación total</p>
               </div>
-              <div className={`p-4 rounded-xl border shrink-0 transition-transform duration-500 group-hover:scale-110 shadow-inner ${
-                isDark ? 'bg-[#291A11] border-[#3D281E] text-[#3B82F6]' : 'bg-[#FAF6F2] border-[#EADED5] text-[#3B82F6]'
-              }`}>
-                <DollarSign className="w-6 h-6 stroke-[1.75]" />
-              </div>
+              <div className={`p-4 rounded-xl border text-[#3B82F6] ${isDark ? 'bg-[#291A11] border-[#3D281E]' : 'bg-[#FAF6F2] border-[#EADED5]'}`}><DollarSign className="w-6 h-6" /></div>
             </div>
           </div>
         </div>
 
-        {/* SECCIONES COMPLEJAS: CITAS PRÓXIMAS Y TOP SERVICIOS */}
+        {/* CONTENIDO INTERMEDIO */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Ficha de Citas Próximas */}
-          <div className={`lg:col-span-2 rounded-2xl border p-6 md:p-7 shadow-sm transition-all duration-300 ${
-            isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'
-          }`}>
-            <div className="flex items-center justify-between mb-6 border-b pb-4 border-[#EADED5]/50 dark:border-[#3D281E]/50">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl ${isDark ? 'bg-[#291A11] text-[#D4AF37]' : 'bg-[#FAF6F2] text-[#D4AF37]'}`}>
-                  <Clock className="w-5 h-5 stroke-[2]" />
-                </div>
-                <div>
-                  <h3 className={`font-serif text-xl font-bold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                    Cronograma de <span className="text-[#C9A96E] font-serif italic font-normal">Próximas Citas</span>
-                  </h3>
-                  <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Próximos turnos reservados en el salón</p>
-                </div>
-              </div>
-              
-              <Link 
-                href="/admin/agenda" 
-                className={`text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all duration-300 ${
-                  isDark ? 'text-[#BCAEA5] bg-[#291A11] hover:text-[#D4AF37]' : 'text-[#6E5A4D] bg-[#FAF6F2] hover:text-[#D4AF37]'
-                }`}
-              >
-                <span>Ver todo</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-[#D4AF37]" />
-              </Link>
-            </div>
-
+          <div className={`lg:col-span-2 rounded-2xl border p-6 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+            <h3 className="font-serif text-xl font-bold mb-4">Cronograma de Próximas Citas</h3>
             {stats.citasProximas.length === 0 ? (
-              <div className={`text-center py-12 border border-dashed rounded-2xl flex flex-col items-center justify-center ${
-                isDark ? 'border-[#3D281E] bg-[#170E09]/40' : 'border-[#EADED5] bg-[#FAF8F5]/50'
-              }`}>
-                <Calendar className="w-10 h-10 mb-3 text-[#BCAEA5]/60 stroke-[1.25]" />
-                <p className={`text-sm font-medium ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>No hay citas programadas a futuro</p>
-                <p className="text-[11px] text-[#A89588] font-light mt-0.5">¡Buen momento para promocionar turnos libres!</p>
-              </div>
+              <p className="text-sm text-stone-400 py-6 text-center">No hay citas planificadas.</p>
             ) : (
-              <div className="space-y-3.5">
-                {stats.citasProximas.map((cita, idx) => {
-                  const hoy = new Date()
-                  hoy.setHours(0, 0, 0, 0)
-                  const citaDate = new Date(cita.date)
-                  citaDate.setHours(0, 0, 0, 0)
-
-                  const diffDias = Math.ceil((citaDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-                  let label = `En ${diffDias} días`
-                  let badgeStyles = isDark ? 'bg-neutral-900 border-neutral-800 text-[#BCAEA5]' : 'bg-neutral-50 border-neutral-200 text-[#6E5A4D]'
-
-                  if (diffDias === 0) { 
-                    label = 'Hoy'; 
-                    badgeStyles = 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#C9A96E] font-bold animate-pulse' 
-                  } else if (diffDias === 1) { 
-                    label = 'Mañana'; 
-                    badgeStyles = 'bg-[#EC4899]/10 border-[#EC4899]/30 text-[#EC4899] font-bold' 
-                  }
-
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
-                        isDark 
-                          ? 'border-[#3D281E] bg-[#170E09] hover:border-[#D4AF37]/40 shadow-xs' 
-                          : 'border-[#EADED5] bg-[#FAF8F5] hover:border-[#D4AF37]/40 shadow-xs'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        {/* Calendario Icono Miniatura */}
-                        <div className="w-10 h-10 rounded-xl flex flex-col items-center justify-center text-center shadow-xs border border-[#D4AF37]/20 bg-neutral-950 text-white shrink-0">
-                          <span className="text-[9px] uppercase font-black tracking-widest text-[#D4AF37] leading-none">
-                            {new Date(cita.date).toLocaleDateString('es-ES', { month: 'short' }).slice(0,3)}
-                          </span>
-                          <span className="text-sm font-black font-serif leading-none mt-0.5">
-                            {new Date(cita.date).getDate() + 1}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 space-y-0.5">
-                          <p className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                            {cita.clienteNombre}
-                          </p>
-                          <div className="flex items-center gap-2 flex-wrap text-xs">
-                            <span className="font-semibold text-[#C9A96E] truncate">{cita.servicioNombre}</span>
-                            <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-stone-700' : 'bg-stone-300'}`} />
-                            <span className={`font-mono text-[11px] font-bold px-1.5 rounded bg-black/5 dark:bg-white/5 ${isDark ? 'text-stone-300' : 'text-stone-700'}`}>
-                              {cita.time?.slice(0,5) || '--:--'} hs
-                            </span>
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeStyles}`}>
-                              {label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0 ml-3 pl-2 border-l border-dashed border-[#EADED5]/60 dark:border-[#3D281E]/60">
-                        <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-[#A89588]' : 'text-[#9C8A7E]'}`}>Total</p>
-                        <span className="text-base font-serif font-black text-[#C9A96E]">
-                          {currencySymbol}{cita.precio?.toLocaleString() || 0}
-                        </span>
-                      </div>
+              <div className="space-y-3">
+                {stats.citasProximas.map((cita, idx) => (
+                  <div key={idx} className={`flex items-center justify-between p-3.5 rounded-xl border ${isDark ? 'border-[#3D281E] bg-[#170E09]' : 'border-[#EADED5] bg-[#FAF8F5]'}`}>
+                    <div>
+                      <p className="text-sm font-bold">{cita.clienteNombre}</p>
+                      <p className="text-xs text-[#C9A96E]">{cita.servicioNombre} — {cita.time?.slice(0,5)} hs</p>
                     </div>
-                  )
-                })}
+                    <span className="font-serif font-black text-[#C9A96E]">{currencySymbol}{cita.precio}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Gráfico y Ficha de Top Servicios */}
-          <div className={`rounded-2xl border p-6 shadow-sm transition-all duration-300 flex flex-col justify-between ${
-            isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'
-          }`}>
-            <div>
-              <div className="flex items-center gap-3 mb-6 border-b pb-4 border-[#EADED5]/50 dark:border-[#3D281E]/50">
-                <div className={`p-2.5 rounded-xl ${isDark ? 'bg-[#291A11] text-[#D4AF37]' : 'bg-[#FAF6F2] text-[#D4AF37]'}`}>
-                  <BarChart className="w-5 h-5 stroke-[2]" />
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+            <h3 className="font-serif text-xl font-bold mb-4">Top Servicios</h3>
+            <div className="space-y-3">
+              {stats.serviciosTop.map((serv, idx) => (
+                <div key={idx} className="flex justify-between text-xs border-b pb-2 dark:border-stone-800">
+                  <span>{idx+1}. {serv.nombre}</span>
+                  <span className="font-bold text-[#C9A96E]">{serv.count} usos</span>
                 </div>
-                <div>
-                  <h3 className={`font-serif text-xl font-bold ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
-                    Top <span className="text-[#C9A96E] font-serif italic font-normal">Servicios</span>
-                  </h3>
-                  <p className={`text-xs ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Los tratamientos más solicitados</p>
-                </div>
-              </div>
-
-              {stats.serviciosTop.length === 0 ? (
-                <div className={`text-center py-12 border border-dashed rounded-xl ${isDark ? 'border-[#3D281E]' : 'border-[#EADED5]'}`}>
-                  <Scissors className="w-10 h-10 mx-auto mb-2 text-[#BCAEA5]/60 stroke-[1.25]" />
-                  <p className={`text-sm font-medium ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Sin registros comerciales aún</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {stats.serviciosTop.map((serv, idx) => {
-                    const maxCount = stats.serviciosTop[0]?.count || 1
-                    const porcentaje = Math.round((serv.count / maxCount) * 100)
-                    
-                    // Colores temáticos cálidos y distinguidos
-                    const gradientBars = [
-                      'from-[#D4AF37] to-[#E8D5A0]', 
-                      'from-[#EC4899] to-[#F472B6]', 
-                      'from-[#3B82F6] to-[#60A5FA]',
-                      'from-[#8B5CF6] to-[#A78BFA]'
-                    ]
-
-                    return (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shadow-xs bg-neutral-950 text-[#D4AF37] border border-white/10`}>
-                              {idx + 1}
-                            </span>
-                            <span className={`text-xs font-bold truncate ${isDark ? 'text-stone-100' : 'text-[#1A0E0A]'}`}>
-                              {serv.nombre}
-                            </span>
-                          </div>
-                          <span className={`text-[11px] font-mono font-black px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#5C4A3E]'}`}>
-                            {serv.count} servicios
-                          </span>
-                        </div>
-                        {/* Barra de progreso fluida */}
-                        <div className={`w-full rounded-full h-2 overflow-hidden p-[1px] ${isDark ? 'bg-[#2A1A11]' : 'bg-[#F2E6DD]'}`}>
-                          <div 
-                            className={`h-full rounded-full bg-gradient-to-r shadow-xs transition-all duration-1000 ${gradientBars[idx % 4]}`} 
-                            style={{ width: `${porcentaje}%` }} 
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className={`mt-6 p-3 rounded-xl border border-dashed flex items-center gap-2.5 text-[11px] font-medium ${
-              isDark ? 'bg-[#170E09]/50 border-[#3D281E] text-[#BCAEA5]' : 'bg-[#FAF8F5]/60 border-[#EADED5] text-[#6E5A4D]'
-            }`}>
-              <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0" />
-              <span>Estadísticas calculadas basándose en el historial de citas.</span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* BOTONERÍA / ACCIONES RÁPIDAS EXCLUSIVAS */}
-        <div className="space-y-3">
-          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] font-mono ${isDark ? 'text-[#A89588]' : 'text-[#6E5A4D]'}`}>
-            Módulos Rápidos de Gestión
-          </h4>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {/* Cita Nueva */}
-            <Link 
-              href="/admin/agenda" 
-              className={`group relative overflow-hidden rounded-2xl border p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50 shadow-sm' : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/50 shadow-xs'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 shadow-sm ${
-                isDark ? 'bg-[#291A11] text-[#D4AF37]' : 'bg-[#FAF6F2] text-[#D4AF37]'
-              }`}>
-                <PlusCircle className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <p className={`text-xs font-bold tracking-wide ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>Agendar Turno</p>
-              <p className={`text-[10px] font-medium mt-0.5 opacity-60 flex items-center justify-center gap-0.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                <span>Nueva cita</span> <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
-              </p>
-            </Link>
-
-            {/* Ficha Clientes */}
-            <Link 
-              href="/admin/clientes" 
-              className={`group relative overflow-hidden rounded-2xl border p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#EC4899]/50 shadow-sm' : 'bg-white border-[#EADED5] hover:border-[#EC4899]/50 shadow-xs'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 shadow-sm ${
-                isDark ? 'bg-[#291A11] text-[#EC4899]' : 'bg-[#FAF6F2] text-[#EC4899]'
-              }`}>
-                <Users className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <p className={`text-xs font-bold tracking-wide ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>Comunidad VIP</p>
-              <p className={`text-[10px] font-medium mt-0.5 opacity-60 flex items-center justify-center gap-0.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                <span>{stats.clientas} Clientes</span> <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
-              </p>
-            </Link>
-
-            {/* Ficha Servicios */}
-            <Link 
-              href="/admin/servicios" 
-              className={`group relative overflow-hidden rounded-2xl border p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#3B82F6]/50 shadow-sm' : 'bg-white border-[#EADED5] hover:border-[#3B82F6]/50 shadow-xs'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 shadow-sm ${
-                isDark ? 'bg-[#291A11] text-[#3B82F6]' : 'bg-[#FAF6F2] text-[#3B82F6]'
-              }`}>
-                <Scissors className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <p className={`text-xs font-bold tracking-wide ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>Menú de Catálogo</p>
-              <p className={`text-[10px] font-medium mt-0.5 opacity-60 flex items-center justify-center gap-0.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                <span>Servicios</span> <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
-              </p>
-            </Link>
-
-            {/* Ficha Staff */}
-            <Link 
-              href="/admin/staff" 
-              className={`group relative overflow-hidden rounded-2xl border p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50 shadow-sm' : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/50 shadow-xs'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110 shadow-sm ${
-                isDark ? 'bg-[#291A11] text-[#D4AF37]' : 'bg-[#FAF6F2] text-[#D4AF37]'
-              }`}>
-                <UserCheck className="w-5 h-5 stroke-[1.75]" />
-              </div>
-              <p className={`text-xs font-bold tracking-wide ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>Equipo de Staff</p>
-              <p className={`text-[10px] font-medium mt-0.5 opacity-60 flex items-center justify-center gap-0.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
-                <span>Especialistas</span> <ArrowRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
-              </p>
-            </Link>
-          </div>
+        {/* ACCIONES RÁPIDAS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Link href="/admin/agenda" className={`p-5 rounded-2xl border text-center ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}><PlusCircle className="mx-auto mb-2 text-[#D4AF37]" /><span className="text-xs font-bold">Agendar Turno</span></Link>
+          <Link href="/admin/clientes" className={`p-5 rounded-2xl border text-center ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}><Users className="mx-auto mb-2 text-[#EC4899]" /><span className="text-xs font-bold">Comunidad VIP</span></Link>
+          <Link href="/admin/servicios" className={`p-5 rounded-2xl border text-center ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}><Scissors className="mx-auto mb-2 text-[#3B82F6]" /><span className="text-xs font-bold">Catálogo</span></Link>
+          <Link href="/admin/staff" className={`p-5 rounded-2xl border text-center ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}><UserCheck className="mx-auto mb-2 text-[#D4AF37]" /><span className="text-xs font-bold">Equipo Staff</span></Link>
         </div>
-
       </div>
     </div>
   )
