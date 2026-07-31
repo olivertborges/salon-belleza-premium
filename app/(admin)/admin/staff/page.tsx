@@ -117,7 +117,22 @@ export default function StaffPage() {
         setDebugInfo(`📝 Actualizando ID: ${editingId}`)
         setDebugInfo(prev => prev + `\n📝 Nuevo nombre: "${formData.name}"`)
 
-        // Actualizar usando el ID directamente (más confiable)
+        // PRIMERO: Obtener el user_id y los datos actuales
+        const { data: staffRecord, error: fetchError } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('id', editingId)
+          .single()
+
+        if (fetchError) {
+          setDebugInfo(prev => prev + `\n❌ Error obteniendo registro: ${fetchError.message}`)
+          throw new Error(`No se encontró el registro con ID: ${editingId}`)
+        }
+
+        setDebugInfo(prev => prev + `\n✅ Registro encontrado: "${staffRecord.name}"`)
+        setDebugInfo(prev => prev + `\n🔑 user_id: ${staffRecord.user_id}`)
+
+        // SEGUNDO: Actualizar usando user_id (que es el enlace con auth)
         const updateData = {
           name: formData.name.trim(),
           role: formData.role,
@@ -129,27 +144,13 @@ export default function StaffPage() {
           avatar_url: formData.avatar_url.trim()
         }
 
-        setDebugInfo(prev => prev + `\n📦 Datos a enviar: ${JSON.stringify(updateData, null, 2)}`)
+        setDebugInfo(prev => prev + `\n📦 Actualizando con user_id: ${staffRecord.user_id}`)
 
-        // PRIMERO: Verificar que el registro existe
-        const { data: checkRecord, error: checkError } = await supabase
-          .from('staff')
-          .select('id, name')
-          .eq('id', editingId)
-          .single()
-
-        if (checkError) {
-          setDebugInfo(prev => prev + `\n❌ Error verificando existencia: ${checkError.message}`)
-          throw new Error(`No se encontró el registro con ID: ${editingId}`)
-        }
-
-        setDebugInfo(prev => prev + `\n✅ Registro encontrado: "${checkRecord.name}"`)
-
-        // SEGUNDO: Actualizar
+        // ACTUALIZAR USANDO user_id
         const { data: updatedData, error: updateError } = await supabase
           .from('staff')
           .update(updateData)
-          .eq('id', editingId) // ← USAR id, NO user_id
+          .eq('user_id', staffRecord.user_id) // ← USAR user_id
           .select()
 
         if (updateError) {
@@ -161,7 +162,26 @@ export default function StaffPage() {
         
         if (!updatedData || updatedData.length === 0) {
           setDebugInfo(prev => prev + `\n⚠️ No se actualizó ningún registro (array vacío)`)
-          throw new Error('La actualización no afectó a ningún registro')
+          
+          // INTENTAR ACTUALIZACIÓN DIRECTA SIN SELECT (por si RLS está bloqueando)
+          setDebugInfo(prev => prev + `\n🔄 Intentando actualización directa con ID...`)
+          
+          const { data: directUpdate, error: directError } = await supabase
+            .from('staff')
+            .update(updateData)
+            .eq('id', editingId)
+            .select()
+
+          if (directError) {
+            setDebugInfo(prev => prev + `\n❌ Error directo: ${directError.message}`)
+            throw directError
+          }
+
+          setDebugInfo(prev => prev + `\n✅ Resultado directo: ${JSON.stringify(directUpdate, null, 2)}`)
+          
+          if (!directUpdate || directUpdate.length === 0) {
+            throw new Error('No se pudo actualizar el registro. Verifica las políticas RLS en Supabase.')
+          }
         }
 
         setSuccess('✅ Miembro actualizado correctamente.')
