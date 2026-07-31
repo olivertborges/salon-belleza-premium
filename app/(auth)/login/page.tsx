@@ -11,7 +11,7 @@ import {
   User, LogIn, Shield, Crown, Gem, 
   ArrowRight, CheckCircle2, XCircle,
   Heart, Star, Zap, Fingerprint, 
-  Flower2, Waves, Palette, Gift
+  Flower2, Waves, Palette, Gift, Bug
 } from 'lucide-react'
 
 // ===== ANIMACIONES =====
@@ -85,6 +85,10 @@ export default function AuthMobilDefinitivo() {
   const [redirectPath, setRedirectPath] = useState('/portal')
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [loginSuccess, setLoginSuccess] = useState(false)
+  
+  // ===== ESTADO PARA DEBUG EN PANTALLA =====
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [showDebug, setShowDebug] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -92,70 +96,110 @@ export default function AuthMobilDefinitivo() {
   const [phone, setPhone] = useState('')
   const [referralCode, setReferralCode] = useState('')
 
+  // ===== FUNCIÓN PARA AGREGAR LOGS VISIBLES =====
+  const addDebugLog = (mensaje: string) => {
+    setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${mensaje}`])
+  }
+
   useEffect(() => {
     setMounted(true)
+    addDebugLog('✅ Componente montado')
 
     const searchParams = new URLSearchParams(window.location.search);
     const redirect = searchParams.get('redirect');
     if (redirect) {
       setRedirectPath(redirect)
+      addDebugLog(`📌 Redirect param: ${redirect}`)
     }
 
     const ref = searchParams.get('ref');
     if (ref) {
       setReferralCode(ref)
+      addDebugLog(`📌 Código de referencia: ${ref}`)
     }
   }, [])
 
-  // ===== CORRECCIÓN Y VERIFICACIÓN DE ACCESO DE STAFF EN TIEMPO REAL =====
+  // ===== VERIFICACIÓN DE ACCESO DE STAFF CON DEBUG VISIBLE =====
   useEffect(() => {
-    if (!mounted || authLoading) return
-    if (!user) return
-    if (isRedirecting) return
+    if (!mounted || authLoading) {
+      addDebugLog('⏳ Esperando mount o auth...')
+      return
+    }
+    if (!user) {
+      addDebugLog('👤 No hay usuario logueado')
+      return
+    }
+    if (isRedirecting) {
+      addDebugLog('⏳ Ya redirigiendo...')
+      return
+    }
 
     const verificarRolYRedirigir = async () => {
       setIsRedirecting(true)
       
       try {
-        // Forzar bypass de caché pidiendo directamente la fila del staff logueado
+        addDebugLog(`🔍 Verificando usuario ID: ${user.id}`)
+        addDebugLog(`📧 Email: ${user.email}`)
+
+        // Buscar en la tabla staff
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
-          .select('auth_role')
+          .select('auth_role, email, user_id')
           .eq('user_id', user.id)
           .maybeSingle()
 
-        if (staffError) throw staffError
+        if (staffError) {
+          addDebugLog(`❌ Error en staff: ${staffError.message}`)
+        }
+
+        addDebugLog(`📊 Resultado staff: ${JSON.stringify(staffMember)}`)
 
         let targetPath = '/portal' // Por defecto: Clientes normales
 
         // Si existe en la tabla staff, comprobamos su nivel de sistema
         if (staffMember) {
-          // Si el auth_role viene en blanco o no existe, pero la fila está en staff, le asignamos acceso por defecto
           const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
+          addDebugLog(`👤 Rol encontrado: ${systemRole}`)
           
           if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
             targetPath = '/dashboard'
+            addDebugLog('➡️ Redirigiendo a DASHBOARD')
+          } else {
+            addDebugLog('➡️ Redirigiendo a PORTAL (rol no válido)')
           }
-        } else if (role === 'admin' || role === 'owner') {
-          // Salvaguarda histórica del hook useAuth
-          targetPath = '/dashboard'
+        } else {
+          addDebugLog('⚠️ Usuario NO encontrado en staff, redirigiendo a PORTAL')
         }
 
-        // Si viene con una redirección explícita válida externa (que no sea portal/login), la respetamos
+        // Si viene con una redirección explícita válida externa
         const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
           ? redirectPath 
           : targetPath
 
-        router.replace(finalPath)
-        router.refresh() // Forzamos refresco para limpiar estados de sesión viejos
-      } catch (err) {
-        console.error("Error al verificar nivel de acceso:", err)
+        addDebugLog(`🎯 Ruta final: ${finalPath}`)
+        
+        // Mostrar debug por 3 segundos antes de redirigir
+        setShowDebug(true)
+        
+        setTimeout(() => {
+          router.replace(finalPath)
+        }, 2000)
+
+      } catch (err: any) {
+        addDebugLog(`❌ Error capturado: ${err.message}`)
         router.replace('/portal')
+      } finally {
+        setIsRedirecting(false)
       }
     }
 
-    verificarRolYRedirigir()
-  }, [user, role, authLoading, mounted, redirectPath, router, isRedirecting])
+    // Delay para asegurar sesión
+    const timer = setTimeout(() => {
+      verificarRolYRedirigir()
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [user, role, authLoading, mounted, redirectPath, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -164,16 +208,32 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
+    addDebugLog('🔐 Intentando login...')
 
     try {
-      const { error: signInError } = await signIn(email, password)
-      if (signInError) throw signInError
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
-      setSuccess('¡Ingreso correcto!')
+      const data = await response.json()
+      
+      if (!response.ok || data.error) {
+        addDebugLog(`❌ Error login: ${data.error}`)
+        throw new Error(data.error || 'Error al iniciar sesión')
+      }
+
+      addDebugLog('✅ Login exitoso!')
+      setSuccess('✅ ¡Ingreso correcto!')
       setLoginSuccess(true)
 
+      await supabase.auth.getSession()
+      addDebugLog('🔄 Sesión recargada')
+
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error inesperado.')
+      addDebugLog(`❌ Error: ${err.message}`)
+      setError(err.message || '❌ Ocurrió un error inesperado.')
       setLoading(false)
       setLoginSuccess(false)
     }
@@ -186,6 +246,7 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
+    addDebugLog('📝 Intentando registro...')
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -202,18 +263,32 @@ export default function AuthMobilDefinitivo() {
 
       const data = await res.json()
       if (!res.ok || !data.success) {
+        addDebugLog(`❌ Error registro: ${data.error}`)
         throw new Error(data.error || 'No se pudo crear la cuenta')
       }
 
+      addDebugLog('✅ Registro exitoso!')
       setSuccess('✅ ¡Registro exitoso!')
 
-      const { error: signInError } = await signIn(email, password)
-      if (signInError) throw signInError
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
+      const loginData = await loginResponse.json()
+      if (!loginResponse.ok || loginData.error) {
+        addDebugLog(`❌ Error login post-registro: ${loginData.error}`)
+        throw new Error(loginData.error || 'Error al iniciar sesión')
+      }
+
+      addDebugLog('✅ Login post-registro exitoso!')
       setLoginSuccess(true)
+      await supabase.auth.getSession()
 
     } catch (err: any) {
-      setError(err.message || 'Error inesperado')
+      addDebugLog(`❌ Error: ${err.message}`)
+      setError(err.message || '❌ Error inesperado')
       setLoading(false)
       setLoginSuccess(false)
     }
@@ -225,30 +300,57 @@ export default function AuthMobilDefinitivo() {
     setLoading(true)
     setError('')
     setSuccess('')
+    addDebugLog('🔐 Intentando recuperación...')
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       })
-      if (resetError) throw resetError
+      if (resetError) {
+        addDebugLog(`❌ Error recuperación: ${resetError.message}`)
+        throw resetError
+      }
+      addDebugLog('✅ Enlace de recuperación enviado')
       setSuccess('📧 Enlace de recuperación enviado a tu correo.')
     } catch (err: any) {
+      addDebugLog(`❌ Error: ${err.message}`)
       setError(err.message || 'Error al enviar el correo de recuperación.')
     } finally {
       setLoading(false)
     }
   }
 
-  if (isRedirecting) {
+  // ===== ESTADOS DE CARGA =====
+  if (isRedirecting || authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#1E120C]">
+      <div className="flex flex-col items-center justify-center h-screen bg-[#1E120C] p-4">
         <div className="relative">
           <div className="w-12 h-12 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto" />
           <div className="absolute inset-0 w-12 h-12 rounded-full animate-ping opacity-20 bg-[#D4AF37]" />
         </div>
         <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-[#D4AF37] mt-4">
-          Comprobando accesos...
+          {isRedirecting ? 'Comprobando accesos...' : 'Cargando...'}
         </p>
+        
+        {/* MOSTRAR DEBUG EN PANTALLA */}
+        {showDebug && debugLogs.length > 0 && (
+          <div className="mt-6 w-full max-w-md bg-black/80 rounded-xl p-4 border border-[#D4AF37]/30 max-h-60 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-mono text-[#D4AF37] uppercase tracking-widest">🔍 Debug</p>
+              <button 
+                onClick={() => setShowDebug(false)}
+                className="text-[#A89588] hover:text-white text-xs"
+              >
+                ✕
+              </button>
+            </div>
+            {debugLogs.map((log, i) => (
+              <p key={i} className="text-[10px] font-mono text-white/80 border-b border-white/5 py-1">
+                {log}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
@@ -337,7 +439,7 @@ export default function AuthMobilDefinitivo() {
     </div>
   )
 
-  const isDark = false // Forzamos light para la página de auth como estaba en tu diseño original
+  const isDark = false
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-[#FFF9F6] via-white to-[#FFF9F6]/50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
@@ -360,6 +462,15 @@ export default function AuthMobilDefinitivo() {
         exit="exit"
         className="w-full max-w-md bg-white/95 backdrop-blur-2xl border border-[#F0E4DA] rounded-[32px] p-6 shadow-2xl shadow-[#D4AF37]/5 relative overflow-hidden"
       >
+
+        {/* BOTÓN DE DEBUG */}
+        <button
+          type="button"
+          onClick={() => setShowDebug(!showDebug)}
+          className="absolute top-4 right-4 z-20 p-2 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-colors"
+        >
+          <Bug className="w-4 h-4" />
+        </button>
 
         {/* HEADER */}
         <motion.div variants={itemVariants} className="text-center mb-6 relative">
@@ -417,6 +528,31 @@ export default function AuthMobilDefinitivo() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* PANEL DE DEBUG VISIBLE */}
+        {showDebug && debugLogs.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-4 bg-black/90 rounded-xl p-3 border border-[#D4AF37]/30 max-h-48 overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] font-mono text-[#D4AF37] uppercase tracking-widest">🔍 Debug Logs</p>
+              <button 
+                onClick={() => setDebugLogs([])}
+                className="text-[#A89588] hover:text-white text-[10px]"
+              >
+                Limpiar
+              </button>
+            </div>
+            {debugLogs.map((log, i) => (
+              <p key={i} className="text-[9px] font-mono text-white/70 border-b border-white/5 py-0.5">
+                {log}
+              </p>
+            ))}
+          </motion.div>
+        )}
 
         {/* CONTENIDO */}
         <AnimatePresence mode="wait">
