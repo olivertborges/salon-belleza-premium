@@ -30,6 +30,7 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -105,9 +106,11 @@ export default function StaffPage() {
     }
 
     try {
+      setIsSubmitting(true)
       setRefreshing(true)
+
       if (editingId) {
-        // CORRECCIÓN: Se añadió la coma faltante después de phone.trim()
+        // ACTUALIZAR - CORREGIDO: la coma faltante
         const { error: updateError } = await supabase
           .from('staff')
           .update({
@@ -115,7 +118,7 @@ export default function StaffPage() {
             role: formData.role,
             auth_role: formData.auth_role,
             email: formData.email.trim(),
-            phone: formData.phone.trim(), 
+            phone: formData.phone.trim(), // ← COMA CORREGIDA
             specialty: formData.specialty.trim(),
             experience: formData.experience ? String(formData.experience) : '',
             avatar_url: formData.avatar_url.trim()
@@ -125,7 +128,7 @@ export default function StaffPage() {
         if (updateError) throw updateError
         setSuccess('Miembro actualizado correctamente.')
       } else {
-        // CREACIÓN MAESTRA
+        // CREAR NUEVO - Usando el endpoint
         const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,6 +136,7 @@ export default function StaffPage() {
         })
 
         const resData = await response.json()
+        
         if (!response.ok || !resData.success) {
           throw new Error(resData.error || 'No se pudo crear el staff automatizado.')
         }
@@ -140,13 +144,16 @@ export default function StaffPage() {
         setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
+      // Cerrar modal y recargar
       setShowModal(false)
       setEditingId(null)
       await fetchStaff() 
+      
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
       setError(err.message || 'Error al guardar el registro.')
     } finally {
+      setIsSubmitting(false)
       setRefreshing(false)
     }
   }
@@ -589,11 +596,14 @@ export default function StaffPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-[#D4AF37]/20 cursor-pointer"
+                  disabled={isSubmitting}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-[#D4AF37]/20 ${
+                    isSubmitting ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
                   style={brandGradient}
                 >
                   <Save className="w-4 h-4" />
-                  {editingId ? 'Actualizar' : 'Guardar y Vincular'}
+                  {isSubmitting ? 'Guardando...' : (editingId ? 'Actualizar' : 'Guardar y Vincular')}
                 </button>
               </div>
             </form>
