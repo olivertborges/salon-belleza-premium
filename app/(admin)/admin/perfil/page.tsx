@@ -87,7 +87,7 @@ export default function AdminPerfilPage() {
     
     if (staffData2?.tenant_id) return staffData2.tenant_id
 
-    return '2fb6af3b-944e-4974-93f4-1d4860771173' // Fallback con tu tenant_id confirmado
+    return '2fb6af3b-944e-4974-93f4-1d4860771173'
   }
 
   const loadProfile = async () => {
@@ -212,7 +212,6 @@ export default function AdminPerfilPage() {
     reader.readAsDataURL(file)
   }
 
-  // ✅ GUARDADO DIRECTO A BASE DE DATOS (EVITA "Failed to fetch" de Storage)
   const handleSave = async () => {
     if (!user?.id || !profile) return
 
@@ -222,10 +221,11 @@ export default function AdminPerfilPage() {
 
     try {
       let avatarUrl = profile.avatar_url
-      const idColumn = activeTable === 'profiles' ? 'id' : 'user_id'
-      const nameCol = activeTable === 'profiles' ? 'full_name' : 'name'
+      
+      const isProfiles = activeTable === 'profiles'
+      const idColumn = isProfiles ? 'id' : 'user_id'
+      const nameCol = isProfiles ? 'full_name' : (profile.name !== undefined ? 'name' : 'full_name')
 
-      // Si seleccionó un archivo nuevo, lo convertimos a Base64 de forma local
       if (avatarFile) {
         avatarUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader()
@@ -241,17 +241,26 @@ export default function AdminPerfilPage() {
       }
       updatePayload[nameCol] = formData.full_name.trim()
 
-      if (activeTable === 'profiles') {
+      if (isProfiles) {
         updatePayload.updated_at = new Date().toISOString()
       }
 
-      const { error: updateError } = await supabase
+      let { error: updateError } = await supabase
         .from(activeTable)
         .update(updatePayload)
         .eq(idColumn, user.id)
 
+      if (updateError && !isProfiles) {
+        const { error: retryError } = await supabase
+          .from('staff')
+          .update(updatePayload)
+          .eq('id', profile.id || user.id)
+        
+        updateError = retryError
+      }
+
       if (updateError) {
-        throw new Error(`Error al guardar en tabla ${activeTable}: ${updateError.message}`)
+        throw new Error(`Error al guardar en ${activeTable}: ${updateError.message}`)
       }
 
       setProfile(prev => ({
