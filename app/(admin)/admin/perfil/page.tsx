@@ -51,7 +51,6 @@ export default function AdminPerfilPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [tenantId, setTenantId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -77,7 +76,6 @@ export default function AdminPerfilPage() {
       const targetTable = getTargetTable()
       const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
 
-      // 1. Cargar perfil/staff primero
       const { data, error } = await supabase
         .from(targetTable)
         .select('*')
@@ -96,10 +94,6 @@ export default function AdminPerfilPage() {
         if (data.avatar_url) {
           setAvatarPreview(data.avatar_url)
         }
-
-        // Obtener y guardar el tenant_id del registro o metadatos
-        const tid = data.tenant_id || user?.user_metadata?.tenant_id || user?.app_metadata?.tenant_id || 'general'
-        setTenantId(tid)
       } else {
         setError(`No se encontró el registro en la tabla de ${targetTable}.`)
       }
@@ -156,12 +150,11 @@ export default function AdminPerfilPage() {
       const nameCol = getNameColumn()
 
       if (avatarFile) {
-        const activeTenantId = tenantId || 'general'
         const fileExt = avatarFile.name.split('.').pop()
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `${activeTenantId}/${fileName}`
+        // Guardamos directamente en la raíz con el ID del usuario para evitar problemas de carpetas y permisos
+        const filePath = `${user.id}-${Date.now()}.${fileExt}`
 
-        console.log('📤 Subiendo avatar al bucket staff en:', filePath)
+        console.log('📤 Subiendo avatar al bucket staff:', filePath)
 
         const { error: uploadError } = await supabase.storage
           .from('staff')
