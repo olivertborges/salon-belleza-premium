@@ -181,7 +181,7 @@ export default function AuthMobilDefinitivo() {
       setSuccess('📧 Enlace enviado a tu correo.')
     } catch (err: any) {
       setError(err.message || 'Error al enviar recuperación.')
-    } fillalmente {
+    } finally {
       setLoading(false)
     }
   }
