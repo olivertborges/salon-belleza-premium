@@ -40,9 +40,9 @@ export default function StaffPage() {
   const [formData, setFormData] = useState({
     name: '',
     role: 'Especialista',
-    auth_role: 'staff', // Por defecto, acceso estándar al panel
+    auth_role: 'staff', 
     email: '',
-    password: '',       // Campo de contraseña nuevo
+    password: '',       
     phone: '',
     specialty: '',
     experience: '',
@@ -107,7 +107,7 @@ export default function StaffPage() {
     try {
       setRefreshing(true)
       if (editingId) {
-        // EDITAR REGISTRO TRADICIONAL
+        // EDITAR REGISTRO TRADICIONAL FILTRANDO POR ID ÚNICO
         const { error: updateError } = await supabase
           .from('staff')
           .update({
@@ -142,7 +142,7 @@ export default function StaffPage() {
 
       setShowModal(false)
       setEditingId(null)
-      fetchStaff()
+      await fetchStaff() // Recarga inmediata de la lista actualizada
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
       setError(err.message || 'Error al guardar el registro.')
@@ -182,7 +182,7 @@ export default function StaffPage() {
       role: member.role || 'Especialista',
       auth_role: member.auth_role || 'staff',
       email: member.email || '',
-      password: '', // No se edita la contraseña desde aquí por seguridad
+      password: '', 
       phone: member.phone || '',
       specialty: member.specialty || '',
       experience: member.experience ? String(member.experience) : '',
@@ -478,7 +478,7 @@ export default function StaffPage() {
                 />
               </div>
 
-              {/* NUEVO CAMPO: CONTRASEÑA (SOLO CUANDO SE CREA UN NUEVO USUARIO) */}
+              {/* CONTRASEÑA: SOLO NUEVOS USUARIOS */}
               {!editingId && (
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
@@ -506,7 +506,7 @@ export default function StaffPage() {
                 </div>
               )}
 
-              {/* NUEVO CAMPO: ROL DE ENTRADA AL SISTEMA */}
+              {/* NIVEL DE ACCESO */}
               <div>
                 <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" /> Nivel de Acceso al Sistema
