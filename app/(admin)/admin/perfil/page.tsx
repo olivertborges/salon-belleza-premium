@@ -226,13 +226,39 @@ export default function AdminPerfilPage() {
       const idColumn = isProfiles ? 'id' : 'user_id'
       const nameCol = isProfiles ? 'full_name' : (profile.name !== undefined ? 'name' : 'full_name')
 
+      // Si seleccionó un archivo nuevo, subirlo al Bucket de Supabase
       if (avatarFile) {
-        avatarUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(avatarFile)
-          reader.onload = () => resolve(reader.result)
-          reader.onerror = error => reject(error)
-        })
+        const fileExt = avatarFile.name.split('.').pop()
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        // Nota: Asegúrate de que el bucket se llame 'staff' o 'avatars' según tu configuración
+        const bucketName = activeTable === 'staff' ? 'staff' : 'avatars'
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, avatarFile, { upsert: true })
+
+        if (uploadError) {
+          // Fallback por si el bucket 'staff' no existe, probar con 'avatars'
+          const { error: fallbackError, data: fallbackData } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, avatarFile, { upsert: true })
+
+          if (fallbackError) {
+            throw new Error(`Error al subir la imagen al bucket: ${uploadError.message}`)
+          } else {
+            const { data: publicUrlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(filePath)
+            avatarUrl = publicUrlData.publicUrl
+          }
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(filePath)
+          avatarUrl = publicUrlData.publicUrl
+        }
       }
 
       const updatePayload: any = {
