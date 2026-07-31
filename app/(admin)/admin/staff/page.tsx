@@ -6,14 +6,15 @@ import { supabase } from '@/lib/supabase/client'
 import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Users, Plus, Search, Edit, Trash2, 
-  Mail, Phone, X, Save, UserPlus, 
-  Award, Tag, RefreshCw, CheckCircle, AlertTriangle
+  Mail, Phone, X, Save, UserPlus, Eye, EyeOff,
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck
 } from 'lucide-react'
 
 interface StaffMember {
   id: string
   name: string
   role: string
+  auth_role: string
   email: string
   phone: string
   avatar_url: string
@@ -34,11 +35,14 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
     role: 'Especialista',
+    auth_role: 'staff', // Por defecto, acceso estándar al panel
     email: '',
+    password: '',       // Campo de contraseña nuevo
     phone: '',
     specialty: '',
     experience: '',
@@ -46,6 +50,10 @@ export default function StaffPage() {
   })
 
   const roles = ['Especialista', 'Senior', 'Master', 'Directora', 'Asistente']
+  const systemRoles = [
+    { value: 'staff', label: 'Staff (Ingresa a Gestión)' },
+    { value: 'admin', label: 'Administrador (Control Total)' }
+  ]
 
   const brandGradient = {
     backgroundImage: 'linear-gradient(to right, #D4AF37, #E8D5A0)'
@@ -91,14 +99,21 @@ export default function StaffPage() {
       return
     }
 
+    if (!editingId && !formData.password) {
+      setError('La contraseña es obligatoria para nuevos miembros.')
+      return
+    }
+
     try {
+      setRefreshing(true)
       if (editingId) {
-        // EDITAR REGISTRO
+        // EDITAR REGISTRO TRADICIONAL
         const { error: updateError } = await supabase
           .from('staff')
           .update({
             name: formData.name.trim(),
             role: formData.role,
+            auth_role: formData.auth_role,
             email: formData.email.trim(),
             phone: formData.phone.trim(),
             specialty: formData.specialty.trim(),
@@ -110,21 +125,19 @@ export default function StaffPage() {
         if (updateError) throw updateError
         setSuccess('Miembro actualizado correctamente.')
       } else {
-        // CREAR REGISTRO
-        const { error: insertError } = await supabase
-          .from('staff')
-          .insert([{
-            name: formData.name.trim(),
-            role: formData.role,
-            email: formData.email.trim(),
-            phone: formData.phone.trim(),
-            specialty: formData.specialty.trim(),
-            experience: formData.experience ? String(formData.experience) : '',
-            avatar_url: formData.avatar_url.trim()
-          }])
+        // CREACIÓN MAESTRA A TRAVÉS DE NUESTRA API ROUTE AUTOMÁTICA
+        const response = await fetch('/app/api/staff/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
 
-        if (insertError) throw insertError
-        setSuccess('Miembro agregado correctamente.')
+        const resData = await response.json()
+        if (!response.ok || !resData.success) {
+          throw new Error(resData.error || 'No se pudo crear el staff automatizado.')
+        }
+
+        setSuccess('¡Miembro del Staff creado, usuario de Auth registrado y cuenta vinculada con éxito!')
       }
 
       setShowModal(false)
@@ -132,7 +145,9 @@ export default function StaffPage() {
       fetchStaff()
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
-      setError(err.message || 'Error de base de datos al guardar el registro.')
+      setError(err.message || 'Error al guardar el registro.')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -154,7 +169,7 @@ export default function StaffPage() {
       fetchStaff()
     } catch (err: any) {
       console.error('Error in handleDelete:', err)
-      setError(err.message || 'No se pudo eliminar el registro. Verifica las políticas de Supabase (RLS).')
+      setError(err.message || 'No se pudo eliminar el registro.')
     }
   }
 
@@ -165,7 +180,9 @@ export default function StaffPage() {
     setFormData({
       name: member.name || '',
       role: member.role || 'Especialista',
+      auth_role: member.auth_role || 'staff',
       email: member.email || '',
+      password: '', // No se edita la contraseña desde aquí por seguridad
       phone: member.phone || '',
       specialty: member.specialty || '',
       experience: member.experience ? String(member.experience) : '',
@@ -181,7 +198,9 @@ export default function StaffPage() {
     setFormData({
       name: '',
       role: 'Especialista',
+      auth_role: 'staff',
       email: '',
+      password: '',
       phone: '',
       specialty: '',
       experience: '',
@@ -210,7 +229,7 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
+    <div className="space-y-6 p-1 max-w-full overflow-x-hidden font-sans">
 
       {/* HEADER */}
       <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl ${
@@ -298,7 +317,7 @@ export default function StaffPage() {
 
       {/* MENSAJES DE ERROR / ÉXITO */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-xs">
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-sm">
           <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-4 h-4" />
           </div>
@@ -307,7 +326,7 @@ export default function StaffPage() {
       )}
 
       {success && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 flex items-center gap-3 shadow-xs">
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 flex items-center gap-3 shadow-sm">
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
             <CheckCircle className="w-4 h-4" />
           </div>
@@ -336,12 +355,21 @@ export default function StaffPage() {
               
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <h3 className={`font-bold truncate ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{member.name}</h3>
-                  <span className="inline-block mt-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/20">
-                    {member.role}
-                  </span>
+                  <h3 className={`font-bold truncate text-sm ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{member.name}</h3>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="inline-block text-[9px] uppercase font-bold px-2 py-0.5 rounded-full text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/20">
+                      {member.role}
+                    </span>
+                    <span className={`inline-block text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                      member.auth_role === 'admin' 
+                        ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20' 
+                        : 'text-blue-400 bg-blue-500/10 border border-blue-500/20'
+                    }`}>
+                      🔑 {member.auth_role || 'staff'}
+                    </span>
+                  </div>
                   {member.specialty && (
-                    <p className={`text-[11px] mt-1.5 flex items-center gap-1.5 truncate ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <p className={`text-[11px] mt-2 flex items-center gap-1.5 truncate ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                       <Tag className="w-3 h-3 shrink-0 text-[#D4AF37]" />
                       {member.specialty}
                     </p>
@@ -415,7 +443,7 @@ export default function StaffPage() {
                 <UserPlus className="w-5 h-5" />
               </div>
               <h3 className={`text-xl font-serif font-extrabold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                {editingId ? 'Editar Miembro' : 'Nuevo Miembro'}
+                {editingId ? 'Editar Miembro' : 'Nuevo Miembro Premium'}
               </h3>
             </div>
 
@@ -450,9 +478,53 @@ export default function StaffPage() {
                 />
               </div>
 
+              {/* NUEVO CAMPO: CONTRASEÑA (SOLO CUANDO SE CREA UN NUEVO USUARIO) */}
+              {!editingId && (
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Contraseña de Acceso *
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                        isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                      }`}
+                      placeholder="Mínimo 6 caracteres"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      required={!editingId}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 text-[#A89588] hover:text-[#D4AF37] transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* NUEVO CAMPO: ROL DE ENTRADA AL SISTEMA */}
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" /> Nivel de Acceso al Sistema
+                </label>
+                <select
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none cursor-pointer ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.auth_role}
+                  onChange={(e) => setFormData({...formData, auth_role: e.target.value})}
+                >
+                  {systemRoles.map(sr => <option key={sr.value} value={sr.value}>{sr.label}</option>)}
+                </select>
+              </div>
+
               <div>
                 <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                  Rol
+                  Puesto / Cargo en el Salón
                 </label>
                 <select
                   className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none cursor-pointer ${
@@ -523,7 +595,7 @@ export default function StaffPage() {
                   style={brandGradient}
                 >
                   <Save className="w-4 h-4" />
-                  {editingId ? 'Actualizar' : 'Guardar'}
+                  {editingId ? 'Actualizar' : 'Guardar y Vincular'}
                 </button>
               </div>
             </form>
