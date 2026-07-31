@@ -55,20 +55,25 @@ export default function AdminPerfilPage() {
     phone: ''
   })
 
+  // Función para determinar en qué tabla buscar según el rol del usuario
+  const getTargetTable = () => {
+    const role = user?.user_metadata?.role || 'staff'
+    return role === 'admin' ? 'profiles' : 'staff'
+  }
+
   const loadProfile = async () => {
-    if (!user?.id) {
-      setLoading(false)
-      return
-    }
+    if (!user?.id) return
 
     try {
       setLoading(true)
       setError(null)
 
+      const targetTable = getTargetTable()
+
       const { data, error } = await supabase
-        .from('profiles')
+        .from(targetTable)
         .select('*')
-        .eq('id', user.id)
+        .eq('id', user.id) // Cambiar por 'user_id' si en la tabla staff se llama diferente
         .maybeSingle()
 
       if (error) throw error
@@ -82,6 +87,8 @@ export default function AdminPerfilPage() {
         if (data.avatar_url) {
           setAvatarPreview(data.avatar_url)
         }
+      } else {
+        setError(`No se encontró el registro en la tabla de ${targetTable}.`)
       }
 
     } catch (error) {
@@ -93,8 +100,10 @@ export default function AdminPerfilPage() {
   }
 
   useEffect(() => {
-    loadProfile()
-  }, [user])
+    if (user?.id) {
+      loadProfile()
+    }
+  }, [user?.id])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -129,6 +138,7 @@ export default function AdminPerfilPage() {
 
     try {
       let avatarUrl = profile.avatar_url
+      const targetTable = getTargetTable()
 
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
@@ -154,9 +164,9 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // 3. Actualizar base de datos
+      // 3. Actualizar la base de datos de manera dinámica
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from(targetTable)
         .update({
           full_name: formData.full_name.trim(),
           phone: formData.phone?.trim() || null,
@@ -166,7 +176,7 @@ export default function AdminPerfilPage() {
         .eq('id', profile.id)
 
       if (updateError) {
-        throw new Error(`Error en Base de Datos: ${updateError.message}`)
+        throw new Error(`Error en Base de Datos (${targetTable}): ${updateError.message}`)
       }
 
       setProfile(prev => ({
@@ -227,7 +237,7 @@ export default function AdminPerfilPage() {
             No se encontró tu perfil
           </p>
           <p className={`text-sm mt-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-            Por favor, contacta con el administrador del sistema.
+            {error || 'Por favor, contacta con el administrador del sistema.'}
           </p>
           <Link
             href="/dashboard"
@@ -252,7 +262,7 @@ export default function AdminPerfilPage() {
 
       <div className="max-w-3xl mx-auto px-4 space-y-8 relative z-10">
 
-        {/* MENSAGES DE RESPUESTA */}
+        {/* MENSAJES DE RESPUESTA */}
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
             isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
@@ -320,27 +330,27 @@ export default function AdminPerfilPage() {
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
                 <h1 className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  {profile.full_name || 'Administrador'}
+                  {profile.full_name || 'Miembro de la App'}
                 </h1>
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
                   <BadgeCheck className="w-3 h-3" />
-                  {profile.role || 'Admin'}
+                  {profile.role || user?.user_metadata?.role || 'Staff'}
                 </span>
               </div>
 
               <p className={`text-sm font-light mt-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Shield className="w-4 h-4 inline mr-1 text-[#D4AF37]" />
-                Cuenta de administrador
+                Cuenta de {getTargetTable() === 'profiles' ? 'Administrador' : 'Personal (Staff)'}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 mt-3">
                 <div className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   <Calendar className="w-4 h-4 text-[#D4AF37]" />
-                  Miembro desde {new Date(profile.created_at).toLocaleDateString('es-ES', {
+                  Miembro desde {profile.created_at ? new Date(profile.created_at).toLocaleDateString('es-ES', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'
-                  })}
+                  }) : 'Reciente'}
                 </div>
               </div>
             </div>
@@ -465,12 +475,12 @@ export default function AdminPerfilPage() {
             {/* Rol */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                <Shield className="w-3.5 h-3.5 inline mr-1.5" /> Rol
+                <Shield className="w-3.5 h-3.5 inline mr-1.5" /> Rol Asignado
               </label>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#D4AF37]/30 text-[#D4AF37]">
                 <BadgeCheck className="w-4 h-4" />
                 <span className="text-sm font-bold uppercase tracking-wider">
-                  {profile.role || 'Administrador'}
+                  {profile.role || user?.user_metadata?.role || 'Staff'}
                 </span>
               </div>
             </div>
