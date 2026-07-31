@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase/client'
@@ -89,6 +89,7 @@ export default function AuthMobilDefinitivo() {
   // ===== ESTADO PARA DEBUG EN PANTALLA =====
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [showDebug, setShowDebug] = useState(false)
+  const [verificando, setVerificando] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -104,102 +105,98 @@ export default function AuthMobilDefinitivo() {
   useEffect(() => {
     setMounted(true)
     addDebugLog('✅ Componente montado')
-
-    const searchParams = new URLSearchParams(window.location.search);
-    const redirect = searchParams.get('redirect');
-    if (redirect) {
-      setRedirectPath(redirect)
-      addDebugLog(`📌 Redirect param: ${redirect}`)
-    }
-
-    const ref = searchParams.get('ref');
-    if (ref) {
-      setReferralCode(ref)
-      addDebugLog(`📌 Código de referencia: ${ref}`)
-    }
   }, [])
 
-  // ===== VERIFICACIÓN DE ACCESO DE STAFF CON DEBUG VISIBLE =====
-  useEffect(() => {
-    if (!mounted || authLoading) {
-      addDebugLog('⏳ Esperando mount o auth...')
+  // ===== FUNCIÓN DE VERIFICACIÓN DE ROL =====
+  const verificarRolYRedirigir = async (usuario: any) => {
+    if (verificando) {
+      addDebugLog('⏳ Ya está verificando...')
       return
     }
-    if (!user) {
-      addDebugLog('👤 No hay usuario logueado')
-      return
-    }
-    if (isRedirecting) {
-      addDebugLog('⏳ Ya redirigiendo...')
+    
+    if (!usuario) {
+      addDebugLog('👤 No hay usuario para verificar')
       return
     }
 
-    const verificarRolYRedirigir = async () => {
-      setIsRedirecting(true)
-      
-      try {
-        addDebugLog(`🔍 Verificando usuario ID: ${user.id}`)
-        addDebugLog(`📧 Email: ${user.email}`)
+    setVerificando(true)
+    setIsRedirecting(true)
+    
+    try {
+      addDebugLog(`🔍 Verificando usuario ID: ${usuario.id}`)
+      addDebugLog(`📧 Email: ${usuario.email}`)
 
-        // Buscar en la tabla staff
-        const { data: staffMember, error: staffError } = await supabase
-          .from('staff')
-          .select('auth_role, email, user_id')
-          .eq('user_id', user.id)
-          .maybeSingle()
+      // Buscar en la tabla staff
+      const { data: staffMember, error: staffError } = await supabase
+        .from('staff')
+        .select('auth_role, email, user_id')
+        .eq('user_id', usuario.id)
+        .maybeSingle()
 
-        if (staffError) {
-          addDebugLog(`❌ Error en staff: ${staffError.message}`)
-        }
-
-        addDebugLog(`📊 Resultado staff: ${JSON.stringify(staffMember)}`)
-
-        let targetPath = '/portal' // Por defecto: Clientes normales
-
-        // Si existe en la tabla staff, comprobamos su nivel de sistema
-        if (staffMember) {
-          const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
-          addDebugLog(`👤 Rol encontrado: ${systemRole}`)
-          
-          if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
-            targetPath = '/dashboard'
-            addDebugLog('➡️ Redirigiendo a DASHBOARD')
-          } else {
-            addDebugLog('➡️ Redirigiendo a PORTAL (rol no válido)')
-          }
-        } else {
-          addDebugLog('⚠️ Usuario NO encontrado en staff, redirigiendo a PORTAL')
-        }
-
-        // Si viene con una redirección explícita válida externa
-        const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
-          ? redirectPath 
-          : targetPath
-
-        addDebugLog(`🎯 Ruta final: ${finalPath}`)
-        
-        // Mostrar debug por 3 segundos antes de redirigir
-        setShowDebug(true)
-        
-        setTimeout(() => {
-          router.replace(finalPath)
-        }, 2000)
-
-      } catch (err: any) {
-        addDebugLog(`❌ Error capturado: ${err.message}`)
-        router.replace('/portal')
-      } finally {
-        setIsRedirecting(false)
+      if (staffError) {
+        addDebugLog(`❌ Error en staff: ${staffError.message}`)
+        throw staffError
       }
+
+      addDebugLog(`📊 Resultado staff: ${JSON.stringify(staffMember)}`)
+
+      let targetPath = '/portal' // Por defecto: Clientes normales
+
+      // Si existe en la tabla staff, comprobamos su nivel de sistema
+      if (staffMember) {
+        const systemRole = staffMember.auth_role ? staffMember.auth_role.toLowerCase().trim() : 'staff'
+        addDebugLog(`👤 Rol encontrado: ${systemRole}`)
+        
+        if (systemRole === 'admin' || systemRole === 'staff' || systemRole === 'owner') {
+          targetPath = '/dashboard'
+          addDebugLog('➡️ Redirigiendo a DASHBOARD')
+        } else {
+          addDebugLog('➡️ Redirigiendo a PORTAL (rol no válido)')
+        }
+      } else {
+        addDebugLog('⚠️ Usuario NO encontrado en staff, redirigiendo a PORTAL')
+      }
+
+      // Si viene con una redirección explícita válida externa
+      const finalPath = redirectPath !== '/portal' && redirectPath !== '/login' 
+        ? redirectPath 
+        : targetPath
+
+      addDebugLog(`🎯 Ruta final: ${finalPath}`)
+      
+      setShowDebug(true)
+      
+      // Redirigir después de 1 segundo
+      setTimeout(() => {
+        router.replace(finalPath)
+      }, 1000)
+
+    } catch (err: any) {
+      addDebugLog(`❌ Error capturado: ${err.message}`)
+      setTimeout(() => {
+        router.replace('/portal')
+      }, 1000)
+    } finally {
+      setVerificando(false)
+      setIsRedirecting(false)
     }
+  }
 
-    // Delay para asegurar sesión
-    const timer = setTimeout(() => {
-      verificarRolYRedirigir()
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [user, role, authLoading, mounted, redirectPath, router])
+  // ===== EFECTO PARA MONITOREAR EL USUARIO =====
+  useEffect(() => {
+    if (!mounted) return
+    if (authLoading) {
+      addDebugLog('⏳ Auth cargando...')
+      return
+    }
+    
+    if (user) {
+      addDebugLog(`👤 Usuario detectado: ${user.email}`)
+      verificarRolYRedirigir(user)
+    } else {
+      addDebugLog('👤 No hay usuario logueado')
+    }
+  }, [user, authLoading, mounted])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -228,14 +225,38 @@ export default function AuthMobilDefinitivo() {
       setSuccess('✅ ¡Ingreso correcto!')
       setLoginSuccess(true)
 
-      await supabase.auth.getSession()
-      addDebugLog('🔄 Sesión recargada')
+      // OBTENER LA SESIÓN ACTUALIZADA
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) {
+        addDebugLog(`❌ Error obteniendo sesión: ${sessionError.message}`)
+        throw sessionError
+      }
+
+      const usuario = sessionData?.session?.user
+      addDebugLog(`🔄 Sesión recargada: ${usuario?.email || 'sin usuario'}`)
+
+      if (usuario) {
+        addDebugLog('👤 Usuario obtenido de sesión, verificando...')
+        // Esperar un momento para que el estado se actualice
+        setTimeout(() => {
+          verificarRolYRedirigir(usuario)
+        }, 300)
+      } else {
+        addDebugLog('⚠️ No se pudo obtener usuario de la sesión')
+        // Forzar recarga de la página para que el useEffect se ejecute
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
+      }
 
     } catch (err: any) {
       addDebugLog(`❌ Error: ${err.message}`)
       setError(err.message || '❌ Ocurrió un error inesperado.')
       setLoading(false)
       setLoginSuccess(false)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -284,13 +305,23 @@ export default function AuthMobilDefinitivo() {
 
       addDebugLog('✅ Login post-registro exitoso!')
       setLoginSuccess(true)
-      await supabase.auth.getSession()
+
+      const { data: sessionData } = await supabase.auth.getSession()
+      const usuario = sessionData?.session?.user
+      
+      if (usuario) {
+        setTimeout(() => {
+          verificarRolYRedirigir(usuario)
+        }, 300)
+      }
 
     } catch (err: any) {
       addDebugLog(`❌ Error: ${err.message}`)
       setError(err.message || '❌ Error inesperado')
       setLoading(false)
       setLoginSuccess(false)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -332,7 +363,6 @@ export default function AuthMobilDefinitivo() {
           {isRedirecting ? 'Comprobando accesos...' : 'Cargando...'}
         </p>
         
-        {/* MOSTRAR DEBUG EN PANTALLA */}
         {showDebug && debugLogs.length > 0 && (
           <div className="mt-6 w-full max-w-md bg-black/80 rounded-xl p-4 border border-[#D4AF37]/30 max-h-60 overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
