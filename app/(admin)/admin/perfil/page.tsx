@@ -67,47 +67,6 @@ export default function AdminPerfilPage() {
     return getTargetTable() === 'profiles' ? 'full_name' : 'name'
   }
 
-  // ✅ FUNCIÓN PARA OBTENER TENANT_ID
-  const getTenantId = async (): Promise<string | null> => {
-    // 1. Intentar desde useAuth
-    const { tenantId: authTenantId } = useAuth()
-    if (authTenantId) return authTenantId
-
-    // 2. Intentar desde user_metadata
-    if (user?.user_metadata?.tenant_id) {
-      return user.user_metadata.tenant_id
-    }
-
-    // 3. Intentar desde app_metadata
-    if (user?.app_metadata?.tenant_id) {
-      return user.app_metadata.tenant_id
-    }
-
-    // 4. Buscar en profiles
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user?.id)
-      .maybeSingle()
-    
-    if (profileData?.tenant_id) {
-      return profileData.tenant_id
-    }
-
-    // 5. Buscar en staff
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('tenant_id')
-      .eq('user_id', user?.id)
-      .maybeSingle()
-    
-    if (staffData?.tenant_id) {
-      return staffData.tenant_id
-    }
-
-    return null
-  }
-
   const loadProfile = async () => {
     if (!user?.id) return
 
@@ -115,14 +74,10 @@ export default function AdminPerfilPage() {
       setLoading(true)
       setError(null)
 
-      // ✅ OBTENER TENANT_ID PRIMERO
-      const tid = await getTenantId()
-      setTenantId(tid)
-      console.log('✅ Tenant ID obtenido:', tid)
-
       const targetTable = getTargetTable()
       const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
 
+      // 1. Cargar perfil/staff primero
       const { data, error } = await supabase
         .from(targetTable)
         .select('*')
@@ -141,6 +96,10 @@ export default function AdminPerfilPage() {
         if (data.avatar_url) {
           setAvatarPreview(data.avatar_url)
         }
+
+        // Obtener y guardar el tenant_id del registro o metadatos
+        const tid = data.tenant_id || user?.user_metadata?.tenant_id || user?.app_metadata?.tenant_id || 'general'
+        setTenantId(tid)
       } else {
         setError(`No se encontró el registro en la tabla de ${targetTable}.`)
       }
@@ -197,72 +156,30 @@ export default function AdminPerfilPage() {
       const nameCol = getNameColumn()
 
       if (avatarFile) {
-        // ✅ USAR tenantId del estado (ya cargado en loadProfile)
-        const activeTenantId = tenantId
-        
-        if (!activeTenantId) {
-          // Si no hay tenantId, intentar obtenerlo nuevamente
-          const tid = await getTenantId()
-          if (!tid) {
-            throw new Error('No se encontró el tenant_id. Contacta al administrador.')
-          }
-          setTenantId(tid)
-        }
-
-        // ✅ RUTA CORRECTA
+        const activeTenantId = tenantId || 'general'
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `staff/${tenantId}/${fileName}`
+        const filePath = `${activeTenantId}/${fileName}`
 
-        console.log('📤 Subiendo avatar a:', filePath)
-        console.log('📤 Tenant ID:', tenantId)
+        console.log('📤 Subiendo avatar al bucket staff en:', filePath)
 
-        // ✅ INTENTAR CON BUCKET 'staff'
-        let uploadError = null
-        let publicUrl = null
-
-        // Primero intentar con bucket 'staff'
-        const { error: err1 } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('staff')
           .upload(filePath, avatarFile, {
             cacheControl: '3600',
             upsert: true
           })
 
-        if (err1) {
-          console.log('⚠️ Error en bucket staff:', err1.message)
-          uploadError = err1
-          
-          // Fallback: intentar con bucket 'avatars'
-          const fallbackPath = `avatars/${tenantId}/${fileName}`
-          console.log('⚠️ Fallback: intentando con bucket avatars:', fallbackPath)
-          
-          const { error: err2 } = await supabase.storage
-            .from('avatars')
-            .upload(fallbackPath, avatarFile, {
-              cacheControl: '3600',
-              upsert: true
-            })
-          
-          if (err2) {
-            throw new Error(`Error al subir la imagen: ${err2.message}`)
-          }
-          
-          const { data: fallbackUrlData } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fallbackPath)
-          
-          publicUrl = fallbackUrlData.publicUrl
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('staff')
-            .getPublicUrl(filePath)
-          
-          publicUrl = urlData.publicUrl
+        if (uploadError) {
+          throw new Error(`Error al subir la imagen: ${uploadError.message}`)
         }
 
-        avatarUrl = publicUrl
-        console.log('✅ Avatar subido:', avatarUrl)
+        const { data: urlData } = supabase.storage
+          .from('staff')
+          .getPublicUrl(filePath)
+
+        avatarUrl = urlData.publicUrl
+        console.log('✅ URL pública generada:', avatarUrl)
       }
 
       const updatePayload: any = {
