@@ -171,7 +171,7 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // Payload dinámico seguro (solo incluye updated_at si es la tabla profiles)
+      // Payload dinámico adaptado a las columnas reales de cada tabla
       const updatePayload: any = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
