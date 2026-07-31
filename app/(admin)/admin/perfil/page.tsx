@@ -151,7 +151,7 @@ export default function AdminPerfilPage() {
 
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
-        const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`
+        const filePath = `${user.id}-${Date.now()}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
           .from('clients')
@@ -161,6 +161,7 @@ export default function AdminPerfilPage() {
           })
 
         if (uploadError) {
+          console.error('Error detallado de Storage:', uploadError)
           throw new Error(`Error en Storage: ${uploadError.message}`)
         }
 
@@ -171,7 +172,6 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // Payload dinámico adaptado a las columnas reales de cada tabla
       const updatePayload: any = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
@@ -188,6 +188,7 @@ export default function AdminPerfilPage() {
         .eq(idColumn, user.id)
 
       if (updateError) {
+        console.error('Error detallado de Base de Datos:', updateError)
         throw new Error(`Error en Base de Datos (${targetTable}): ${updateError.message}`)
       }
 
@@ -204,7 +205,7 @@ export default function AdminPerfilPage() {
       setTimeout(() => setSuccess(null), 3000)
 
     } catch (err: any) {
-      console.error('Error guardando perfil:', err)
+      console.error('Error general en handleSave:', err)
       setError(err.message || 'Error al guardar los cambios')
     } finally {
       setSaving(false)
