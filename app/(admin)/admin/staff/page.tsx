@@ -7,8 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Users, Plus, Search, Edit, Trash2, 
   Mail, Phone, X, Save, UserPlus, Eye, EyeOff,
-  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck,
-  Bug
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck
 } from 'lucide-react'
 
 interface StaffMember {
@@ -39,7 +38,6 @@ export default function StaffPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -97,15 +95,14 @@ export default function StaffPage() {
     e.preventDefault()
     setError(null)
     setSuccess(null)
-    setDebugInfo(null)
 
     if (!formData.name || !formData.email) {
-      setError('❌ El nombre y el email son obligatorios.')
+      setError('El nombre y el email son obligatorios.')
       return
     }
 
     if (!editingId && !formData.password) {
-      setError('❌ La contraseña es obligatoria para nuevos miembros.')
+      setError('La contraseña es obligatoria para nuevos miembros.')
       return
     }
 
@@ -114,77 +111,37 @@ export default function StaffPage() {
       setRefreshing(true)
 
       if (editingId) {
-        setDebugInfo(`📝 Actualizando ID: ${editingId}`)
-        setDebugInfo(prev => prev + `\n📝 Nuevo nombre: "${formData.name}"`)
-
-        // PRIMERO: Obtener el user_id y los datos actuales
+        // Obtener el user_id del registro
         const { data: staffRecord, error: fetchError } = await supabase
           .from('staff')
-          .select('*')
+          .select('user_id')
           .eq('id', editingId)
           .single()
 
-        if (fetchError) {
-          setDebugInfo(prev => prev + `\n❌ Error obteniendo registro: ${fetchError.message}`)
-          throw new Error(`No se encontró el registro con ID: ${editingId}`)
+        if (fetchError) throw fetchError
+
+        if (!staffRecord?.user_id) {
+          throw new Error('El registro no tiene user_id vinculado')
         }
 
-        setDebugInfo(prev => prev + `\n✅ Registro encontrado: "${staffRecord.name}"`)
-        setDebugInfo(prev => prev + `\n🔑 user_id: ${staffRecord.user_id}`)
-
-        // SEGUNDO: Actualizar usando user_id (que es el enlace con auth)
-        const updateData = {
-          name: formData.name.trim(),
-          role: formData.role,
-          auth_role: formData.auth_role,
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
-          specialty: formData.specialty.trim(),
-          experience: formData.experience ? String(formData.experience) : '',
-          avatar_url: formData.avatar_url.trim()
-        }
-
-        setDebugInfo(prev => prev + `\n📦 Actualizando con user_id: ${staffRecord.user_id}`)
-
-        // ACTUALIZAR USANDO user_id
-        const { data: updatedData, error: updateError } = await supabase
+        // Actualizar usando user_id
+        const { error: updateError } = await supabase
           .from('staff')
-          .update(updateData)
-          .eq('user_id', staffRecord.user_id) // ← USAR user_id
-          .select()
+          .update({
+            name: formData.name.trim(),
+            role: formData.role,
+            auth_role: formData.auth_role,
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            specialty: formData.specialty.trim(),
+            experience: formData.experience ? String(formData.experience) : '',
+            avatar_url: formData.avatar_url.trim()
+          })
+          .eq('user_id', staffRecord.user_id)
 
-        if (updateError) {
-          setDebugInfo(prev => prev + `\n❌ Error Supabase: ${updateError.message}`)
-          throw updateError
-        }
+        if (updateError) throw updateError
 
-        setDebugInfo(prev => prev + `\n✅ Resultado: ${JSON.stringify(updatedData, null, 2)}`)
-        
-        if (!updatedData || updatedData.length === 0) {
-          setDebugInfo(prev => prev + `\n⚠️ No se actualizó ningún registro (array vacío)`)
-          
-          // INTENTAR ACTUALIZACIÓN DIRECTA SIN SELECT (por si RLS está bloqueando)
-          setDebugInfo(prev => prev + `\n🔄 Intentando actualización directa con ID...`)
-          
-          const { data: directUpdate, error: directError } = await supabase
-            .from('staff')
-            .update(updateData)
-            .eq('id', editingId)
-            .select()
-
-          if (directError) {
-            setDebugInfo(prev => prev + `\n❌ Error directo: ${directError.message}`)
-            throw directError
-          }
-
-          setDebugInfo(prev => prev + `\n✅ Resultado directo: ${JSON.stringify(directUpdate, null, 2)}`)
-          
-          if (!directUpdate || directUpdate.length === 0) {
-            throw new Error('No se pudo actualizar el registro. Verifica las políticas RLS en Supabase.')
-          }
-        }
-
-        setSuccess('✅ Miembro actualizado correctamente.')
+        setSuccess('Miembro actualizado correctamente.')
       } else {
         // CREAR NUEVO
         const response = await fetch('/app/api/staff/create', {
@@ -206,12 +163,10 @@ export default function StaffPage() {
         const resData = await response.json()
         
         if (!response.ok || !resData.success) {
-          setDebugInfo(`❌ Error API: ${JSON.stringify(resData, null, 2)}`)
           throw new Error(resData.error || 'No se pudo crear el staff.')
         }
 
-        setDebugInfo(`✅ Creado: ${JSON.stringify(resData.data, null, 2)}`)
-        setSuccess('✅ ¡Miembro del Staff creado con éxito!')
+        setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
       setShowModal(false)
@@ -220,8 +175,7 @@ export default function StaffPage() {
       
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
-      setError(`❌ ${err.message || 'Error al guardar el registro.'}`)
-      setDebugInfo(prev => prev + `\n❌ Error capturado: ${err.message}`)
+      setError(err.message || 'Error al guardar el registro.')
     } finally {
       setIsSubmitting(false)
       setRefreshing(false)
@@ -253,7 +207,6 @@ export default function StaffPage() {
   const handleOpenEdit = (member: StaffMember) => {
     setError(null)
     setSuccess(null)
-    setDebugInfo(null)
     setEditingId(member.id)
     setFormData({
       name: member.name || '',
@@ -272,7 +225,6 @@ export default function StaffPage() {
   const handleOpenCreate = () => {
     setError(null)
     setSuccess(null)
-    setDebugInfo(null)
     setEditingId(null)
     setFormData({
       name: '',
@@ -396,13 +348,11 @@ export default function StaffPage() {
 
       {/* MENSAJES */}
       {error && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-start gap-3 shadow-sm">
-          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-rose-400 font-medium whitespace-pre-wrap break-words">{error}</p>
-          </div>
+          <p className="text-xs text-rose-400 font-medium min-w-0">{error}</p>
         </div>
       )}
 
@@ -412,26 +362,6 @@ export default function StaffPage() {
             <CheckCircle className="w-4 h-4" />
           </div>
           <p className="text-xs text-emerald-400 font-medium min-w-0">{success}</p>
-        </div>
-      )}
-
-      {/* DEBUG */}
-      {debugInfo && (
-        <div className="rounded-2xl p-4 bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 flex items-start gap-3 shadow-sm">
-          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
-            <Bug className="w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-mono text-blue-400 whitespace-pre-wrap break-words leading-relaxed">
-              {debugInfo}
-            </p>
-          </div>
-          <button
-            onClick={() => setDebugInfo(null)}
-            className="shrink-0 text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
       )}
 
@@ -547,14 +477,6 @@ export default function StaffPage() {
                 {editingId ? 'Editar Miembro' : 'Nuevo Miembro Premium'}
               </h3>
             </div>
-
-            {editingId && (
-              <div className="mb-4 p-3 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/20">
-                <p className="text-[10px] text-[#D4AF37] font-mono">
-                  Editando ID: {editingId}
-                </p>
-              </div>
-            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
