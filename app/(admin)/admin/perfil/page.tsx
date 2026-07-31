@@ -27,7 +27,8 @@ import {
 interface AdminProfile {
   id?: string
   user_id?: string
-  full_name: string
+  full_name?: string
+  name?: string // Por si acaso la columna en staff se llama 'name'
   email: string
   phone?: string
   avatar_url?: string
@@ -56,10 +57,14 @@ export default function AdminPerfilPage() {
     phone: ''
   })
 
-  // Determinar en qué tabla buscar según el rol
   const getTargetTable = () => {
     const role = user?.user_metadata?.role || 'staff'
     return role === 'admin' ? 'profiles' : 'staff'
+  }
+
+  // Detecta el nombre real de la columna del nombre según la tabla
+  const getNameColumn = () => {
+    return getTargetTable() === 'profiles' ? 'full_name' : 'name' // Cambia 'name' si en tu tabla staff se llama diferente (ej: 'nombre')
   }
 
   const loadProfile = async () => {
@@ -70,8 +75,8 @@ export default function AdminPerfilPage() {
       setError(null)
 
       const targetTable = getTargetTable()
-      // Usar 'id' si es admin en profiles, o 'user_id' si es staff en su tabla
       const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
+      const nameCol = getNameColumn()
 
       const { data, error } = await supabase
         .from(targetTable)
@@ -83,8 +88,10 @@ export default function AdminPerfilPage() {
 
       if (data) {
         setProfile(data)
+        // Mapea dinámicamente según la columna que traiga la tabla
+        const currentName = data.full_name || data.name || ''
         setFormData({
-          full_name: data.full_name || '',
+          full_name: currentName,
           phone: data.phone || ''
         })
         if (data.avatar_url) {
@@ -143,12 +150,12 @@ export default function AdminPerfilPage() {
       let avatarUrl = profile.avatar_url
       const targetTable = getTargetTable()
       const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
+      const nameCol = getNameColumn()
 
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
         const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`
 
-        // 1. Subida al bucket 'clients'
         const { error: uploadError } = await supabase.storage
           .from('clients')
           .upload(filePath, avatarFile, {
@@ -157,10 +164,9 @@ export default function AdminPerfilPage() {
           })
 
         if (uploadError) {
-          throw new Error(`Error en Storage (bucket clients): ${uploadError.message}`)
+          throw new Error(`Error en Storage: ${uploadError.message}`)
         }
 
-        // 2. Obtener la URL pública desde 'clients'
         const { data: { publicUrl } } = supabase.storage
           .from('clients')
           .getPublicUrl(filePath)
@@ -168,15 +174,17 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // 3. Actualizar la base de datos de manera dinámica con la columna correcta
+      // Objeto de actualización dinámico dependiendo de la columna que use la tabla
+      const updatePayload: any = {
+        phone: formData.phone?.trim() || null,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString()
+      }
+      updatePayload[nameCol] = formData.full_name.trim()
+
       const { error: updateError } = await supabase
         .from(targetTable)
-        .update({
-          full_name: formData.full_name.trim(),
-          phone: formData.phone?.trim() || null,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq(idColumn, user.id)
 
       if (updateError) {
@@ -185,7 +193,7 @@ export default function AdminPerfilPage() {
 
       setProfile(prev => ({
         ...prev!,
-        full_name: formData.full_name.trim(),
+        [nameCol]: formData.full_name.trim(),
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl
       }))
@@ -205,8 +213,9 @@ export default function AdminPerfilPage() {
 
   const handleCancel = () => {
     if (profile) {
+      const currentName = profile.full_name || profile.name || ''
       setFormData({
-        full_name: profile.full_name || '',
+        full_name: currentName,
         phone: profile.phone || ''
       })
       setAvatarPreview(profile.avatar_url || null)
@@ -258,6 +267,8 @@ export default function AdminPerfilPage() {
     )
   }
 
+  const displayName = profile.full_name || profile.name || 'Miembro de la App'
+
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
       isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
@@ -266,7 +277,6 @@ export default function AdminPerfilPage() {
 
       <div className="max-w-3xl mx-auto px-4 space-y-8 relative z-10">
 
-        {/* MENSAJES DE RESPUESTA */}
         {error && (
           <div className={`flex items-start gap-4 border p-5 rounded-2xl transition-all duration-300 ${
             isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'
@@ -295,7 +305,6 @@ export default function AdminPerfilPage() {
           </div>
         )}
 
-        {/* HERO DEL PERFIL */}
         <div className={`relative overflow-hidden rounded-2xl border p-7 md:p-10 shadow-lg transition-all duration-300 mt-4 ${
           isDark 
             ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
@@ -305,7 +314,6 @@ export default function AdminPerfilPage() {
           <div className="absolute -bottom-32 left-1/4 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            {/* Avatar */}
             <div className="relative group">
               <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#D4AF37]/40 shadow-lg relative">
                 {avatarPreview ? (
@@ -330,11 +338,10 @@ export default function AdminPerfilPage() {
               )}
             </div>
 
-            {/* Info */}
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
                 <h1 className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  {profile.full_name || 'Miembro de la App'}
+                  {displayName}
                 </h1>
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
                   <BadgeCheck className="w-3 h-3" />
@@ -359,7 +366,6 @@ export default function AdminPerfilPage() {
               </div>
             </div>
 
-            {/* Botones de acción */}
             <div className="flex flex-col gap-2 shrink-0">
               {editing ? (
                 <>
@@ -405,7 +411,6 @@ export default function AdminPerfilPage() {
           </div>
         </div>
 
-        {/* INFORMACIÓN DETALLADA */}
         <div className={`border rounded-2xl p-6 md:p-8 shadow-sm transition-all duration-300 ${
           isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
         }`}>
@@ -416,7 +421,6 @@ export default function AdminPerfilPage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nombre */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <User className="w-3.5 h-3.5 inline mr-1.5" /> Nombre completo
@@ -436,12 +440,11 @@ export default function AdminPerfilPage() {
                 />
               ) : (
                 <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-                  {profile.full_name || 'No especificado'}
+                  {displayName}
                 </p>
               )}
             </div>
 
-            {/* Email */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <AtSign className="w-3.5 h-3.5 inline mr-1.5" /> Correo electrónico
@@ -451,7 +454,6 @@ export default function AdminPerfilPage() {
               </p>
             </div>
 
-            {/* Teléfono */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Smartphone className="w-3.5 h-3.5 inline mr-1.5" /> Teléfono
@@ -476,7 +478,6 @@ export default function AdminPerfilPage() {
               )}
             </div>
 
-            {/* Rol */}
             <div>
               <label className={`text-[9px] font-black uppercase tracking-[0.2em] block mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                 <Shield className="w-3.5 h-3.5 inline mr-1.5" /> Rol Asignado
@@ -491,7 +492,6 @@ export default function AdminPerfilPage() {
           </div>
         </div>
 
-        {/* NAVEGACIÓN INFERIOR */}
         <div className={`border-t pt-6 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
           <Link
             href="/dashboard"
