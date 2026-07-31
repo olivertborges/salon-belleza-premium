@@ -25,7 +25,8 @@ import {
 } from 'lucide-react'
 
 interface AdminProfile {
-  id: string
+  id?: string
+  user_id?: string
   full_name: string
   email: string
   phone?: string
@@ -55,7 +56,7 @@ export default function AdminPerfilPage() {
     phone: ''
   })
 
-  // Función para determinar en qué tabla buscar según el rol del usuario
+  // Determinar en qué tabla buscar según el rol
   const getTargetTable = () => {
     const role = user?.user_metadata?.role || 'staff'
     return role === 'admin' ? 'profiles' : 'staff'
@@ -69,11 +70,13 @@ export default function AdminPerfilPage() {
       setError(null)
 
       const targetTable = getTargetTable()
+      // Usar 'id' si es admin en profiles, o 'user_id' si es staff en su tabla
+      const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
 
       const { data, error } = await supabase
         .from(targetTable)
         .select('*')
-        .eq('id', user.id) // Cambiar por 'user_id' si en la tabla staff se llama diferente
+        .eq(idColumn, user.id)
         .maybeSingle()
 
       if (error) throw error
@@ -139,6 +142,7 @@ export default function AdminPerfilPage() {
     try {
       let avatarUrl = profile.avatar_url
       const targetTable = getTargetTable()
+      const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
 
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
@@ -164,7 +168,7 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // 3. Actualizar la base de datos de manera dinámica
+      // 3. Actualizar la base de datos de manera dinámica con la columna correcta
       const { error: updateError } = await supabase
         .from(targetTable)
         .update({
@@ -173,7 +177,7 @@ export default function AdminPerfilPage() {
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString()
         })
-        .eq('id', profile.id)
+        .eq(idColumn, user.id)
 
       if (updateError) {
         throw new Error(`Error en Base de Datos (${targetTable}): ${updateError.message}`)
