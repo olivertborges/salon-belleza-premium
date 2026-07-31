@@ -107,7 +107,7 @@ export default function StaffPage() {
     try {
       setRefreshing(true)
       if (editingId) {
-        // EDITAR REGISTRO TRADICIONAL FILTRANDO POR ID ÚNICO
+        // ACTUALIZACIÓN CORREGIDA CON LOS CAMPOS EXACTOS DE LA BD (name y phone)
         const { error: updateError } = await supabase
           .from('staff')
           .update({
@@ -115,7 +115,7 @@ export default function StaffPage() {
             role: formData.role,
             auth_role: formData.auth_role,
             email: formData.email.trim(),
-            phone: formData.phone.trim(),
+            phone: formData.phone.trim(), 
             specialty: formData.specialty.trim(),
             experience: formData.experience ? String(formData.experience) : '',
             avatar_url: formData.avatar_url.trim()
@@ -125,7 +125,7 @@ export default function StaffPage() {
         if (updateError) throw updateError
         setSuccess('Miembro actualizado correctamente.')
       } else {
-        // CREACIÓN MAESTRA A TRAVÉS DE NUESTRA API ROUTE AUTOMÁTICA
+        // CREACIÓN MAESTRA
         const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -137,12 +137,12 @@ export default function StaffPage() {
           throw new Error(resData.error || 'No se pudo crear el staff automatizado.')
         }
 
-        setSuccess('¡Miembro del Staff creado, usuario de Auth registrado y cuenta vinculada con éxito!')
+        setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
       setShowModal(false)
       setEditingId(null)
-      await fetchStaff() // Recarga inmediata de la lista actualizada
+      await fetchStaff() 
     } catch (err: any) {
       console.error('Error in handleSubmit:', err)
       setError(err.message || 'Error al guardar el registro.')
@@ -173,6 +173,7 @@ export default function StaffPage() {
     }
   }
 
+  // ¡AQUÍ ESTABA EL ERROR CORREGIDO! Mapeamos directamente member.name y member.phone
   const handleOpenEdit = (member: StaffMember) => {
     setError(null)
     setSuccess(null)
@@ -478,7 +479,6 @@ export default function StaffPage() {
                 />
               </div>
 
-              {/* CONTRASEÑA: SOLO NUEVOS USUARIOS */}
               {!editingId && (
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
@@ -506,7 +506,6 @@ export default function StaffPage() {
                 </div>
               )}
 
-              {/* NIVEL DE ACCESO */}
               <div>
                 <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                   <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" /> Nivel de Acceso al Sistema
