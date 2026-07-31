@@ -28,14 +28,14 @@ interface AdminProfile {
   id?: string
   user_id?: string
   full_name?: string
-  name?: string // Por si acaso la columna en staff se llama 'name'
+  name?: string
   email: string
   phone?: string
   avatar_url?: string
   role: string
   tenant_id?: string
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
 export default function AdminPerfilPage() {
@@ -62,9 +62,8 @@ export default function AdminPerfilPage() {
     return role === 'admin' ? 'profiles' : 'staff'
   }
 
-  // Detecta el nombre real de la columna del nombre según la tabla
   const getNameColumn = () => {
-    return getTargetTable() === 'profiles' ? 'full_name' : 'name' // Cambia 'name' si en tu tabla staff se llama diferente (ej: 'nombre')
+    return getTargetTable() === 'profiles' ? 'full_name' : 'name'
   }
 
   const loadProfile = async () => {
@@ -76,7 +75,6 @@ export default function AdminPerfilPage() {
 
       const targetTable = getTargetTable()
       const idColumn = targetTable === 'profiles' ? 'id' : 'user_id'
-      const nameCol = getNameColumn()
 
       const { data, error } = await supabase
         .from(targetTable)
@@ -88,7 +86,6 @@ export default function AdminPerfilPage() {
 
       if (data) {
         setProfile(data)
-        // Mapea dinámicamente según la columna que traiga la tabla
         const currentName = data.full_name || data.name || ''
         setFormData({
           full_name: currentName,
@@ -174,13 +171,16 @@ export default function AdminPerfilPage() {
         avatarUrl = publicUrl
       }
 
-      // Objeto de actualización dinámico dependiendo de la columna que use la tabla
+      // Payload dinámico seguro (solo incluye updated_at si es la tabla profiles)
       const updatePayload: any = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
-        updated_at: new Date().toISOString()
       }
       updatePayload[nameCol] = formData.full_name.trim()
+
+      if (targetTable === 'profiles') {
+        updatePayload.updated_at = new Date().toISOString()
+      }
 
       const { error: updateError } = await supabase
         .from(targetTable)
