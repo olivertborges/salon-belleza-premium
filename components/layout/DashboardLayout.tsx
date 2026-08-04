@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Estados locales para el nombre y avatar sincronizados con la BD
   const [dbName, setDbName] = useState('')
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
+  const [imgError, setImgError] = useState(false)
 
   const isDark = theme === 'dark'
 
@@ -42,44 +43,86 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
-  // Cargar perfil real desde la tabla 'staff' o 'clients' para asegurar la foto actualizada
+  // Cargar perfil desde la base de datos (clients, staff o profiles)
   useEffect(() => {
-    const fetchUserHeaderProfile = async () => {
+    const fetchUserProfileHeader = async () => {
       if (!user?.id) return
 
       try {
-        // 1. Intentar obtener perfil desde 'staff' primero
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('name, photo_url, avatar_url')
-          .eq('user_id', user.id)
-          .maybeSingle()
+        console.log('🔍 [HeaderAvatar] Buscando foto para usuario ID:', user.id)
 
-        if (staffData && (staffData.photo_url || staffData.avatar_url || staffData.name)) {
-          if (staffData.name) setDbName(staffData.name)
-          if (staffData.photo_url || staffData.avatar_url) {
-            setDbAvatarUrl(staffData.photo_url || staffData.avatar_url)
+        // 1. Probar en la tabla 'clients'
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
+          .limit(1)
+
+        if (!clientError && clientData && clientData.length > 0) {
+          const client = clientData[0]
+          console.log('📌 [HeaderAvatar] Datos hallados en "clients":', client)
+          
+          const foundAvatar = client.avatar_url || client.photo_url || client.image || client.picture
+          const foundName = client.name || client.full_name || client.nombre
+
+          if (foundName) setDbName(foundName)
+          if (foundAvatar) {
+            setDbAvatarUrl(foundAvatar)
+            setImgError(false)
             return
           }
         }
 
-        // 2. Si no existe en staff, consultar en 'clients'
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('name, avatar_url')
-          .eq('auth_user_id', user.id)
-          .maybeSingle()
+        // 2. Probar en la tabla 'staff' (por si es personal/administrador)
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
+          .select('*')
+          .or(`user_id.eq.${user.id},id.eq.${user.id}`)
+          .limit(1)
 
-        if (clientData) {
-          if (clientData.name) setDbName(clientData.name)
-          if (clientData.avatar_url) setDbAvatarUrl(clientData.avatar_url)
+        if (!staffError && staffData && staffData.length > 0) {
+          const staff = staffData[0]
+          console.log('📌 [HeaderAvatar] Datos hallados en "staff":', staff)
+
+          const foundAvatar = staff.photo_url || staff.avatar_url || staff.image || staff.picture
+          const foundName = staff.name || staff.full_name || staff.nombre
+
+          if (foundName) setDbName(foundName)
+          if (foundAvatar) {
+            setDbAvatarUrl(foundAvatar)
+            setImgError(false)
+            return
+          }
         }
+
+        // 3. Probar en la tabla 'profiles'
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .limit(1)
+
+        if (!profileError && profileData && profileData.length > 0) {
+          const prof = profileData[0]
+          console.log('📌 [HeaderAvatar] Datos hallados en "profiles":', prof)
+
+          const foundAvatar = prof.avatar_url || prof.photo_url || prof.image || prof.picture
+          const foundName = prof.full_name || prof.name
+
+          if (foundName) setDbName(foundName)
+          if (foundAvatar) {
+            setDbAvatarUrl(foundAvatar)
+            setImgError(false)
+            return
+          }
+        }
+
       } catch (err) {
-        console.error('Error cargando foto del header:', err)
+        console.error('❌ [HeaderAvatar] Error buscando avatar:', err)
       }
     }
 
-    fetchUserHeaderProfile()
+    fetchUserProfileHeader()
   }, [user])
 
   const menuItems = [
@@ -95,12 +138,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
-  // Respaldo de nombre e imagen usando los metadatos de autenticación si no están en BD
-  const finalName = dbName || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Usuario'
+  // Evaluación defensiva de Nombre y Foto (Metadata de Auth + DB)
+  const meta = user?.user_metadata || {}
+  const authAvatarUrl = meta.avatar_url || meta.picture || meta.photoURL || meta.avatar || null
+  
+  const finalAvatarUrl = dbAvatarUrl || authAvatarUrl
+
+  const finalName = dbName || meta.full_name || meta.name || meta.nombre || user?.email?.split('@')[0] || 'Cliente'
   const inicialNombre = finalName.charAt(0).toUpperCase()
   const primerNombre = finalName.split(' ')[0]
-  
-  const avatarUrl = dbAvatarUrl || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null
 
   const handleLogoutClick = async () => {
     try {
@@ -278,13 +324,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER (Barra Superior con Foto) */}
+          {/* ACCIONES DEL HEADER CON FOTO DE LA PERSONA */}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
             <div className={`h-5 w-[1px] mx-1 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
 
-            {/* Perfil VIP / Staff — CLICKEABLE CON FOTO DE LA PERSONA */}
             <Link 
               href="/perfil"
               className="flex items-center gap-2.5 sm:gap-3 pl-1 group cursor-pointer"
@@ -300,20 +345,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
               </div>
               
-              {/* Contenedor Avatar con imagen de la BD */}
+              {/* CAJA DE FOTO DEL PERFIL */}
               <div className={`relative w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] shrink-0 ${
                 isDark
                   ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
                   : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] ring-offset-[#FFF9F6]'
               }`}>
-                {avatarUrl ? (
+                {finalAvatarUrl && !imgError ? (
                   <img 
-                    src={avatarUrl} 
+                    src={finalAvatarUrl} 
                     alt={`Foto de ${primerNombre}`} 
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     onError={(e) => {
-                      // Respaldo por si la imagen da error de carga
-                      e.currentTarget.style.display = 'none'
+                      console.warn('⚠️ [HeaderAvatar] Error al renderizar URL de imagen:', finalAvatarUrl)
+                      setImgError(true)
                     }}
                   />
                 ) : (
