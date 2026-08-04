@@ -53,6 +53,7 @@ export default function AdminPerfilPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [activeTable, setActiveTable] = useState<string>('profiles')
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -216,34 +217,44 @@ export default function AdminPerfilPage() {
     if (!user?.id || !profile) return
 
     setSaving(true)
+    setUploadingAvatar(true)
     setError(null)
     setSuccess(null)
 
     try {
       let avatarUrl = profile.avatar_url
 
-      // Si seleccionó un archivo nuevo, lo subimos exactamente igual usando el bucket compartido (ej. 'avatars')
+      // Si seleccionó un archivo nuevo, lo subimos al bucket 'staff'
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = `${fileName}`
+        
+        // Organizar en carpetas: staff/{tenant_id}/{user_id}/{archivo}
+        const filePath = tenantId ? `${tenantId}/${user.id}/${fileName}` : `${user.id}/${fileName}`
+
+        console.log('📤 Subiendo avatar al bucket staff:', filePath)
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile, { upsert: true })
+          .from('staff')
+          .upload(filePath, avatarFile, { 
+            upsert: true,
+            cacheControl: '3600'
+          })
 
         if (uploadError) {
+          console.error('❌ Error al subir:', uploadError)
           throw new Error(`Error al subir la imagen: ${uploadError.message}`)
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from('avatars')
+          .from('staff')
           .getPublicUrl(filePath)
 
         avatarUrl = publicUrlData.publicUrl
+        console.log('✅ Avatar subido exitosamente:', avatarUrl)
       }
 
-      // Preparamos el payload unificado garantizando que se guarden los campos de texto correspondientes
+      // Preparamos el payload unificado
       const isProfiles = activeTable === 'profiles'
       const idColumn = isProfiles ? 'id' : 'user_id'
       
@@ -256,7 +267,7 @@ export default function AdminPerfilPage() {
         updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
       } else {
-        // En staff cubrimos tanto si usa 'name' como 'full_name' para que funcione siempre idéntico a admin
+        // En staff cubrimos tanto 'name' como 'full_name'
         updatePayload.name = formData.full_name.trim()
         updatePayload.full_name = formData.full_name.trim()
       }
@@ -293,9 +304,11 @@ export default function AdminPerfilPage() {
       setTimeout(() => setSuccess(null), 4000)
 
     } catch (err: any) {
+      console.error('❌ Error en handleSave:', err)
       setError(err.message || 'Error desconocido al guardar los cambios')
     } finally {
       setSaving(false)
+      setUploadingAvatar(false)
     }
   }
 
@@ -411,9 +424,14 @@ export default function AdminPerfilPage() {
                     <UserCircle className="w-16 h-16 text-[#A89588]" />
                   </div>
                 )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  </div>
+                )}
               </div>
 
-              {editing && (
+              {editing && !uploadingAvatar && (
                 <label className="absolute -bottom-2 -right-2 p-2 rounded-xl cursor-pointer transition-all duration-300 hover:scale-110 shadow-md bg-[#D4AF37] text-[#1A0E0A]">
                   <Camera className="w-4 h-4" />
                   <input
@@ -459,14 +477,14 @@ export default function AdminPerfilPage() {
                 <>
                   <button
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || uploadingAvatar}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 ${
                       isDark 
                         ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
                         : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
-                    }`}
+                    } ${(saving || uploadingAvatar) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {saving ? (
+                    {(saving || uploadingAvatar) ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Guardando</>
                     ) : (
                       <><Save className="w-4 h-4" /> Guardar</>
@@ -474,11 +492,12 @@ export default function AdminPerfilPage() {
                   </button>
                   <button
                     onClick={handleCancel}
+                    disabled={saving || uploadingAvatar}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center gap-2 border ${
                       isDark 
                         ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E] hover:text-[#FFF9F6]' 
                         : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA] hover:text-[#1A0E0A]'
-                    }`}
+                    } ${(saving || uploadingAvatar) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <X className="w-4 h-4" /> Cancelar
                   </button>
