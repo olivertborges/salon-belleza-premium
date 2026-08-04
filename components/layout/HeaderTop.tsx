@@ -13,13 +13,13 @@ interface HeaderTopProps {
 }
 
 export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
-  const { user: authUser, role } = useAuth()
+  const { user, role } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { settings } = useSettings()
   const [showSearch, setShowSearch] = useState(false)
-
+  
+  // Estado exacto igual a AdminHeader
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [imgError, setImgError] = useState(false)
 
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
@@ -27,71 +27,34 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
+  // Consulta exacta igual a AdminHeader
   useEffect(() => {
-    const fetchUserAvatarDirectly = async () => {
+    if (!user) return
+
+    const fetchProfileData = async () => {
       try {
-        setImgError(false)
-
-        // 1. Obtener la sesión activa directamente desde Supabase Client
-        const { data: { user: currentUser } } = await supabase.auth.getUser()
-        const targetUser = currentUser || authUser
-
-        if (!targetUser) return
-
-        // 2. Probar metadata de Auth
-        if (targetUser.user_metadata?.avatar_url) {
-          setAvatarUrl(targetUser.user_metadata.avatar_url)
-          return
-        }
-
-        // 3. Consultar tabla profiles
-        const { data: profile } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
-          .select('*')
-          .eq('id', targetUser.id)
+          .select('full_name, avatar_url')
+          .eq('id', user.id)
           .maybeSingle()
 
-        if (profile?.avatar_url) {
-          setAvatarUrl(profile.avatar_url)
-          return
+        if (error) throw error
+
+        if (data && data.avatar_url) {
+          setAvatarUrl(data.avatar_url)
         }
-
-        // 4. Consultar tabla staff por ID / auth_user_id / user_id
-        const { data: staffById } = await supabase
-          .from('staff')
-          .select('*')
-          .or(`user_id.eq.${targetUser.id},auth_user_id.eq.${targetUser.id},id.eq.${targetUser.id}`)
-          .maybeSingle()
-
-        if (staffById?.avatar_url) {
-          setAvatarUrl(staffById.avatar_url)
-          return
-        }
-
-        // 5. Consultar tabla staff por Email
-        if (targetUser.email) {
-          const { data: staffByEmail } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('email', targetUser.email)
-            .maybeSingle()
-
-          if (staffByEmail?.avatar_url) {
-            setAvatarUrl(staffByEmail.avatar_url)
-            return
-          }
-        }
-      } catch (err) {
-        console.error('Error cargando avatar:', err)
+      } catch (error) {
+        console.error('Error cargando avatar en el Header:', error)
       }
     }
 
-    fetchUserAvatarDirectly()
-  }, [authUser])
+    fetchProfileData()
+  }, [user])
 
   const getInitials = () => {
-    if (authUser?.full_name) {
-      return authUser.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    if (user?.full_name) {
+      return user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     }
     return 'U'
   }
@@ -111,6 +74,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         : 'bg-white/80 backdrop-blur-md border-b border-pink-100/60'
     }`}>
       <div className="flex items-center justify-between px-4 md:px-6 h-14 md:h-16">
+        {/* Lado izquierdo - Logo y menú */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSidebarOpen(true)}
@@ -123,6 +87,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             <Menu className="w-5 h-5" />
           </button>
 
+          {/* Logo unificado y más pequeño */}
           <div className="hidden lg:flex items-center gap-2">
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
@@ -145,7 +110,9 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
           </div>
         </div>
 
+        {/* Lado derecho - Acciones */}
         <div className="flex items-center gap-1 md:gap-2">
+          {/* Búsqueda */}
           <button 
             onClick={() => setShowSearch(!showSearch)}
             className={`hidden md:flex p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
@@ -157,6 +124,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             <Search className="w-4 h-4" />
           </button>
 
+          {/* Toggle Dark/Light */}
           <button 
             onClick={toggleTheme}
             className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
@@ -168,6 +136,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
+          {/* Notificaciones */}
           <button className={`relative p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
             isDark 
               ? 'hover:bg-fuchsia-950/30 text-stone-400 hover:text-pink-400' 
@@ -179,13 +148,13 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             }`} />
           </button>
 
-          {/* Desktop Avatar */}
+          {/* Perfil - Desktop */}
           <div className="hidden lg:flex items-center gap-2.5 pl-3 border-l border-stone-200 dark:border-fuchsia-950/30">
             <div className="text-right leading-tight">
               <p className={`text-[11px] font-medium ${
                 isDark ? 'text-white' : 'text-stone-800'
               }`}>
-                {authUser?.full_name || 'Usuario'}
+                {user?.full_name || 'Usuario'}
               </p>
               <p className={`text-[7px] uppercase tracking-[0.15em] font-medium ${
                 isDark ? 'text-stone-500' : 'text-stone-400'
@@ -196,14 +165,13 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             
             <div 
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden shrink-0"
-              style={{ background: avatarUrl && !imgError ? 'transparent' : brandGradient }}
+              style={{ background: avatarUrl ? 'transparent' : brandGradient }}
             >
-              {avatarUrl && !imgError ? (
+              {avatarUrl ? (
                 <img 
                   src={avatarUrl} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
-                  onError={() => setImgError(true)}
                 />
               ) : (
                 getInitials()
@@ -211,18 +179,17 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             </div>
           </div>
 
-          {/* Mobile Avatar */}
+          {/* Perfil - Mobile */}
           <div className="lg:hidden">
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[9px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden shrink-0"
-              style={{ background: avatarUrl && !imgError ? 'transparent' : brandGradient }}
+              style={{ background: avatarUrl ? 'transparent' : brandGradient }}
             >
-              {avatarUrl && !imgError ? (
+              {avatarUrl ? (
                 <img 
                   src={avatarUrl} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
-                  onError={() => setImgError(true)}
                 />
               ) : (
                 getInitials()
@@ -232,6 +199,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         </div>
       </div>
 
+      {/* Barra de búsqueda expandible */}
       {showSearch && (
         <div className={`px-4 md:px-6 pb-3 transition-all duration-300 ${
           isDark ? 'border-t border-fuchsia-950/30' : 'border-t border-pink-100/60'
@@ -254,6 +222,11 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               } as React.CSSProperties}
               autoFocus
             />
+            <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[7px] font-mono ${
+              isDark ? 'bg-stone-800 text-stone-500' : 'bg-stone-100 text-stone-400'
+            }`}>
+              ⌘K
+            </kbd>
           </div>
         </div>
       )}
