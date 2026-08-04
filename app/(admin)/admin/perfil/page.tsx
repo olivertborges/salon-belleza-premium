@@ -53,7 +53,6 @@ export default function AdminPerfilPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [activeTable, setActiveTable] = useState<string>('profiles')
-  const [tenantId, setTenantId] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -61,73 +60,23 @@ export default function AdminPerfilPage() {
     phone: ''
   })
 
-  const getTenantId = async (): Promise<string | null> => {
-    if (user?.user_metadata?.tenant_id) return user.user_metadata.tenant_id
-    if (user?.app_metadata?.tenant_id) return user.app_metadata.tenant_id
-
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user?.id)
-      .maybeSingle()
-
-    if (profileData?.tenant_id) return profileData.tenant_id
-
-    const { data: staffData } = await supabase
+  const uploadAvatar = async (file: File, path: string): Promise<string> => {
+    // 1. Subir archivo al bucket 'staff' sin forzar contentType para evitar Failed to Fetch
+    const { error: uploadError } = await supabase.storage
       .from('staff')
-      .select('tenant_id')
-      .or(`user_id.eq.${user?.id},auth_user_id.eq.${user?.id}`)
-      .maybeSingle()
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: true
+      })
 
-    if (staffData?.tenant_id) return staffData.tenant_id
+    if (uploadError) throw uploadError
 
-    return '2fb6af3b-944e-4974-93f4-1d4860771173'
-  }
+    // 2. Obtener la URL pública
+    const { data: publicUrlData } = supabase.storage
+      .from('staff')
+      .getPublicUrl(path)
 
-  const uploadAvatarWithRetry = async (file: File, path: string): Promise<string> => {
-    const maxRetries = 3
-    let lastError = null
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const { error: uploadError } = await supabase.storage
-          .from('staff')
-          .upload(path, file, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: file.type || 'image/jpeg'
-          })
-
-        if (uploadError) {
-          lastError = uploadError
-          if (uploadError.message.includes('Failed to fetch') || 
-              uploadError.message.includes('network') ||
-              uploadError.message.includes('timeout')) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
-            continue
-          }
-          throw uploadError
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('staff')
-          .getPublicUrl(path)
-
-        return publicUrlData.publicUrl
-
-      } catch (error: any) {
-        lastError = error
-        if (error.message?.includes('Failed to fetch') || 
-            error.message?.includes('network') ||
-            error.message?.includes('timeout')) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
-          continue
-        }
-        throw error
-      }
-    }
-
-    throw lastError || new Error('No se pudo subir la imagen después de varios intentos')
+    return publicUrlData.publicUrl
   }
 
   const loadProfile = async () => {
@@ -136,9 +85,6 @@ export default function AdminPerfilPage() {
     try {
       setLoading(true)
       setError(null)
-
-      const tid = await getTenantId()
-      setTenantId(tid)
 
       // 1. Intentar obtener de 'profiles'
       let { data: profileData } = await supabase
@@ -281,14 +227,12 @@ export default function AdminPerfilPage() {
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        const filePath = tenantId ? `${tenantId}/${user.id}/${fileName}` : `${user.id}/${fileName}`
+        const filePath = `${user.id}/${fileName}`
 
-        avatarUrl = await uploadAvatarWithRetry(avatarFile, filePath)
+        avatarUrl = await uploadAvatar(avatarFile, filePath)
       }
 
       const isProfiles = activeTable === 'profiles'
-
-      // Construcción del objeto a actualizar según la tabla
       const updatePayload: Record<string, any> = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
@@ -298,7 +242,6 @@ export default function AdminPerfilPage() {
         updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
 
-        // Guardar en la tabla profiles
         const { error: profileError } = await supabase
           .from('profiles')
           .update(updatePayload)
@@ -308,13 +251,11 @@ export default function AdminPerfilPage() {
       } else {
         updatePayload.name = formData.full_name.trim()
 
-        // Intentar actualizar en la tabla staff por user_id, auth_user_id o id
         let { error: staffError } = await supabase
           .from('staff')
           .update(updatePayload)
           .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${profile.id || user.id}`)
 
-        // Reintento por email si el anterior no afectó o dio error
         if (staffError && user.email) {
           const { error: retryError } = await supabase
             .from('staff')
@@ -325,7 +266,7 @@ export default function AdminPerfilPage() {
         }
       }
 
-      // Sincronizar SIEMPRE en los metadatos del usuario en Supabase Auth
+      // Sincronizar metadatos del usuario en Auth
       await supabase.auth.updateUser({
         data: {
           avatar_url: avatarUrl,
@@ -349,7 +290,7 @@ export default function AdminPerfilPage() {
 
     } catch (err: any) {
       console.error('❌ Error en handleSave:', err)
-      setError(err.message || 'Error desconocido al guardar los cambios')
+      setError(err.message || 'Error al guardar los cambios')
     } finally {
       setSaving(false)
       setUploadingAvatar(false)
