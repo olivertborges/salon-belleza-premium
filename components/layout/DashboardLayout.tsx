@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, User
+  Camera, Tag, Eye, Hand
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -21,10 +21,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Estados locales para el nombre y avatar sincronizados con la BD
+  // Estados locales
   const [dbName, setDbName] = useState('')
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
-  const [imgError, setImgError] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   const isDark = theme === 'dark'
 
@@ -43,86 +43,82 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
-  // Cargar perfil desde la base de datos (clients, staff o profiles)
+  // BUSCADOR MULTI-TABLA ROBUSTO CON LOGS
   useEffect(() => {
-    const fetchUserProfileHeader = async () => {
-      if (!user?.id) return
+    const fetchUserHeaderProfile = async () => {
+      if (!user) return
+
+      console.log('--------------------------------------------------')
+      console.log('📸 [DEBUG AVATAR] Usuario Auth detectado:', user)
+      console.log('📸 [DEBUG AVATAR] user.user_metadata:', user.user_metadata)
+
+      let fotoEncontrada: string | null = null
+      let nombreEncontrado: string | null = null
 
       try {
-        console.log('🔍 [HeaderAvatar] Buscando foto para usuario ID:', user.id)
-
-        // 1. Probar en la tabla 'clients'
-        const { data: clientData, error: clientError } = await supabase
-          .from('clients')
-          .select('*')
-          .or(`auth_user_id.eq.${user.id},id.eq.${user.id}`)
-          .limit(1)
-
-        if (!clientError && clientData && clientData.length > 0) {
-          const client = clientData[0]
-          console.log('📌 [HeaderAvatar] Datos hallados en "clients":', client)
-          
-          const foundAvatar = client.avatar_url || client.photo_url || client.image || client.picture
-          const foundName = client.name || client.full_name || client.nombre
-
-          if (foundName) setDbName(foundName)
-          if (foundAvatar) {
-            setDbAvatarUrl(foundAvatar)
-            setImgError(false)
-            return
-          }
-        }
-
-        // 2. Probar en la tabla 'staff' (por si es personal/administrador)
-        const { data: staffData, error: staffError } = await supabase
+        // 1. CONSULTA EN TABLA STAFF (por user_id o por email)
+        const { data: staffList, error: staffErr } = await supabase
           .from('staff')
           .select('*')
-          .or(`user_id.eq.${user.id},id.eq.${user.id}`)
-          .limit(1)
+          .or(`user_id.eq.${user.id},email.eq.${user.email}`)
 
-        if (!staffError && staffData && staffData.length > 0) {
-          const staff = staffData[0]
-          console.log('📌 [HeaderAvatar] Datos hallados en "staff":', staff)
+        console.log('📊 [DEBUG AVATAR] Resultado en tabla STAFF:', staffList, staffErr)
 
-          const foundAvatar = staff.photo_url || staff.avatar_url || staff.image || staff.picture
-          const foundName = staff.name || staff.full_name || staff.nombre
+        if (staffList && staffList.length > 0) {
+          const s = staffList[0]
+          nombreEncontrado = s.name || s.full_name || s.nombre
+          fotoEncontrada = s.photo_url || s.avatar_url || s.image || s.picture || s.photo || s.avatar
+        }
 
-          if (foundName) setDbName(foundName)
-          if (foundAvatar) {
-            setDbAvatarUrl(foundAvatar)
-            setImgError(false)
-            return
+        // 2. CONSULTA EN TABLA CLIENTS (si no se halló en staff)
+        if (!fotoEncontrada) {
+          const { data: clientList, error: clientErr } = await supabase
+            .from('clients')
+            .select('*')
+            .or(`auth_user_id.eq.${user.id},email.eq.${user.email},id.eq.${user.id}`)
+
+          console.log('📊 [DEBUG AVATAR] Resultado en tabla CLIENTS:', clientList, clientErr)
+
+          if (clientList && clientList.length > 0) {
+            const c = clientList[0]
+            if (!nombreEncontrado) nombreEncontrado = c.name || c.full_name || c.nombre
+            fotoEncontrada = c.avatar_url || c.photo_url || c.image || c.picture || c.photo || c.avatar
           }
         }
 
-        // 3. Probar en la tabla 'profiles'
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .limit(1)
+        // 3. CONSULTA EN TABLA PROFILES
+        if (!fotoEncontrada) {
+          const { data: profileList, error: profErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
 
-        if (!profileError && profileData && profileData.length > 0) {
-          const prof = profileData[0]
-          console.log('📌 [HeaderAvatar] Datos hallados en "profiles":', prof)
+          console.log('📊 [DEBUG AVATAR] Resultado en tabla PROFILES:', profileList, profErr)
 
-          const foundAvatar = prof.avatar_url || prof.photo_url || prof.image || prof.picture
-          const foundName = prof.full_name || prof.name
-
-          if (foundName) setDbName(foundName)
-          if (foundAvatar) {
-            setDbAvatarUrl(foundAvatar)
-            setImgError(false)
-            return
+          if (profileList && profileList.length > 0) {
+            const p = profileList[0]
+            if (!nombreEncontrado) nombreEncontrado = p.full_name || p.name
+            fotoEncontrada = p.avatar_url || p.photo_url || p.image || p.picture || p.avatar
           }
+        }
+
+        if (nombreEncontrado) setDbName(nombreEncontrado)
+
+        if (fotoEncontrada) {
+          console.log('✅ [DEBUG AVATAR] Foto encontrada con éxito:', fotoEncontrada)
+          setDbAvatarUrl(fotoEncontrada)
+          setImageError(false)
+        } else {
+          console.warn('⚠️ [DEBUG AVATAR] No se encontró URL de foto en ninguna tabla de la BD.')
         }
 
       } catch (err) {
-        console.error('❌ [HeaderAvatar] Error buscando avatar:', err)
+        console.error('❌ [DEBUG AVATAR] Error realizando consultas:', err)
       }
+      console.log('--------------------------------------------------')
     }
 
-    fetchUserProfileHeader()
+    fetchUserHeaderProfile()
   }, [user])
 
   const menuItems = [
@@ -138,13 +134,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
-  // Evaluación defensiva de Nombre y Foto (Metadata de Auth + DB)
+  // Extraer alternativas de foto desde auth metadata
   const meta = user?.user_metadata || {}
-  const authAvatarUrl = meta.avatar_url || meta.picture || meta.photoURL || meta.avatar || null
-  
-  const finalAvatarUrl = dbAvatarUrl || authAvatarUrl
+  const authAvatar = meta.avatar_url || meta.picture || meta.photoURL || meta.avatar || null
 
-  const finalName = dbName || meta.full_name || meta.name || meta.nombre || user?.email?.split('@')[0] || 'Cliente'
+  // URL Final a utilizar
+  const finalAvatarUrl = dbAvatarUrl || authAvatar
+
+  const finalName = dbName || meta.full_name || meta.name || meta.nombre || user?.email?.split('@')[0] || 'Usuario'
   const inicialNombre = finalName.charAt(0).toUpperCase()
   const primerNombre = finalName.split(' ')[0]
 
@@ -189,9 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       />
 
-      {/* ============================================================ */}
       {/* SIDEBAR */}
-      {/* ============================================================ */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:static lg:translate-x-0 flex flex-col shrink-0 ${
           sidebarOpen ? 'translate-x-0 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.3)]' : '-translate-x-full'
@@ -199,7 +194,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           isDark ? 'bg-[#1E120C]/95 border-[#3D281E]' : 'bg-[#FFF9F6]/95 border-[#F0E4DA]'
         }`}
       >
-        {/* LOGO AREA */}
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
@@ -227,7 +221,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
 
-        {/* MENÚ */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-[#D4AF37]/20">
           {menuItems.map((item, index) => {
             const Icon = item.icon
@@ -240,9 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setSidebarOpen(false)} 
                 className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition-all duration-300 group relative border ${
                   isActive 
-                    ? isDark 
-                      ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37]'
-                      : 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37]'
+                    ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37]'
                     : 'border-transparent text-[#A89588] hover:text-[#1A0E0A] dark:hover:text-[#FFF9F6] hover:bg-[#D4AF37]/5'
                 }`}
               >
@@ -261,18 +252,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 <span className="tracking-wide font-medium">{item.label}</span>
-
-                {item.href === '/promociones' && (
-                  <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 animate-pulse">
-                    HOT
-                  </span>
-                )}
               </Link>
             )
           })}
         </div>
 
-        {/* LOGOUT BOTÓN */}
         <div className={`p-4 border-t shrink-0 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]/50' : 'border-[#F0E4DA] bg-[#FFF9F6]/50'
         }`}>
@@ -296,9 +280,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* ============================================================ */}
-      {/* VISTA PRINCIPAL CONTENIDO */}
-      {/* ============================================================ */}
+      {/* VISTA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
         {/* HEADER */}
@@ -324,7 +306,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER CON FOTO DE LA PERSONA */}
+          {/* ACCIONES DEL HEADER */}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
@@ -345,20 +327,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
               </div>
               
-              {/* CAJA DE FOTO DEL PERFIL */}
-              <div className={`relative w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] shrink-0 ${
-                isDark
-                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
-                  : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] ring-offset-[#FFF9F6]'
+              {/* CONTENEDOR DE LA IMAGEN */}
+              <div className={`relative w-11 h-11 rounded-xl border overflow-hidden flex items-center justify-center font-black text-sm transition-all duration-300 shadow-md shrink-0 border-[#D4AF37]/50 ${
+                isDark ? 'bg-[#2A1B14] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
               }`}>
-                {finalAvatarUrl && !imgError ? (
+                {finalAvatarUrl && !imageError ? (
                   <img 
                     src={finalAvatarUrl} 
                     alt={`Foto de ${primerNombre}`} 
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
-                      console.warn('⚠️ [HeaderAvatar] Error al renderizar URL de imagen:', finalAvatarUrl)
-                      setImgError(true)
+                      console.error('❌ Error al cargar la foto desde URL:', finalAvatarUrl)
+                      setImageError(true)
                     }}
                   />
                 ) : (
@@ -371,7 +351,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto bg-transparent transition-all duration-300">
-          <div className="max-w-7xl mx-auto animate-[fadeIn_0.4s_ease-out]">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
