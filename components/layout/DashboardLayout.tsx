@@ -21,60 +21,78 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Estados locales para el nombre y avatar idénticos a AdminHeader
-  const [userName, setUserName] = useState('Usuario')
+  const [userName, setUserName] = useState('Silvana')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [imgError, setImgError] = useState(false)
 
   const isDark = theme === 'dark'
 
   useEffect(() => {
-    if (sidebarOpen) {
-      document.documentElement.style.overflow = 'hidden'
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.documentElement.style.overflow = ''
-      document.body.style.overflow = ''
-    }
-
-    return () => {
-      document.documentElement.style.overflow = ''
-      document.body.style.overflow = ''
-    }
-  }, [sidebarOpen])
-
-  // Lógica idéntica al AdminHeader
-  useEffect(() => {
     if (!user) return
 
-    // 1. Configurar nombre desde los metadatos de autenticación por defecto
-    const name = user.user_metadata?.full_name || 
-                 user.user_metadata?.name || 
-                 user.user_metadata?.first_name ||
-                 user.email?.split('@')[0] || 
-                 'Usuario'
-    setUserName(name)
+    const initialName = user.user_metadata?.full_name || 
+                        user.user_metadata?.name || 
+                        user.email?.split('@')[0] || 
+                        'Silvana'
+    setUserName(initialName)
 
-    // 2. Traer la foto directamente desde 'profiles' (idéntico al admin)
-    const fetchProfileData = async () => {
+    const fetchStaffAvatarFromBucket = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', user.id)
-          .maybeSingle()
+        let avatarPath: string | null = null
 
-        if (error) throw error
+        // 1. Buscar el registro en la tabla 'staff' por email o user_id
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('*')
+          .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+          .limit(1)
 
-        if (data) {
-          if (data.full_name) setUserName(data.full_name)
-          if (data.avatar_url) setAvatarUrl(data.avatar_url)
+        if (staffData && staffData.length > 0) {
+          const staffMember = staffData[0]
+          
+          if (staffMember.name || staffMember.full_name) {
+            setUserName(staffMember.name || staffMember.full_name)
+          }
+
+          // Obtener el nombre o ruta del archivo dentro del bucket
+          avatarPath = staffMember.avatar_url || staffMember.photo_url || staffMember.image_path || staffMember.photo
         }
-      } catch (error) {
-        console.error('Error cargando avatar en el Header:', error)
+
+        // 2. Si el registro tiene una ruta o nombre de archivo guardado
+        if (avatarPath) {
+          // Si ya es una URL completa (http/https), usarla directamente
+          if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+            setAvatarUrl(avatarPath)
+          } else {
+            // Si es un path/nombre de archivo, construir la URL pública desde el bucket 'staff'
+            const { data } = supabase.storage.from('staff').getPublicUrl(avatarPath)
+            if (data?.publicUrl) {
+              setAvatarUrl(data.publicUrl)
+            }
+          }
+        } else {
+          // 3. Si la columna en la tabla está vacía, probar si el archivo se guardó con el ID o email del usuario
+          const candidatePaths = [
+            `${user.id}.jpg`,
+            `${user.id}.png`,
+            `${user.email}.jpg`,
+            `${user.email}.png`
+          ]
+
+          for (const path of candidatePaths) {
+            const { data } = supabase.storage.from('staff').getPublicUrl(path)
+            if (data?.publicUrl) {
+              setAvatarUrl(data.publicUrl)
+              break
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error al obtener imagen del bucket staff:', err)
       }
     }
 
-    fetchProfileData()
+    fetchStaffAvatarFromBucket()
   }, [user])
 
   const firstName = userName.split(' ')[0] || userName
@@ -99,16 +117,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       await supabase.auth.signOut()
       localStorage.clear()
       sessionStorage.clear()
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
       setTimeout(() => {
         window.location.href = '/login'
       }, 100)
     } catch (error) {
-      console.error('Error crítico en el logout:', error)
+      console.error('Error al cerrar sesión:', error)
       window.location.href = '/login'
     }
   }
@@ -118,15 +131,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
-      {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      {/* GLOW DE FONDO DECORATIVO */}
-      {isDark && (
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#D4AF37]/5 blur-[150px] pointer-events-none rounded-full z-0" />
-      )}
-
-      {/* BACKDROP */}
       <div 
         onClick={() => setSidebarOpen(false)} 
         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-500 ${
@@ -134,7 +140,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       />
 
-      {/* SIDEBAR */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:static lg:translate-x-0 flex flex-col shrink-0 ${
           sidebarOpen ? 'translate-x-0 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.3)]' : '-translate-x-full'
@@ -228,10 +233,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* VISTA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
-        {/* HEADER */}
         <header className={`sticky top-0 z-30 border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-all duration-300 ${
           isDark ? 'bg-[#1E120C]/80 border-[#3D281E] backdrop-blur-xl' : 'bg-[#FFF9F6]/80 border-[#F0E4DA] backdrop-blur-xl'
         }`}>
@@ -254,7 +257,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER: MISMA ESTRUCTURA Y LOGICA DEL ADMIN */}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
@@ -271,21 +273,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {userName}
                 </p>
                 <span className="text-[8px] font-black tracking-[0.2em] uppercase mt-1 block bg-gradient-to-r from-[#D4AF37] to-[#E8D5A0] bg-clip-text text-transparent">
-                  MEMBER
+                  STAFF MEMBER
                 </span>
               </div>
               
-              {/* Contenedor de la Foto o Inicial exacto al Admin Header */}
               <div className={`w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center text-sm font-black shadow-sm transition-all ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] shrink-0 ${
                 isDark
                   ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
                   : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] ring-offset-[#FFF9F6]'
               }`}>
-                {avatarUrl ? (
+                {avatarUrl && !imgError ? (
                   <img 
                     src={avatarUrl} 
                     alt={`Avatar de ${userName}`} 
                     className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
                   />
                 ) : (
                   <span>{inicialNombre}</span>
@@ -295,7 +297,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto bg-transparent transition-all duration-300">
           <div className="max-w-7xl mx-auto">
             {children}
