@@ -18,7 +18,6 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   const { settings } = useSettings()
   const [showSearch, setShowSearch] = useState(false)
   
-  // Estado exacto igual a AdminHeader
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const isDark = theme === 'dark'
@@ -27,15 +26,21 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // Consulta exacta igual a AdminHeader
   useEffect(() => {
     if (!user) return
 
-    const fetchProfileData = async () => {
+    const fetchAvatar = async () => {
       try {
+        // 1. Revisar primero si está en los metadatos de Auth (caso larasanturio@outlook.com)
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url)
+          return
+        }
+
+        // 2. Si no, buscar en la tabla 'profiles' (caso Aniexis Campo)
         const { data, error } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url')
+          .select('avatar_url')
           .eq('id', user.id)
           .maybeSingle()
 
@@ -45,11 +50,11 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
           setAvatarUrl(data.avatar_url)
         }
       } catch (error) {
-        console.error('Error cargando avatar en el Header:', error)
+        console.error('Error al cargar la foto de perfil:', error)
       }
     }
 
-    fetchProfileData()
+    fetchAvatar()
   }, [user])
 
   const getInitials = () => {
@@ -87,7 +92,6 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Logo unificado y más pequeño */}
           <div className="hidden lg:flex items-center gap-2">
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
@@ -199,7 +203,6 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         </div>
       </div>
 
-      {/* Barra de búsqueda expandible */}
       {showSearch && (
         <div className={`px-4 md:px-6 pb-3 transition-all duration-300 ${
           isDark ? 'border-t border-fuchsia-950/30' : 'border-t border-pink-100/60'
@@ -222,11 +225,6 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               } as React.CSSProperties}
               autoFocus
             />
-            <kbd className={`absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[7px] font-mono ${
-              isDark ? 'bg-stone-800 text-stone-500' : 'bg-stone-100 text-stone-400'
-            }`}>
-              ⌘K
-            </kbd>
           </div>
         </div>
       )}
