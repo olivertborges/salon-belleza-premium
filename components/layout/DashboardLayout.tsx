@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand
+  Camera, Tag, Eye, Hand, ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -96,6 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const firstName = userName.split(' ')[0] || userName
   const inicialNombre = firstName.charAt(0).toUpperCase()
 
+  // Se eliminó la tienda de la lista de navegación del cliente
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -171,8 +172,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        <div className="p-4 border-t border-[#3D281E]">
-          <button onClick={handleLogoutClick} className="flex items-center gap-3 px-4 py-3 text-xs text-[#A89588]">
+        {/* BOTÓN AL PANEL DE ADMINISTRACIÓN Y CERRAR SESIÓN */}
+        <div className="p-4 border-t border-[#3D281E] space-y-1">
+          <Link 
+            href="/dashboard" 
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Panel Admin</span>
+          </Link>
+          <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-4 py-3 text-xs text-[#A89588]">
             <LogOut className="w-4 h-4" />
             <span>Cerrar Sesión</span>
           </button>
@@ -189,6 +199,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <div className="flex items-center gap-3 ml-auto">
+            {/* Acceso rápido visible en la barra superior en pantallas medianas y grandes */}
+            <Link 
+              href="/dashboard" 
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#D4AF37]/30 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Ir a Admin</span>
+            </Link>
+
             <ThemeToggle />
 
             {/* INDICADOR VISUAL DE ESTADO DE LA FOTO EN EL TELÉFONO */}
