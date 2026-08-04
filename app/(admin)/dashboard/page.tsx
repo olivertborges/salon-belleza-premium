@@ -1,12 +1,13 @@
-// @ts-nocheck
+//@ts-nocheck
+'use client'
+
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
-import PageLayout from '../components/PageLayout'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
+import PageLayout from '@/components/PageLayout'
 import { 
-  Users, Calendar, Clock, TrendingUp, CheckCircle, AlertTriangle, 
-  ArrowRight, ShieldAlert
+  Users, Calendar, Clock, CheckCircle, ArrowRight, ShieldAlert
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -34,7 +35,6 @@ export default function DashboardPage() {
       }
 
       try {
-        // 1. Obtener el rol del usuario desde la tabla profiles
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -50,7 +50,6 @@ export default function DashboardPage() {
           return
         }
 
-        // 2. Si no es admin/owner en profiles, verificar si pertenece al equipo en staff
         const { data: staffData } = await supabase
           .from('staff')
           .select('id, is_active')
@@ -79,26 +78,22 @@ export default function DashboardPage() {
     try {
       const hoy = new Date().toISOString().split('T')[0]
 
-      // 1. Citas de hoy
       const { count: countHoy } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .gte('appointment_date', `${hoy}T00:00:00`)
         .lte('appointment_date', `${hoy}T23:59:59`)
 
-      // 2. Citas pendientes
       const { count: countPendientes } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
 
-      // 3. Citas completadas
       const { count: countCompletadas } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'completed')
 
-      // 4. Clientes totales
       const { count: countClientes } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
@@ -110,7 +105,6 @@ export default function DashboardPage() {
         clientesTotales: countClientes || 0
       })
 
-      // 5. Próximas citas (las 5 más recientes a partir de hoy)
       const { data: citas } = await supabase
         .from('appointments')
         .select(`
@@ -132,7 +126,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Vista durante la carga de autenticación
   if (authLoading || authorized === null) {
     return (
       <PageLayout>
@@ -143,7 +136,6 @@ export default function DashboardPage() {
     )
   }
 
-  // Vista cuando el usuario no está autorizado
   if (!authorized) {
     return (
       <PageLayout>
@@ -154,7 +146,7 @@ export default function DashboardPage() {
             No tienes los permisos necesarios para acceder a esta sección.
           </p>
           <Link
-            to="/"
+            href="/"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           >
             Volver al inicio
@@ -176,7 +168,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 md:mt-0">
             <Link
-              to="/admin/agenda"
+              href="/admin/agenda"
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
             >
               Ir a la Agenda
@@ -305,4 +297,3 @@ export default function DashboardPage() {
     </PageLayout>
   )
 }
-
