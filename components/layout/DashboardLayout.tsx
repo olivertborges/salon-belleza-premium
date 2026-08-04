@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, RefreshCw
+  Camera, Tag, Eye, Hand
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -24,12 +24,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userName, setUserName] = useState('Usuario')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [imgError, setImgError] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string>('Cargando diagnóstico...')
 
   const isDark = theme === 'dark'
 
   useEffect(() => {
-    if (!user) return
+    if (!user?.id) return
 
     const initialName = user.user_metadata?.full_name || 
                         user.user_metadata?.name || 
@@ -37,68 +36,77 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         'Usuario'
     setUserName(initialName)
 
-    const fetchAvatar = async () => {
-      let log = []
-      log.push(`User ID: ${user.id}`)
+    const fetchAvatarIdenticoAlPerfil = async () => {
+      try {
+        setImgError(false)
 
-      // 1. Verificar si hay archivos en el bucket 'staff'
-      const { data: files, error: listError } = await supabase.storage
-        .from('staff')
-        .list()
+        // 1. Probar en la tabla 'profiles'
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      if (listError) {
-        log.push(`❌ Error leyendo bucket staff: ${listError.message}`)
-      } else if (files) {
-        log.push(`📁 Archivos en bucket staff: ${files.map(f => f.name).join(', ') || 'Ninguno'}`)
-      }
-
-      // 2. Consultar tabla staff
-      const { data: staffData, error: staffErr } = await supabase
-        .from('staff')
-        .select('*')
-        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-        .limit(1)
-
-      let finalPath = null
-
-      if (staffErr) {
-        log.push(`❌ Error tabla staff: ${staffErr.message}`)
-      } else if (staffData && staffData.length > 0) {
-        const st = staffData[0]
-        log.push(`👤 Staff encontrado: ${st.name || st.nombre || 'Sin nombre'}`)
-        finalPath = st.avatar_url || st.photo_url || st.image || st.picture || st.photo
-        log.push(`🔑 Path en BD: ${finalPath || 'Vacío / null'}`)
-      } else {
-        log.push(`⚠️ No se encontró registro en tabla 'staff' para este mail/id`)
-      }
-
-      // 3. Probar si el archivo está guardado con el ID de usuario si la tabla estaba vacía
-      if (!finalPath && files && files.length > 0) {
-        const match = files.find(f => f.name.includes(user.id) || (user.email && f.name.includes(user.email.split('@')[0])))
-        if (match) {
-          finalPath = match.name
-          log.push(`🎯 Coincidencia encontrada por ID/Email: ${finalPath}`)
+        if (profileData) {
+          const avatar = profileData.avatar_url || user.user_metadata?.avatar_url || null
+          if (profileData.full_name || profileData.name) {
+            setUserName(profileData.full_name || profileData.name)
+          }
+          if (avatar) {
+            setAvatarUrl(avatar)
+            return
+          }
         }
-      }
 
-      // 4. Armar URL
-      if (finalPath) {
-        if (finalPath.startsWith('http://') || finalPath.startsWith('https://')) {
-          setAvatarUrl(finalPath)
-          log.push(`🔗 URL completa: ${finalPath}`)
-        } else {
-          const { data } = supabase.storage.from('staff').getPublicUrl(finalPath)
-          setAvatarUrl(data?.publicUrl || null)
-          log.push(`🔗 URL Pública generada: ${data?.publicUrl}`)
+        // 2. Probar en la tabla 'staff' por ID (user_id / auth_user_id)
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('*')
+          .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${user.id}`)
+          .maybeSingle()
+
+        if (staffData) {
+          const avatar = staffData.avatar_url || user.user_metadata?.avatar_url || null
+          if (staffData.name || staffData.full_name) {
+            setUserName(staffData.name || staffData.full_name)
+          }
+          if (avatar) {
+            setAvatarUrl(avatar)
+            return
+          }
         }
-      } else {
-        log.push(`❌ No se pudo determinar ninguna ruta de foto.`)
-      }
 
-      setDebugInfo(log.join(' | '))
+        // 3. Probar en la tabla 'staff' por Email
+        if (user.email) {
+          const { data: staffByEmail } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('email', user.email)
+            .maybeSingle()
+
+          if (staffByEmail) {
+            const avatar = staffByEmail.avatar_url || user.user_metadata?.avatar_url || null
+            if (staffByEmail.name || staffByEmail.full_name) {
+              setUserName(staffByEmail.name || staffByEmail.full_name)
+            }
+            if (avatar) {
+              setAvatarUrl(avatar)
+              return
+            }
+          }
+        }
+
+        // 4. Fallback final: Metadata del usuario Auth
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url)
+        }
+
+      } catch (err) {
+        console.error('Error al obtener el avatar:', err)
+      }
     }
 
-    fetchAvatar()
+    fetchAvatarIdenticoAlPerfil()
   }, [user])
 
   const firstName = userName.split(' ')[0] || userName
@@ -136,6 +144,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+
       <div 
         onClick={() => setSidebarOpen(false)} 
         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-500 ${
@@ -144,8 +154,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 lg:static lg:translate-x-0 flex flex-col shrink-0 ${
-          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] lg:static lg:translate-x-0 flex flex-col shrink-0 ${
+          sidebarOpen ? 'translate-x-0 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.3)]' : '-translate-x-full'
         } ${
           isDark ? 'bg-[#1E120C]/95 border-[#3D281E]' : 'bg-[#FFF9F6]/95 border-[#F0E4DA]'
         }`}
@@ -153,84 +163,154 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-            <span className="text-sm font-light tracking-[0.3em] uppercase">freshNails</span>
+          <div className="flex items-center gap-2.5 group cursor-default">
+            <Sparkles className="w-4 h-4 text-[#D4AF37] opacity-80 group-hover:rotate-12 transition-transform duration-500 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-light tracking-[0.3em] uppercase leading-tight">
+                <span className="font-serif italic text-[#D4AF37] text-xl tracking-normal normal-case font-medium mr-1">fresh</span>
+                <span className={isDark ? 'text-[#FFF9F6]/90' : 'text-[#1A0E0A]/90'}>Nails</span>
+              </span>
+              <span className={`text-[8px] uppercase tracking-[0.4em] font-light block mt-0.5 border-t pt-0.5 ${
+                isDark ? 'text-[#A89588]/60 border-[#3D281E]' : 'text-[#5C4A3E]/60 border-[#F0E4DA]'
+              }`}>
+                Studio Center
+              </span>
+            </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-[#A89588]">
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            className={`lg:hidden p-2 rounded-xl transition-all ${
+              isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#A89588] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+            }`}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-1">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-[#D4AF37]/20">
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
+
             return (
               <Link 
                 key={index} 
                 href={item.href} 
                 onClick={() => setSidebarOpen(false)} 
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold ${
-                  isActive ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-[#A89588]'
+                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition-all duration-300 group relative border ${
+                  isActive 
+                    ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#D4AF37]'
+                    : 'border-transparent text-[#A89588] hover:text-[#1A0E0A] dark:hover:text-[#FFF9F6] hover:bg-[#D4AF37]/5'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
+                {isActive && (
+                  <span className="absolute left-0 w-1 h-6 rounded-r-full bg-[#D4AF37]" />
+                )}
+
+                <div className={`p-2 rounded-lg border transition-all duration-300 transform group-hover:scale-105 ${
+                  isActive 
+                    ? 'bg-[#D4AF37] border-[#D4AF37] text-[#1A0E0A] shadow-md shadow-[#D4AF37]/20'
+                    : isDark
+                      ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
+                      : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#A89588] group-hover:border-[#D4AF37]/30 group-hover:text-[#D4AF37]'
+                }`}>
+                  <Icon className={`w-4 h-4 transition-transform duration-500 ${isActive ? '' : 'group-hover:rotate-6'}`} />
+                </div>
+
+                <span className="tracking-wide font-medium">{item.label}</span>
               </Link>
             )
           })}
         </div>
 
-        <div className="p-4 border-t border-[#3D281E]">
-          <button onClick={handleLogoutClick} className="flex items-center gap-3 px-4 py-3 text-xs text-[#A89588]">
-            <LogOut className="w-4 h-4" />
-            <span>Cerrar Sesión</span>
+        <div className={`p-4 border-t shrink-0 ${
+          isDark ? 'border-[#3D281E] bg-[#1E120C]/50' : 'border-[#F0E4DA] bg-[#FFF9F6]/50'
+        }`}>
+          <button 
+            onClick={handleLogoutClick}
+            className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-xl text-xs font-semibold transition-all border border-transparent group ${
+              isDark
+                ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E] hover:border-[#D4AF37]/20'
+                : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA] hover:border-[#D4AF37]/20'
+            }`}
+          >
+            <div className={`p-2 rounded-lg border transition-all duration-300 ${
+              isDark
+                ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] group-hover:text-[#D4AF37] group-hover:border-[#D4AF37]/30 group-hover:rotate-6'
+                : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#A89588] group-hover:text-[#D4AF37] group-hover:border-[#D4AF37]/30 group-hover:rotate-6'
+            }`}>
+              <LogOut className="w-4 h-4" />
+            </div>
+            <span className="tracking-wide">Cerrar Sesión</span>
           </button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
 
-        <header className={`sticky top-0 z-30 border-b px-4 h-20 flex items-center justify-between gap-4 shrink-0 ${
-          isDark ? 'bg-[#1E120C]/80 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
+        <header className={`sticky top-0 z-30 border-b px-4 md:px-8 h-20 flex items-center justify-between gap-4 shrink-0 transition-all duration-300 ${
+          isDark ? 'bg-[#1E120C]/80 border-[#3D281E] backdrop-blur-xl' : 'bg-[#FFF9F6]/80 border-[#F0E4DA] backdrop-blur-xl'
         }`}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]">
-            <Menu className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setSidebarOpen(true)} 
+              className={`lg:hidden p-2.5 rounded-xl border transition-all active:scale-95 ${
+                isDark 
+                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' 
+                  : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#FFF9F6] shadow-sm'
+              }`}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col lg:hidden">
+              <h1 className="text-base font-light tracking-[0.2em] uppercase leading-none">
+                <span className="font-serif italic text-[#D4AF37] text-lg tracking-normal normal-case font-medium mr-0.5">fresh</span>
+                <span className={isDark ? 'text-[#FFF9F6]/90' : 'text-[#1A0E0A]/90'}>Nails</span>
+              </h1>
+            </div>
+          </div>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
-            
-            <div className="text-right">
-              <p className="text-xs font-bold">{userName}</p>
-              <span className="text-[8px] font-black uppercase text-[#D4AF37]">STAFF</span>
-            </div>
-            
-            <div className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37]">
-              {avatarUrl && !imgError ? (
-                <img 
-                  src={avatarUrl} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <span>{inicialNombre}</span>
-              )}
-            </div>
+
+            <div className={`h-5 w-[1px] mx-1 ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+
+            <Link 
+              href="/perfil"
+              className="flex items-center gap-3 shrink-0 group cursor-pointer"
+            >
+              <div className="text-right hidden sm:block">
+                <p className={`text-xs font-bold leading-none transition-colors group-hover:text-[#D4AF37] ${
+                  isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                }`}>
+                  {userName}
+                </p>
+                <span className="text-[8px] font-black tracking-[0.2em] uppercase mt-1 block bg-gradient-to-r from-[#D4AF37] to-[#E8D5A0] bg-clip-text text-transparent">
+                  STAFF MEMBER
+                </span>
+              </div>
+              
+              <div className={`w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center text-sm font-black shadow-sm transition-all ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] shrink-0 ${
+                isDark
+                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
+                  : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] ring-offset-[#FFF9F6]'
+              }`}>
+                {avatarUrl && !imgError ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={`Avatar de ${userName}`} 
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <span>{inicialNombre}</span>
+                )}
+              </div>
+            </Link>
           </div>
         </header>
 
-        <main className="flex-1 p-4 overflow-y-auto">
-          {/* CUADRO DE DIAGNÓSTICO EN PANTALLA PARA MÓVIL */}
-          <div className="mb-6 p-4 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-xs text-[#D4AF37] break-all leading-relaxed">
-            <div className="font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Diagnóstico de Foto (Móvil):
-            </div>
-            {debugInfo}
-          </div>
-
+        <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto bg-transparent transition-all duration-300">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
