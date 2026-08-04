@@ -9,7 +9,7 @@ import {
   Menu, X, LogOut, Home, CalendarPlus,
   Camera, Tag, Eye, Hand
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { supabase } from '@/lib/supabase/client'
@@ -21,10 +21,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Estados locales para el nombre y la foto de la persona logueada
-  const [dbName, setDbName] = useState('')
-  const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
-  const [imageError, setImageError] = useState(false)
+  // Estados locales para el nombre y avatar idénticos a AdminHeader
+  const [userName, setUserName] = useState('Usuario')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   const isDark = theme === 'dark'
 
@@ -43,72 +42,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
-  // CONSULTA DIRECTA A LA TABLA STAFF
+  // Lógica idéntica al AdminHeader
   useEffect(() => {
-    const fetchStaffProfile = async () => {
-      if (!user) return
+    if (!user) return
 
+    // 1. Configurar nombre desde los metadatos de autenticación por defecto
+    const name = user.user_metadata?.full_name || 
+                 user.user_metadata?.name || 
+                 user.user_metadata?.first_name ||
+                 user.email?.split('@')[0] || 
+                 'Usuario'
+    setUserName(name)
+
+    // 2. Traer la foto directamente desde 'profiles' (idéntico al admin)
+    const fetchProfileData = async () => {
       try {
-        let photo: string | null = null
-        let name: string | null = null
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle()
 
-        // 1. Intentar buscar en 'staff' por email (El correo de Silvana: larasanturio@outlook.com)
-        if (user.email) {
-          const { data: staffByEmail } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('email', user.email)
-            .limit(1)
+        if (error) throw error
 
-          if (staffByEmail && staffByEmail.length > 0) {
-            const s = staffByEmail[0]
-            name = s.name || s.full_name || s.nombre
-            photo = s.avatar_url || s.photo_url || s.image || s.picture || s.photo || s.avatar
-          }
+        if (data) {
+          if (data.full_name) setUserName(data.full_name)
+          if (data.avatar_url) setAvatarUrl(data.avatar_url)
         }
-
-        // 2. Si no se halló por email, intentar buscar en 'staff' por user_id / id
-        if (!photo && user.id) {
-          const { data: staffById } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('user_id', user.id)
-            .limit(1)
-
-          if (staffById && staffById.length > 0) {
-            const s = staffById[0]
-            if (!name) name = s.name || s.full_name || s.nombre
-            photo = s.avatar_url || s.photo_url || s.image || s.picture || s.photo || s.avatar
-          }
-        }
-
-        // 3. Respaldo opcional en la tabla 'clients' si no fuera staff
-        if (!photo && user.email) {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('*')
-            .eq('email', user.email)
-            .limit(1)
-
-          if (clientData && clientData.length > 0) {
-            const c = clientData[0]
-            if (!name) name = c.name || c.full_name
-            photo = c.avatar_url || c.photo_url || c.image
-          }
-        }
-
-        if (name) setDbName(name)
-        if (photo) {
-          setDbAvatarUrl(photo)
-          setImageError(false)
-        }
-      } catch (err) {
-        console.error('Error al cargar la foto de staff:', err)
+      } catch (error) {
+        console.error('Error cargando avatar en el Header:', error)
       }
     }
 
-    fetchStaffProfile()
+    fetchProfileData()
   }, [user])
+
+  const firstName = userName.split(' ')[0] || userName
+  const inicialNombre = firstName.charAt(0).toUpperCase()
 
   const menuItems = [
     { icon: Home, label: 'Inicio', href: '/portal' },
@@ -122,15 +92,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
-
-  // Evaluación de variables de perfil y metadatos de usuario
-  const meta = user?.user_metadata || {}
-  const authAvatar = meta.avatar_url || meta.picture || meta.photoURL || null
-  const finalAvatarUrl = dbAvatarUrl || authAvatar
-
-  const finalName = dbName || meta.full_name || meta.name || 'Silvana'
-  const inicialNombre = finalName.charAt(0).toUpperCase()
-  const primerNombre = finalName.split(' ')[0]
 
   const handleLogoutClick = async () => {
     try {
@@ -293,7 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER: MOSTRANDO LA FOTO DE SILVANA MORALES */}
+          {/* ACCIONES DEL HEADER: MISMA ESTRUCTURA Y LOGICA DEL ADMIN */}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
@@ -301,29 +262,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <Link 
               href="/perfil"
-              className="flex items-center gap-2.5 sm:gap-3 pl-1 group cursor-pointer"
+              className="flex items-center gap-3 shrink-0 group cursor-pointer"
             >
               <div className="text-right hidden sm:block">
                 <p className={`text-xs font-bold leading-none transition-colors group-hover:text-[#D4AF37] ${
                   isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
                 }`}>
-                  {primerNombre}
+                  {userName}
                 </p>
                 <span className="text-[8px] font-black tracking-[0.2em] uppercase mt-1 block bg-gradient-to-r from-[#D4AF37] to-[#E8D5A0] bg-clip-text text-transparent">
-                  STAFF MEMBER
+                  MEMBER
                 </span>
               </div>
               
-              {/* CONTENEDOR DE LA FOTO DEL STAFF EN LA BARRA SUPERIOR */}
-              <div className={`relative w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm shrink-0 border-[#D4AF37]/60 group-hover:scale-105 ${
-                isDark ? 'bg-[#2A1B14] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
+              {/* Contenedor de la Foto o Inicial exacto al Admin Header */}
+              <div className={`w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center text-sm font-black shadow-sm transition-all ring-offset-2 ring-0 group-hover:ring-2 group-hover:ring-[#D4AF37] shrink-0 ${
+                isDark
+                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] ring-offset-[#1E120C]'
+                  : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#D4AF37] ring-offset-[#FFF9F6]'
               }`}>
-                {finalAvatarUrl && !imageError ? (
+                {avatarUrl ? (
                   <img 
-                    src={finalAvatarUrl} 
-                    alt={`Foto de ${primerNombre}`} 
+                    src={avatarUrl} 
+                    alt={`Avatar de ${userName}`} 
                     className="w-full h-full object-cover"
-                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <span>{inicialNombre}</span>
