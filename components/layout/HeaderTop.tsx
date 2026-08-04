@@ -4,8 +4,9 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { supabase } from '@/lib/supabase/client'
 import { Menu, Bell, Search, Sparkles, Sun, Moon } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface HeaderTopProps {
   setIsSidebarOpen: (open: boolean) => void
@@ -17,11 +18,74 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   const { settings } = useSettings()
   const [showSearch, setShowSearch] = useState(false)
 
+  // Estados para la foto de perfil
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [imgError, setImgError] = useState(false)
+
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
   const secondaryColor = settings?.secondary_color || '#E5A46E'
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+
+  // Efecto para buscar la foto de perfil idéntica a la vista /perfil
+  useEffect(() => {
+    if (!user?.id) return
+
+    const fetchAvatar = async () => {
+      try {
+        setImgError(false)
+
+        // 1. Probar en Auth Metadata
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url)
+          return
+        }
+
+        // 2. Probar en la tabla 'profiles'
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profileData?.avatar_url) {
+          setAvatarUrl(profileData.avatar_url)
+          return
+        }
+
+        // 3. Probar en la tabla 'staff' por ID
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('avatar_url')
+          .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${user.id}`)
+          .maybeSingle()
+
+        if (staffData?.avatar_url) {
+          setAvatarUrl(staffData.avatar_url)
+          return
+        }
+
+        // 4. Probar en la tabla 'staff' por Email
+        if (user.email) {
+          const { data: staffByEmail } = await supabase
+            .from('staff')
+            .select('avatar_url')
+            .eq('email', user.email)
+            .maybeSingle()
+
+          if (staffByEmail?.avatar_url) {
+            setAvatarUrl(staffByEmail.avatar_url)
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Error al obtener la foto de perfil en HeaderTop:', err)
+      }
+    }
+
+    fetchAvatar()
+  }, [user])
 
   const getInitials = () => {
     if (user?.full_name) {
@@ -58,7 +122,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Logo unificado y más pequeño */}
+          {/* Logo unificado */}
           <div className="hidden lg:flex items-center gap-2">
             <div 
               className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
@@ -135,20 +199,38 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             </div>
             
             <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer"
-              style={{ background: brandGradient }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden shrink-0"
+              style={{ background: avatarUrl && !imgError ? 'transparent' : brandGradient }}
             >
-              {getInitials()}
+              {avatarUrl && !imgError ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                getInitials()
+              )}
             </div>
           </div>
 
           {/* Perfil - Mobile */}
           <div className="lg:hidden">
             <div 
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[9px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer"
-              style={{ background: brandGradient }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[9px] font-bold shadow-sm transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden shrink-0"
+              style={{ background: avatarUrl && !imgError ? 'transparent' : brandGradient }}
             >
-              {getInitials()}
+              {avatarUrl && !imgError ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                getInitials()
+              )}
             </div>
           </div>
         </div>
