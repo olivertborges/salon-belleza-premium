@@ -36,12 +36,12 @@ export async function POST(request: Request) {
 
     const userId = authUser.user?.id
 
-    // 2. Insertar en staff con user_id (NO id)
+    // 2. Insertar en staff con user_id
     const { data: staffData, error: staffError } = await supabaseAdmin
       .from('staff')
       .insert([
         {
-          user_id: userId,        // ← CORREGIDO: usar user_id
+          user_id: userId,
           name: name.trim(),
           email: email.trim().toLowerCase(),
           role: role || 'Especialista',
@@ -56,12 +56,31 @@ export async function POST(request: Request) {
       .single()
 
     if (staffError) {
-      // Rollback: eliminar usuario de auth
+      // Rollback: eliminar usuario de auth si falla staff
       await supabaseAdmin.auth.admin.deleteUser(userId)
       return NextResponse.json(
         { success: false, error: `Error en Tabla Staff: ${staffError.message}` },
         { status: 400 }
       )
+    }
+
+    // 3. NUEVO: Sincronizar o crear también en la tabla 'profiles'
+    // Usamos .upsert() por si la base de datos ya creó un perfil automático por trigger.
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: userId, // En profiles normalmente el id es el mismo UUID del auth.users
+        full_name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: auth_role || 'staff',
+        avatar_url: avatar_url?.trim() || '',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
+
+    if (profileError) {
+      console.warn('Advertencia al sincronizar profiles:', profileError.message)
+      // No hacemos rollback completo aquí para no tirar abajo la creación del staff, 
+      // pero queda registrado en consola por si la estructura de 'profiles' requiere otro campo obligatorio.
     }
 
     return NextResponse.json({ success: true, data: staffData })
