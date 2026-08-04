@@ -1,11 +1,10 @@
-//@ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/context/AuthContext'
-import PageLayout from '@/components/PageLayout'
+import { supabase } from '../../../lib/supabase'
+import { useAuth } from '../../../context/AuthContext'
+import PageLayout from '../../../components/PageLayout'
 import { 
   Users, Calendar, Clock, CheckCircle, ArrowRight, ShieldAlert
 } from 'lucide-react'
@@ -43,13 +42,14 @@ export default function DashboardPage() {
 
         const rolPerfil = profile?.role?.toLowerCase().trim() || role?.toLowerCase().trim()
 
-        if (rolPerfil === 'admin' || rolPerfil === 'owner' || rolPerfil === 'staff') {
-          setIsAdmin(rolPerfil === 'admin' || rolPerfil === 'owner')
+        if (rolPerfil === 'admin' || rolPerfil === 'owner') {
+          setIsAdmin(true)
           setAuthorized(true)
-          cargarEstadisticas()
+          cargarEstadisticas(true, null) // Es admin, ve todo
           return
         }
 
+        // Si es staff o rol de empleado
         const { data: staffData } = await supabase
           .from('staff')
           .select('id, is_active')
@@ -59,7 +59,7 @@ export default function DashboardPage() {
         if (staffData && staffData.is_active !== false) {
           setIsAdmin(false)
           setAuthorized(true)
-          cargarEstadisticas()
+          cargarEstadisticas(false, staffData.id) // Es staff, filtramos por su ID
           return
         }
 
@@ -73,27 +73,46 @@ export default function DashboardPage() {
     validarAccesoPanel()
   }, [user, role, authLoading])
 
-  const cargarEstadisticas = async () => {
+  const cargarEstadisticas = async (adminMode: boolean, staffId: string | null) => {
     setLoading(true)
     try {
       const hoy = new Date().toISOString().split('T')[0]
 
-      const { count: countHoy } = await supabase
+      // 1. Query base para citas de hoy aplicando filtro de staff si no es admin
+      let queryHoy = supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .gte('appointment_date', `${hoy}T00:00:00`)
         .lte('appointment_date', `${hoy}T23:59:59`)
 
-      const { count: countPendientes } = await supabase
+      if (!adminMode && staffId) {
+        queryHoy = queryHoy.eq('staff_id', staffId)
+      }
+      const { count: countHoy } = await queryHoy
+
+      // 2. Query para citas pendientes
+      let queryPendientes = supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
 
-      const { count: countCompletadas } = await supabase
+      if (!adminMode && staffId) {
+        queryPendientes = queryPendientes.eq('staff_id', staffId)
+      }
+      const { count: countPendientes } = await queryPendientes
+
+      // 3. Query para citas completadas
+      let queryCompletadas = supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'completed')
 
+      if (!adminMode && staffId) {
+        queryCompletadas = queryCompletadas.eq('staff_id', staffId)
+      }
+      const { count: countCompletadas } = await queryCompletadas
+
+      // Clientes totales (generalmente los admins o el staff pueden ver los clientes, pero puedes acotarlo si gustas)
       const { count: countClientes } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
@@ -105,7 +124,8 @@ export default function DashboardPage() {
         clientesTotales: countClientes || 0
       })
 
-      const { data: citas } = await supabase
+      // 4. Próximas citas filtradas
+      let queryProximas = supabase
         .from('appointments')
         .select(`
           id,
@@ -118,6 +138,11 @@ export default function DashboardPage() {
         .order('appointment_date', { ascending: true })
         .limit(5)
 
+      if (!adminMode && staffId) {
+        queryProximas = queryProximas.eq('staff_id', staffId)
+      }
+
+      const { data: citas } = await queryProximas
       setProximasCitas(citas || [])
     } catch (err) {
       console.error('Error cargando datos del dashboard:', err)
@@ -161,9 +186,11 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Panel de Control</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isAdmin ? 'Panel de Control (Administrador)' : 'Mi Panel / Agenda'}
+            </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Resumen general del estado de tus citas y clientes
+              {isAdmin ? 'Resumen general del salón' : 'Tus citas y servicios asignados'}
             </p>
           </div>
           <div className="mt-4 md:mt-0">
@@ -242,7 +269,7 @@ export default function DashboardPage() {
           {loading ? (
             <div className="py-8 text-center text-gray-500">Cargando próximas citas...</div>
           ) : proximasCitas.length === 0 ? (
-            <p className="text-gray-500 py-4">No hay citas programadas en los próximos días.</p>
+            <p className="text-gray-500 py-4">No hay citas programadas para ti en los próximos días.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
