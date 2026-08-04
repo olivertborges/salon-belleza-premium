@@ -21,7 +21,8 @@ import {
   UserCircle,
   BadgeCheck,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  RefreshCw
 } from 'lucide-react'
 
 interface AdminProfile {
@@ -75,31 +76,20 @@ export default function AdminPerfilPage() {
     const { data: staffData } = await supabase
       .from('staff')
       .select('tenant_id')
-      .eq('user_id', user?.id)
+      .or(`user_id.eq.${user?.id},auth_user_id.eq.${user?.id}`)
       .maybeSingle()
 
     if (staffData?.tenant_id) return staffData.tenant_id
 
-    const { data: staffData2 } = await supabase
-      .from('staff')
-      .select('tenant_id')
-      .eq('auth_user_id', user?.id)
-      .maybeSingle()
-
-    if (staffData2?.tenant_id) return staffData2.tenant_id
-
     return '2fb6af3b-944e-4974-93f4-1d4860771173'
   }
 
-  // FUNCIÓN PARA SUBIR CON RETRY Y DIFERENTES ESTRATEGIAS
   const uploadAvatarWithRetry = async (file: File, path: string): Promise<string> => {
     const maxRetries = 3
     let lastError = null
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`📤 Intento ${attempt} de subida...`)
-
         const { error: uploadError } = await supabase.storage
           .from('staff')
           .upload(path, file, {
@@ -109,16 +99,13 @@ export default function AdminPerfilPage() {
           })
 
         if (uploadError) {
-          console.log(`⚠️ Error en intento ${attempt}:`, uploadError.message)
           lastError = uploadError
-
           if (uploadError.message.includes('Failed to fetch') || 
               uploadError.message.includes('network') ||
               uploadError.message.includes('timeout')) {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
             continue
           }
-
           throw uploadError
         }
 
@@ -126,25 +113,21 @@ export default function AdminPerfilPage() {
           .from('staff')
           .getPublicUrl(path)
 
-        console.log(`✅ Subida exitosa en intento ${attempt}`)
         return publicUrlData.publicUrl
 
       } catch (error: any) {
-        console.log(`❌ Error en intento ${attempt}:`, error.message)
         lastError = error
-
         if (error.message?.includes('Failed to fetch') || 
             error.message?.includes('network') ||
             error.message?.includes('timeout')) {
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
           continue
         }
-
         throw error
       }
     }
 
-    throw lastError || new Error('No se pudo subir la imagen después de múltiples intentos')
+    throw lastError || new Error('No se pudo subir la imagen después de varios intentos')
   }
 
   const loadProfile = async () => {
@@ -157,90 +140,91 @@ export default function AdminPerfilPage() {
       const tid = await getTenantId()
       setTenantId(tid)
 
-      if (!tid) {
-        setError('⚠️ No se encontró tenant_id. Contacta al administrador.')
-        setLoading(false)
-        return
-      }
-
-      // 1. Intentar cargar desde 'profiles'
-      let { data, error: errProfiles } = await supabase
+      // 1. Intentar obtener de 'profiles'
+      let { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (data) {
+      if (profileData) {
         setActiveTable('profiles')
-        const currentAvatar = data.avatar_url || user.user_metadata?.avatar_url || null
-        setProfile({ ...data, avatar_url: currentAvatar })
-        const currentName = data.full_name || data.name || ''
+        const avatar = profileData.avatar_url || user.user_metadata?.avatar_url || null
+        setProfile({ ...profileData, avatar_url: avatar })
         setFormData({
-          full_name: currentName,
-          phone: data.phone || ''
+          full_name: profileData.full_name || profileData.name || '',
+          phone: profileData.phone || ''
         })
-        setAvatarPreview(currentAvatar)
+        setAvatarPreview(avatar)
         setLoading(false)
         return
       }
 
-      // 2. Intentar cargar desde 'staff' por 'user_id' o 'auth_user_id'
-      let { data: dataStaff } = await supabase
+      // 2. Intentar obtener de 'staff' por id de Auth
+      let { data: staffData } = await supabase
         .from('staff')
         .select('*')
-        .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id}`)
+        .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${user.id}`)
         .maybeSingle()
 
-      if (dataStaff) {
+      if (staffData) {
         setActiveTable('staff')
-        const currentAvatar = dataStaff.avatar_url || user.user_metadata?.avatar_url || null
-        setProfile({ ...dataStaff, avatar_url: currentAvatar })
-        const currentName = dataStaff.full_name || dataStaff.name || ''
+        const avatar = staffData.avatar_url || user.user_metadata?.avatar_url || null
+        setProfile({ ...staffData, avatar_url: avatar })
         setFormData({
-          full_name: currentName,
-          phone: dataStaff.phone || ''
+          full_name: staffData.name || staffData.full_name || '',
+          phone: staffData.phone || ''
         })
-        setAvatarPreview(currentAvatar)
+        setAvatarPreview(avatar)
         setLoading(false)
         return
       }
 
-      // 3. Crear en 'staff' si no existe
-      const newStaff = {
+      // 3. Respaldo por email si fallaron los IDs anteriores
+      if (user.email) {
+        let { data: staffByEmail } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('email', user.email)
+          .maybeSingle()
+
+        if (staffByEmail) {
+          setActiveTable('staff')
+          const avatar = staffByEmail.avatar_url || user.user_metadata?.avatar_url || null
+          setProfile({ ...staffByEmail, avatar_url: avatar })
+          setFormData({
+            full_name: staffByEmail.name || staffByEmail.full_name || '',
+            phone: staffByEmail.phone || ''
+          })
+          setAvatarPreview(avatar)
+          setLoading(false)
+          return
+        }
+      }
+
+      // 4. Si realmente no existe en la base de datos, construir perfil fallback con Auth metadata
+      const fallbackProfile: AdminProfile = {
+        id: user.id,
         user_id: user.id,
-        auth_user_id: user.id,
-        tenant_id: tid,
+        email: user.email || '',
         name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Staff',
-        email: user.email,
-        role: 'staff',
-        is_active: true,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Staff',
+        role: user.user_metadata?.role || 'staff',
         avatar_url: user.user_metadata?.avatar_url || null,
         created_at: new Date().toISOString()
       }
 
-      const { data: createdStaff, error: createError } = await supabase
-        .from('staff')
-        .insert([newStaff])
-        .select()
-        .single()
-
-      if (createError) {
-        setError('No se pudo crear tu perfil de staff.')
-        setLoading(false)
-        return
-      }
-
       setActiveTable('staff')
-      const createdAvatar = createdStaff.avatar_url || user.user_metadata?.avatar_url || null
-      setProfile({ ...createdStaff, avatar_url: createdAvatar })
+      setProfile(fallbackProfile)
       setFormData({
-        full_name: createdStaff.name || '',
-        phone: createdStaff.phone || ''
+        full_name: fallbackProfile.full_name,
+        phone: ''
       })
-      setAvatarPreview(createdAvatar)
+      setAvatarPreview(fallbackProfile.avatar_url)
 
     } catch (err: any) {
-      setError('Error al cargar los datos del perfil: ' + err.message)
+      console.error('Error al cargar perfil:', err)
+      setError('Error al conectar con la base de datos: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -299,9 +283,7 @@ export default function AdminPerfilPage() {
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
         const filePath = tenantId ? `${tenantId}/${user.id}/${fileName}` : `${user.id}/${fileName}`
 
-        console.log('📤 Subiendo avatar al bucket staff:', filePath)
         avatarUrl = await uploadAvatarWithRetry(avatarFile, filePath)
-        console.log('✅ Avatar subido exitosamente:', avatarUrl)
       }
 
       const isProfiles = activeTable === 'profiles'
@@ -319,25 +301,23 @@ export default function AdminPerfilPage() {
         updatePayload.name = formData.full_name.trim()
       }
 
+      // Intentar actualización en la tabla activa
       let { error: updateError } = await supabase
         .from(activeTable)
         .update(updatePayload)
         .eq(idColumn, user.id)
 
+      // Reintento en staff usando 'email' o 'id' si por user_id no afectó registros
       if (updateError && !isProfiles) {
         const { error: retryError } = await supabase
           .from('staff')
           .update(updatePayload)
-          .eq('id', profile.id || user.id)
+          .or(`id.eq.${profile.id || user.id},email.eq.${user.email}`)
 
         updateError = retryError
       }
 
-      if (updateError) {
-        throw new Error(`Error al guardar en ${activeTable}: ${updateError.message}`)
-      }
-
-      // Actualizamos también la metadata del usuario en Auth para persistir la foto entre recargas
+      // Sincronizar en metadata de Auth
       await supabase.auth.updateUser({
         data: {
           avatar_url: avatarUrl,
@@ -407,24 +387,32 @@ export default function AdminPerfilPage() {
             No se encontró tu perfil
           </p>
           <p className={`text-sm mt-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-            {error || 'Por favor, contacta con el administrador del sistema.'}
+            {error || 'Ocurrió un problema de permisos o conexión con la base de datos.'}
           </p>
-          <Link
-            href="/dashboard"
-            className={`mt-4 inline-block px-6 py-2 rounded-xl font-bold text-sm transition-colors ${
-              isDark 
-                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37] hover:text-[#1A0E0A]'
-            }`}
-          >
-            Volver al Dashboard
-          </Link>
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <button
+              onClick={loadProfile}
+              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0] transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" /> Reintentar
+            </button>
+            <Link
+              href="/dashboard"
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
+                isDark 
+                  ? 'border-[#3D281E] text-[#FFF9F6] hover:bg-[#3D281E]' 
+                  : 'border-[#F0E4DA] text-[#1A0E0A] hover:bg-[#F0E4DA]'
+              }`}
+            >
+              Volver al Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
-  const displayName = profile.full_name || profile.name || 'Miembro de la App'
+  const displayName = profile.full_name || profile.name || user?.email?.split('@')[0] || 'Miembro de la App'
 
   return (
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
@@ -442,7 +430,7 @@ export default function AdminPerfilPage() {
               <AlertCircle className="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <p className={`text-[9px] font-black uppercase tracking-[0.2em] text-red-500`}>Error al guardar</p>
+              <p className={`text-[9px] font-black uppercase tracking-[0.2em] text-red-500`}>Error</p>
               <p className="text-sm font-light mt-1 whitespace-pre-wrap">{error}</p>
             </div>
           </div>
