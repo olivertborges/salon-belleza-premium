@@ -31,13 +31,18 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
     const fetchAvatar = async () => {
       try {
-        // 1. Revisar primero si está en los metadatos de Auth (caso larasanturio@outlook.com)
-        if (user.user_metadata?.avatar_url) {
-          setAvatarUrl(user.user_metadata.avatar_url)
+        // 1. Extraer metadatos directamente del objeto de sesión
+        const metaAvatar = user.user_metadata?.avatar_url || 
+                           user.user_metadata?.avatar || 
+                           user.user_metadata?.picture || 
+                           user.user_metadata?.photo_url
+
+        if (metaAvatar) {
+          setAvatarUrl(metaAvatar)
           return
         }
 
-        // 2. Si no, buscar en la tabla 'profiles' (caso Aniexis Campo)
+        // 2. Si no existe en metadatos, consultar en la tabla 'profiles'
         const { data, error } = await supabase
           .from('profiles')
           .select('avatar_url')
@@ -48,6 +53,8 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
         if (data && data.avatar_url) {
           setAvatarUrl(data.avatar_url)
+        } else {
+          setAvatarUrl(null)
         }
       } catch (error) {
         console.error('Error al cargar la foto de perfil:', error)
