@@ -287,8 +287,8 @@ export default function AdminPerfilPage() {
       }
 
       const isProfiles = activeTable === 'profiles'
-      const idColumn = isProfiles ? 'id' : 'user_id'
 
+      // Construcción del objeto a actualizar según la tabla
       const updatePayload: Record<string, any> = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
@@ -297,27 +297,35 @@ export default function AdminPerfilPage() {
       if (isProfiles) {
         updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
+
+        // Guardar en la tabla profiles
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(updatePayload)
+          .eq('id', user.id)
+
+        if (profileError) throw profileError
       } else {
         updatePayload.name = formData.full_name.trim()
-      }
 
-      // Intentar actualización en la tabla activa
-      let { error: updateError } = await supabase
-        .from(activeTable)
-        .update(updatePayload)
-        .eq(idColumn, user.id)
-
-      // Reintento en staff usando 'email' o 'id' si por user_id no afectó registros
-      if (updateError && !isProfiles) {
-        const { error: retryError } = await supabase
+        // Intentar actualizar en la tabla staff por user_id, auth_user_id o id
+        let { error: staffError } = await supabase
           .from('staff')
           .update(updatePayload)
-          .or(`id.eq.${profile.id || user.id},email.eq.${user.email}`)
+          .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${profile.id || user.id}`)
 
-        updateError = retryError
+        // Reintento por email si el anterior no afectó o dio error
+        if (staffError && user.email) {
+          const { error: retryError } = await supabase
+            .from('staff')
+            .update(updatePayload)
+            .eq('email', user.email)
+
+          if (retryError) throw retryError
+        }
       }
 
-      // Sincronizar en metadata de Auth
+      // Sincronizar SIEMPRE en los metadatos del usuario en Supabase Auth
       await supabase.auth.updateUser({
         data: {
           avatar_url: avatarUrl,
