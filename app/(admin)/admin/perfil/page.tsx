@@ -163,6 +163,7 @@ export default function AdminPerfilPage() {
         return
       }
 
+      // 1. Intentar cargar desde 'profiles'
       let { data, error: errProfiles } = await supabase
         .from('profiles')
         .select('*')
@@ -171,36 +172,40 @@ export default function AdminPerfilPage() {
 
       if (data) {
         setActiveTable('profiles')
-        setProfile(data)
+        const currentAvatar = data.avatar_url || user.user_metadata?.avatar_url || null
+        setProfile({ ...data, avatar_url: currentAvatar })
         const currentName = data.full_name || data.name || ''
         setFormData({
           full_name: currentName,
           phone: data.phone || ''
         })
-        if (data.avatar_url) setAvatarPreview(data.avatar_url)
+        setAvatarPreview(currentAvatar)
         setLoading(false)
         return
       }
 
-      let { data: dataStaff, error: errStaff } = await supabase
+      // 2. Intentar cargar desde 'staff' por 'user_id' o 'auth_user_id'
+      let { data: dataStaff } = await supabase
         .from('staff')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id}`)
         .maybeSingle()
 
       if (dataStaff) {
         setActiveTable('staff')
-        setProfile(dataStaff)
+        const currentAvatar = dataStaff.avatar_url || user.user_metadata?.avatar_url || null
+        setProfile({ ...dataStaff, avatar_url: currentAvatar })
         const currentName = dataStaff.full_name || dataStaff.name || ''
         setFormData({
           full_name: currentName,
           phone: dataStaff.phone || ''
         })
-        if (dataStaff.avatar_url) setAvatarPreview(dataStaff.avatar_url)
+        setAvatarPreview(currentAvatar)
         setLoading(false)
         return
       }
 
+      // 3. Crear en 'staff' si no existe
       const newStaff = {
         user_id: user.id,
         auth_user_id: user.id,
@@ -209,6 +214,7 @@ export default function AdminPerfilPage() {
         email: user.email,
         role: 'staff',
         is_active: true,
+        avatar_url: user.user_metadata?.avatar_url || null,
         created_at: new Date().toISOString()
       }
 
@@ -225,12 +231,13 @@ export default function AdminPerfilPage() {
       }
 
       setActiveTable('staff')
-      setProfile(createdStaff)
+      const createdAvatar = createdStaff.avatar_url || user.user_metadata?.avatar_url || null
+      setProfile({ ...createdStaff, avatar_url: createdAvatar })
       setFormData({
         full_name: createdStaff.name || '',
         phone: createdStaff.phone || ''
       })
-      if (createdStaff.avatar_url) setAvatarPreview(createdStaff.avatar_url)
+      setAvatarPreview(createdAvatar)
 
     } catch (err: any) {
       setError('Error al cargar los datos del perfil: ' + err.message)
@@ -293,9 +300,6 @@ export default function AdminPerfilPage() {
         const filePath = tenantId ? `${tenantId}/${user.id}/${fileName}` : `${user.id}/${fileName}`
 
         console.log('📤 Subiendo avatar al bucket staff:', filePath)
-        console.log('📄 Tipo de archivo:', avatarFile.type)
-        console.log('📏 Tamaño:', (avatarFile.size / 1024).toFixed(2), 'KB')
-
         avatarUrl = await uploadAvatarWithRetry(avatarFile, filePath)
         console.log('✅ Avatar subido exitosamente:', avatarUrl)
       }
@@ -308,7 +312,6 @@ export default function AdminPerfilPage() {
         avatar_url: avatarUrl,
       }
 
-      // Separación estricta de esquemas entre 'profiles' y 'staff'
       if (isProfiles) {
         updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
@@ -334,6 +337,14 @@ export default function AdminPerfilPage() {
         throw new Error(`Error al guardar en ${activeTable}: ${updateError.message}`)
       }
 
+      // Actualizamos también la metadata del usuario en Auth para persistir la foto entre recargas
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: avatarUrl,
+          full_name: formData.full_name.trim()
+        }
+      }).catch(err => console.log('Aviso: no se actualizó Auth metadata', err))
+
       setProfile(prev => ({
         ...prev!,
         full_name: formData.full_name.trim(),
@@ -342,6 +353,7 @@ export default function AdminPerfilPage() {
         avatar_url: avatarUrl
       }))
 
+      setAvatarPreview(avatarUrl)
       setAvatarFile(null)
       setEditing(false)
       setSuccess('✅ Perfil y foto actualizados correctamente')
