@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Estados locales
+  // Estados locales para el nombre y la foto de la persona logueada
   const [dbName, setDbName] = useState('')
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
   const [imageError, setImageError] = useState(false)
@@ -43,82 +43,71 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [sidebarOpen])
 
-  // BUSCADOR MULTI-TABLA ROBUSTO CON LOGS
+  // CONSULTA DIRECTA A LA TABLA STAFF
   useEffect(() => {
-    const fetchUserHeaderProfile = async () => {
+    const fetchStaffProfile = async () => {
       if (!user) return
 
-      console.log('--------------------------------------------------')
-      console.log('📸 [DEBUG AVATAR] Usuario Auth detectado:', user)
-      console.log('📸 [DEBUG AVATAR] user.user_metadata:', user.user_metadata)
-
-      let fotoEncontrada: string | null = null
-      let nombreEncontrado: string | null = null
-
       try {
-        // 1. CONSULTA EN TABLA STAFF (por user_id o por email)
-        const { data: staffList, error: staffErr } = await supabase
-          .from('staff')
-          .select('*')
-          .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        let photo: string | null = null
+        let name: string | null = null
 
-        console.log('📊 [DEBUG AVATAR] Resultado en tabla STAFF:', staffList, staffErr)
+        // 1. Intentar buscar en 'staff' por email (El correo de Silvana: larasanturio@outlook.com)
+        if (user.email) {
+          const { data: staffByEmail } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('email', user.email)
+            .limit(1)
 
-        if (staffList && staffList.length > 0) {
-          const s = staffList[0]
-          nombreEncontrado = s.name || s.full_name || s.nombre
-          fotoEncontrada = s.photo_url || s.avatar_url || s.image || s.picture || s.photo || s.avatar
+          if (staffByEmail && staffByEmail.length > 0) {
+            const s = staffByEmail[0]
+            name = s.name || s.full_name || s.nombre
+            photo = s.avatar_url || s.photo_url || s.image || s.picture || s.photo || s.avatar
+          }
         }
 
-        // 2. CONSULTA EN TABLA CLIENTS (si no se halló en staff)
-        if (!fotoEncontrada) {
-          const { data: clientList, error: clientErr } = await supabase
+        // 2. Si no se halló por email, intentar buscar en 'staff' por user_id / id
+        if (!photo && user.id) {
+          const { data: staffById } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1)
+
+          if (staffById && staffById.length > 0) {
+            const s = staffById[0]
+            if (!name) name = s.name || s.full_name || s.nombre
+            photo = s.avatar_url || s.photo_url || s.image || s.picture || s.photo || s.avatar
+          }
+        }
+
+        // 3. Respaldo opcional en la tabla 'clients' si no fuera staff
+        if (!photo && user.email) {
+          const { data: clientData } = await supabase
             .from('clients')
             .select('*')
-            .or(`auth_user_id.eq.${user.id},email.eq.${user.email},id.eq.${user.id}`)
+            .eq('email', user.email)
+            .limit(1)
 
-          console.log('📊 [DEBUG AVATAR] Resultado en tabla CLIENTS:', clientList, clientErr)
-
-          if (clientList && clientList.length > 0) {
-            const c = clientList[0]
-            if (!nombreEncontrado) nombreEncontrado = c.name || c.full_name || c.nombre
-            fotoEncontrada = c.avatar_url || c.photo_url || c.image || c.picture || c.photo || c.avatar
+          if (clientData && clientData.length > 0) {
+            const c = clientData[0]
+            if (!name) name = c.name || c.full_name
+            photo = c.avatar_url || c.photo_url || c.image
           }
         }
 
-        // 3. CONSULTA EN TABLA PROFILES
-        if (!fotoEncontrada) {
-          const { data: profileList, error: profErr } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-
-          console.log('📊 [DEBUG AVATAR] Resultado en tabla PROFILES:', profileList, profErr)
-
-          if (profileList && profileList.length > 0) {
-            const p = profileList[0]
-            if (!nombreEncontrado) nombreEncontrado = p.full_name || p.name
-            fotoEncontrada = p.avatar_url || p.photo_url || p.image || p.picture || p.avatar
-          }
-        }
-
-        if (nombreEncontrado) setDbName(nombreEncontrado)
-
-        if (fotoEncontrada) {
-          console.log('✅ [DEBUG AVATAR] Foto encontrada con éxito:', fotoEncontrada)
-          setDbAvatarUrl(fotoEncontrada)
+        if (name) setDbName(name)
+        if (photo) {
+          setDbAvatarUrl(photo)
           setImageError(false)
-        } else {
-          console.warn('⚠️ [DEBUG AVATAR] No se encontró URL de foto en ninguna tabla de la BD.')
         }
-
       } catch (err) {
-        console.error('❌ [DEBUG AVATAR] Error realizando consultas:', err)
+        console.error('Error al cargar la foto de staff:', err)
       }
-      console.log('--------------------------------------------------')
     }
 
-    fetchUserHeaderProfile()
+    fetchStaffProfile()
   }, [user])
 
   const menuItems = [
@@ -134,14 +123,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
   ]
 
-  // Extraer alternativas de foto desde auth metadata
+  // Evaluación de variables de perfil y metadatos de usuario
   const meta = user?.user_metadata || {}
-  const authAvatar = meta.avatar_url || meta.picture || meta.photoURL || meta.avatar || null
-
-  // URL Final a utilizar
+  const authAvatar = meta.avatar_url || meta.picture || meta.photoURL || null
   const finalAvatarUrl = dbAvatarUrl || authAvatar
 
-  const finalName = dbName || meta.full_name || meta.name || meta.nombre || user?.email?.split('@')[0] || 'Usuario'
+  const finalName = dbName || meta.full_name || meta.name || 'Silvana'
   const inicialNombre = finalName.charAt(0).toUpperCase()
   const primerNombre = finalName.split(' ')[0]
 
@@ -306,7 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* ACCIONES DEL HEADER */}
+          {/* ACCIONES DEL HEADER: MOSTRANDO LA FOTO DE SILVANA MORALES */}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
 
@@ -323,12 +310,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {primerNombre}
                 </p>
                 <span className="text-[8px] font-black tracking-[0.2em] uppercase mt-1 block bg-gradient-to-r from-[#D4AF37] to-[#E8D5A0] bg-clip-text text-transparent">
-                  VIP MEMBER
+                  STAFF MEMBER
                 </span>
               </div>
               
-              {/* CONTENEDOR DE LA IMAGEN */}
-              <div className={`relative w-11 h-11 rounded-xl border overflow-hidden flex items-center justify-center font-black text-sm transition-all duration-300 shadow-md shrink-0 border-[#D4AF37]/50 ${
+              {/* CONTENEDOR DE LA FOTO DEL STAFF EN LA BARRA SUPERIOR */}
+              <div className={`relative w-10 h-10 rounded-xl border overflow-hidden flex items-center justify-center font-black text-xs transition-all duration-300 shadow-sm shrink-0 border-[#D4AF37]/60 group-hover:scale-105 ${
                 isDark ? 'bg-[#2A1B14] text-[#D4AF37]' : 'bg-[#FFF9F6] text-[#D4AF37]'
               }`}>
                 {finalAvatarUrl && !imageError ? (
@@ -336,10 +323,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     src={finalAvatarUrl} 
                     alt={`Foto de ${primerNombre}`} 
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('❌ Error al cargar la foto desde URL:', finalAvatarUrl)
-                      setImageError(true)
-                    }}
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <span>{inicialNombre}</span>
