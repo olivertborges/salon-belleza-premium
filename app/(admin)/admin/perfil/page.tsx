@@ -69,7 +69,7 @@ export default function AdminPerfilPage() {
       .select('tenant_id')
       .eq('id', user?.id)
       .maybeSingle()
-    
+
     if (profileData?.tenant_id) return profileData.tenant_id
 
     const { data: staffData } = await supabase
@@ -77,7 +77,7 @@ export default function AdminPerfilPage() {
       .select('tenant_id')
       .eq('user_id', user?.id)
       .maybeSingle()
-    
+
     if (staffData?.tenant_id) return staffData.tenant_id
 
     const { data: staffData2 } = await supabase
@@ -85,26 +85,21 @@ export default function AdminPerfilPage() {
       .select('tenant_id')
       .eq('auth_user_id', user?.id)
       .maybeSingle()
-    
+
     if (staffData2?.tenant_id) return staffData2.tenant_id
 
     return '2fb6af3b-944e-4974-93f4-1d4860771173'
   }
 
-  // ✅ FUNCIÓN PARA SUBIR CON RETRY Y DIFERENTES ESTRATEGIAS
+  // FUNCIÓN PARA SUBIR CON RETRY Y DIFERENTES ESTRATEGIAS
   const uploadAvatarWithRetry = async (file: File, path: string): Promise<string> => {
     const maxRetries = 3
     let lastError = null
-
-    // Estrategia 1: Subida normal
-    // Estrategia 2: Subida con contentType explícito
-    // Estrategia 3: Subida como FormData
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`📤 Intento ${attempt} de subida...`)
 
-        // Estrategia 1: Subida normal
         const { error: uploadError } = await supabase.storage
           .from('staff')
           .upload(path, file, {
@@ -116,19 +111,17 @@ export default function AdminPerfilPage() {
         if (uploadError) {
           console.log(`⚠️ Error en intento ${attempt}:`, uploadError.message)
           lastError = uploadError
-          
-          // Si es un error de red, esperamos y reintentamos
+
           if (uploadError.message.includes('Failed to fetch') || 
               uploadError.message.includes('network') ||
               uploadError.message.includes('timeout')) {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
             continue
           }
-          
+
           throw uploadError
         }
 
-        // Si llegamos aquí, la subida fue exitosa
         const { data: publicUrlData } = supabase.storage
           .from('staff')
           .getPublicUrl(path)
@@ -139,16 +132,14 @@ export default function AdminPerfilPage() {
       } catch (error: any) {
         console.log(`❌ Error en intento ${attempt}:`, error.message)
         lastError = error
-        
-        // Si es un error de red, esperamos y reintentamos
+
         if (error.message?.includes('Failed to fetch') || 
             error.message?.includes('network') ||
             error.message?.includes('timeout')) {
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
           continue
         }
-        
-        // Si es otro tipo de error, lo lanzamos inmediatamente
+
         throw error
       }
     }
@@ -165,7 +156,7 @@ export default function AdminPerfilPage() {
 
       const tid = await getTenantId()
       setTenantId(tid)
-      
+
       if (!tid) {
         setError('⚠️ No se encontró tenant_id. Contacta al administrador.')
         setLoading(false)
@@ -265,7 +256,6 @@ export default function AdminPerfilPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validar tipo de archivo
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
     if (!validTypes.includes(file.type)) {
       setError('Formato de imagen no válido. Usa JPG, PNG, GIF, WEBP o SVG.')
@@ -297,38 +287,33 @@ export default function AdminPerfilPage() {
     try {
       let avatarUrl = profile.avatar_url
 
-      // Si seleccionó un archivo nuevo, lo subimos al bucket 'staff'
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
         const fileName = `${user.id}-${Date.now()}.${fileExt}`
-        
-        // Ruta del archivo
         const filePath = tenantId ? `${tenantId}/${user.id}/${fileName}` : `${user.id}/${fileName}`
 
         console.log('📤 Subiendo avatar al bucket staff:', filePath)
         console.log('📄 Tipo de archivo:', avatarFile.type)
         console.log('📏 Tamaño:', (avatarFile.size / 1024).toFixed(2), 'KB')
 
-        // ✅ USAR LA FUNCIÓN CON RETRY
         avatarUrl = await uploadAvatarWithRetry(avatarFile, filePath)
         console.log('✅ Avatar subido exitosamente:', avatarUrl)
       }
 
-      // Preparamos el payload unificado
       const isProfiles = activeTable === 'profiles'
       const idColumn = isProfiles ? 'id' : 'user_id'
-      
-      const updatePayload: any = {
+
+      const updatePayload: Record<string, any> = {
         phone: formData.phone?.trim() || null,
         avatar_url: avatarUrl,
       }
 
+      // Separación estricta de esquemas entre 'profiles' y 'staff'
       if (isProfiles) {
         updatePayload.full_name = formData.full_name.trim()
         updatePayload.updated_at = new Date().toISOString()
       } else {
         updatePayload.name = formData.full_name.trim()
-        updatePayload.full_name = formData.full_name.trim()
       }
 
       let { error: updateError } = await supabase
@@ -341,7 +326,7 @@ export default function AdminPerfilPage() {
           .from('staff')
           .update(updatePayload)
           .eq('id', profile.id || user.id)
-        
+
         updateError = retryError
       }
 
