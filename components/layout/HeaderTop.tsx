@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Menu, Globe } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { supabase } from '@/lib/supabase/client'
@@ -24,7 +24,8 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   const isDark = theme === 'dark'
 
   const fetchClientData = useCallback(async () => {
-    if (!user?.id && !user?.email) {
+    if (!user?.id) {
+      console.log(' HeaderTop: Esperando por el ID de usuario...')
       setLoading(false)
       return
     }
@@ -32,32 +33,31 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
     try {
       setLoading(true)
 
-      // Consultar la tabla clients EXACTAMENTE IGUAL que en Perfil (por auth_user_id)
-      let query = supabase.from('clients').select('name, full_name, avatar_url')
-      
-      if (user.id) {
-        query = query.eq('auth_user_id', user.id)
-      } else {
-        query = query.eq('email', user.email)
+      // Misma consulta que PerfilPage
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('name, full_name, avatar_url')
+        .eq('auth_user_id', user.id)
+        .maybeSingle()
+
+      if (clientError) {
+        console.error(' HeaderTop Error Supabase:', clientError)
+        setLoading(false)
+        return
       }
 
-      const { data: client, error } = await query.maybeSingle()
+      console.log(' HeaderTop Cliente encontrado:', clientData)
 
-      if (error) {
-        console.error('Error al consultar cliente en HeaderTop:', error)
-      }
-
-      if (client) {
-        const displayName = client.name || client.full_name
+      if (clientData) {
+        const displayName = clientData.name || clientData.full_name
         if (displayName) setUserName(displayName)
-        if (client.avatar_url) setAvatarUrl(client.avatar_url)
+        if (clientData.avatar_url) setAvatarUrl(clientData.avatar_url)
       } else {
-        // Fallback metadata si no hay cliente registrado aún
         const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
         if (metaName) setUserName(metaName)
       }
     } catch (err) {
-      console.error('Error imprevisto al cargar avatar en Header:', err)
+      console.error(' HeaderTop Error inesperado:', err)
     } finally {
       setLoading(false)
     }
