@@ -112,10 +112,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className={`h-screen w-full antialiased flex relative transition-colors duration-500 overflow-hidden ${
+    /* 1. SE FIJA EL ALTO COMPLETO Y SE BLOQUEA CUALQUIER SCROLL EXTERNO */
+    <div className={`h-screen w-screen antialiased flex relative transition-colors duration-500 overflow-hidden ${
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
+      {/* Backdrop Sidebar Móvil */}
       <div 
         onClick={() => setSidebarOpen(false)} 
         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-500 ${
@@ -123,11 +125,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       />
 
+      {/* Sidebar Lateral */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 lg:static lg:translate-x-0 flex flex-col shrink-0 ${
           sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } ${
-          isDark ? 'bg-[#1E120C]/95 border-[#3D281E]' : 'bg-[#FFF9F6]/95 border-[#F0E4DA]'
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}
       >
         <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
@@ -159,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        <div className="p-4 border-t border-[#3D281E] space-y-1">
+        <div className="p-4 border-t border-[#3D281E] space-y-1 shrink-0">
           <Link 
             href="/" 
             onClick={() => setSidebarOpen(false)}
@@ -175,10 +178,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
+      {/* ÁREA DERECHA (HEADER + MAIN) */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
 
-        <header className={`sticky top-0 z-30 border-b px-4 h-20 flex items-center justify-between gap-4 shrink-0 ${
-          isDark ? 'bg-[#1E120C]/80 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
+        {/* 2. HEADER COMPLETAMENTE RÍGIDO Y DESVINCULADO DEL EVENTO SCROLL
+            Se cambiaron las clases 'sticky top-0' por 'relative shrink-0 w-full' */}
+        <header className={`relative shrink-0 w-full z-30 border-b px-4 h-20 flex items-center justify-between gap-4 ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]">
             <Menu className="w-5 h-5" />
@@ -213,7 +219,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-4 overflow-y-auto">
+        {/* 3. ÚNICO CONTENEDOR CON SCROLL DEL SISTEMA */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
