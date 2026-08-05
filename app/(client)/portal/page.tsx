@@ -78,7 +78,6 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
     
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
       <div className="flex items-center gap-8 justify-between md:justify-start w-full md:w-auto">
-        {/* Puntos Glow */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Gem className="w-3.5 h-3.5 text-[#D4AF37]" />
@@ -89,7 +88,6 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
         
         <div className={`w-[1px] h-10 hidden md:block ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
         
-        {/* Puntos Hair */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Star className="w-3.5 h-3.5 text-[#D4AF37]" />
@@ -184,6 +182,9 @@ export default function ClientDashboardIndex() {
   const [serviciosUnicos, setServiciosUnicos] = useState(0)
   const [codigoReferido, setCodigoReferido] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
+  
+  // Estado para controlar la existencia de promociones/anuncios
+  const [hasPromos, setHasPromos] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -266,6 +267,17 @@ export default function ClientDashboardIndex() {
             .select('id')
             .eq('referred_by_id', currentCliente.id)
           setReferidos(referidosData || [])
+
+          // Verificar si hay promociones o anuncios creados
+          const { data: promos } = await supabase
+            .from('promotions')
+            .select('id')
+            .eq('is_active', true)
+            .limit(1)
+
+          if (promos && promos.length > 0) {
+            setHasPromos(true)
+          }
         }
       } catch (error) {
         console.error('Error al cargar datos:', error)
@@ -358,20 +370,22 @@ export default function ClientDashboardIndex() {
         </section>
 
         {/* ============================================================ */}
-        {/* NOVEDADES Y PROMOCIONES */}
+        {/* NOVEDADES Y PROMOCIONES (Solo se renderiza si existen) */}
         {/* ============================================================ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
-            <AnunciosBanner position="hero" limit={2} />
+        {hasPromos && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+            }`}>
+              <AnunciosBanner position="hero" limit={2} />
+            </div>
+            <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+            }`}>
+              <PromocionesVolante limit={3} />
+            </div>
           </div>
-          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
-            <PromocionesVolante limit={3} />
-          </div>
-        </div>
+        )}
 
         {/* ============================================================ */}
         {/* ACTIVIDADES DENTRO DEL SALÓN */}
