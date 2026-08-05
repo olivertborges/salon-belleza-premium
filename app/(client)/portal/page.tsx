@@ -6,8 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase/client'
 import { 
-  Calendar, Sparkles, Gift, ArrowRight, RefreshCw, 
-  Crown, Clock, Gem, Star, User
+  Calendar, ArrowRight, RefreshCw, Clock, Sparkles, User, Heart
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -15,7 +14,6 @@ import Link from 'next/link'
 import InsigniasLogros from '@/components/InsigniasLogros'
 import InstagramFeed from '@/components/InstagramFeed'
 import QRReferido from '@/components/QRReferido'
-import RuletaModal from '@/components/RuedaSuerte'
 import MisionesDiarias from '@/components/MisionesDiarias'
 import AnunciosBanner from '@/components/AnunciosBanner'
 import PromocionesVolante from '@/components/PromocionesVolante'
@@ -51,60 +49,48 @@ interface Cliente {
 }
 
 // ============================================================
-// MICRO-COMPONENTES CON CORTE ORGÁNICO Y RELIEVE
+// MICRO-COMPONENTES
 // ============================================================
 
 const LoadingSpinner = ({ isDark }: { isDark: boolean }) => (
-  <div className={`flex items-center justify-center min-h-[80vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
-    <div className="flex flex-col items-center gap-6">
-      <div className="relative w-16 h-16">
-        <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
-        <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
+  <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-300 ${isDark ? 'bg-[#1E1E1E]' : 'bg-[#FAFAFA]'}`}>
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative w-12 h-12">
+        <div className={`absolute inset-0 rounded-full border-2 ${isDark ? 'border-pink-500/10' : 'border-pink-500/20'}`} />
+        <div className="absolute inset-0 rounded-full border-t-2 border-pink-500 animate-spin" />
       </div>
-      <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]'}`}>
-        Sincronizando tu espacio de belleza...
+      <p className={`text-xs tracking-wider uppercase font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        Cargando Fresh Nails Salón...
       </p>
     </div>
   </div>
 )
 
 const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark: boolean }) => (
-  <div className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-300 group ${
+  <div className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-300 ${
     isDark 
-      ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-[#D4AF37]/40' 
-      : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)] hover:border-[#D4AF37]/40'
+      ? 'bg-[#252525] border-gray-800 text-white shadow-lg' 
+      : 'bg-white border-pink-100 text-gray-800 shadow-sm'
   }`}>
-    <div className={`absolute top-0 right-0 w-24 h-24 rounded-full translate-x-8 -translate-y-8 pointer-events-none group-hover:scale-110 transition-transform duration-700 ${
-      isDark ? 'bg-[#3D281E]/40' : 'bg-[#FFF9F6]'
-    }`} />
-    
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
       <div className="flex items-center gap-8 justify-between md:justify-start w-full md:w-auto">
-        {/* Marcador GLOW */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Gem className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#A89588]">Glow Points</span>
-          </div>
-          <p className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{glow}</p>
+        <div className="space-y-1">
+          <span className="text-xs font-semibold uppercase text-pink-500 tracking-wider">Puntos Acumulados</span>
+          <p className="text-3xl font-bold">{glow}</p>
         </div>
         
-        <div className={`w-[1px] h-10 hidden md:block ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
+        <div className={`w-[1px] h-10 hidden md:block ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
         
-        {/* Marcador HAIR */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#A89588]">Hair Points</span>
-          </div>
-          <p className={`font-serif text-3xl font-light ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{hair}</p>
+        <div className="space-y-1">
+          <span className="text-xs font-semibold uppercase text-pink-500 tracking-wider">Puntos de Regalo</span>
+          <p className="text-3xl font-bold">{hair}</p>
         </div>
       </div>
 
-      <div className={`text-left md:text-right border-t md:border-t-0 pt-4 md:pt-0 flex flex-col justify-end ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
-        <span className="text-[9px] text-[#D4AF37] uppercase tracking-[0.3em] font-bold block mb-1">Estatus del Balance</span>
-        <div className={`font-serif text-4xl font-normal tracking-tight ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-          {glow + hair} <span className="text-xs font-sans font-light tracking-widest opacity-60">PTS</span>
+      <div className={`border-t md:border-t-0 pt-4 md:pt-0 flex flex-col justify-end ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+        <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Total de Beneficios</span>
+        <div className="text-3xl font-extrabold text-pink-500">
+          {glow + hair} <span className="text-xs font-normal text-gray-400">pts</span>
         </div>
       </div>
     </div>
@@ -114,19 +100,19 @@ const PointsCard = ({ glow, hair, isDark }: { glow: number; hair: number; isDark
 const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark: boolean }) => {
   if (!cita) {
     return (
-      <div className={`p-8 text-center border border-dashed rounded-2xl space-y-4 shadow-sm transition-all duration-300 ${
-        isDark ? 'border-[#D4AF37]/20 bg-[#2A1B14]/40 hover:bg-[#2A1B14]/60' : 'border-[#D4AF37]/30 bg-white hover:bg-[#FFF9F6]/30'
+      <div className={`p-8 text-center border border-dashed rounded-2xl space-y-3 transition-all duration-300 ${
+        isDark ? 'border-gray-800 bg-[#252525]' : 'border-pink-200 bg-pink-50/30'
       }`}>
-        <Calendar className="w-6 h-6 text-[#A89588] mx-auto stroke-[1.2]" />
-        <p className={`text-xs uppercase tracking-[0.2em] font-light ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>
-          No tienes rituales programados en agenda
+        <Calendar className="w-8 h-8 text-pink-400 mx-auto" />
+        <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+          No tienes ninguna cita agendada en este momento.
         </p>
         <Link 
           href="/agenda"
-          className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-[#D4AF37] hover:opacity-80 transition-opacity pt-2"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-pink-500 hover:text-pink-600 uppercase tracking-wider pt-2"
         >
-          Agendar Tratamiento de Autor
-          <ArrowRight className="w-3 h-3" />
+          Agendar una cita
+          <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     )
@@ -135,39 +121,30 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
   const isConfirmed = cita.status === 'confirmed'
 
   return (
-    <div className={`p-6 border rounded-2xl shadow-md transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl relative overflow-hidden group ${
-      isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+    <div className={`p-6 border rounded-2xl shadow-sm transition-all duration-300 ${
+      isDark ? 'bg-[#252525] border-gray-800 text-white' : 'bg-white border-pink-100 text-gray-800'
     }`}>
-      <div className="absolute top-0 left-0 h-[3px] bg-[#D4AF37] w-0 group-hover:w-full transition-all duration-700" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-3">
-          <div className={`inline-flex items-center gap-2 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.15em] rounded-full ${
-            isDark ? 'bg-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isConfirmed ? 'bg-amber-500' : 'bg-[#A89588]'} animate-pulse`} />
-            {isConfirmed ? 'Confirmado' : 'Pendiente'}
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full bg-pink-100 text-pink-700">
+            <span className={`w-2 h-2 rounded-full ${isConfirmed ? 'bg-green-500' : 'bg-amber-500'}`} />
+            {isConfirmed ? 'Cita Confirmada' : 'Pendiente de Confirmación'}
           </div>
           
-          <h4 className={`font-serif text-2xl font-light tracking-wide ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
-            {cita.services?.name || 'Tratamiento de Belleza'}
+          <h4 className="text-xl font-bold">
+            {cita.services?.name || 'Servicio de Belleza'}
           </h4>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs pt-1">
-            <span className={`flex items-center gap-2 font-light tracking-wide ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>
-              <Calendar className="w-3.5 h-3.5 text-[#D4AF37] stroke-[1.5]" />
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 pt-1">
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-pink-500" />
               {cita.date}
             </span>
-            <span className={`flex items-center gap-2 font-light tracking-wide ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>
-              <Clock className="w-3.5 h-3.5 text-[#D4AF37] stroke-[1.5]" />
+            <span className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-pink-500" />
               {cita.time} hs
             </span>
           </div>
-        </div>
-
-        <div className={`w-12 h-12 border flex items-center justify-center rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-          isDark ? 'bg-[#3D281E]/50 border-[#4A3227]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
-        }`}>
-          <Crown className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
         </div>
       </div>
     </div>
@@ -175,16 +152,13 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
 }
 
 // ============================================================
-// COMPONENTE PRINCIPAL (RUIDO BAJO E HIDRATACIÓN INTEGRAL)
+// COMPONENTE PRINCIPAL
 // ============================================================
 export default function ClientDashboardIndex() {
-  const { user, tenantId, refreshUserData } = useAuth()
+  const { user, refreshUserData } = useAuth()
   const { theme } = useTheme()
 
-  // Protección anti desajustes entre servidor y cliente (Next.js Hydration Mismatch)
   const [mounted, setMounted] = useState(false)
-
-  // Estados de Negocio
   const [citas, setCitas] = useState<Cita[]>([])
   const [puntosGlow, setPuntosGlow] = useState(0)
   const [puntosHair, setPuntosHair] = useState(0)
@@ -196,7 +170,6 @@ export default function ClientDashboardIndex() {
   const [serviciosUnicos, setServiciosUnicos] = useState(0)
   const [codigoReferido, setCodigoReferido] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
-  const [isRuletaOpen, setIsRuletaOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -218,7 +191,7 @@ export default function ClientDashboardIndex() {
         setPuntosHair(data.hair_points || 0)
       }
     } catch (error) {
-      console.error('Error al sincronizar monedero:', error)
+      console.error('Error al actualizar puntos:', error)
     }
   }
 
@@ -246,7 +219,7 @@ export default function ClientDashboardIndex() {
         if (clienteData) {
           const currentCliente = clienteData as unknown as Cliente
           setClientId(currentCliente.id)
-          setNombreCliente(currentCliente.name || 'Invitado')
+          setNombreCliente(currentCliente.name || 'Cliente')
           setCodigoReferido(currentCliente.referral_code || '')
 
           await refreshPuntos(currentCliente.id)
@@ -281,7 +254,7 @@ export default function ClientDashboardIndex() {
           setReferidos(referidosData || [])
         }
       } catch (error) {
-        console.error('Error al poblar el panel de control:', error)
+        console.error('Error al cargar datos:', error)
       } finally {
         setLoading(false)
       }
@@ -293,62 +266,61 @@ export default function ClientDashboardIndex() {
   }, [user, mounted])
 
   if (!mounted) return null
-
   if (loading) return <LoadingSpinner isDark={isDark} />
 
   const proximaCita = citasProximas[0]
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
-      isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
+    <div className={`min-h-screen transition-colors duration-300 pb-12 ${
+      isDark ? 'bg-[#1E1E1E] text-white' : 'bg-[#FAFAFA] text-gray-800'
     }`}>
-      
-      {/* Fondo Texturizado Minimalista */}
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 space-y-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 space-y-6 pt-2">
 
         {/* ============================================================ */}
-        {/* 👤 PERFIL & CABECERA EDITORIAL CON RELIEVE Y NOMBRE COMPLETO */}
+        {/* CABECERA: SALÓN FRESH NAILS & ANAXIS CAMPOS LEIVA */}
         {/* ============================================================ */}
-        <div className={`border p-5 sm:p-8 rounded-2xl transition-all duration-300 ${
-          isDark 
-            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
-            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+        <div className={`p-6 sm:p-8 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'
         }`}>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl border flex items-center justify-center shrink-0 ${
-                isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
-              }`}>
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37] stroke-[1.2]" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-pink-500 uppercase tracking-widest">
+                  Fresh Nails Salón
+                </span>
+                <span className="text-gray-300">•</span>
+                <span className="text-xs font-medium text-gray-400">
+                  By Anaxis Campos Leiva
+                </span>
               </div>
-              <div className="space-y-1 min-w-0 flex-1">
-                <span className="text-[9px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block">Panel Privado</span>
-                {/* Removido el truncate: Ahora respira y se ve el nombre entero */}
-                <h1 className="font-serif text-2xl sm:text-3xl font-light tracking-tight leading-snug">
-                  Bienvenido, <span className="italic font-normal block sm:inline">{nombreCliente}</span>
-                </h1>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                ¡Hola, {nombreCliente}!
+              </h1>
+              <p className="text-xs text-gray-400">
+                Nos alegra verte de nuevo en tu espacio personal.
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
-                className={`p-3 border rounded-xl transition-all duration-300 shrink-0 ${
-                  isDark ? 'bg-[#3D281E] border-[#4A3227] text-[#FFF9F6]/70 hover:text-[#D4AF37]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37]'
+                title="Actualizar datos"
+                className={`p-3 rounded-xl border transition-all ${
+                  isDark 
+                    ? 'bg-[#1E1E1E] border-gray-800 text-gray-400 hover:text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
 
               <Link 
                 href="/agenda" 
-                className="bg-[#1A0E0A] hover:bg-[#D4AF37] border border-transparent text-white px-5 sm:px-6 py-3 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300 flex items-center justify-center gap-2 flex-1 lg:flex-none text-center rounded-xl shadow-md hover:shadow-lg"
+                className="bg-pink-500 hover:bg-pink-600 text-white px-5 py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
-                <Calendar className="w-3.5 h-3.5 stroke-[1.5]" />
-                Reservar Cita
+                <Calendar className="w-4 h-4" />
+                Agendar Cita
               </Link>
             </div>
           </div>
@@ -359,53 +331,39 @@ export default function ClientDashboardIndex() {
         </div>
 
         {/* ============================================================ */}
-        {/* 📅 EJE DE CITAS ACTIVAS */}
+        {/* SECCIÓN PRÓXIMA CITA */}
         {/* ============================================================ */}
         <section className="space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase">Próximo Ritual</span>
-            <div className={`flex-1 h-[1px] ${isDark ? 'bg-[#D4AF37]/10' : 'bg-[#D4AF37]/20'}`} />
-          </div>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-pink-500">
+            Tu próxima cita en Fresh Nails Salón
+          </h2>
           <NextAppointmentCard cita={proximaCita} isDark={isDark} />
         </section>
 
         {/* ============================================================ */}
-        {/* 📢 PASARELA DE ANUNCIOS Y EVENTOS */}
+        {/* NOVEDADES Y PROMOCIONES */}
         {/* ============================================================ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
+          <div className={`p-4 border rounded-2xl ${isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'}`}>
             <AnunciosBanner position="hero" limit={2} />
           </div>
-          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
+          <div className={`p-4 border rounded-2xl ${isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'}`}>
             <PromocionesVolante limit={3} />
           </div>
         </div>
 
         {/* ============================================================ */}
-        {/* 🎯 SECCIÓN MISIONES DEL ATELIER */}
+        {/* ACTIVIDADES Y RECOMENDACIONES */}
         {/* ============================================================ */}
-        <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-          isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
+        <div className={`p-4 border rounded-2xl ${isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'}`}>
           <MisionesDiarias />
         </div>
 
-        {/* ============================================================ */}
-        {/* 🏆 FIDELIZACIÓN: INSIGNIAS Y RECOMENDADOS */}
-        {/* ============================================================ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
+          <div className={`p-4 border rounded-2xl ${isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'}`}>
             <QRReferido codigo={codigoReferido} user={user} />
           </div>
-          <div className={`border p-6 flex flex-col justify-center rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-            isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-          }`}>
+          <div className={`p-6 border rounded-2xl flex flex-col justify-center ${isDark ? 'bg-[#252525] border-gray-800' : 'bg-white border-pink-100 shadow-sm'}`}>
             <InsigniasLogros 
               citas={citas.length} 
               serviciosUnicos={serviciosUnicos} 
@@ -417,55 +375,14 @@ export default function ClientDashboardIndex() {
         </div>
 
         {/* ============================================================ */}
-        {/* 🎡 EXPERIENCIA INTERACTIVA */}
+        {/* COMUNIDAD Y REDES (Anaxis Campos Leiva) */}
         {/* ============================================================ */}
-        <div className={`border p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group rounded-2xl shadow-md transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 ${
-          isDark ? 'bg-[#2A1B14] border-[#D4AF37]/40' : 'bg-white border-[#D4AF37]/30'
-        }`}>
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full translate-x-12 translate-y-12 opacity-50 group-hover:scale-110 transition-transform duration-700 pointer-events-none ${
-            isDark ? 'bg-[#3D281E]/30' : 'bg-[#FFF9F6]'
-          }`} />
-          
-          <div className="flex items-center gap-4 relative z-10">
-            <div className={`w-12 h-12 border flex items-center justify-center rounded-xl ${
-              isDark ? 'bg-[#3D281E] border-[#D4AF37]/40' : 'bg-[#FFF9F6] border-[#D4AF37]/30'
-            }`}>
-              <Gift className="w-4 h-4 text-[#D4AF37] stroke-[1.2]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-serif text-xl font-light tracking-wide">La Rueda de la Fortuna</h3>
-              <p className={`text-xs font-light ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>Accede a recompensas y beneficios exclusivos por lealtad.</p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => setIsRuletaOpen(true)} 
-            className="w-full sm:w-auto bg-[#1A0E0A] hover:bg-[#D4AF37] text-white px-6 py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300 shrink-0 relative z-10 rounded-xl shadow-sm"
-          >
-            Activar Rueda
-          </button>
-        </div>
-
-        {/* ============================================================ */}
-        {/* 📸 INSTAGRAM SOCIAL GALLERY */}
-        {/* ============================================================ */}
-        <div className={`pt-6 border-t ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`}>
+        <div className={`pt-6 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
           <InstagramFeed />
         </div>
 
-        {/* Footer del Ecosistema */}
+        {/* Pie de página */}
         <FooterCliente />
-
-        {/* ============================================================ */}
-        {/* 🎡 CAPA MODAL: EXPERIENCIA DIGITAL */}
-        {/* ============================================================ */}
-        <RuletaModal
-          isOpen={isRuletaOpen}
-          onClose={() => { setIsRuletaOpen(false); if (clientId) refreshPuntos(clientId) }}
-          onPremioProcesado={() => { if (clientId) refreshPuntos(clientId) }}
-          usuarioActivo={user || undefined}
-          tenantIdActivo={tenantId ?? undefined}
-        />
 
       </div>
     </div>
