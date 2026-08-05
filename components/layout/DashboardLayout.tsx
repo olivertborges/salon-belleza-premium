@@ -108,8 +108,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    /* Contenedor principal a pantalla completa sin bloquear el scroll del sistema */
-    <div className={`fixed inset-0 w-screen h-[100dvh] antialiased flex relative transition-colors duration-500 select-none ${
+    /* Usamos h-[100dvh] fijo y flex para aislar el marco de la pantalla */
+    <div className={`fixed inset-0 w-screen h-[100dvh] antialiased flex relative transition-colors duration-500 overflow-hidden select-none ${
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
@@ -177,8 +177,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ÁREA DERECHA (HEADER + MAIN) */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
 
-        {/* HEADER RIGIDO */}
-        <header className={`shrink-0 w-full z-30 border-b px-4 h-20 flex items-center justify-between gap-4 ${
+        {/* HEADER RÍGIDO (shrink-0 + sticky top-0 garantiza que no se desplaze) */}
+        <header className={`shrink-0 w-full z-30 border-b px-4 h-20 flex items-center justify-between gap-4 sticky top-0 ${
           isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]">
@@ -214,8 +214,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* ÁREA DE CONTENIDO CON SCROLL HABILITADO */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+        {/* CONTENEDOR CON SCROLL ISLADO (overscroll-contain frena la propagación del rebote al header) */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 overscroll-contain">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
