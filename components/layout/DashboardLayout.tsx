@@ -63,12 +63,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }
         }
 
-        // 3. Buscar en tabla staff
+        // 3. Buscar en tabla staff (solo usando columnas estándar que existen)
         if (!foundAvatar) {
           const { data: staffData } = await supabase
             .from('staff')
             .select('avatar_url, name, full_name')
-            .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${user.id}`)
+            .eq('id', user.id)
             .maybeSingle()
 
           if (staffData) {
