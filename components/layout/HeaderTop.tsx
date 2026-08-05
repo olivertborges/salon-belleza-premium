@@ -19,92 +19,53 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   
   const [userName, setUserName] = useState('Usuario')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [imgStatus, setImgStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading')
+  const [loading, setLoading] = useState(true)
 
   const isDark = theme === 'dark'
 
-  const fetchAvatarDirect = useCallback(async () => {
-    if (!user?.id) {
-      setImgStatus('empty')
+  const fetchClientData = useCallback(async () => {
+    if (!user?.id && !user?.email) {
+      setLoading(false)
       return
     }
 
-    // Nombre inicial desde Metadatos o Email
-    const initialName = user.user_metadata?.full_name || 
-                        user.user_metadata?.name || 
-                        user.email?.split('@')[0] || 
-                        'Usuario'
-    setUserName(initialName)
-
     try {
-      setImgStatus('loading')
-      let foundAvatar = null
+      setLoading(true)
 
-      // 1. Auth Metadata
-      if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
-        foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
-      }
-
-      // 2. Tabla clients (Consultamos por Email o por ID)
-      if (!foundAvatar) {
-        let { data: clientData } = await supabase
-          .from('clients')
-          .select('full_name, avatar_url')
-          .eq('email', user.email)
-          .maybeSingle()
-
-        if (!clientData && user.id) {
-          const { data: clientById } = await supabase
-            .from('clients')
-            .select('full_name, avatar_url')
-            .eq('id', user.id)
-            .maybeSingle()
-          if (clientById) clientData = clientById
-        }
-
-        if (clientData) {
-          if (clientData.full_name) setUserName(clientData.full_name)
-          if (clientData.avatar_url && clientData.avatar_url.trim() !== '') {
-            foundAvatar = clientData.avatar_url
-          }
-        }
-      }
-
-      // 3. Tabla profiles (Respaldo)
-      if (!foundAvatar && user.id) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('avatar_url, full_name, name')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (profileData) {
-          if (profileData.full_name || profileData.name) setUserName(profileData.full_name || profileData.name)
-          if (profileData.avatar_url && profileData.avatar_url.trim() !== '') {
-            foundAvatar = profileData.avatar_url
-          }
-        }
-      }
-
-      // Verificar si se encontró una URL de imagen válida
-      if (foundAvatar && typeof foundAvatar === 'string' && foundAvatar.length > 5) {
-        setAvatarUrl(foundAvatar)
-        setImgStatus('success')
+      // Consultar la tabla clients EXACTAMENTE IGUAL que en Perfil (por auth_user_id)
+      let query = supabase.from('clients').select('name, full_name, avatar_url')
+      
+      if (user.id) {
+        query = query.eq('auth_user_id', user.id)
       } else {
-        setAvatarUrl(null)
-        setImgStatus('empty')
+        query = query.eq('email', user.email)
       }
 
+      const { data: client, error } = await query.maybeSingle()
+
+      if (error) {
+        console.error('Error al consultar cliente en HeaderTop:', error)
+      }
+
+      if (client) {
+        const displayName = client.name || client.full_name
+        if (displayName) setUserName(displayName)
+        if (client.avatar_url) setAvatarUrl(client.avatar_url)
+      } else {
+        // Fallback metadata si no hay cliente registrado aún
+        const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
+        if (metaName) setUserName(metaName)
+      }
     } catch (err) {
-      console.error('Error al obtener el avatar:', err)
-      setAvatarUrl(null)
-      setImgStatus('empty')
+      console.error('Error imprevisto al cargar avatar en Header:', err)
+    } finally {
+      setLoading(false)
     }
   }, [user])
 
   useEffect(() => {
-    fetchAvatarDirect()
-  }, [fetchAvatarDirect])
+    fetchClientData()
+  }, [fetchClientData])
 
   const firstName = userName.split(' ')[0] || userName
   const inicialNombre = firstName.charAt(0).toUpperCase()
@@ -131,35 +92,19 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
         <ThemeToggle />
 
-        {/* INDICADOR DE ESTADO DE LA FOTO */}
         <div className="text-right flex flex-col items-end">
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${
-              imgStatus === 'success' ? 'bg-green-500' :
-              imgStatus === 'loading' ? 'bg-yellow-500 animate-pulse' :
-              'bg-gray-400'
-            }`} />
-            <p className="text-xs font-bold">{userName}</p>
-          </div>
-          <span className="text-[8px] font-black uppercase text-[#D4AF37]">
-            {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : 'SIN FOTO'}
-          </span>
+          <p className="text-xs font-bold">{userName}</p>
         </div>
         
-        {/* AVATAR: MUESTRA FOTO SI EXISTE, O LA INICIAL SI ESTÁ VACÍA */}
         <Link 
           href="/perfil" 
-          className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative shrink-0"
+          className="w-10 h-10 rounded-xl border border-[#D4AF37]/40 overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative shrink-0 hover:border-[#D4AF37] transition-all"
         >
-          {imgStatus === 'success' && avatarUrl ? (
+          {avatarUrl ? (
             <img 
               src={avatarUrl} 
               alt={userName} 
               className="w-full h-full object-cover"
-              onError={() => {
-                setImgStatus('empty')
-                setAvatarUrl(null)
-              }}
             />
           ) : (
             <span>{inicialNombre}</span>
