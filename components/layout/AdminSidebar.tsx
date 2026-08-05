@@ -30,6 +30,7 @@ const ALL_MENU_ITEMS = [
   { id: 'fidelizacion', name: 'VIP Club', icon: Crown, path: '/admin/fidelizacion' },
   { id: 'servicios', name: 'Servicios', icon: Sparkles, path: '/admin/servicios' },
   { id: 'promociones', name: 'Promociones', icon: Gift, path: '/admin/promociones' },
+  { id: 'productos', name: 'Tienda', icon: ShoppingBag, path: '/admin/productos' },
   { id: 'cancelaciones', name: 'Cancelaciones', icon: XCircle, path: '/admin/cancelaciones' },
   { id: 'usuarios', name: 'Usuarios', icon: UsersRound, path: '/admin/usuarios' },
   { id: 'configuracion', name: 'Configuración', icon: Sliders, path: '/admin/configuracion' },
