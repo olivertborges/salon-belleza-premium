@@ -303,7 +303,7 @@ const StatsSection = () => {
 
   const stats = [
     { number: '25+', label: 'Años de Trayectoria' },
-    { number: '3K+', label: 'Clientes Satisfechos },
+    { number: '3K+', label: 'Clientes Satisfechos' },
     { number: '4.9', label: 'Calificación Global' },
     { number: '100%', label: 'Garantía de Satisfacción' }
   ]
