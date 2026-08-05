@@ -179,7 +179,7 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
             </div>
           </motion.div>
 
-          {/* FOTO ESPECTACULAR DESTACADA EN EL HERO */}
+          {/* FOTO EN EL HERO */}
           <motion.div 
             className="lg:col-span-5 relative flex justify-center items-center"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -211,7 +211,7 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
 }
 
 // ============================================================
-// EQUIPO PROFESIONAL (ANIEXIS & SILVANA)
+// EQUIPO PROFESIONAL
 // ============================================================
 const EquipoSection = () => {
   const ref = useRef(null)
@@ -229,7 +229,6 @@ const EquipoSection = () => {
 
         <div className="grid md:grid-cols-2 gap-12 items-stretch">
           
-          {/* ANIEXIS CAMPO LEYVA */}
           <motion.div 
             className="bg-pink-50/40 rounded-3xl border border-pink-100 overflow-hidden p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all"
             initial={{ opacity: 0, y: 20 }}
@@ -258,7 +257,6 @@ const EquipoSection = () => {
             </div>
           </motion.div>
 
-          {/* SILVANA (PELUQUERÍA) */}
           <motion.div 
             className="bg-pink-50/40 rounded-3xl border border-pink-100 overflow-hidden p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all"
             initial={{ opacity: 0, y: 20 }}
