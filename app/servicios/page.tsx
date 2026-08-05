@@ -6,13 +6,15 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
-  FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
+  FaClock, FaHeart, FaEye, FaGem, FaBars, FaTimes, FaRegStar,
+  FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar,
+  FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
   FaPalette, FaHandSparkles, FaAward, FaLeaf,
-  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
-  FaSprayCan, FaUserTie, FaSparkles
+  FaCrown, FaSprayCan, FaUserTie, FaSparkles
 } from 'react-icons/fa'
-import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
+import { 
+  GiNails, GiSparkles, GiScissors, GiLipstick
+} from 'react-icons/gi'
 
 // ============================================================
 // CONFIGURACIÓN DE ICONOS E IMÁGENES
@@ -31,14 +33,14 @@ const CATEGORY_ICONS: Record<string, any> = {
 }
 
 const CATEGORY_IMAGES: Record<string, string> = {
-  'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop',
-  'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=800&h=600&fit=crop',
-  'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&h=600&fit=crop',
-  'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=800&h=600&fit=crop',
-  'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&h=600&fit=crop',
-  'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800&h=600&fit=crop',
-  'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800&h=600&fit=crop',
-  'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&h=600&fit=crop'
+  'Uñas': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop',
+  'Micropigmentación': 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&h=400&fit=crop',
+  'Peluquería': 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&h=400&fit=crop',
+  'Cejas': 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&h=400&fit=crop',
+  'Estética': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=400&fit=crop',
+  'Depilación': 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&h=400&fit=crop',
+  'Pestañas': 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=400&fit=crop',
+  'default': 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=400&fit=crop'
 }
 
 const getCleanSlug = (text: string) => {
@@ -63,8 +65,18 @@ const getProfesionalPorServicio = (category: string) => {
   }
 }
 
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+}
+
 // ============================================================
-// HEADER (MISMO ESTILO QUE HOME)
+// HEADER (IGUAL QUE LA LANDING PAGE)
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -202,33 +214,6 @@ const ServicesHero = () => {
 }
 
 // ============================================================
-// STATS DE SERVICIOS
-// ============================================================
-const ServicesStats = ({ total }: { total: number }) => {
-  const stats = [
-    { number: total, label: 'Tratamientos Disponibles' },
-    { number: '25+', label: 'Años de Experiencia' },
-    { number: '4.9', label: 'Calificación Global' },
-    { number: '100%', label: 'Garantía de Calidad' }
-  ]
-
-  return (
-    <section className="py-16 bg-white border-y border-[#F0E4DA]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="text-center">
-              <p className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-light">{stat.number}</p>
-              <p className="text-[9px] tracking-[0.25em] text-[#5C4A3E] uppercase mt-2 font-medium">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
 // COMPONENTE PRINCIPAL
 // ============================================================
 export default function ServiciosPublicPage() {
@@ -304,7 +289,6 @@ export default function ServiciosPublicPage() {
     <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased selection:bg-[#D4AF37]/20">
       <Header />
       <ServicesHero />
-      <ServicesStats total={servicios.length} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 relative z-10">
         
@@ -326,7 +310,7 @@ export default function ServiciosPublicPage() {
                     ({count})
                   </span>
                   {selectedCategory === cat && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]" />
+                    <motion.div layoutId="activeFilterLine" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]" />
                   )}
                 </button>
               )
@@ -358,14 +342,15 @@ export default function ServiciosPublicPage() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {servicesInCategory.map((servicio) => {
                       const imageUrl = CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
                       const profesional = getProfesionalPorServicio(servicio.category)
                       
                       return (
-                        <div
+                        <motion.div
                           key={servicio.id}
+                          variants={fadeInUp}
                           onClick={() => setActiveService(servicio)}
                           className="group bg-white border border-[#F0E4DA] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 hover:border-[#D4AF37]"
                         >
@@ -421,10 +406,10 @@ export default function ServiciosPublicPage() {
                               {profesional.experiencia}
                             </span>
                           </div>
-                        </div>
+                        </motion.div>
                       )
                     })}
-                  </div>
+                  </motion.div>
                 </div>
               )
             })}
@@ -454,32 +439,16 @@ export default function ServiciosPublicPage() {
         </div>
       </div>
 
-      {/* ============================================================
-          POPUP DE DETALLES
-          ============================================================ */}
+      {/* POPUP DE DETALLES EXCLUSIVO */}
       <AnimatePresence>
         {activeService && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            <div 
-              onClick={() => setActiveService(null)} 
-              className="fixed inset-0 bg-[#1A0E0A]/80 backdrop-blur-md" 
-            />
-            
-            <div className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-4xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
-              <button 
-                onClick={() => setActiveService(null)} 
-                className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
-              >
-                <FaTimes className="text-xs" />
-              </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveService(null)} className="fixed inset-0 bg-[#1A0E0A]/70 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-3xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[90vh] md:max-h-none overflow-y-auto">
+              <button onClick={() => setActiveService(null)} className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"><FaTimes className="text-xs" /></button>
               
-              {/* IMAGEN LATERAL */}
-              <div className="md:col-span-5 relative h-64 md:h-auto bg-[#FFF9F6]">
-                <img 
-                  src={CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} 
-                  alt={activeService.name} 
-                  className="w-full h-full object-cover" 
-                />
+              <div className="md:col-span-5 relative h-60 md:h-auto bg-[#FFF9F6]">
+                <img src={CATEGORY_IMAGES[activeService.category] || CATEGORY_IMAGES.default} alt={activeService.name} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent md:bg-gradient-to-r" />
                 
                 <div className="absolute bottom-4 left-4 md:left-6 md:bottom-6 flex flex-wrap gap-2">
@@ -494,69 +463,39 @@ export default function ServiciosPublicPage() {
                 </div>
               </div>
 
-              {/* CONTENIDO */}
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">
-                      {activeService.name}
-                    </h2>
-                  </div>
-                  
-                  <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                    {activeService.description || 'Tratamiento de autor del atelier, diseñado con técnicas exclusivas y productos de alta gama.'}
-                  </p>
-
-                  {activeService.subcategory && (
-                    <span className="inline-block text-[8px] tracking-widest uppercase text-[#A89588] border border-[#F0E4DA] px-3 py-1.5 bg-white">
-                      Subcategoría: {activeService.subcategory}
-                    </span>
-                  )}
+                <div className="space-y-3">
+                  <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">{activeService.name}</h2>
+                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed">{activeService.description || 'Tratamiento de autor del atelier.'}</p>
                 </div>
 
-                {/* PRECIO Y DURACIÓN */}
-                <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-5">
+                <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-4">
                   <div>
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block font-bold">Inversión</span>
-                    <span className="font-serif text-4xl text-[#1A0E0A] font-light">${activeService.price}</span>
+                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Inversión</span>
+                    <span className="font-serif text-3xl text-[#1A0E0A] font-medium">${activeService.price}</span>
                   </div>
                   <div>
-                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block font-bold">Duración</span>
-                    <span className="text-sm font-medium text-[#1A0E0A] flex items-center gap-2 mt-1">
-                      <FaClock className="text-[#D4AF37]" /> 
-                      {activeService.duration} minutos
-                    </span>
+                    <span className="text-[8px] tracking-wider text-[#A89588] uppercase block">Duración</span>
+                    <span className="text-xs font-semibold text-[#1A0E0A] flex items-center gap-1.5 mt-2"><FaClock className="text-[#D4AF37]" /> {activeService.duration} min</span>
                   </div>
                 </div>
 
-                {/* ARTISTA */}
-                <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-4 flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-white border border-[#F0E4DA] flex-shrink-0">
-                    <img 
-                      src={getProfesionalPorServicio(activeService.category).foto} 
-                      alt={getProfesionalPorServicio(activeService.category).nombre} 
-                      className="w-full h-full object-cover" 
-                    />
+                <div className="bg-[#FFF9F6] border border-[#F0E4DA] p-3 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white border border-[#F0E4DA]">
+                    <img src={getProfesionalPorServicio(activeService.category).foto} alt="Profesional" className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <span className="text-[8px] tracking-widest uppercase text-[#D4AF37] block font-bold">Artista Especializada</span>
-                    <span className="font-serif text-lg text-[#1A0E0A] font-light block">
-                      {getProfesionalPorServicio(activeService.category).nombre}
-                    </span>
-                    <span className="text-[10px] text-[#A89588] block font-light">
-                      {getProfesionalPorServicio(activeService.category).rol} · {getProfesionalPorServicio(activeService.category).experiencia} de experiencia
-                    </span>
+                    <span className="font-serif text-sm text-[#1A0E0A] font-normal block">{getProfesionalPorServicio(activeService.category).nombre}</span>
+                    <span className="text-[9px] text-[#A89588] block font-light">{getProfesionalPorServicio(activeService.category).rol} · {getProfesionalPorServicio(activeService.category).experiencia}</span>
                   </div>
                 </div>
 
-                <Link 
-                  href={`/agenda?service=${activeService.id}`} 
-                  className="w-full block text-center bg-[#1A0E0A] hover:bg-[#D4AF37] text-white py-4 text-[10px] font-bold tracking-[0.25em] uppercase transition-all duration-300"
-                >
+                <Link href={`/agenda?service=${activeService.id}`} className="w-full block text-center bg-[#1A0E0A] hover:bg-[#D4AF37] text-white py-3.5 text-[10px] font-bold tracking-[0.25em] uppercase transition-all">
                   Agendar este Tratamiento
                 </Link>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
