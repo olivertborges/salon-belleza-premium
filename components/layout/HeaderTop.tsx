@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { supabase } from '@/lib/supabase/client'
 import { Menu, Bell, Search, Sparkles, Sun, Moon } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface HeaderTopProps {
   setIsSidebarOpen: (open: boolean) => void
@@ -19,6 +19,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   const [showSearch, setShowSearch] = useState(false)
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string>('Usuario')
 
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
@@ -26,47 +27,81 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  useEffect(() => {
-    if (!user) return
+  // Función reutilizable para obtener los datos de la tabla profiles
+  const fetchProfileData = useCallback(async () => {
+    if (!user?.id) return
 
-    const fetchAvatar = async () => {
-      try {
-        // 1. Extraer metadatos directamente del objeto de sesión
-        const metaAvatar = user.user_metadata?.avatar_url || 
-                           user.user_metadata?.avatar || 
-                           user.user_metadata?.picture || 
-                           user.user_metadata?.photo_url
+    try {
+      // 1. Prioridad: Tabla profiles (donde se guarda tras la subida)
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('avatar_url, full_name, name')
+        .eq('id', user.id)
+        .maybeSingle()
 
-        if (metaAvatar) {
-          setAvatarUrl(metaAvatar)
-          return
-        }
-
-        // 2. Si no existe en metadatos, consultar en la tabla 'profiles'
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (error) throw error
-
-        if (data && data.avatar_url) {
-          setAvatarUrl(data.avatar_url)
-        } else {
-          setAvatarUrl(null)
-        }
-      } catch (error) {
-        console.error('Error al cargar la foto de perfil:', error)
+      if (error) {
+        console.error('Error leyendo profiles:', error)
       }
-    }
 
-    fetchAvatar()
+      const nameFromProfile = profile?.full_name || profile?.name
+      const avatarFromProfile = profile?.avatar_url
+
+      // Nombre
+      if (nameFromProfile) {
+        setDisplayName(nameFromProfile)
+      } else {
+        const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
+        setDisplayName(metaName || 'Usuario')
+      }
+
+      // Avatar
+      if (avatarFromProfile) {
+        setAvatarUrl(avatarFromProfile)
+      } else {
+        // Fallback a metadata de auth
+        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture
+        setAvatarUrl(metaAvatar || null)
+      }
+    } catch (err) {
+      console.error('Error al cargar la foto de perfil:', err)
+    }
   }, [user])
 
+  useEffect(() => {
+    fetchProfileData()
+
+    if (!user?.id) return
+
+    // Escuchar cambios EN TIEMPO REAL en la tabla 'profiles' para este usuario
+    const channel = supabase
+      .channel(`profile_changes_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new?.avatar_url) {
+            setAvatarUrl(payload.new.avatar_url)
+          }
+          if (payload.new?.full_name || payload.new?.name) {
+            setDisplayName(payload.new.full_name || payload.new.name)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, fetchProfileData])
+
   const getInitials = () => {
-    if (user?.full_name) {
-      return user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    if (displayName) {
+      return displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     }
     return 'U'
   }
@@ -165,7 +200,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               <p className={`text-[11px] font-medium ${
                 isDark ? 'text-white' : 'text-stone-800'
               }`}>
-                {user?.full_name || 'Usuario'}
+                {displayName}
               </p>
               <p className={`text-[7px] uppercase tracking-[0.15em] font-medium ${
                 isDark ? 'text-stone-500' : 'text-stone-400'
@@ -183,6 +218,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
                   src={avatarUrl} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarUrl(null)}
                 />
               ) : (
                 getInitials()
@@ -201,6 +237,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
                   src={avatarUrl} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarUrl(null)}
                 />
               ) : (
                 getInitials()
