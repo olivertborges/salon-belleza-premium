@@ -17,9 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Grid3x3,
-  LayoutList,
-  Calendar,
-  Sparkle
+  LayoutList
 } from 'lucide-react'
 
 interface GalleryImage {
@@ -64,8 +62,8 @@ export default function GaleriaPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // URL de la foto flash destacada para el Hero
-  const HERO_FLASH_IMAGE = "https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=1000&auto=format&fit=crop"
+  // Fotografía editorial completamente nueva para el fondo del Hero
+  const HERO_BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1632345031435-8727fec88a10?q=80&w=1600&auto=format&fit=crop"
 
   // ============================================================
   // FUNCIÓN PARA OBTENER TENANT_ID
@@ -303,92 +301,61 @@ export default function GaleriaPage() {
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       {/* ============================================================ */}
-      {/* HERO — ESTRUCTURA ORIGINAL RESTAURADA */}
+      {/* HERO — FOTO EN TODO EL FONDO DE LA TARJETA CON OVERLAY LEVE */}
       {/* ============================================================ */}
-      <div className={`relative overflow-hidden min-h-[70vh] flex items-center justify-center border-b transition-all duration-300 py-12 ${
-        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-      }`}>
-        <div className={`absolute inset-0 ${
-          isDark 
-            ? 'bg-gradient-to-br from-[#1E120C] via-[#2A1B14] to-[#1E120C]' 
-            : 'bg-gradient-to-br from-[#FFF9F6] via-[#F5EDE8] to-[#FFF9F6]'
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 z-10">
+        <div className={`relative overflow-hidden rounded-3xl border shadow-2xl transition-all duration-500 min-h-[480px] sm:min-h-[520px] flex items-center justify-center ${
+          isDark ? 'border-[#3D281E] shadow-[0_20px_50px_rgba(0,0,0,0.8)]' : 'border-[#F0E4DA] shadow-[0_20px_50px_rgba(240,228,218,0.8)]'
         }`}>
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#D4AF37]/10 rounded-full blur-[150px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
-        </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Imagen completa en el fondo */}
+          <div className="absolute inset-0 w-full h-full overflow-hidden bg-[#1E120C]">
+            <img
+              src={HERO_BACKGROUND_IMAGE}
+              alt="Fondo de la galería"
+              className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-1000"
+            />
+
+            {/* Capa de velo semitransparente (suficientemente suave para ver la foto) */}
+            <div className="absolute inset-0 bg-black/35" />
+
+            {/* Gradiente sutil central/inferior para dar legibilidad perfecta a las letras */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/40" />
+          </div>
+
+          {/* Contenido en primer plano */}
+          <div className="relative z-10 px-6 py-16 sm:py-20 max-w-3xl mx-auto text-center space-y-6">
             
-            {/* Lado Izquierdo: Información Editorial */}
-            <div className="lg:col-span-6 text-center lg:text-left space-y-6">
-              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-sm border ${
-                isDark ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' : 'bg-[#D4AF37]/10 border-[#D4AF37]/20'
-              }`}>
-                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
-                <span className="text-[8px] tracking-[0.3em] uppercase font-black text-[#D4AF37]">
-                  ✦ Galería de Arte & Tendencias ✦
-                </span>
-              </div>
-
-              <h1 className={`text-4xl sm:text-6xl font-light font-serif tracking-wide leading-[1.1] ${
-                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-              }`}>
-                Inspiración
-                <span className="block font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#D4AF37] bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite] mt-1">
-                  Visual
-                </span>
-              </h1>
-
-              <p className={`text-sm font-light max-w-md mx-auto lg:mx-0 ${
-                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-              }`}>
-                Descubre nuestros diseños destacados y explora la colección completa de acabados exclusivos para salón.
-              </p>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <button 
-                  onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                  className={`group inline-flex items-center gap-2 px-6 py-3 rounded-full text-[9px] tracking-[0.25em] uppercase font-bold transition-all duration-300 ${
-                    isDark 
-                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
-                  }`}
-                >
-                  <span>Explorar Colección</span>
-                  <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-1 transition-transform duration-300" />
-                </button>
-              </div>
+            {/* Badge flotante */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full backdrop-blur-md bg-black/40 border border-white/20 text-[#D4AF37] shadow-xl">
+              <Sparkles className="w-3.5 h-3.5 animate-[spin_4s_linear_infinite]" />
+              <span className="text-[9px] tracking-[0.3em] uppercase font-black text-amber-200">
+                ✦ Galería de Arte & Tendencias ✦
+              </span>
             </div>
 
-            {/* Lado Derecho: Tarjeta con Foto Flash Destacada */}
-            <div className="lg:col-span-6 flex justify-center items-center">
-              <div className={`relative w-full max-w-[320px] sm:max-w-[360px] aspect-[4/5] rounded-3xl p-2.5 border shadow-2xl overflow-hidden transition-all duration-300 ${
-                isDark 
-                  ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_20px_50px_rgba(0,0,0,0.6)]' 
-                  : 'bg-white border-[#F0E4DA] shadow-[0_20px_50px_rgba(240,228,218,0.8)]'
-              }`}>
-                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#1E120C]">
-                  <img
-                    src={HERO_FLASH_IMAGE}
-                    alt="Diseño destacado de manicura"
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                  />
-                  
-                  {/* Sombra gradiente inferior */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+            {/* Título Principal */}
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-light text-white tracking-wide leading-tight drop-shadow-lg">
+              Inspiración{' '}
+              <span className="italic block font-serif text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#FFF5D0] to-[#D4AF37]">
+                Visual & Estilo
+              </span>
+            </h1>
 
-                  {/* Detalle flotante en la tarjeta */}
-                  <div className="absolute bottom-5 left-5 right-5 text-white pointer-events-none space-y-1">
-                    <span className="inline-block text-[8px] uppercase tracking-[0.25em] font-black text-[#D4AF37] bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#D4AF37]/30">
-                      ✦ Tendencia
-                    </span>
-                    <h3 className="text-sm font-serif font-light text-white leading-snug">
-                      Nail Art & Estilo de Salón
-                    </h3>
-                  </div>
-                </div>
-              </div>
+            {/* Descripción */}
+            <p className="text-sm sm:text-base font-light text-white/90 max-w-xl mx-auto leading-relaxed drop-shadow-md">
+              Descubre nuestros acabados exclusivos y explora la colección de arte en uñas seleccionada especialmente para ti.
+            </p>
+
+            {/* Botón de Acción */}
+            <div className="pt-2 flex items-center justify-center">
+              <button 
+                onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                className="group inline-flex items-center gap-3 px-8 py-3.5 rounded-full text-[10px] tracking-[0.25em] uppercase font-bold bg-[#D4AF37] text-[#1A0E0A] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_10px_25px_rgba(0,0,0,0.4)] hover:scale-105"
+              >
+                <span>Explorar Colección</span>
+                <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform duration-300" />
+              </button>
             </div>
 
           </div>
@@ -398,7 +365,7 @@ export default function GaleriaPage() {
       {/* ============================================================ */}
       {/* GALERÍA */}
       {/* ============================================================ */}
-      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 mt-12 relative z-20 pb-20">
+      <div ref={galleryRef} className="max-w-7xl mx-auto px-4 md:px-8 mt-8 relative z-20 pb-20">
 
         {/* CONTROLES FLOTANTES */}
         <div className={`rounded-2xl border shadow-lg p-5 md:p-6 mb-10 transition-all duration-300 ${
