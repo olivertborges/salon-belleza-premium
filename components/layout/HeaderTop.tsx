@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { supabase } from '@/lib/supabase/client'
-import { Menu, Bell, Search, Sparkles, Sun, Moon, AlertTriangle } from 'lucide-react'
+import { Menu, Bell, Sun, Moon, AlertTriangle } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 
 interface HeaderTopProps {
@@ -19,9 +19,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [displayName, setDisplayName] = useState<string>('Usuario')
-  
-  // Estado para mostrar los logs de error en pantalla móvil
-  const [visualLog, setVisualLog] = useState<string | null>('Iniciando carga...')
+  const [visualLog, setVisualLog] = useState<string | null>('Cargando...')
 
   const isDark = theme === 'dark'
   const primaryColor = settings?.primary_color || '#DB5B9A'
@@ -30,14 +28,13 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   const fetchClientProfile = useCallback(async () => {
     if (!user) {
-      setVisualLog('ERROR: No hay usuario autenticado (user es null)')
+      setVisualLog('ERROR: No hay usuario autenticado')
       return
     }
 
     try {
       setVisualLog(`Buscando ID: ${user.id.slice(0, 6)}...`)
 
-      // 1. Consulta flexible en la tabla 'clients'
       const { data: client, error } = await supabase
         .from('clients')
         .select('*')
@@ -58,16 +55,15 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         if (rawUrl) {
           const cleanUrl = rawUrl.includes('?') ? `${rawUrl}&t=${Date.now()}` : `${rawUrl}?t=${Date.now()}`
           setAvatarUrl(cleanUrl)
-          setVisualLog(null) // Todo OK, sin errores visuales
+          setVisualLog(null) // Carga exitosa
           return
         } else {
-          setVisualLog('AVISO: Cliente encontrado pero sin campo de foto (avatar_url/foto vacío)')
+          setVisualLog('AVISO: Cliente sin URL de foto en la tabla clients')
         }
       } else {
-        setVisualLog(`AVISO: No existe registro en 'clients' para este usuario/email`)
+        setVisualLog('AVISO: Registro no encontrado en la tabla clients')
       }
 
-      // Fallback metadatos
       const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
       if (metaName) setDisplayName(metaName)
 
@@ -78,7 +74,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
       }
 
     } catch (err: any) {
-      setVisualLog(`Catch Error: ${err.message || JSON.stringify(err)}`)
+      setVisualLog(`Error: ${err.message || 'Desconocido'}`)
     }
   }, [user])
 
@@ -110,18 +106,17 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   return (
     <>
-      {/* 🔴 LOG VISUAL EN PANTALLA (Toca el cuadro rojo para cerrarlo) */}
+      {/* 🔴 LOG VISUAL EN PANTALLA MÓVIL (Toca para ocultar) */}
       {visualLog && (
         <div 
           onClick={() => setVisualLog(null)}
-          className="bg-red-600 text-white text-[10px] p-2 px-3 font-mono flex items-center justify-between gap-2 shadow-lg z-50 relative border-b border-red-700 cursor-pointer animate-pulse"
-          title="Toca para ocultar"
+          className="bg-red-600 text-white text-[10px] p-2 px-3 font-mono flex items-center justify-between gap-2 shadow-lg z-50 relative cursor-pointer"
         >
           <div className="flex items-center gap-1.5 overflow-hidden">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span className="truncate"><strong>Debug Móvil:</strong> {visualLog}</span>
+            <span className="truncate"><strong>Debug:</strong> {visualLog}</span>
           </div>
-          <span className="text-[9px] underline shrink-0 opacity-80">[Ocultar]</span>
+          <span className="text-[9px] underline shrink-0">[Ocultar]</span>
         </div>
       )}
 
@@ -142,12 +137,6 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
             </button>
 
             <div className="hidden lg:flex items-center gap-2">
-              <div 
-                className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
-                style={{ background: brandGradient }}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-white" />
-              </div>
               <h1 className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>
                 Fresh<span className="font-light" style={{ color: primaryColor }}>Nails</span>
               </h1>
@@ -166,17 +155,21 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               <Bell className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-2 pl-2">
+            {/* Perfil del Cliente */}
+            <div className="flex items-center gap-2 pl-2 border-l border-stone-200 dark:border-fuchsia-950/30">
               <div className="text-right leading-tight">
-                <p className={`text-[11px] font-semibold truncate max-w-[100px] sm:max-w-none ${
+                <p className={`text-[11px] font-semibold truncate max-w-[110px] ${
                   isDark ? 'text-white' : 'text-stone-800'
                 }`}>
                   {displayName}
                 </p>
+                <p className="text-[8px] uppercase tracking-wider font-medium text-pink-500">
+                  Cliente
+                </p>
               </div>
               
               <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm overflow-hidden shrink-0 border border-amber-500/20"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm overflow-hidden shrink-0"
                 style={{ background: avatarUrl ? 'transparent' : brandGradient }}
               >
                 {avatarUrl ? (
@@ -185,7 +178,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
                     alt="Avatar" 
                     className="w-full h-full object-cover rounded-lg"
                     onError={() => {
-                      setVisualLog(`ERROR IMG LOAD: No se pudo renderizar la URL de imagen`)
+                      setVisualLog('ERROR IMG LOAD: La URL de la foto no se pudo cargar')
                       setAvatarUrl(null)
                     }}
                   />
