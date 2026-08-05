@@ -1,267 +1,196 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
-import { 
-  Sparkles, Scissors, Heart, Crown, Calendar, 
-  Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, ShieldCheck, Globe
-} from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { supabase } from '@/lib/supabase/client'
+import { useSettings } from '@/contexts/SettingsContext'
+import HeaderTop from './HeaderTop'
+import { 
+  User, 
+  Calendar, 
+  Sparkles, 
+  X, 
+  LogOut, 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  Scissors 
+} from 'lucide-react'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+interface DashboardLayoutProps {
+  children: React.ReactNode
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { role, signOut } = useAuth()
   const { theme } = useTheme()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const [userName, setUserName] = useState('Usuario')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [imgStatus, setImgStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading')
+  const { settings } = useSettings()
 
   const isDark = theme === 'dark'
+  const primaryColor = settings?.primary_color || '#DB5B9A'
+  const secondaryColor = settings?.secondary_color || '#E5A46E'
+  const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  useEffect(() => {
-    if (!user?.id) {
-      setImgStatus('empty')
-      return
-    }
-
-    const initialName = user.user_metadata?.full_name || 
-                        user.user_metadata?.name || 
-                        user.email?.split('@')[0] || 
-                        'Usuario'
-    setUserName(initialName)
-
-    const fetchAvatarDirect = async () => {
-      try {
-        setImgStatus('loading')
-        let foundAvatar = null
-
-        // 1. Perfil en Auth Metadata (lo más rápido)
-        if (user.user_metadata?.avatar_url) {
-          foundAvatar = user.user_metadata.avatar_url
-        }
-
-        // 2. Buscar en tabla profiles
-        if (!foundAvatar) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('avatar_url, full_name, name')
-            .eq('id', user.id)
-            .maybeSingle()
-
-          if (profileData) {
-            if (profileData.full_name || profileData.name) setUserName(profileData.full_name || profileData.name)
-            if (profileData.avatar_url) foundAvatar = profileData.avatar_url
-          }
-        }
-
-        // 3. Buscar en tabla staff
-        if (!foundAvatar) {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('avatar_url, name, full_name')
-            .or(`user_id.eq.${user.id},auth_user_id.eq.${user.id},id.eq.${user.id}`)
-            .maybeSingle()
-
-          if (staffData) {
-            if (staffData.name || staffData.full_name) setUserName(staffData.name || staffData.full_name)
-            if (staffData.avatar_url) foundAvatar = staffData.avatar_url
-          }
-        }
-
-        if (foundAvatar) {
-          setAvatarUrl(foundAvatar)
-          setImgStatus('success')
-        } else {
-          setImgStatus('empty')
-        }
-
-      } catch (err) {
-        console.error('Error cargando avatar en layout:', err)
-        setImgStatus('error')
-      }
-    }
-
-    fetchAvatarDirect()
-  }, [user])
-
-  const firstName = userName.split(' ')[0] || userName
-  const inicialNombre = firstName.charAt(0).toUpperCase()
-
-  // Menú sin tienda
+  // Definición de ítems del menú con restricción explícita por rol
   const menuItems = [
-    { icon: Home, label: 'Inicio Portal', href: '/portal' },
-    { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
-    { icon: Calendar, label: 'Mis Citas', href: '/reservas' },
-    { icon: Scissors, label: 'Peluquería', href: '/peluqueria' },
-    { icon: Eye, label: 'Micropigmentación', href: '/micropigmentacion' },
-    { icon: Hand, label: 'Uñas', href: '/unhas' },
-    { icon: Heart, label: 'Estética', href: '/estetica' },
-    { icon: Camera, label: 'Galería & Looks', href: '/mi-galeria' },
-    { icon: Tag, label: 'Ofertas Especiales', href: '/promociones' },
-    { icon: Crown, label: 'Club Fresh VIP', href: '/fidelizacion' }
+    // 👤 Opciones para Clientes y Todos los Usuarios
+    {
+      name: 'Mi Perfil',
+      href: '/perfil',
+      icon: User,
+      roles: ['client', 'staff', 'admin'],
+    },
+    {
+      name: 'Mis Citas',
+      href: '/citas',
+      icon: Calendar,
+      roles: ['client', 'staff', 'admin'],
+    },
+    {
+      name: 'Reservar Cita',
+      href: '/reservar',
+      icon: Scissors,
+      roles: ['client', 'staff', 'admin'],
+    },
+
+    // ⚡ Opciones EXCLUSIVAS para Admin y Staff (Ocultas para Clientes)
+    {
+      name: 'Dashboard Admin',
+      href: '/admin',
+      icon: LayoutDashboard,
+      roles: ['admin', 'staff'],
+    },
+    {
+      name: 'Gestión de Clientes',
+      href: '/admin/clientes',
+      icon: Users,
+      roles: ['admin', 'staff'],
+    },
+    {
+      name: 'Configuración',
+      href: '/admin/configuracion',
+      icon: Settings,
+      roles: ['admin'],
+    },
   ]
 
-  const handleLogoutClick = async () => {
-    try {
-      if (signOut) await signOut()
-      await supabase.auth.signOut()
-      localStorage.clear()
-      sessionStorage.clear()
-      setTimeout(() => {
-        window.location.href = '/login'
-      }, 100)
-    } catch (error) {
-      window.location.href = '/login'
-    }
-  }
+  // Filtrar los ítems del menú según el rol actual del usuario
+  const currentRole = role || 'client'
+  const visibleMenuItems = menuItems.filter((item) =>
+    item.roles.includes(currentRole)
+  )
 
   return (
-    <div className={`h-screen w-full antialiased flex relative transition-colors duration-500 overflow-hidden ${
-      isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
-    }`}>
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#090710] text-white' : 'bg-stone-50 text-stone-900'}`}>
+      
+      {/* Encabezado Superior */}
+      <HeaderTop setIsSidebarOpen={setIsSidebarOpen} />
 
-      <div 
-        onClick={() => setSidebarOpen(false)} 
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-500 ${
-          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      />
+      <div className="flex flex-1 relative">
+        
+        {/* Overlay para cerrar el menú en móviles */}
+        {isSidebarOpen && (
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          />
+        )}
 
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-76 h-full border-r transition-all duration-500 lg:static lg:translate-x-0 flex flex-col shrink-0 ${
-          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-        } ${
-          isDark ? 'bg-[#1E120C]/95 border-[#3D281E]' : 'bg-[#FFF9F6]/95 border-[#F0E4DA]'
-        }`}
-      >
-        <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
-          isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-        }`}>
-          <span className="text-sm font-light tracking-[0.3em] uppercase">freshNails</span>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-[#A89588]">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Panel Lateral / Sidebar */}
+        <aside
+          className={`fixed lg:sticky top-0 left-0 z-50 lg:z-20 h-screen lg:h-[calc(100vh-3.5rem)] w-64 transition-transform duration-300 ease-in-out border-r ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          } ${
+            isDark
+              ? 'bg-[#0f0c1b] border-fuchsia-950/30'
+              : 'bg-white border-pink-100/60'
+          }`}
+        >
+          <div className="flex flex-col h-full justify-between p-4">
+            
+            {/* Header del Sidebar */}
+            <div>
+              <div className="flex items-center justify-between pb-6 border-b border-stone-200 dark:border-fuchsia-950/30">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
+                    style={{ background: brandGradient }}
+                  >
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold leading-tight">
+                      Fresh<span style={{ color: primaryColor }}>Nails</span>
+                    </h2>
+                    <p className="text-[9px] uppercase tracking-widest text-stone-400">
+                      Studio
+                    </p>
+                  </div>
+                </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-1">
-          {menuItems.map((item, index) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            return (
-              <Link 
-                key={index} 
-                href={item.href} 
-                onClick={() => setSidebarOpen(false)} 
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold ${
-                  isActive ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-[#A89588]'
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="lg:hidden p-1.5 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navegación Filtrada */}
+              <nav className="mt-6 space-y-1.5">
+                {visibleMenuItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                        isActive
+                          ? 'text-white shadow-sm font-semibold'
+                          : isDark
+                          ? 'text-stone-400 hover:bg-fuchsia-950/20 hover:text-pink-300'
+                          : 'text-stone-600 hover:bg-pink-50 hover:text-pink-600'
+                      }`}
+                      style={{
+                        background: isActive ? brandGradient : 'transparent',
+                      }}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span>{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+
+            {/* Pie del Sidebar - Botón de Cerrar Sesión */}
+            <div className="pt-4 border-t border-stone-200 dark:border-fuchsia-950/30">
+              <button
+                onClick={() => signOut()}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                  isDark
+                    ? 'text-rose-400 hover:bg-rose-950/30'
+                    : 'text-rose-600 hover:bg-rose-50'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* ACCESOS A LANDING PAGE, PANEL ADMIN Y CERRAR SESIÓN */}
-        <div className="p-4 border-t border-[#3D281E] space-y-1">
-          <Link 
-            href="/" 
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]/50 transition-colors"
-          >
-            <Globe className="w-4 h-4" />
-            <span>Página Principal (Landing)</span>
-          </Link>
-          <Link 
-            href="/dashboard" 
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Panel Admin</span>
-          </Link>
-          <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#A89588]">
-            <LogOut className="w-4 h-4" />
-            <span>Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col min-w-0 h-full relative z-10">
-
-        <header className={`sticky top-0 z-30 border-b px-4 h-20 flex items-center justify-between gap-4 shrink-0 ${
-          isDark ? 'bg-[#1E120C]/80 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
-        }`}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]">
-            <Menu className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center gap-3 ml-auto">
-            <Link 
-              href="/" 
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#3D281E] text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] transition-colors"
-            >
-              <Globe className="w-4 h-4" />
-              <span>Ver Web</span>
-            </Link>
-
-            <Link 
-              href="/dashboard" 
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#D4AF37]/30 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Ir a Admin</span>
-            </Link>
-
-            <ThemeToggle />
-
-            {/* INDICADOR VISUAL DE ESTADO DE LA FOTO EN EL TELÉFONO */}
-            <div className="text-right flex flex-col items-end">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${
-                  imgStatus === 'success' ? 'bg-green-500' :
-                  imgStatus === 'loading' ? 'bg-yellow-500 animate-pulse' :
-                  imgStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                }`} />
-                <p className="text-xs font-bold">{userName}</p>
-              </div>
-              <span className="text-[8px] font-black uppercase text-[#D4AF37]">
-                {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : 'SIN FOTO / ERROR'}
-              </span>
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span>Cerrar Sesión</span>
+              </button>
             </div>
-            
-            <Link href="/perfil" className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative">
-              {avatarUrl && imgStatus !== 'error' ? (
-                <img 
-                  src={avatarUrl} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                  onError={() => {
-                    console.error('Falló la etiqueta img con URL:', avatarUrl)
-                    setImgStatus('error')
-                  }}
-                />
-              ) : (
-                <span>{inicialNombre}</span>
-              )}
-            </Link>
           </div>
-        </header>
+        </aside>
 
-        <main className="flex-1 p-4 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        {/* Contenido Principal de la Vista */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+          {children}
         </main>
       </div>
     </div>
