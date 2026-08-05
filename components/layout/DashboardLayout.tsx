@@ -5,9 +5,9 @@ import React, { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
-  Sparkles, Scissors, Heart, Crown, Calendar, 
+  Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, ShieldCheck, Globe
+  Camera, Tag, Eye, Hand, Globe
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -45,11 +45,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         let foundAvatar = null
 
         // 1. Perfil en Auth Metadata (lo más rápido)
-        if (user.user_metadata?.avatar_url) {
-          foundAvatar = user.user_metadata.avatar_url
+        if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
+          foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
         }
 
-        // 2. Buscar en tabla profiles
+        // 2. Buscar en tabla clients por ID
+        if (!foundAvatar) {
+          let { data: clientData } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle()
+
+          // Respaldo por email si no se encuentra por ID
+          if (!clientData && user.email) {
+            const { data: clientByEmail } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('email', user.email)
+              .maybeSingle()
+            if (clientByEmail) clientData = clientByEmail
+          }
+
+          if (clientData) {
+            const name = clientData.full_name || clientData.name || clientData.nombre
+            if (name) setUserName(name)
+
+            foundAvatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url || clientData.avatar
+          }
+        }
+
+        // 3. Respaldo en tabla profiles
         if (!foundAvatar) {
           const { data: profileData } = await supabase
             .from('profiles')
@@ -63,22 +89,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }
         }
 
-        // 3. Buscar en tabla staff (solo usando columnas estándar que existen)
-        if (!foundAvatar) {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('avatar_url, name, full_name')
-            .eq('id', user.id)
-            .maybeSingle()
-
-          if (staffData) {
-            if (staffData.name || staffData.full_name) setUserName(staffData.name || staffData.full_name)
-            if (staffData.avatar_url) foundAvatar = staffData.avatar_url
-          }
-        }
-
         if (foundAvatar) {
-          setAvatarUrl(foundAvatar)
+          // Agregar timestamp para evitar caché si es necesario
+          const cleanUrl = foundAvatar.includes('?') ? `${foundAvatar}&t=${Date.now()}` : `${foundAvatar}?t=${Date.now()}`
+          setAvatarUrl(cleanUrl)
           setImgStatus('success')
         } else {
           setImgStatus('empty')
@@ -96,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const firstName = userName.split(' ')[0] || userName
   const inicialNombre = firstName.charAt(0).toUpperCase()
 
-  // Menú sin tienda
+  // Menú para clientes
   const menuItems = [
     { icon: Home, label: 'Inicio Portal', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -172,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        {/* ACCESOS A LANDING PAGE, PANEL ADMIN Y CERRAR SESIÓN */}
+        {/* ACCESO A LANDING PAGE Y CERRAR SESIÓN (PANEL ADMIN ELIMINADO) */}
         <div className="p-4 border-t border-[#3D281E] space-y-1">
           <Link 
             href="/" 
@@ -181,14 +195,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <Globe className="w-4 h-4" />
             <span>Página Principal (Landing)</span>
-          </Link>
-          <Link 
-            href="/dashboard" 
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Panel Admin</span>
           </Link>
           <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#A89588]">
             <LogOut className="w-4 h-4" />
@@ -215,17 +221,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Ver Web</span>
             </Link>
 
-            <Link 
-              href="/dashboard" 
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#D4AF37]/30 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Ir a Admin</span>
-            </Link>
-
             <ThemeToggle />
 
-            {/* INDICADOR VISUAL DE ESTADO DE LA FOTO EN EL TELÉFONO */}
+            {/* INDICADOR VISUAL DE ESTADO DE LA FOTO EN EL HEADER */}
             <div className="text-right flex flex-col items-end">
               <div className="flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${
