@@ -7,17 +7,12 @@ import Link from 'next/link'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { 
   FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar,
-  FaBars, FaTimes, FaPhoneAlt, FaMapMarkerAlt,
-  FaPalette, FaAward, FaLeaf, FaClock
+  FaBars, FaTimes, FaPhoneAlt, FaMapMarkerAlt, FaClock
 } from 'react-icons/fa'
-import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
+import { GiNails, GiScissors, GiSparkles } from 'react-icons/gi'
 
-// URL por defecto enviada para el Hero
 const DEFAULT_HERO_IMAGE = "https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/IMG-20260805-WA0002.jpg"
 
-// ============================================================
-// CONFIGURACIÓN DE ICONOS DE CATEGORÍAS
-// ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
@@ -60,7 +55,7 @@ const Header = () => {
         </Link>
 
         <nav className="hidden lg:flex items-center gap-8">
-          {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+          {['Equipo', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <Link 
               key={item}
               href={`#${getCleanSlug(item)}`}
@@ -95,7 +90,7 @@ const Header = () => {
             className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-pink-100 py-6 px-8 shadow-xl"
           >
             <div className="flex flex-col gap-4">
-              {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+              {['Equipo', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
                 <Link
                   key={item}
                   href={`#${getCleanSlug(item)}`}
@@ -145,12 +140,12 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
             </div>
 
             <h1 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] leading-tight font-medium">
-              Especialistas en manicura y belleza profesional por <br />
+              Especialistas en manicura y belleza por <br />
               <span className="text-pink-600 italic">Aniexis Campo Leyva</span>
             </h1>
 
             <p className="text-[#5C4A3E] text-base md:text-lg font-normal max-w-lg leading-relaxed">
-              Resalta tu belleza natural con técnicas profesionales, atención personalizada e ingredientes de alta calidad para el cuidado de tus uñas y piel.
+              Resalta tu belleza natural con técnicas profesionales en manicura, cuidado de uñas y estilismo de peluquería de la mano de nuestro equipo especialista.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -161,10 +156,10 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
                 Reservar Turno
               </Link>
               <Link
-                href="#sobre-aniexis"
+                href="#equipo"
                 className="border border-gray-300 text-[#1A0E0A] hover:border-pink-600 hover:text-pink-600 px-8 py-4 text-xs font-semibold tracking-wider uppercase transition-all text-center rounded-full bg-white"
               >
-                Conócela
+                Conocer al Equipo
               </Link>
             </div>
 
@@ -184,21 +179,24 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
             </div>
           </motion.div>
 
+          {/* FOTO ESPECTACULAR DESTACADA EN EL HERO */}
           <motion.div 
             className="lg:col-span-5 relative flex justify-center items-center"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="relative w-full max-w-md">
-              <div className="relative aspect-[3/4] bg-pink-100 rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+            <div className="relative w-full max-w-md group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 to-rose-300 rounded-3xl blur-md opacity-30 group-hover:opacity-60 transition duration-500"></div>
+              
+              <div className="relative aspect-[3/4] bg-white rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                 <img 
                   src={imageUrl}
                   alt="Aniexis Campo Leyva - Salon Fresh Nails"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition duration-700"
                 />
                 
-                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-md border border-pink-100">
+                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-pink-100">
                   <p className="text-xs font-bold text-pink-600 uppercase tracking-wider">Fundadora & Máster</p>
                   <p className="font-serif text-base text-[#1A0E0A] font-semibold">Aniexis Campo Leyva</p>
                 </div>
@@ -213,59 +211,84 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
 }
 
 // ============================================================
-// SOBRE ANIEXIS CAMPO LEYVA
+// EQUIPO PROFESIONAL (ANIEXIS & SILVANA)
 // ============================================================
-const SobreAniexisSection = () => {
+const EquipoSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.3 })
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
 
   return (
-    <section id="sobre-aniexis" ref={ref} className="py-24 bg-white relative">
+    <section id="equipo" ref={ref} className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="lg:col-span-5 relative">
-            <motion.div 
-              className="aspect-[3/4] rounded-2xl overflow-hidden bg-pink-50 shadow-lg border border-pink-100"
-              animate={isInView ? { opacity: [0, 1], y: [20, 0] } : {}}
-              transition={{ duration: 0.8 }}
-            >
-              <img 
-                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
-                className="w-full h-full object-cover" 
-                alt="Aniexis Campo Leyva" 
-              />
-            </motion.div>
-          </div>
+        
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-2">
+          <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">NUESTRO EQUIPO</p>
+          <h2 className="font-serif text-3xl md:text-5xl text-[#1A0E0A] font-medium">Profesionales a tu Servicio</h2>
+          <p className="text-[#5C4A3E] text-sm pt-2">Especialistas dedicas a brindarte el mejor cuidado y resultados de alta calidad.</p>
+        </div>
 
+        <div className="grid md:grid-cols-2 gap-12 items-stretch">
+          
+          {/* ANIEXIS CAMPO LEYVA */}
           <motion.div 
-            className="lg:col-span-7 space-y-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.8 }}
+            className="bg-pink-50/40 rounded-3xl border border-pink-100 overflow-hidden p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6 }}
           >
-            <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">SOBRE LA FUNDADORA</p>
-            <h2 className="font-serif text-3xl md:text-5xl text-[#1A0E0A] font-medium leading-tight">
-              Aniexis Campo Leyva <br />
-              <span className="text-pink-600 italic">Pasión y precisión en cada detalle</span>
-            </h2>
-            <p className="text-[#5C4A3E] leading-relaxed text-base">
-              Fundadora de **Salon Fresh Nails**, Aniexis se ha destacado por ofrecer un servicio de manicura y belleza impecable. Su enfoque se basa en la constante actualización técnica, el cuidado cuidadoso de la salud de la uña natural y una atención cercana con cada cliente.
-            </p>
-            
-            <div className="grid sm:grid-cols-2 gap-6 pt-4">
-              <div className="border-l-2 border-pink-500 pl-4">
-                <h4 className="text-sm font-bold uppercase text-[#1A0E0A]">Técnicas Modernas</h4>
-                <p className="text-xs text-[#5C4A3E] mt-1">Especialización en manicura rusa, nivelación con gel, esmaltado semipermanente y esculpidas de alta durabilidad.</p>
+            <div className="space-y-6">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-pink-100 border border-white shadow-sm">
+                <img 
+                  src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
+                  className="w-full h-full object-cover" 
+                  alt="Aniexis Campo Leyva" 
+                />
               </div>
-              <div className="border-l-2 border-pink-500 pl-4">
-                <h4 className="text-sm font-bold uppercase text-[#1A0E0A]">Cuidado de la Salud</h4>
-                <p className="text-xs text-[#5C4A3E] mt-1">Uso de productos certificados e insumos que protegen la salud de la piel y las uñas.</p>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-pink-600">Fundadora & Especialista en Uñas</span>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] font-semibold mt-1">Aniexis Campo Leyva</h3>
+                <p className="text-xs text-[#5C4A3E] leading-relaxed mt-3">
+                  Apasionada por la belleza de las manos y pies. Especializada en manicura rusa, esmaltado semipermanente y nivelación con gel, garantizando la salud natural de tus uñas.
+                </p>
               </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-pink-200/60 flex items-center justify-between text-xs font-semibold text-pink-700">
+              <span>Manicura & Pedicura</span>
+              <Link href="/agenda" className="hover:underline">Agendar con Aniexis →</Link>
+            </div>
+          </motion.div>
+
+          {/* SILVANA (PELUQUERÍA) */}
+          <motion.div 
+            className="bg-pink-50/40 rounded-3xl border border-pink-100 overflow-hidden p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all"
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="space-y-6">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-pink-100 border border-white shadow-sm flex items-center justify-center">
+                <img 
+                  src="https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop" 
+                  className="w-full h-full object-cover" 
+                  alt="Silvana - Peluquería" 
+                />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-pink-600">Especialista Capilar</span>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] font-semibold mt-1">Silvana</h3>
+                <p className="text-xs text-[#5C4A3E] leading-relaxed mt-3">
+                  Encargada del área de Peluquería en Salon Fresh Nails. Experta en cortes, peinados, nutrición capilar y tratamientos que le devuelven el brillo y fuerza a tu cabello.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-pink-200/60 flex items-center justify-between text-xs font-semibold text-pink-700">
+              <span>Peluquería & Estilismo</span>
+              <Link href="/agenda" className="hover:underline">Agendar con Silvana →</Link>
             </div>
           </motion.div>
 
         </div>
+
       </div>
     </section>
   )
@@ -279,10 +302,10 @@ const EspecialidadesSection = () => {
   const isInView = useInView(ref, { once: true, amount: 0.05 })
 
   const categories = [
-    { id: 'manicura', name: 'Manicura Profesional', description: 'Manicura rusa, nivelación con gel, esmaltado semipermanente y diseños personalizados.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop' },
+    { id: 'manicura', name: 'Manicura Profesional', description: 'Manicura rusa, nivelación con gel, esmaltado semipermanente y diseños personalizados por Aniexis.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop' },
+    { id: 'peluqueria', name: 'Peluquería & Capilar', description: 'Cortes, peinados y tratamientos capilares profesionales a cargo de Silvana.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop' },
     { id: 'pedicura', name: 'Pedicura Completa', description: 'Tratamiento profundo para pies, cuidado de uñas, exfoliación e hidratación.', image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&fit=crop' },
-    { id: 'pestanas', name: 'Pestañas y Cejas', description: 'Lifting de pestañas, perfilado y diseño de cejas para resaltar la mirada.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop' },
-    { id: 'peluqueria', name: 'Peluquería', description: 'Cortes, peinados y tratamientos capilares para mantener el cabello fuerte y sano.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop' }
+    { id: 'pestanas', name: 'Pestañas y Cejas', description: 'Lifting de pestañas, perfilado y diseño de cejas para resaltar la mirada.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop' }
   ]
 
   return (
@@ -291,8 +314,8 @@ const EspecialidadesSection = () => {
         
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div>
-            <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">SERVICIOS DESTACADOS</p>
-            <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Nuestras Especialidades</h2>
+            <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">LO QUE OFRECEMOS</p>
+            <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Especialidades del Salón</h2>
           </div>
           <Link href="/servicios" className="text-xs font-semibold tracking-wider uppercase text-pink-600 hover:text-pink-700 transition-colors">
             Ver Todos los Servicios →
@@ -433,9 +456,9 @@ const GallerySection = ({ images }: { images: any[] }) => {
       <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
         <div>
           <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">TRABAJOS REALES</p>
-          <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Galería de Trabajos</h2>
+          <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Galería del Salón</h2>
         </div>
-        <p className="text-xs text-gray-500 max-w-xs">Fotos de clientes y resultados diarios en Salon Fresh Nails.</p>
+        <p className="text-xs text-gray-500 max-w-xs">Resultados diarios en uñas y peluquería en Salon Fresh Nails.</p>
       </div>
 
       <div className="relative w-full">
@@ -474,9 +497,9 @@ const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const TESTIMONIALS = [
-    { name: 'Valeria Martínez', text: 'Aniexis es súper detallista y cuidadosa. Mis uñas duran intactas más de tres semanas. ¡Excelente atención!' },
-    { name: 'Carolina Rodríguez', text: 'Me encantó la atención en Salon Fresh Nails. Un ambiente muy cómodo y resultados impecables.' },
-    { name: 'Agustina Sosa', text: 'Llevo meses atendiéndome con Aniexis y no la cambio por nada. La mejor calidad en manicura.' }
+    { name: 'Valeria Martínez', text: 'Aniexis es súper detallista con la manicura. Mis uñas duran impecables semanas.' },
+    { name: 'Carolina Rodríguez', text: 'Silvana me hizo un tratamiento capilar increíble, el cabello me quedó suave y con mucho brillo.' },
+    { name: 'Agustina Sosa', text: 'Excelente atención en Salon Fresh Nails. Un ambiente cálido y profesional.' }
   ]
 
   return (
@@ -531,9 +554,9 @@ const CtaSection = () => {
   return (
     <section className="py-20 bg-pink-600 text-white text-center relative overflow-hidden">
       <div className="max-w-4xl mx-auto px-6 lg:px-12 space-y-6 relative z-10">
-        <h2 className="font-serif text-3xl md:text-5xl font-medium">¿Lista para lucir tus uñas perfectas?</h2>
+        <h2 className="font-serif text-3xl md:text-5xl font-medium">¿Lista para consentirte?</h2>
         <p className="text-white/90 font-normal max-w-md mx-auto text-sm">
-          Reserva tu lugar en **Salon Fresh Nails** con **Aniexis Campo Leyva**.
+          Reserva tu cita en **Salon Fresh Nails** con **Aniexis Campo Leyva** y **Silvana**.
         </p>
         
         <div className="pt-2">
@@ -562,7 +585,7 @@ const Footer = () => (
           <span className="text-[9px] tracking-widest text-pink-400 uppercase">Aniexis Campo Leyva</span>
         </Link>
         <p className="text-white/50 text-xs leading-relaxed">
-          Especialistas en manicura profesional, pedicure y cuidado estético.
+          Especialistas en manicura profesional, pedicura y servicios de peluquería.
         </p>
         <div className="flex gap-3 pt-2">
           <a 
@@ -598,7 +621,7 @@ const Footer = () => (
       <div className="space-y-3">
         <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider">Navegación</h4>
         <ul className="space-y-2 text-xs">
-          {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+          {['Equipo', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <li key={item}>
               <Link href={`#${getCleanSlug(item)}`} className="hover:text-pink-400 transition-colors">
                 {item}
@@ -749,7 +772,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="bg-white min-h-screen flex items-center justify-center">
+      <main className="bg-[#FFFDFB] min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-pink-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-xs text-gray-500 uppercase tracking-wider">Cargando...</p>
@@ -759,10 +782,10 @@ export default function Home() {
   }
 
   return (
-    <main className="bg-white text-[#1A0E0A] min-h-screen font-sans antialiased">
+    <main className="bg-[#FFFDFB] text-[#1A0E0A] min-h-screen font-sans antialiased">
       <Header />
       <HeroSection heroImage={heroImage} />
-      <SobreAniexisSection />
+      <EquipoSection />
       <EspecialidadesSection />
       <ServicesSection services={services} />
       <GallerySection images={galleryImages} />
