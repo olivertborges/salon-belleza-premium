@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -168,44 +168,24 @@ const ServicesHero = () => {
       
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         <div className="text-center max-w-3xl mx-auto space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="flex items-center justify-center gap-3"
-          >
+          <div className="flex items-center justify-center gap-3">
             <span className="h-[1px] w-12 bg-[#D4AF37]" />
             <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">
               Catálogo de Autor
             </span>
             <span className="h-[1px] w-12 bg-[#D4AF37]" />
-          </motion.div>
+          </div>
 
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-[#1A0E0A] font-light leading-tight"
-          >
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-[#1A0E0A] font-light leading-tight">
             La Carta de <br />
             <span className="italic font-normal text-[#D4AF37]">Tratamientos</span> Exclusivos
-          </motion.h1>
+          </h1>
 
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-[#5C4A3E] font-light max-w-xl mx-auto text-base md:text-lg leading-relaxed"
-          >
+          <p className="text-[#5C4A3E] font-light max-w-xl mx-auto text-base md:text-lg leading-relaxed">
             Descubre nuestra colección de servicios de alta perfumería, diseñados bajo la dirección de Any y ejecutados por nuestras artistas especializadas.
-          </motion.p>
+          </p>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-wrap justify-center gap-4 pt-4"
-          >
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 border border-[#F0E4DA]">
               <FaUserTie className="text-[#D4AF37] text-sm" />
               <span className="text-xs text-[#5C4A3E] font-light">25+ años de trayectoria</span>
@@ -214,7 +194,7 @@ const ServicesHero = () => {
               <FaSparkles className="text-[#D4AF37] text-sm" />
               <span className="text-xs text-[#5C4A3E] font-light">Certificaciones internacionales</span>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
@@ -222,7 +202,7 @@ const ServicesHero = () => {
 }
 
 // ============================================================
-// STATS DE SERVICIOS (SIN useInView)
+// STATS DE SERVICIOS
 // ============================================================
 const ServicesStats = ({ total }: { total: number }) => {
   const stats = [
@@ -237,17 +217,10 @@ const ServicesStats = ({ total }: { total: number }) => {
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="text-center"
-            >
+            <div key={idx} className="text-center">
               <p className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-light">{stat.number}</p>
               <p className="text-[9px] tracking-[0.25em] text-[#5C4A3E] uppercase mt-2 font-medium">{stat.label}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -353,7 +326,7 @@ export default function ServiciosPublicPage() {
                     ({count})
                   </span>
                   {selectedCategory === cat && (
-                    <motion.div layoutId="activeFilterLine" className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]" />
+                    <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#D4AF37]" />
                   )}
                 </button>
               )
@@ -372,7 +345,6 @@ export default function ServiciosPublicPage() {
               if (servicesInCategory.length === 0) return null
 
               const Icon = CATEGORY_ICONS[categoryName] || CATEGORY_ICONS.default
-              const categoryImage = CATEGORY_IMAGES[categoryName] || CATEGORY_IMAGES.default
 
               return (
                 <div key={categoryName} className="space-y-8">
@@ -386,27 +358,14 @@ export default function ServiciosPublicPage() {
                     </span>
                   </div>
 
-                  <motion.div 
-                    initial="hidden" 
-                    whileInView="visible" 
-                    viewport={{ once: true }} 
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-                    }} 
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  >
-                    {servicesInCategory.map((servicio, idx) => {
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {servicesInCategory.map((servicio) => {
                       const imageUrl = CATEGORY_IMAGES[servicio.category] || CATEGORY_IMAGES.default
                       const profesional = getProfesionalPorServicio(servicio.category)
                       
                       return (
-                        <motion.div
+                        <div
                           key={servicio.id}
-                          variants={{
-                            hidden: { opacity: 0, y: 20 },
-                            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-                          }}
                           onClick={() => setActiveService(servicio)}
                           className="group bg-white border border-[#F0E4DA] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 hover:border-[#D4AF37]"
                         >
@@ -462,10 +421,10 @@ export default function ServiciosPublicPage() {
                               {profesional.experiencia}
                             </span>
                           </div>
-                        </motion.div>
+                        </div>
                       )
                     })}
-                  </motion.div>
+                  </div>
                 </div>
               )
             })}
@@ -496,25 +455,17 @@ export default function ServiciosPublicPage() {
       </div>
 
       {/* ============================================================
-          POPUP DE DETALLES (RENOVADO Y ESPECTACULAR)
+          POPUP DE DETALLES
           ============================================================ */}
       <AnimatePresence>
         {activeService && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
+            <div 
               onClick={() => setActiveService(null)} 
               className="fixed inset-0 bg-[#1A0E0A]/80 backdrop-blur-md" 
             />
             
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-4xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[95vh] md:max-h-[90vh] overflow-y-auto"
-            >
+            <div className="bg-[#FFFCF8] border border-[#D4AF37]/20 w-full max-w-4xl relative shadow-2xl overflow-hidden z-10 md:grid md:grid-cols-12 max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
               <button 
                 onClick={() => setActiveService(null)} 
                 className="absolute top-4 right-4 z-30 bg-white border border-[#F0E4DA] p-2 rounded-full hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
@@ -605,7 +556,7 @@ export default function ServiciosPublicPage() {
                   Agendar este Tratamiento
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
