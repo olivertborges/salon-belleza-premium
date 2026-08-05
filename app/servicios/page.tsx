@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
   FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
@@ -222,12 +222,9 @@ const ServicesHero = () => {
 }
 
 // ============================================================
-// STATS DE SERVICIOS
+// STATS DE SERVICIOS (SIN useInView)
 // ============================================================
 const ServicesStats = ({ total }: { total: number }) => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true })
-
   const stats = [
     { number: total, label: 'Tratamientos Disponibles' },
     { number: '25+', label: 'Años de Experiencia' },
@@ -236,14 +233,15 @@ const ServicesStats = ({ total }: { total: number }) => {
   ]
 
   return (
-    <section ref={ref} className="py-16 bg-white border-y border-[#F0E4DA]">
+    <section className="py-16 bg-white border-y border-[#F0E4DA]">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 15 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
               className="text-center"
             >
