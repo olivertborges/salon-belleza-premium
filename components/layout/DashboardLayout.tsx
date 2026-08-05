@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Sparkles, Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, ShieldCheck
+  Camera, Tag, Eye, Hand, ShieldCheck, Globe
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -96,9 +96,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const firstName = userName.split(' ')[0] || userName
   const inicialNombre = firstName.charAt(0).toUpperCase()
 
-  // Se eliminó la tienda de la lista de navegación del cliente
+  // Menú sin tienda
   const menuItems = [
-    { icon: Home, label: 'Inicio', href: '/portal' },
+    { icon: Home, label: 'Inicio Portal', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
     { icon: Calendar, label: 'Mis Citas', href: '/reservas' },
     { icon: Scissors, label: 'Peluquería', href: '/peluqueria' },
@@ -172,17 +172,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        {/* BOTÓN AL PANEL DE ADMINISTRACIÓN Y CERRAR SESIÓN */}
+        {/* ACCESOS A LANDING PAGE, PANEL ADMIN Y CERRAR SESIÓN */}
         <div className="p-4 border-t border-[#3D281E] space-y-1">
+          <Link 
+            href="/" 
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]/50 transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+            <span>Página Principal (Landing)</span>
+          </Link>
           <Link 
             href="/dashboard" 
             onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Panel Admin</span>
           </Link>
-          <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-4 py-3 text-xs text-[#A89588]">
+          <button onClick={handleLogoutClick} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-[#A89588]">
             <LogOut className="w-4 h-4" />
             <span>Cerrar Sesión</span>
           </button>
@@ -199,7 +207,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <div className="flex items-center gap-3 ml-auto">
-            {/* Acceso rápido visible en la barra superior en pantallas medianas y grandes */}
+            <Link 
+              href="/" 
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#3D281E] text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] transition-colors"
+            >
+              <Globe className="w-4 h-4" />
+              <span>Ver Web</span>
+            </Link>
+
             <Link 
               href="/dashboard" 
               className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#D4AF37]/30 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-colors"
