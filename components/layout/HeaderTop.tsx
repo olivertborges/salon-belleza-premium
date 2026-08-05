@@ -13,7 +13,7 @@ interface HeaderTopProps {
 }
 
 export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
-  const { user, role } = useAuth()
+  const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { settings } = useSettings()
   
@@ -33,13 +33,27 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
     }
 
     try {
-      setVisualLog(`Buscando ID: ${user.id.slice(0, 6)}...`)
+      setVisualLog(`Buscando usuario...`)
 
-      const { data: client, error } = await supabase
+      // 1. Buscar por ID de Auth en la tabla clients
+      let { data: client, error } = await supabase
         .from('clients')
         .select('*')
-        .or(`id.eq.${user.id},user_id.eq.${user.id},auth_id.eq.${user.id},email.eq.${user.email}`)
+        .eq('id', user.id)
         .maybeSingle()
+
+      // 2. Si no lo halla por ID, buscar por email como respaldo seguro
+      if (!client && user.email) {
+        const { data: clientByEmail, error: emailErr } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('email', user.email)
+          .maybeSingle()
+
+        if (!emailErr && clientByEmail) {
+          client = clientByEmail
+        }
+      }
 
       if (error) {
         setVisualLog(`DB Error: ${error.message}`)
@@ -55,15 +69,16 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
         if (rawUrl) {
           const cleanUrl = rawUrl.includes('?') ? `${rawUrl}&t=${Date.now()}` : `${rawUrl}?t=${Date.now()}`
           setAvatarUrl(cleanUrl)
-          setVisualLog(null) // Carga exitosa
+          setVisualLog(null) // Carga exitosa sin errores
           return
         } else {
-          setVisualLog('AVISO: Cliente sin URL de foto en la tabla clients')
+          setVisualLog('AVISO: Registro encontrado pero sin URL de foto')
         }
       } else {
-        setVisualLog('AVISO: Registro no encontrado en la tabla clients')
+        setVisualLog('AVISO: Usuario no registrado en la tabla clients')
       }
 
+      // Fallback a metadatos de sesión en Auth
       const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
       if (metaName) setDisplayName(metaName)
 
@@ -106,7 +121,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   return (
     <>
-      {/* 🔴 LOG VISUAL EN PANTALLA MÓVIL (Toca para ocultar) */}
+      {/* Log visual interactivo para pantalla móvil */}
       {visualLog && (
         <div 
           onClick={() => setVisualLog(null)}
@@ -127,6 +142,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
       }`}>
         <div className="flex items-center justify-between px-4 md:px-6 h-14 md:h-16">
           <div className="flex items-center gap-3">
+            {/* Botón Hamburguesa que abre el Menú Lateral */}
             <button
               onClick={() => setIsSidebarOpen(true)}
               className={`lg:hidden p-2 rounded-xl transition-all ${
@@ -155,7 +171,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
               <Bell className="w-4 h-4" />
             </button>
 
-            {/* Perfil del Cliente */}
+            {/* Perfil Exclusivo del Cliente */}
             <div className="flex items-center gap-2 pl-2 border-l border-stone-200 dark:border-fuchsia-950/30">
               <div className="text-right leading-tight">
                 <p className={`text-[11px] font-semibold truncate max-w-[110px] ${
@@ -178,7 +194,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
                     alt="Avatar" 
                     className="w-full h-full object-cover rounded-lg"
                     onError={() => {
-                      setVisualLog('ERROR IMG LOAD: La URL de la foto no se pudo cargar')
+                      setVisualLog('ERROR IMG LOAD: No se pudo renderizar la foto')
                       setAvatarUrl(null)
                     }}
                   />
