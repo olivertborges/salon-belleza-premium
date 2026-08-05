@@ -279,8 +279,8 @@ export default function MisReservasPage() {
       {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      {/* Espacio superior corregido (pt-8 sm:pt-12 en lugar de pt-20 sm:pt-24) */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-12 space-y-8 relative z-10">
+      {/* ESPACIO SUPERIOR REDUCIDO AL MÍNIMO (pt-2 sm:pt-4) */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4 pb-12 space-y-8 relative z-10">
 
         {/* ============================================================ */}
         {/* HERO BANNER EDITORIAL */}
