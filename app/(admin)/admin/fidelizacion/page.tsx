@@ -9,7 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   Crown, Gift, Plus, Trash2,
   Percent, Layers, Edit3, Check, X, RefreshCw,
-  AlertCircle, ChevronLeft
+  AlertCircle
 } from 'lucide-react'
 
 interface Level {
@@ -42,8 +42,6 @@ const DEFAULT_LEVELS = [
   { name: 'Platino', emoji: '💎', min_points: 3000 }
 ]
 
-const GOLD_PALETTE = { primary: '#D4AF37', light: '#E8D5A0', dark: '#C9A96E' }
-
 export default function AdminVIPConfigPage() {
   const { tenantId, loading: authLoading } = useAuth()
   const { settings } = useSettings()
@@ -64,11 +62,6 @@ export default function AdminVIPConfigPage() {
   const [editingReward, setEditingReward] = useState<Reward | null>(null)
   const [showLevelModal, setShowLevelModal] = useState(false)
   const [showRewardModal, setShowRewardModal] = useState(false)
-
-  // Memorización de estilos dinámicos de gradiente
-  const headerGradient = useMemo(() => ({
-    backgroundImage: `linear-gradient(135deg, ${GOLD_PALETTE.primary} 0%, ${GOLD_PALETTE.dark} 50%, ${GOLD_PALETTE.light} 100%)`
-  }), [])
 
   // ============================================================
   // PETICIONES A SUPABASE OPTIMIZADAS
@@ -286,7 +279,6 @@ export default function AdminVIPConfigPage() {
     }
   }
 
-  // Memorización de Contadores Globales
   const totalLevels = useMemo(() => levels.length, [levels])
   const totalRewards = useMemo(() => rewards.length, [rewards])
 
@@ -328,33 +320,48 @@ export default function AdminVIPConfigPage() {
 
       <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-6">
 
-        {/* CABECERA */}
-        <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10" style={headerGradient}>
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Configuración de Beneficios
+        {/* HERO / CABECERA ESTILO DASHBOARD */}
+        <div className={`relative overflow-hidden rounded-2xl p-6 md:p-8 border shadow-lg transition-all duration-300 ${
+          isDark 
+            ? 'bg-[#2A1B14]/80 border-[#3D281E] text-[#FFF9F6]' 
+            : 'bg-white/80 border-[#F0E4DA] text-[#1A0E0A]'
+        } backdrop-blur-md`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-start md:items-center gap-4">
+              <div className={`p-3.5 rounded-2xl border shrink-0 shadow-sm ${
+                isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+              }`}>
+                <Crown className="w-8 h-8 text-[#D4AF37] stroke-[1.5]" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
-                Club VIP Fresh Nails
-              </h1>
-              <p className="text-xs md:text-sm text-white/80 font-medium max-w-md">
-                Gestiona los rangos VIP y el catálogo de premios para tus clientas.
-              </p>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
+                    Configuración Global
+                  </span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                  Club VIP & Fidelización
+                </h1>
+                <p className={`text-xs md:text-sm font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Administra los niveles de lealtad, reglas de puntos y el catálogo de beneficios.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            <div className="flex items-center gap-3 self-end md:self-center shrink-0">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing} 
-                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
-                title="Actualizar Configuración"
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all active:scale-95 shadow-sm ${
+                  isDark 
+                    ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] hover:border-[#D4AF37]/40' 
+                    : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] hover:border-[#D4AF37]/40'
+                }`}
+                title="Actualizar datos"
               >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 text-[#D4AF37] ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Actualizar</span>
               </button>
             </div>
           </div>
@@ -379,7 +386,7 @@ export default function AdminVIPConfigPage() {
           </div>
         )}
 
-        {/* TARGETAS DE CONTROL / KPIS */}
+        {/* TARJETAS DE CONTROL / KPIS */}
         <div className="grid grid-cols-2 gap-3">
           <div className={`rounded-2xl p-3 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
             <div className="flex items-center gap-3 min-w-0">
@@ -445,7 +452,7 @@ export default function AdminVIPConfigPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 text-[#1A0E0A] rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0]">
+              <button type="submit" className="w-full py-2.5 text-[#1A0E0A] rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-[1.02] transition-all flex items-center justify-center gap-1.5 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0]">
                 <Plus className="w-3.5 h-3.5" /> Crear Rango VIP
               </button>
             </form>
@@ -538,7 +545,7 @@ export default function AdminVIPConfigPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 text-[#1A0E0A] rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-1.5 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0]">
+              <button type="submit" className="w-full py-2.5 text-[#1A0E0A] rounded-xl text-[10px] font-mono font-bold uppercase tracking-widest hover:scale-[1.02] transition-all flex items-center justify-center gap-1.5 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0]">
                 <Plus className="w-3.5 h-3.5" /> Agregar Premio
               </button>
             </form>
@@ -631,7 +638,7 @@ export default function AdminVIPConfigPage() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => { setShowLevelModal(false); setEditingLevel(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'}`}>Cancelar</button>
-                  <button type="button" onClick={handleUpdateLevel} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
+                  <button type="button" onClick={handleUpdateLevel} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-[1.02] transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
                     <Check className="w-4 h-4" /> Guardar
                   </button>
                 </div>
@@ -689,7 +696,7 @@ export default function AdminVIPConfigPage() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => { setShowRewardModal(false); setEditingReward(null); }} className={`flex-1 py-2.5 rounded-xl border text-xs font-bold uppercase transition-colors ${isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'}`}>Cancelar</button>
-                  <button type="button" onClick={handleUpdateReward} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-105 transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
+                  <button type="button" onClick={handleUpdateReward} className="flex-1 py-2.5 rounded-xl text-[#1A0E0A] text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-md hover:scale-[1.02] transition-all bg-[#D4AF37] hover:bg-[#E8D5A0]">
                     <Check className="w-4 h-4" /> Guardar
                   </button>
                 </div>
