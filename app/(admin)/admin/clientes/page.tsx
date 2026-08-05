@@ -8,10 +8,9 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { 
   User, Search, Plus, Phone, Mail, Calendar, 
   UserCheck, TrendingUp, RefreshCw, XCircle, 
-  AlertCircle, Crown, Loader2, Save, Camera, Upload, X,
+  Sparkles, Loader2, Save, Camera, Upload, X,
   ChevronLeft, ChevronRight, Filter
 } from 'lucide-react'
-import { format } from 'date-fns'
 
 type Cliente = {
   id: string
@@ -48,15 +47,13 @@ export default function ClientesPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Depuración visual
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
-
-  const headerGradient = useMemo(() => ({
-    backgroundImage: `linear-gradient(135deg, ${GOLD_PALETTE.primary} 0%, ${GOLD_PALETTE.dark} 50%, ${GOLD_PALETTE.light} 100%)`
-  }), [])
 
   // ============================================================
   // COMPRIMIR IMAGEN
@@ -142,7 +139,7 @@ export default function ClientesPage() {
     fetchClientes(true)
   }, [fetchClientes])
 
-  // Resetear paginación al cambiar términos de búsqueda o segmentos
+  // Resetear paginación al cambiar búsqueda o segmento
   useEffect(() => {
     setCurrentPage(1)
   }, [search, filterSegment])
@@ -163,13 +160,7 @@ export default function ClientesPage() {
     setShowDebug(false)
   }
 
-  // ============================================================
-  // MANEJAR AVATAR
-  // ============================================================
-  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const processAvatarFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setFormError('⚠️ Selecciona un formato de imagen válido (JPG, PNG, etc.)')
       setTimeout(() => setFormError(null), 3000)
@@ -180,7 +171,6 @@ export default function ClientesPage() {
       setUploadingAvatar(true)
       const compressedFile = await compressImage(file, 500, 500, 0.8)
       setAvatarFile(compressedFile)
-      setUploadingAvatar(false)
 
       const reader = new FileReader()
       reader.onloadend = () => setAvatarPreview(reader.result as string)
@@ -189,9 +179,15 @@ export default function ClientesPage() {
       setFormError(null)
     } catch (err) {
       setFormError('⚠️ Error al procesar la imagen. Intenta con otra.')
-      setUploadingAvatar(false)
       setTimeout(() => setFormError(null), 3000)
+    } finally {
+      setUploadingAvatar(false)
     }
+  }
+
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) processAvatarFile(file)
   }
 
   const uploadAvatar = async (file: File): Promise<string> => {
@@ -308,23 +304,24 @@ export default function ClientesPage() {
     }
   }
 
-  // Lógica de Métricas Procesadas en Memoria
+  // Métricas
   const stats = useMemo(() => {
     const total = clientes.length
     const recientes = clientes.filter(c => {
       const diff = (new Date().getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24)
       return diff <= 30
     }).length
-    const vip = Math.round(total * 0.4) // Proporción estimada fija en base a lógica original
-    return { total, recientes, vip }
+    const frecuentes = clientes.filter(c => c.phone && c.email).length
+    return { total, recientes, frecuentes }
   }, [clientes])
 
-  // Lógica de Filtrado y Segmentación Avanzada
+  // Filtrado
   const filtrados = useMemo(() => {
+    const term = search.toLowerCase()
     let result = clientes.filter((c: Cliente) => 
-      c.name?.toLowerCase().includes(search.toLowerCase()) || 
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search)
+      c.name?.toLowerCase().includes(term) || 
+      c.email?.toLowerCase().includes(term) ||
+      c.phone?.includes(term)
     )
 
     if (filterSegment === 'recientes') {
@@ -332,23 +329,20 @@ export default function ClientesPage() {
         const diff = (new Date().getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24)
         return diff <= 30
       })
-    } else if (filterSegment === 'vip') {
-      // Tomamos el primer 40% alfabéticamente como VIP simulado bajo tu regla original
-      const totalVipCount = Math.round(clientes.length * 0.4)
-      const vipIds = new Set(clientes.slice(0, totalVipCount).map(c => c.id))
-      result = result.filter(c => vipIds.has(c.id))
+    } else if (filterSegment === 'completos') {
+      result = result.filter(c => c.phone && c.email)
     }
 
     return result
   }, [clientes, search, filterSegment])
 
-  // Lógica de Paginación Interna
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filtrados.slice(start, start + ITEMS_PER_PAGE)
-  }, [filtrados, currentPage])
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / ITEMS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
 
-  const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE)
+  const paginatedItems = useMemo(() => {
+    const start = (safeCurrentPage - 1) * ITEMS_PER_PAGE
+    return filtrados.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtrados, safeCurrentPage])
 
   if (loading) {
     return (
@@ -359,7 +353,7 @@ export default function ClientesPage() {
             <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
           </div>
           <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
-            Cargando clientas...
+            Cargando clientes...
           </p>
         </div>
       </div>
@@ -370,66 +364,87 @@ export default function ClientesPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-6xl mx-auto px-4 space-y-5 relative z-10 pt-6">
+      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-6">
 
-        {/* CABECERA */}
-        <div className="relative overflow-hidden rounded-2xl p-5 md:p-6 shadow-2xl text-white border border-white/10" style={headerGradient}>
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[9px] font-black uppercase tracking-widest text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Base de Datos del Salón
+        {/* HERO TIPO DASHBOARD */}
+        <div className={`relative overflow-hidden rounded-2xl border p-6 md:p-8 backdrop-blur-md shadow-sm transition-all duration-300 ${
+          isDark ? 'bg-[#2A1B14]/80 border-[#3D281E]' : 'bg-white/80 border-[#F0E4DA]'
+        }`}>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            
+            {/* Título e Identidad */}
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wider uppercase bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20">
+                <Sparkles className="w-3 h-3" />
+                Fresh Nails Salón
               </div>
-              <h1 className="text-2xl font-serif font-black tracking-tight drop-shadow-sm">Clientes Fresh Nails</h1>
+              <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-tight">
+                Gestión de Clientes
+              </h1>
+              <p className="text-xs opacity-70 max-w-md">
+                Administra el registro y contacto de tus clientes de forma clara y organizada.
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button 
-                onClick={handleRefresh} 
-                disabled={refreshing} 
-                className="p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+            {/* Métricas Integradas + Acciones */}
+            <div className="flex flex-wrap items-center gap-3">
+              
+              {/* Card Métrica 1 */}
+              <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${
+                isDark ? 'bg-[#1E120C]/60 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
+              }`}>
+                <UserCheck className="w-4 h-4 text-[#D4AF37]" />
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider font-semibold opacity-60">Total</p>
+                  <p className="text-sm font-bold">{stats.total}</p>
+                </div>
+              </div>
 
-              <button 
-                onClick={() => { resetForm(); setShowModal(true); }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-stone-900 font-black text-[10px] uppercase tracking-wider shadow-xl hover:bg-[#F0E4DA] transition-all"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[3] text-[#D4AF37]" />
-                <span>Nueva Cliente</span>
-              </button>
+              {/* Card Métrica 2 */}
+              <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${
+                isDark ? 'bg-[#1E120C]/60 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
+              }`}>
+                <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider font-semibold opacity-60">Nuevas (30d)</p>
+                  <p className="text-sm font-bold">+{stats.recientes}</p>
+                </div>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="flex items-center gap-2 pl-2 border-l border-[#F0E4DA] dark:border-[#3D281E]">
+                <button 
+                  onClick={handleRefresh} 
+                  disabled={refreshing} 
+                  title="Actualizar datos"
+                  className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-50 ${
+                    isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
+                  }`}
+                >
+                  <RefreshCw className={`w-4 h-4 text-[#D4AF37] ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+
+                <button 
+                  onClick={() => { resetForm(); setShowModal(true); }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D4AF37] text-stone-900 font-bold text-xs uppercase tracking-wider shadow-sm hover:opacity-95 transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Nueva Cliente</span>
+                </button>
+              </div>
+
             </div>
+
           </div>
         </div>
 
-        {/* MENSAJES */}
+        {/* MENSAJES DE ESTADO */}
         {error && <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs">{error}</div>}
         {success && <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs">{success}</div>}
 
-        {/* KPIS */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Registradas', value: stats.total, icon: UserCheck, color: 'text-[#D4AF37]' },
-            { label: 'VIP Activas', value: stats.vip, icon: Crown, color: 'text-[#D4AF37]' },
-            { label: 'Nuevas (30d)', value: `+${stats.recientes}`, icon: TrendingUp, color: 'text-[#D4AF37]' }
-          ].map((kpi, idx) => (
-            <div key={idx} className={`rounded-xl p-2.5 border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-              <div className="flex items-center gap-2">
-                <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
-                <div>
-                  <p className="text-[7px] font-mono uppercase tracking-wider font-bold opacity-60">{kpi.label}</p>
-                  <p className="text-sm font-black">{kpi.value}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* BUSCADOR Y SEGMENTOS */}
+        {/* BUSCADOR Y FILTROS */}
         <div className={`flex flex-wrap items-center gap-3 p-3 rounded-xl border shadow-sm ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-          <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+          <div className="flex items-center gap-2 flex-1 min-w-[180px]">
             <Search className="w-4 h-4 opacity-50" />
             <input 
               type="text" 
@@ -438,7 +453,7 @@ export default function ClientesPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-xs w-full outline-none"
             />
-            {search && <XCircle className="w-4 h-4 cursor-pointer opacity-60" onClick={() => setSearch('')} />}
+            {search && <XCircle className="w-4 h-4 cursor-pointer opacity-60 hover:opacity-100" onClick={() => setSearch('')} />}
           </div>
 
           <div className="w-px h-5 bg-[#F0E4DA] dark:bg-[#3D281E]" />
@@ -450,9 +465,9 @@ export default function ClientesPage() {
               onChange={(e) => setFilterSegment(e.target.value)}
               className="bg-transparent text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer"
             >
-              <option value="todos">Todos los Segmentos</option>
-              <option value="vip">Clientas VIP</option>
-              <option value="recientes">Recientes (30 días)</option>
+              <option value="todos">Todos los registros</option>
+              <option value="recientes">Recientes (Últimos 30 días)</option>
+              <option value="completos">Con datos completos</option>
             </select>
           </div>
         </div>
@@ -486,12 +501,12 @@ export default function ClientesPage() {
               <hr className={`my-3 ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`} />
 
               <div className="space-y-1.5 font-mono text-[10px] opacity-80">
-                <div className="flex items-center gap-2 truncate"><Mail className="w-3.5 h-3.5 shrink-0 opacity-60" /> <span>{cliente.email || 'sin_correo@nails.com'}</span></div>
+                <div className="flex items-center gap-2 truncate"><Mail className="w-3.5 h-3.5 shrink-0 opacity-60" /> <span>{cliente.email || 'Sin correo registrado'}</span></div>
                 <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 shrink-0 opacity-60" /> <span>{cliente.phone || 'Sin teléfono'}</span></div>
                 <div className="flex items-center gap-2 pt-1">
                   <Calendar className="w-3.5 h-3.5 shrink-0 opacity-60" />
                   <span className={`px-1.5 py-0.5 rounded border text-[8px] ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}>
-                    Alta: {new Date(cliente.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    Registrada: {new Date(cliente.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </div>
               </div>
@@ -500,18 +515,18 @@ export default function ClientesPage() {
 
           {paginatedItems.length === 0 && (
             <div className="col-span-full text-center py-10 border border-dashed rounded-xl font-mono text-xs opacity-50">
-              No se encontraron clientas.
+              No se encontraron clientes registrados.
             </div>
           )}
         </div>
 
-        {/* PAGINADOR INFERIOR */}
+        {/* PAGINACIÓN INFERIOR */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-2">
-            <p className="text-[10px] opacity-60">Página {currentPage} de {totalPages} ({filtrados.length} clientas)</p>
+            <p className="text-[10px] opacity-60">Página {safeCurrentPage} de {totalPages} ({filtrados.length} clientes)</p>
             <div className="flex items-center gap-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="p-1.5 rounded-lg border disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="p-1.5 rounded-lg border disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+              <button disabled={safeCurrentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="p-1.5 rounded-lg border disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+              <button disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="p-1.5 rounded-lg border disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         )}
@@ -526,8 +541,8 @@ export default function ClientesPage() {
               <button onClick={() => { setShowModal(false); resetForm(); }} className="absolute top-4 right-4 p-2 opacity-60 hover:opacity-100"><X className="w-5 h-5" /></button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-xl text-white bg-[#D4AF37]"><User className="w-5 h-5" /></div>
-                <h3 className="text-lg font-serif font-extrabold">Nueva Cliente</h3>
+                <div className="p-2 rounded-xl text-[#1A0E0A] bg-[#D4AF37]"><User className="w-5 h-5" /></div>
+                <h3 className="text-lg font-serif font-bold">Nueva Cliente</h3>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -538,14 +553,12 @@ export default function ClientesPage() {
                       {avatarPreview ? <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" /> : <User className="w-8 h-8 opacity-40" />}
                     </div>
                     <div className="absolute -bottom-1 -right-1 flex gap-1">
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-full bg-[#D4AF37] text-white shadow"><Upload className="w-3 h-3" /></button>
-                      <button type="button" onClick={() => {
-                        const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
-                        input.onchange = (e) => { if (e.target.files?.length) handleAvatarFileSelect({ target: { files: e.target.files } }) }
-                        input.click()
-                      }} className="p-1.5 rounded-full bg-[#D4AF37] text-white shadow"><Camera className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-full bg-[#D4AF37] text-stone-900 shadow hover:opacity-90"><Upload className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => cameraInputRef.current?.click()} className="p-1.5 rounded-full bg-[#D4AF37] text-stone-900 shadow hover:opacity-90"><Camera className="w-3 h-3" /></button>
                     </div>
+
                     <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFileSelect} className="hidden" />
+                    <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleAvatarFileSelect} className="hidden" />
                   </div>
                   {uploadingAvatar && <p className="text-[10px] text-[#D4AF37] mt-1 animate-pulse">Procesando imagen...</p>}
                 </div>
@@ -576,7 +589,7 @@ export default function ClientesPage() {
 
                 <div className="flex gap-2 pt-2">
                   <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-2 rounded-xl border text-xs font-bold uppercase opacity-70">Cancelar</button>
-                  <button type="submit" disabled={saving || uploadingAvatar} className="flex-1 py-2 rounded-xl bg-[#D4AF37] text-stone-900 font-bold text-xs uppercase flex items-center justify-center gap-1">
+                  <button type="submit" disabled={saving || uploadingAvatar} className="flex-1 py-2 rounded-xl bg-[#D4AF37] text-stone-900 font-bold text-xs uppercase flex items-center justify-center gap-1 disabled:opacity-50">
                     {saving || uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     <span>Guardar</span>
                   </button>
