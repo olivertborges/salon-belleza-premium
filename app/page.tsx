@@ -35,7 +35,7 @@ const getCleanSlug = (text: string) => {
 }
 
 // ============================================================
-// HEADER (ELEGANTE & MINIMALISTA)
+// HEADER (ELEGANTE & MINIMALISTA - SALON FRESH)
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,10 +56,10 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
         <Link href="/" className="flex flex-col tracking-widest group">
           <span className="text-[#1A0E0A] font-serif text-xl md:text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
-            ANIEXIS LEIVA
+            SALON FRESH
           </span>
           <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-            HAUTE BEAUTY ATELIER
+            NAILS & BEAUTY ATELIER
           </span>
         </Link>
 
@@ -125,7 +125,7 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO (REDISEÑO ASIMÉTRICO DE ALTA COSTURA - MARCA PERSONAL)
+// HERO (CON LA FOTO NUEVA EN EL HERO Y ANEXIS CAMPO LEYVA)
 // ============================================================
 const HeroSection = () => {
   return (
@@ -145,7 +145,7 @@ const HeroSection = () => {
             <div className="flex items-center gap-3">
               <span className="h-[1px] w-8 bg-[#D4AF37]" />
               <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">
-                Aniexis Campo Leiva (Leiva con Y)
+                Aniexis Campo Leyva
               </span>
             </div>
 
@@ -156,7 +156,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="text-[#5C4A3E] text-base md:text-lg font-light max-w-lg leading-relaxed">
-              Un santuario arquitectónico de relajación y vanguardia bajo la firma personal de Aniexis Leiva. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
+              Un santuario arquitectónico de relajación y vanguardia bajo la dirección de Ani Campo Leyva. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -198,15 +198,15 @@ const HeroSection = () => {
           >
             <div className="relative w-full max-w-md aspect-[3/4] bg-[#F0E4DA] overflow-hidden group shadow-2xl">
               <img 
-                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png"
-                alt="Aniexis Campo Leiva"
+                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/IMG-20260805-WA0002.jpg"
+                alt="Aniexis Campo Leyva"
                 className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
               
               <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-5 shadow-lg border-l-2 border-[#D4AF37]">
                 <p className="text-[9px] tracking-[0.25em] text-[#D4AF37] font-bold uppercase">Fundadora & Master Artist</p>
-                <p className="font-serif text-base text-[#1A0E0A] mt-1">Aniexis Campo Leiva</p>
+                <p className="font-serif text-base text-[#1A0E0A] mt-1">Aniexis Campo Leyva (Ani)</p>
               </div>
             </div>
           </motion.div>
@@ -236,7 +236,7 @@ const EsenciaSection = () => {
                 animate={isInView ? { y: [40, 0], opacity: [0, 1] } : {}}
                 transition={{ duration: 0.8 }}
               >
-                <img src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/IMG-20260805-WA0002.jpg" className="w-full h-full object-cover" alt="Aniexis Leiva Esencia" />
+                <img src="https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Detalle" />
               </motion.div>
               <motion.div 
                 className="aspect-[3/5] bg-gray-100 overflow-hidden mt-12 shadow-lg"
@@ -257,18 +257,17 @@ const EsenciaSection = () => {
           >
             <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRO MANIFIESTO</p>
             <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light leading-tight">
-              Crear belleza bajo el sello de Aniexis Leiva es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
+              Crear belleza bajo el sello de Aniexis Campo Leyva es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
             </h2>
             <p className="text-[#5C4A3E] font-light leading-relaxed text-base">
-              Nos distanciamos de lo genérico. Bajo la dirección de Aniexis Campo Leiva, fusionamos técnicas exclusivas con el dominio milimétrico del arte moderno. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
+              Nos distanciamos de lo genérico. Bajo la dirección de Ani, fusionamos técnicas exclusivas con el dominio milimétrico del arte moderno. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
             </p>
             
-            {/* Incorporación de la foto enviada junto a su frase característica en la seccion de esencia */}
             <div className="bg-[#FFF9F6] border-l-2 border-[#D4AF37] p-6 my-6 shadow-sm">
               <p className="font-serif italic text-base text-[#1A0E0A] mb-2">
                 "La verdadera elegancia radica en la autenticidad de los detalles y el cuidado absoluto de cada faceta de tu belleza."
               </p>
-              <p className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">— Aniexis Campo Leiva</p>
+              <p className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">— Aniexis Campo Leyva (Ani)</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6 pt-2">
@@ -394,7 +393,7 @@ const CategoriesSection = () => {
 }
 
 // ============================================================
-// LAS ARTISTAS (ANIEXIS & SILVANA - CON URLS DE SUPABASE)
+// LAS ARTISTAS (ANI - ANY Y SILVANA CON URLS DE SUPABASE)
 // ============================================================
 const TeamSection = () => {
   const ref = useRef(null)
@@ -410,17 +409,17 @@ const TeamSection = () => {
         <div className="text-center max-w-2xl mx-auto mb-28 space-y-4">
           <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">EL ALMA DEL ATELIER</p>
           <h2 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] font-light leading-tight">
-            Nuestros Profesionales <br />bajo la firma de <span className="italic font-normal text-[#D4AF37]">Leiva</span>
+            Nuestros Profesionales <br />bajo la firma de <span className="italic font-normal text-[#D4AF37]">Aniexis Campo Leyva</span>
           </h2>
           <div className="w-16 h-[1px] bg-[#D4AF37] mx-auto mt-6" />
           <p className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto pt-2 leading-relaxed">
-            Conoce a Aniexis y Silvana, las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
+            Conoce a Ani (Any) y Silvana, las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
           
-          {/* PROFESIONAL 1: ANIEXIS CAMPO LEIVA */}
+          {/* PROFESIONAL 1: ANY / ANI */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -430,20 +429,20 @@ const TeamSection = () => {
             <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
               <img 
                 src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
-                alt="Aniexis Campo Leiva - Especialista Principal" 
+                alt="Ani (Any) - Especialista Principal" 
                 className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
               />
               <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
               
               <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
                 <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Fundadora & Master</p>
-                <h3 className="font-serif text-2xl text-[#1A0E0A] mt-1 font-light tracking-wide">Aniexis Leiva</h3>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] mt-1 font-light tracking-wide">Ani (Any) Campo Leyva</h3>
               </div>
             </div>
 
             <div className="pt-6 space-y-4 max-w-md">
               <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Aniexis Campo Leiva transforma cada sesión en un ritual personalizado de alta definición.
+                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Ani transforma cada sesión en un ritual personalizado de alta definición.
               </p>
               
               <div className="flex flex-wrap gap-2 pt-2">
@@ -624,7 +623,7 @@ const GallerySection = ({ images }: { images: any[] }) => {
                 </div>
                 <div className="flex items-center justify-between px-1">
                   <p className="text-xs font-serif text-[#1A0E0A] tracking-wide">{title}</p>
-                  <span className="text-[9px] tracking-widest text-[#D4AF37] uppercase font-bold">✦ Aniexis Leiva</span>
+                  <span className="text-[9px] tracking-widest text-[#D4AF37] uppercase font-bold">✦ Salon Fresh</span>
                 </div>
               </motion.div>
             )
@@ -709,7 +708,7 @@ const CtaSection = () => {
       
       <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center relative z-10 space-y-8">
         <p className="text-[10px] tracking-[0.5em] text-[#D4AF37] uppercase font-bold">RESERVA PRIVADA</p>
-        <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia con Aniexis Leiva</span>?</h2>
+        <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia Fresh</span>?</h2>
         <p className="text-white/60 font-light max-w-md mx-auto text-sm leading-relaxed">
           Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu imagen.
         </p>
@@ -736,7 +735,7 @@ const Footer = () => (
       
       <div className="space-y-4">
         <Link href="/" className="flex flex-col tracking-widest">
-          <span className="text-white font-serif text-xl tracking-[0.15em]">ANIEXIS LEIVA</span>
+          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH</span>
           <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">ATELIER</span>
         </Link>
         <p className="text-white/40 leading-relaxed max-w-xs pr-4">
@@ -810,7 +809,7 @@ const Footer = () => (
 
     <div className="border-t border-white/5 py-6">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-white/30 tracking-wider uppercase">
-        <p>© 2026 Aniexis Campo Leiva. Todos los derechos reservados.</p>
+        <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
         <p className="font-light">✦ Hecho en Uruguay para el mundo</p>
       </div>
     </div>
