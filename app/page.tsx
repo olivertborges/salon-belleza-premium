@@ -6,31 +6,24 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { 
-  FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
-  FaBars, FaTimes, FaCalendarCheck, FaPhoneAlt, FaMapMarkerAlt, FaRegHeart,
-  FaPalette, FaHandSparkles, FaAward, FaLeaf,
-  FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
-  FaSprayCan
-} from 'react-[#react-icons/fa]'
+  FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar,
+  FaBars, FaTimes, FaPhoneAlt, FaMapMarkerAlt,
+  FaPalette, FaAward, FaLeaf, FaClock
+} from 'react-icons/fa'
 import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
 
 // URL por defecto enviada para el Hero
 const DEFAULT_HERO_IMAGE = "https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/IMG-20260805-WA0002.jpg"
 
 // ============================================================
-// CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO
+// CONFIGURACIÓN DE ICONOS DE CATEGORÍAS
 // ============================================================
 const CATEGORY_ICONS: Record<string, any> = {
   'Uñas': GiNails,
   'Micropigmentación': GiSparkles,
   'Peluquería': GiScissors,
-  'Cejas': FaRegStar,
   'Estética': GiSparkles,
-  'Depilación': FaHeart,
-  'Pestañas': FaEye,
-  'Labios': GiLipstick,
-  'Microblading': FaSprayCan,
-  'default': FaGem
+  'default': GiNails
 }
 
 const getCleanSlug = (text: string) => {
@@ -38,7 +31,7 @@ const getCleanSlug = (text: string) => {
 }
 
 // ============================================================
-// HEADER (ELEGANTE & MINIMALISTA)
+// HEADER
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -51,42 +44,42 @@ const Header = () => {
   }, [])
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled 
-        ? 'bg-[#FFFCF8]/90 backdrop-blur-md border-b border-[#D4AF37]/10 shadow-sm py-4' 
+        ? 'bg-white/95 backdrop-blur-md border-b border-pink-100 shadow-sm py-4' 
         : 'bg-transparent py-6'
     }`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
-        <Link href="/" className="flex flex-col tracking-widest group">
-          <span className="text-[#1A0E0A] font-serif text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
-            SALON FRESH
+        <Link href="/" className="flex flex-col group">
+          <span className="text-[#1A0E0A] font-serif text-2xl tracking-wide transition-colors group-hover:text-pink-600">
+            SALON FRESH NAILS
           </span>
-          <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-            NAILS & BEAUTY ATELIER
+          <span className="text-[10px] tracking-widest text-pink-600 font-medium uppercase">
+            Aniexis Campo Leyva
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-10">
-          {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+        <nav className="hidden lg:flex items-center gap-8">
+          {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <Link 
               key={item}
               href={`#${getCleanSlug(item)}`}
-              className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-colors duration-300 font-medium"
+              className="text-xs uppercase tracking-wider text-[#5C4A3E] hover:text-pink-600 transition-colors font-medium"
             >
               {item}
             </Link>
           ))}
           <Link 
             href="/agenda"
-            className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all duration-300 rounded-none"
+            className="bg-pink-600 text-white hover:bg-pink-700 px-6 py-2.5 text-xs font-semibold tracking-wider uppercase transition-all rounded-full shadow-sm"
           >
-            Reservar Cita
+            Agendar Cita
           </Link>
         </nav>
 
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden text-[#1A0E0A] hover:text-[#D4AF37] transition-colors p-2"
+          className="lg:hidden text-[#1A0E0A] hover:text-pink-600 transition-colors p-2"
           aria-label="Abrir menú"
         >
           {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
@@ -99,14 +92,14 @@ const Header = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden absolute top-full left-0 right-0 bg-[#FFFCF8] border-b border-[#D4AF37]/10 py-6 px-8 shadow-xl"
+            className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-pink-100 py-6 px-8 shadow-xl"
           >
             <div className="flex flex-col gap-4">
-              {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+              {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
                 <Link
                   key={item}
                   href={`#${getCleanSlug(item)}`}
-                  className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] hover:text-[#D4AF37] transition-all"
+                  className="text-xs uppercase tracking-wider text-[#5C4A3E] hover:text-pink-600 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   {item}
@@ -114,10 +107,10 @@ const Header = () => {
               ))}
               <Link 
                 href="/agenda"
-                className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2"
+                className="block text-center bg-pink-600 text-white py-3 text-xs font-semibold tracking-wider uppercase rounded-full mt-2"
                 onClick={() => setIsOpen(false)}
               >
-                Reservar Cita
+                Agendar Cita
               </Link>
             </div>
           </motion.div>
@@ -128,100 +121,86 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO (HERMOSO, ELEGANTE & DINÁMICO)
+// HERO
 // ============================================================
 const HeroSection = ({ heroImage }: { heroImage?: string }) => {
   const imageUrl = heroImage || DEFAULT_HERO_IMAGE
 
   return (
-    <section className="relative min-h-screen flex items-center pt-28 pb-16 overflow-hidden bg-[#FFF9F6]">
-      {/* Fondos decorativos de alta gama */}
-      <div className="absolute inset-0 z-0 opacity-30 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:36px_36px]" />
-      <div className="absolute top-1/4 right-[-5%] w-[45vw] h-[45vw] bg-[#F5D4E0]/30 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 left-[-5%] w-[35vw] h-[35vw] bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
-
+    <section className="relative min-h-screen flex items-center pt-28 pb-16 overflow-hidden bg-gradient-to-b from-pink-50/50 via-white to-white">
       <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
-          {/* Lado Izquierdo: Textos y CTAs */}
           <motion.div 
-            className="lg:col-span-7 space-y-8"
-            initial={{ opacity: 0, x: -30 }}
+            className="lg:col-span-7 space-y-6"
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1 }}
+            transition={{ duration: 0.8 }}
           >
-            <div className="flex items-center gap-3">
-              <span className="h-[1px] w-12 bg-[#D4AF37]" />
-              <span className="text-[10px] tracking-[0.45em] uppercase text-[#D4AF37] font-semibold">
-                Haute Couture Beauty Atelier
+            <div className="inline-flex items-center gap-2 bg-pink-100/80 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-pink-600" />
+              <span className="text-xs tracking-wide uppercase text-pink-700 font-semibold">
+                Salon Fresh Nails
               </span>
             </div>
 
-            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-[#1A0E0A] leading-[1.08] font-light">
-              Redefiniendo <br />
-              <span className="font-normal italic text-[#D4AF37] tracking-normal">la estética</span> <br />
-              como arte puro.
+            <h1 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] leading-tight font-medium">
+              Especialistas en manicura y belleza profesional por <br />
+              <span className="text-pink-600 italic">Aniexis Campo Leyva</span>
             </h1>
 
-            <p className="text-[#5C4A3E] text-base md:text-lg font-light max-w-lg leading-relaxed">
-              Un santuario arquitectónico de relajación y vanguardia. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
+            <p className="text-[#5C4A3E] text-base md:text-lg font-normal max-w-lg leading-relaxed">
+              Resalta tu belleza natural con técnicas profesionales, atención personalizada e ingredientes de alta calidad para el cuidado de tus uñas y piel.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link 
                 href="/agenda"
-                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center shadow-lg hover:shadow-xl"
+                className="bg-pink-600 text-white hover:bg-pink-700 px-8 py-4 text-xs font-semibold tracking-wider uppercase transition-all text-center rounded-full shadow-md hover:shadow-lg"
               >
-                Agendar Experiencia
+                Reservar Turno
               </Link>
               <Link
-                href="#esencia"
-                className="border border-[#1A0E0A]/20 text-[#1A0E0A] hover:border-[#D4AF37] hover:text-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center bg-white/40 backdrop-blur-sm"
+                href="#sobre-aniexis"
+                className="border border-gray-300 text-[#1A0E0A] hover:border-pink-600 hover:text-pink-600 px-8 py-4 text-xs font-semibold tracking-wider uppercase transition-all text-center rounded-full bg-white"
               >
-                Conocer la Esencia
+                Conócela
               </Link>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 pt-10 border-t border-[#F0E4DA] max-w-md">
+            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-100 max-w-md">
               <div>
-                <p className="font-serif text-3xl text-[#1A0E0A]">05+</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Años Premium</p>
+                <p className="font-serif text-3xl text-[#1A0E0A] font-bold">5+</p>
+                <p className="text-xs text-gray-500 uppercase mt-1 font-medium">Años de experiencia</p>
               </div>
               <div>
-                <p className="font-serif text-3xl text-[#1A0E0A]">3K+</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Almas Felices</p>
+                <p className="font-serif text-3xl text-[#1A0E0A] font-bold">3K+</p>
+                <p className="text-xs text-gray-500 uppercase mt-1 font-medium">Clientes satisfechas</p>
               </div>
               <div>
-                <p className="font-serif text-3xl text-[#1A0E0A]">4.9</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Reseñas Google</p>
+                <p className="font-serif text-3xl text-[#1A0E0A] font-bold">4.9 ★</p>
+                <p className="text-xs text-gray-500 uppercase mt-1 font-medium">Valoración</p>
               </div>
             </div>
           </motion.div>
 
-          {/* Lado Derecho: Imagen Protagonista del Hero con Marco de Alta Costura */}
           <motion.div 
             className="lg:col-span-5 relative flex justify-center items-center"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
             <div className="relative w-full max-w-md">
-              {/* Marco Geométrico Dorado Trasero */}
-              <div className="absolute -inset-3 border border-[#D4AF37]/40 translate-x-3 translate-y-3 pointer-events-none" />
-              
-              <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-2.5 group">
+              <div className="relative aspect-[3/4] bg-pink-100 rounded-3xl overflow-hidden shadow-xl border-4 border-white">
                 <img 
                   src={imageUrl}
-                  alt="Salon Fresh - Portada Principal"
-                  className="w-full h-full object-cover filter contrast-[1.03] group-hover:scale-105 transition-all duration-1000 ease-out"
+                  alt="Aniexis Campo Leyva - Salon Fresh Nails"
+                  className="w-full h-full object-cover"
                 />
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/40 via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-700" />
-                
-                {/* Etiqueta Flotante de Lujo */}
-                <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md p-5 shadow-xl border-l-4 border-[#D4AF37]">
-                  <p className="text-[9px] tracking-[0.3em] text-[#D4AF37] font-bold uppercase">Atelier Destacado</p>
-                  <p className="font-serif text-base text-[#1A0E0A] mt-1 font-medium">Técnicas exclusivas e internacionales</p>
+                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-md border border-pink-100">
+                  <p className="text-xs font-bold text-pink-600 uppercase tracking-wider">Fundadora & Máster</p>
+                  <p className="font-serif text-base text-[#1A0E0A] font-semibold">Aniexis Campo Leyva</p>
                 </div>
               </div>
             </div>
@@ -234,65 +213,54 @@ const HeroSection = ({ heroImage }: { heroImage?: string }) => {
 }
 
 // ============================================================
-// ESENCIA (ESTILO REVISTA EDITORIAL)
+// SOBRE ANIEXIS CAMPO LEYVA
 // ============================================================
-const EsenciaSection = () => {
+const SobreAniexisSection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.3 })
 
   return (
-    <section id="esencia" ref={ref} className="py-32 bg-white relative">
+    <section id="sobre-aniexis" ref={ref} className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="grid lg:grid-cols-12 gap-16 items-center">
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
           
-          <div className="lg:col-span-5 order-2 lg:order-1 relative">
-            <div className="grid grid-cols-2 gap-4">
-              <motion.div 
-                className="aspect-[3/5] bg-gray-100 overflow-hidden"
-                animate={isInView ? { y: [40, 0], opacity: [0, 1] } : {}}
-                transition={{ duration: 0.8 }}
-              >
-                <img src="https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Detalle" />
-              </motion.div>
-              <motion.div 
-                className="aspect-[3/5] bg-gray-100 overflow-hidden mt-12"
-                animate={isInView ? { y: [-40, 0], opacity: [0, 1] } : {}}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <img src="https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=500&h=800&fit=crop" className="w-full h-full object-cover" alt="Estilo" />
-              </motion.div>
-            </div>
-            <div className="absolute -z-10 bottom-4 right-4 left-4 top-4 border border-[#D4AF37]/20 pointer-events-none transform translate-x-4 translate-y-4" />
+          <div className="lg:col-span-5 relative">
+            <motion.div 
+              className="aspect-[3/4] rounded-2xl overflow-hidden bg-pink-50 shadow-lg border border-pink-100"
+              animate={isInView ? { opacity: [0, 1], y: [20, 0] } : {}}
+              transition={{ duration: 0.8 }}
+            >
+              <img 
+                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
+                className="w-full h-full object-cover" 
+                alt="Aniexis Campo Leyva" 
+              />
+            </motion.div>
           </div>
 
           <motion.div 
-            className="lg:col-span-7 order-1 lg:order-2 space-y-6"
-            initial={{ opacity: 0, x: 30 }}
+            className="lg:col-span-7 space-y-6"
+            initial={{ opacity: 0, x: 20 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRO MANIFIESTO</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light leading-tight">
-              Crear belleza no es seguir tendencias, es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
+            <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">SOBRE LA FUNDADORA</p>
+            <h2 className="font-serif text-3xl md:text-5xl text-[#1A0E0A] font-medium leading-tight">
+              Aniexis Campo Leyva <br />
+              <span className="text-pink-600 italic">Pasión y precisión en cada detalle</span>
             </h2>
-            <p className="text-[#5C4A3E] font-light leading-relaxed text-base">
-              Nos distanciamos de lo genérico. En Salon Fresh fusionamos ingredientes orgánicos premium con el dominio milimétrico de la técnica moderna. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
+            <p className="text-[#5C4A3E] leading-relaxed text-base">
+              Fundadora de **Salon Fresh Nails**, Aniexis se ha destacado por ofrecer un servicio de manicura y belleza impecable. Su enfoque se basa en la constante actualización técnica, el cuidado cuidadoso de la salud de la uña natural y una atención cercana con cada cliente.
             </p>
             
-            <div className="grid sm:grid-cols-2 gap-6 pt-6">
-              <div className="border-t border-[#F0E4DA] pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaAward className="text-[#D4AF37]" />
-                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Alta Rigurosidad</h4>
-                </div>
-                <p className="text-xs text-[#5C4A3E] font-light">Especialistas certificados internacionalmente en continuo perfeccionamiento técnico.</p>
+            <div className="grid sm:grid-cols-2 gap-6 pt-4">
+              <div className="border-l-2 border-pink-500 pl-4">
+                <h4 className="text-sm font-bold uppercase text-[#1A0E0A]">Técnicas Modernas</h4>
+                <p className="text-xs text-[#5C4A3E] mt-1">Especialización en manicura rusa, nivelación con gel, esmaltado semipermanente y esculpidas de alta durabilidad.</p>
               </div>
-              <div className="border-t border-[#F0E4DA] pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaLeaf className="text-[#D4AF37]" />
-                  <h4 className="text-xs font-bold tracking-[0.1em] uppercase text-[#1A0E0A]">Línea Orgánica</h4>
-                </div>
-                <p className="text-xs text-[#5C4A3E] font-light">Productos libres de crueldad y tóxicos, priorizando la salud a largo plazo de tu piel y uñas.</p>
+              <div className="border-l-2 border-pink-500 pl-4">
+                <h4 className="text-sm font-bold uppercase text-[#1A0E0A]">Cuidado de la Salud</h4>
+                <p className="text-xs text-[#5C4A3E] mt-1">Uso de productos certificados e insumos que protegen la salud de la piel y las uñas.</p>
               </div>
             </div>
           </motion.div>
@@ -304,201 +272,61 @@ const EsenciaSection = () => {
 }
 
 // ============================================================
-// STATS SECTION
+// ESPECIALIDADES
 // ============================================================
-const StatsSection = () => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true })
-
-  const stats = [
-    { number: '05+', label: 'Años de Trayectoria' },
-    { number: '3K+', label: 'Clientes Premium' },
-    { number: '4.9', label: 'Calificación Global' },
-    { number: '100%', label: 'Garantía de Satisfacción' }
-  ]
-
-  return (
-    <section ref={ref} className="py-20 bg-[#FFF8F5] border-y border-[#F0E4DA]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: idx * 0.1 }}
-              className="text-center"
-            >
-              <p className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">{stat.number}</p>
-              <p className="text-[10px] tracking-[0.25em] text-[#5C4A3E] uppercase mt-2 font-medium">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// CATEGORIES SECTION (ESTILO MENÚ DE LUJO)
-// ============================================================
-const CategoriesSection = () => {
+const EspecialidadesSection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, amount: 0.05 })
 
   const categories = [
-    { id: 'manicura', name: 'Manicura de Autor', description: 'Manicura rusa refinada, nivelación e ingeniería de uñas con acabados de alta costura.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop', tag: 'Elite' },
-    { id: 'micropigmentacion', name: 'Micropigmentación', description: 'Realce hiperrealista de cejas, ojos y labios con pigmentos orgánicos biocompatibles.', image: 'https://plus.unsplash.com/premium_photo-1661580887141-7adca5e04c02?w=600&fit=crop', tag: 'Premium' },
-    { id: 'microblading', name: 'Microblading 3D', description: 'Diseño arquitectónico pelo a pelo adaptado a la morfología de tu rostro.', image: 'https://images.unsplash.com/photo-1604685227049-0ea4b0f9b1b3?w=600&fit=crop', tag: 'Natural' },
-    { id: 'peluqueria', name: 'Alta Peluquería', description: 'Cortes direccionales, colorimetría francesa y tratamientos moleculares de reconstrucción.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop', tag: 'Vanguardia' },
-    { id: 'pestanas', name: 'Mirada Minimal', description: 'Lifting botox y extensiones avanzadas con peso pluma que respetan tu pestaña natural.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop', tag: 'Impacto' },
-    { id: 'estetica', name: 'Estética Avanzada', description: 'Tratamientos dermacéuticos de rejuvenecimiento celular y limpieza profunda hidrafacial.', image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&fit=crop', tag: 'Bienestar' }
+    { id: 'manicura', name: 'Manicura Profesional', description: 'Manicura rusa, nivelación con gel, esmaltado semipermanente y diseños personalizados.', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&fit=crop' },
+    { id: 'pedicura', name: 'Pedicura Completa', description: 'Tratamiento profundo para pies, cuidado de uñas, exfoliación e hidratación.', image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&fit=crop' },
+    { id: 'pestanas', name: 'Pestañas y Cejas', description: 'Lifting de pestañas, perfilado y diseño de cejas para resaltar la mirada.', image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&fit=crop' },
+    { id: 'peluqueria', name: 'Peluquería', description: 'Cortes, peinados y tratamientos capilares para mantener el cabello fuerte y sano.', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&fit=crop' }
   ]
 
   return (
-    <section id="categorias" ref={ref} className="py-32 bg-white">
+    <section id="especialidades" ref={ref} className="py-24 bg-pink-50/30">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-6">
-          <div className="space-y-3">
-            <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRAS DISCIPLINAS</p>
-            <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">La Carta de <span className="italic font-normal text-[#D4AF37]">Especialidades</span></h2>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div>
+            <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">SERVICIOS DESTACADOS</p>
+            <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Nuestras Especialidades</h2>
           </div>
-          <Link href="/servicios" className="text-xs font-semibold tracking-[0.2em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] transition-colors border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 self-start md:self-auto">
-            Ver Todos los Tratamientos →
+          <Link href="/servicios" className="text-xs font-semibold tracking-wider uppercase text-pink-600 hover:text-pink-700 transition-colors">
+            Ver Todos los Servicios →
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {categories.map((cat, idx) => (
             <motion.div 
               key={cat.id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: idx * 0.05 }}
-              className="group border-b border-[#F0E4DA] pb-8 flex flex-col justify-between"
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-pink-100 flex flex-col justify-between group transition-all"
             >
-              <div className="space-y-4">
-                <div className="relative aspect-[16/10] overflow-hidden mb-6 bg-gray-50">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter grayscale-[30%] group-hover:grayscale-0" />
-                  <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-[9px] tracking-widest uppercase font-semibold text-[#1A0E0A] px-3 py-1.5">{cat.tag}</span>
+              <div>
+                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <h3 className="font-serif text-2xl text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors duration-300">{cat.name}</h3>
-                <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">{cat.description}</p>
+                <div className="p-6">
+                  <h3 className="font-serif text-xl text-[#1A0E0A] font-semibold group-hover:text-pink-600 transition-colors">{cat.name}</h3>
+                  <p className="text-xs text-[#5C4A3E] font-normal leading-relaxed mt-2">{cat.description}</p>
+                </div>
               </div>
               
-              <div className="pt-6">
-                <Link href={`/servicios#${cat.id}`} className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-[#1A0E0A] group-hover:text-[#D4AF37] transition-colors">
-                  Descubrir menú <FaArrowRight className="text-[9px] translate-x-0 group-hover:translate-x-1 transition-transform" />
+              <div className="px-6 pb-6">
+                <Link href={`/servicios#${cat.id}`} className="inline-flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-pink-600 hover:text-pink-700">
+                  Ver opciones <FaArrowRight className="text-[10px]" />
                 </Link>
               </div>
             </motion.div>
           ))}
         </div>
 
-      </div>
-    </section>
-  )
-}
-
-// ============================================================
-// LAS ARTISTAS (ALTA VISIBILIDAD & DISEÑO EDITORIAL)
-// ============================================================
-const TeamSection = () => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, amount: 0.15 })
-
-  return (
-    <section id="equipo" ref={ref} className="py-36 bg-[#FFF9F6] border-y border-[#D4AF37]/10 relative overflow-hidden">
-      <div className="absolute top-1/3 left-5 w-72 h-72 bg-[#F5D4E0]/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-5 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-        
-        <div className="text-center max-w-2xl mx-auto mb-28 space-y-4">
-          <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">EL ALMA DEL ATELIER</p>
-          <h2 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] font-light leading-tight">
-            Las Artistas Detrás <br />de tu <span className="italic font-normal text-[#D4AF37]">Transformación</span>
-          </h2>
-          <div className="w-16 h-[1px] bg-[#D4AF37] mx-auto mt-6" />
-          <p className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto pt-2 leading-relaxed">
-            Conoce a las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="space-y-8 group"
-          >
-            <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
-              <img 
-                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
-                alt="Any - Especialista en Estética y Micropigmentación" 
-                className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
-              />
-              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
-              
-              <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
-                <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Nail & Derm Master</p>
-                <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Any</h3>
-              </div>
-            </div>
-
-            <div className="pt-6 space-y-4 max-w-md">
-              <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Any transforma cada sesión en un ritual personalizado de alta definición.
-              </p>
-              
-              <div className="flex flex-wrap gap-2 pt-2">
-                {['Manicura Rusa', 'Micropigmentación', 'Diseño de Cejas', 'Pestañas Premium'].map((tag) => (
-                  <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
-                    ✦ {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 40 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
-            className="space-y-8 group md:mt-24"
-          >
-            <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
-              <img 
-                src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png" 
-                alt="Sil - Especialista en Alta Peluquería" 
-                className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
-              />
-              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
-              
-              <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
-                <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Hair & Body Expert</p>
-                <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Sil</h3>
-              </div>
-            </div>
-
-            <div className="pt-6 space-y-4 max-w-md">
-              <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                Maestra del movimiento y el color. Sil diseña estilos capilares a medida analizando las facciones y la caída natural, garantizando un acabado elegante y orgánico.
-              </p>
-              
-              <div className="flex flex-wrap gap-2 pt-2">
-                {['Alta Peluquería', 'Colorimetría Avanzada', 'Cortes de Autor', 'Depilación'].map((tag) => (
-                  <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
-                    ✦ {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-        </div>
       </div>
     </section>
   )
@@ -514,13 +342,12 @@ const ServicesSection = ({ services }: { services: any[] }) => {
   if (!services || services.length === 0) return null
 
   return (
-    <section id="servicios" ref={ref} className="py-32 bg-[#FFF9F6]">
+    <section id="servicios" ref={ref} className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         
-        <div className="text-center max-w-xl mx-auto mb-20 space-y-3">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">RESERVAS DESTACADAS</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Experiencias más Solicitadas</h2>
-          <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto mt-4" />
+        <div className="text-center max-w-xl mx-auto mb-16 space-y-2">
+          <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">PRECIOS Y TURNOS</p>
+          <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium">Servicios Populares</h2>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -532,35 +359,35 @@ const ServicesSection = ({ services }: { services: any[] }) => {
                 key={service.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                className="bg-white border border-[#F0E4DA] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[#D4AF37] hover:shadow-xl group"
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:border-pink-300 hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex justify-between items-start">
-                    <div className="text-[#D4AF37] text-xl p-3 bg-[#FFF8F5] group-hover:bg-[#D4AF37] group-hover:text-white transition-colors duration-300">
+                    <div className="text-pink-600 text-xl p-3 bg-pink-50 rounded-xl">
                       <Icon />
                     </div>
-                    <span className="text-[9px] font-bold tracking-widest uppercase text-[#5C4A3E]/60 bg-gray-50 px-2.5 py-1">
-                      {service.category || 'Premium'}
+                    <span className="text-[10px] font-semibold tracking-wider uppercase text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                      {service.category || 'Nails'}
                     </span>
                   </div>
 
-                  <h3 className="font-serif text-xl text-[#1A0E0A] mt-6 group-hover:text-[#D4AF37] transition-colors duration-300 min-h-[56px] flex items-center">
+                  <h3 className="font-serif text-lg font-semibold text-[#1A0E0A] mt-4 min-h-[48px] flex items-center">
                     {service.name}
                   </h3>
 
-                  <p className="text-xs text-[#5C4A3E] font-light leading-relaxed mt-4 line-clamp-3">
+                  <p className="text-xs text-gray-600 font-normal leading-relaxed mt-2 line-clamp-3">
                     {service.description}
                   </p>
                 </div>
 
-                <div className="pt-6 mt-6 border-t border-[#F0E4DA] flex items-end justify-between">
+                <div className="pt-6 mt-6 border-t border-gray-100 flex items-center justify-between">
                   <div>
-                    <p className="text-[9px] tracking-wider text-[#A89588] uppercase">Inversión</p>
-                    <p className="font-serif text-2xl text-[#1A0E0A] mt-0.5">${service.price}</p>
+                    <p className="text-[10px] text-gray-400 uppercase font-medium">Precio</p>
+                    <p className="font-serif text-2xl font-bold text-pink-600">${service.price}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-[#5C4A3E]/80 font-light">
-                    <FaClock className="text-[10px] text-[#D4AF37]" />
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <FaClock className="text-pink-500" />
                     <span>{service.duration} min</span>
                   </div>
                 </div>
@@ -570,12 +397,12 @@ const ServicesSection = ({ services }: { services: any[] }) => {
         </div>
 
         {services.length > 4 && (
-          <div className="text-center mt-16">
+          <div className="text-center mt-12">
             <Link 
               href="/servicios"
-              className="inline-flex items-center gap-3 border border-[#1A0E0A] text-[#1A0E0A] hover:bg-[#1A0E0A] hover:text-white px-8 py-4 text-xs font-semibold tracking-[0.25em] uppercase transition-all duration-300"
+              className="inline-flex items-center gap-2 bg-pink-600 text-white hover:bg-pink-700 px-8 py-3.5 text-xs font-semibold tracking-wider uppercase transition-all rounded-full shadow-sm"
             >
-              Explorar Catálogo Completo <FaArrowRight className="text-[10px]" />
+              Ver Catálogo Completo <FaArrowRight className="text-[10px]" />
             </Link>
           </div>
         )}
@@ -602,46 +429,39 @@ const GallerySection = ({ images }: { images: any[] }) => {
       ]
 
   return (
-    <section id="galeria" ref={ref} className="py-32 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-16 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-        <div className="space-y-3">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">PORTAFOLIO VISUAL</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light">Obras Exclusivas</h2>
+    <section id="galeria" ref={ref} className="py-24 bg-pink-50/20 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+        <div>
+          <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold">TRABAJOS REALES</p>
+          <h2 className="font-serif text-3xl md:text-4xl text-[#1A0E0A] font-medium mt-1">Galería de Trabajos</h2>
         </div>
-        <p className="text-sm text-[#5C4A3E] font-light max-w-xs leading-relaxed">Una mirada íntima al arte real creado diariamente en los tocadores de nuestro atelier.</p>
+        <p className="text-xs text-gray-500 max-w-xs">Fotos de clientes y resultados diarios en Salon Fresh Nails.</p>
       </div>
 
       <div className="relative w-full">
-        <div className="flex gap-6 overflow-x-auto pb-8 pt-4 px-6 lg:px-12 scrollbar-none snap-x snap-mandatory">
+        <div className="flex gap-6 overflow-x-auto pb-6 pt-2 px-6 lg:px-12 scrollbar-none snap-x snap-mandatory">
           {displayImages.map((img, idx) => {
             const imageUrl = typeof img === 'string' ? img : img.image_url
-            const title = typeof img === 'string' ? 'Acabado de Autor' : img.title || 'Diseño Exclusivo'
+            const title = typeof img === 'string' ? 'Diseño de Uñas' : img.title || 'Trabajo Fresh Nails'
 
             return (
               <motion.div 
                 key={idx}
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                className="w-72 md:w-96 flex-shrink-0 snap-start group bg-white border border-[#F0E4DA] p-3"
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="w-72 md:w-80 flex-shrink-0 snap-start bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 p-2"
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 mb-4">
-                  <img src={imageUrl} alt={title} className="w-full h-full object-cover filter grayscale-[15%] group-hover:grayscale-0 transition-all duration-700" loading="lazy" />
+                <div className="relative aspect-[4/5] rounded-xl overflow-hidden bg-gray-50 mb-3">
+                  <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy" />
                 </div>
-                <div className="flex items-center justify-between px-1">
-                  <p className="text-xs font-serif text-[#1A0E0A] tracking-wide">{title}</p>
-                  <span className="text-[9px] tracking-widest text-[#D4AF37] uppercase font-bold">✦ Fresh Art</span>
+                <div className="p-2">
+                  <p className="text-xs font-semibold text-[#1A0E0A]">{title}</p>
                 </div>
               </motion.div>
             )
           })}
         </div>
-      </div>
-
-      <div className="text-center mt-12">
-        <Link href="/galeria" className="text-xs font-bold tracking-[0.25em] uppercase text-[#1A0E0A] hover:text-[#D4AF37] border-b border-[#1A0E0A] hover:border-[#D4AF37] pb-1 transition-colors">
-          Ver Todo el Feed de Arte
-        </Link>
       </div>
     </section>
   )
@@ -654,48 +474,47 @@ const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const TESTIMONIALS = [
-    { name: 'Valeria Martínez', role: 'Cliente desde 2021', text: 'La precisión milimétrica de su manicura rusa superó todas mis expectativas. Un nivel de detalle que roza la perfección absoluta.' },
-    { name: 'Carolina Rodríguez', role: 'Cliente desde 2022', text: 'El ambiente del atelier es sublime. La colorimetría avanzada me devolvió la luminosidad natural del cabello. Son artesanas.' },
-    { name: 'Agustina Sosa', role: 'Cliente desde 2020', text: 'Tres años de fidelidad absoluta. La durabilidad y sanidad de los tratamientos faciales y de uñas no tienen rival en la ciudad.' }
+    { name: 'Valeria Martínez', text: 'Aniexis es súper detallista y cuidadosa. Mis uñas duran intactas más de tres semanas. ¡Excelente atención!' },
+    { name: 'Carolina Rodríguez', text: 'Me encantó la atención en Salon Fresh Nails. Un ambiente muy cómodo y resultados impecables.' },
+    { name: 'Agustina Sosa', text: 'Llevo meses atendiéndome con Aniexis y no la cambio por nada. La mejor calidad en manicura.' }
   ]
 
   return (
-    <section id="testimonios" className="py-32 bg-[#FFF8F5] relative border-t border-[#F0E4DA]">
-      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center">
+    <section id="testimonios" className="py-24 bg-white relative border-t border-gray-100">
+      <div className="max-w-3xl mx-auto px-6 lg:px-12 text-center">
         
-        <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold mb-12">VOCES INSIGNIA</p>
+        <p className="text-xs tracking-widest uppercase text-pink-600 font-semibold mb-8">OPINIONES DE CLIENTES</p>
         
-        <div className="min-h-[220px] flex flex-col justify-center">
+        <div className="min-h-[180px] flex flex-col justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-8"
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-6"
             >
-              <FaQuoteLeft className="text-[#D4AF37]/20 text-4xl mx-auto" />
-              <p className="font-serif text-xl md:text-3xl text-[#1A0E0A] font-light leading-relaxed italic">
+              <FaQuoteLeft className="text-pink-200 text-3xl mx-auto" />
+              <p className="font-serif text-lg md:text-2xl text-[#1A0E0A] font-normal leading-relaxed italic">
                 "{TESTIMONIALS[currentIndex].text}"
               </p>
               <div>
-                <h4 className="text-sm font-bold tracking-[0.1em] text-[#1A0E0A] uppercase">{TESTIMONIALS[currentIndex].name}</h4>
-                <p className="text-xs text-[#A89588] mt-1 font-light">{TESTIMONIALS[currentIndex].role}</p>
+                <h4 className="text-xs font-bold text-[#1A0E0A] uppercase tracking-wider">{TESTIMONIALS[currentIndex].name}</h4>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        <div className="flex justify-center gap-4 mt-12">
+        <div className="flex justify-center gap-3 mt-8">
           {TESTIMONIALS.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`h-1.5 transition-all duration-300 ${
-                idx === currentIndex ? 'w-10 bg-[#D4AF37]' : 'w-2 bg-[#F0E4DA] hover:bg-[#D4AF37]/50'
+              className={`h-2 rounded-full transition-all duration-300 ${
+                idx === currentIndex ? 'w-8 bg-pink-600' : 'w-2 bg-gray-200 hover:bg-pink-300'
               }`}
-              aria-label={`Ir al testimonio ${idx + 1}`}
+              aria-label={`Testimonio ${idx + 1}`}
             />
           ))}
         </div>
@@ -710,22 +529,19 @@ const TestimonialsSection = () => {
 // ============================================================
 const CtaSection = () => {
   return (
-    <section className="py-32 bg-[#1A0E0A] text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:32px_32px]" />
-      
-      <div className="max-w-4xl mx-auto px-6 lg:px-12 text-center relative z-10 space-y-8">
-        <p className="text-[10px] tracking-[0.5em] text-[#D4AF37] uppercase font-bold">RESERVA PRIVADA</p>
-        <h2 className="font-serif text-4xl md:text-6xl font-light leading-tight">¿Lista para vivir la <br /><span className="italic text-[#D4AF37] font-normal tracking-normal">experiencia Fresh</span>?</h2>
-        <p className="text-white/60 font-light max-w-md mx-auto text-sm leading-relaxed">
-          Las citas son limitadas para garantizar la dedicación exclusiva de nuestras especialistas a cada detalle de tu imagen.
+    <section className="py-20 bg-pink-600 text-white text-center relative overflow-hidden">
+      <div className="max-w-4xl mx-auto px-6 lg:px-12 space-y-6 relative z-10">
+        <h2 className="font-serif text-3xl md:text-5xl font-medium">¿Lista para lucir tus uñas perfectas?</h2>
+        <p className="text-white/90 font-normal max-w-md mx-auto text-sm">
+          Reserva tu lugar en **Salon Fresh Nails** con **Aniexis Campo Leyva**.
         </p>
         
-        <div className="pt-4">
+        <div className="pt-2">
           <Link 
             href="/agenda"
-            className="inline-block bg-[#D4AF37] text-white hover:bg-white hover:text-[#1A0E0A] px-12 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300"
+            className="inline-block bg-white text-pink-600 hover:bg-gray-100 px-10 py-4 text-xs font-semibold tracking-wider uppercase transition-all rounded-full shadow-md"
           >
-            Agendar Ahora Online
+            Agendar Cita Online
           </Link>
         </div>
       </div>
@@ -737,23 +553,23 @@ const CtaSection = () => {
 // FOOTER
 // ============================================================
 const Footer = () => (
-  <footer className="bg-[#150B08] text-white/60 border-t border-white/5 text-xs font-light">
-    <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+  <footer className="bg-[#1A0E0A] text-white/70 border-t border-white/5 text-xs">
+    <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
       
-      <div className="space-y-4">
-        <Link href="/" className="flex flex-col tracking-widest">
-          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH</span>
-          <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">ATELIER</span>
+      <div className="space-y-3">
+        <Link href="/" className="flex flex-col">
+          <span className="text-white font-serif text-lg">SALON FRESH NAILS</span>
+          <span className="text-[9px] tracking-widest text-pink-400 uppercase">Aniexis Campo Leyva</span>
         </Link>
-        <p className="text-white/40 leading-relaxed max-w-xs pr-4">
-          Un espacio donde el rigor metodológico y la finura estética convergen para esculpir tu versión más sublime y auténtica.
+        <p className="text-white/50 text-xs leading-relaxed">
+          Especialistas en manicura profesional, pedicure y cuidado estético.
         </p>
         <div className="flex gap-3 pt-2">
           <a 
             href="https://instagram.com" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/70 hover:border-pink-500 hover:text-pink-500 transition-all"
             aria-label="Instagram"
           >
             <FaInstagram />
@@ -762,7 +578,7 @@ const Footer = () => (
             href="https://whatsapp.com" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/70 hover:border-pink-500 hover:text-pink-500 transition-all"
             aria-label="WhatsApp"
           >
             <FaWhatsapp />
@@ -770,54 +586,47 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Disponibilidad</h4>
-        <ul className="space-y-2.5">
-          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Lunes a Viernes</span><span className="text-white">09:00 - 20:00</span></li>
-          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Sábados</span><span className="text-white">09:00 - 18:00</span></li>
-          <li className="flex justify-between pr-4"><span className="text-white/30">Domingos y Feriados</span><span className="text-[#D4AF37] font-medium">Cerrado</span></li>
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider">Horarios</h4>
+        <ul className="space-y-2 text-xs">
+          <li className="flex justify-between"><span>Lunes a Viernes</span><span className="text-white">09:00 - 20:00</span></li>
+          <li className="flex justify-between"><span>Sábados</span><span className="text-white">09:00 - 18:00</span></li>
+          <li className="flex justify-between"><span className="text-white/40">Domingos</span><span className="text-pink-400">Cerrado</span></li>
         </ul>
       </div>
 
-      <div className="space-y-4">
-        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Navegación</h4>
-        <ul className="grid grid-cols-2 gap-2">
-          {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider">Navegación</h4>
+        <ul className="space-y-2 text-xs">
+          {['Sobre Aniexis', 'Especialidades', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <li key={item}>
-              <Link href={`#${getCleanSlug(item)}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
-                <span className="text-[8px] text-[#D4AF37]/40">✦</span> {item}
+              <Link href={`#${getCleanSlug(item)}`} className="hover:text-pink-400 transition-colors">
+                {item}
               </Link>
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="space-y-4">
-        <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Contacto Boutique</h4>
-        <ul className="space-y-4">
-          <li className="flex items-start gap-3">
-            <FaPhoneAlt className="text-[#D4AF37] mt-0.5" />
-            <div>
-              <p className="text-[9px] uppercase tracking-wider text-white/30">Línea Directa</p>
-              <p className="text-white font-medium mt-0.5">099 123 456</p>
-            </div>
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider">Contacto</h4>
+        <ul className="space-y-3 text-xs">
+          <li className="flex items-center gap-2">
+            <FaPhoneAlt className="text-pink-400" />
+            <span className="text-white">099 123 456</span>
           </li>
-          <li className="flex items-start gap-3">
-            <FaMapMarkerAlt className="text-[#D4AF37] mt-0.5" />
-            <div>
-              <p className="text-[9px] uppercase tracking-wider text-white/30">Ubicación</p>
-              <p className="text-white font-medium mt-0.5">Montevideo, Uruguay</p>
-            </div>
+          <li className="flex items-center gap-2">
+            <FaMapMarkerAlt className="text-pink-400" />
+            <span className="text-white">Montevideo, Uruguay</span>
           </li>
         </ul>
       </div>
 
     </div>
 
-    <div className="border-t border-white/5 py-6">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-white/30 tracking-wider uppercase">
-        <p>© 2026 Salon Fresh Nails. Todos los derechos reservados.</p>
-        <p className="font-light">✦ Hecho en Uruguay para el mundo</p>
+    <div className="border-t border-white/5 py-4">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 text-center text-[11px] text-white/40">
+        <p>© 2026 Salon Fresh Nails - Aniexis Campo Leyva. Todos los derechos reservados.</p>
       </div>
     </div>
   </footer>
@@ -940,23 +749,21 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
-          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Cargando la experiencia</p>
+      <main className="bg-white min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-pink-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Cargando...</p>
         </div>
       </main>
     )
   }
 
   return (
-    <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden antialiased selection:bg-[#D4AF37]/20">
+    <main className="bg-white text-[#1A0E0A] min-h-screen font-sans antialiased">
       <Header />
       <HeroSection heroImage={heroImage} />
-      <EsenciaSection />
-      <StatsSection />
-      <CategoriesSection />
-      <TeamSection />
+      <SobreAniexisSection />
+      <EspecialidadesSection />
       <ServicesSection services={services} />
       <GallerySection images={galleryImages} />
       <TestimonialsSection />
