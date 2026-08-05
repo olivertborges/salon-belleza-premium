@@ -115,13 +115,13 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
       }`}>
         <Calendar className="w-6 h-6 text-[#A89588] mx-auto stroke-[1.2]" />
         <p className={`text-xs uppercase tracking-[0.2em] font-light ${isDark ? 'text-[#FFF9F6]/70' : 'text-[#5C4A3E]'}`}>
-          No tienes ninguna cita agendada en este momento
+          NO TIENES NINGUNA CITA AGENDADA EN ESTE MOMENTO
         </p>
         <Link 
           href="/agenda"
           className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-[#D4AF37] hover:opacity-80 transition-opacity pt-2"
         >
-          Agendar una cita
+          AGENDAR UNA CITA
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
@@ -182,9 +182,10 @@ export default function ClientDashboardIndex() {
   const [serviciosUnicos, setServiciosUnicos] = useState(0)
   const [codigoReferido, setCodigoReferido] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
-  
-  // Estado para controlar la existencia de promociones/anuncios
-  const [hasPromos, setHasPromos] = useState(false)
+
+  // Estados para saber si hay anuncios o promociones reales que mostrar
+  const [hasAnuncios, setHasAnuncios] = useState(false)
+  const [hasPromociones, setHasPromociones] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -268,15 +269,24 @@ export default function ClientDashboardIndex() {
             .eq('referred_by_id', currentCliente.id)
           setReferidos(referidosData || [])
 
-          // Verificar si hay promociones o anuncios creados
-          const { data: promos } = await supabase
-            .from('promotions')
+          // Verificar si hay anuncios activos
+          const { data: anunciosData } = await supabase
+            .from('announcements') // o la tabla que use AnunciosBanner
             .select('id')
             .eq('is_active', true)
             .limit(1)
+          if (anunciosData && anunciosData.length > 0) {
+            setHasAnuncios(true)
+          }
 
-          if (promos && promos.length > 0) {
-            setHasPromos(true)
+          // Verificar si hay promociones activas
+          const { data: promosData } = await supabase
+            .from('promotions') // o la tabla que use PromocionesVolante
+            .select('id')
+            .eq('is_active', true)
+            .limit(1)
+          if (promosData && promosData.length > 0) {
+            setHasPromosiones(true)
           }
         }
       } catch (error) {
@@ -304,7 +314,7 @@ export default function ClientDashboardIndex() {
       {/* Fondo Texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-7xl mx-auto px-4 space-y-8 relative z-10 pt-2">
+      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-2">
 
         {/* ============================================================ */}
         {/* CABECERA: FRESH NAILS SALÓN - ANIEXIS CAMPO LEYVA */}
@@ -362,39 +372,35 @@ export default function ClientDashboardIndex() {
         {/* SECCIÓN DE PRÓXIMA CITA */}
         {/* ============================================================ */}
         <section className="space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase">Tu Próxima Cita</span>
-            <div className={`flex-1 h-[1px] ${isDark ? 'bg-[#D4AF37]/10' : 'bg-[#D4AF37]/20'}`} />
-          </div>
           <NextAppointmentCard cita={proximaCita} isDark={isDark} />
         </section>
 
         {/* ============================================================ */}
-        {/* NOVEDADES Y PROMOCIONES (Solo se renderiza si existen) */}
+        {/* ANUNCIOS Y PROMOCIONES (Condicionales reales) */}
         {/* ============================================================ */}
-        {hasPromos && (
+        {(hasAnuncios || hasPromociones) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`}>
-              <AnunciosBanner position="hero" limit={2} />
-            </div>
-            <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-            }`}>
-              <PromocionesVolante limit={3} />
-            </div>
+            {hasAnuncios && (
+              <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+                isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+              }`}>
+                <AnunciosBanner position="hero" limit={2} />
+              </div>
+            )}
+            {hasPromociones && (
+              <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
+                isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+              }`}>
+                <PromocionesVolante limit={3} />
+              </div>
+            )}
           </div>
         )}
 
         {/* ============================================================ */}
-        {/* ACTIVIDADES DENTRO DEL SALÓN */}
+        {/* ACTIVIDADES DENTRO DEL SALÓN (MISIONES) */}
         {/* ============================================================ */}
-        <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-          isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-        }`}>
-          <MisionesDiarias />
-        </div>
+        <MisionesDiarias />
 
         {/* ============================================================ */}
         {/* PROGRAMA DE RECOMENDADOS E INSIGNIAS */}
