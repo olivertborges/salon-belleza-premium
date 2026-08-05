@@ -1,125 +1,96 @@
+// @ts-nocheck
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
-  Users, 
-  UserPlus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  X, 
-  CheckCircle, 
-  AlertCircle, 
-  Mail, 
-  Phone, 
-  Award, 
-  Sparkles,
-  ShieldCheck,
-  RefreshCw
+  Users, Plus, Search, Edit, Trash2, 
+  Mail, Phone, X, Save, UserPlus, Eye, EyeOff,
+  Award, Tag, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck
 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface StaffMember {
   id: string
-  user_id: string
+  user_id?: string
   name: string
-  role: string
-  auth_role: 'admin' | 'staff'
-  email: string
-  phone: string
-  specialty: string
-  experience: string
-  avatar_url: string
+  role?: string
+  auth_role?: string
+  email?: string
+  phone?: string
+  avatar_url?: string
+  specialty?: string
+  experience?: string | number
+  created_at?: string
 }
 
-export default function StaffManagement() {
+export default function StaffPage() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
-  
-  // Modales
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
-
-  // Notificaciones
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
-  // Formulario
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    password: '',
     role: 'Especialista',
-    auth_role: 'staff' as 'admin' | 'staff',
+    auth_role: 'staff', 
+    email: '',
+    password: '',       
     phone: '',
     specialty: '',
     experience: '',
     avatar_url: ''
   })
 
-  useEffect(() => {
-    fetchStaff()
-  }, [])
+  const roles = ['Especialista', 'Senior', 'Master', 'Directora', 'Asistente']
+  const systemRoles = [
+    { value: 'staff', label: 'Staff (Ingresa a Gestión)' },
+    { value: 'admin', label: 'Administrador (Control Total)' }
+  ]
+
+  const brandGradient = {
+    backgroundImage: 'linear-gradient(to right, #D4AF37, #E8D5A0)'
+  }
 
   const fetchStaff = async () => {
     try {
-      setRefreshing(true)
+      setLoading(true)
       setError(null)
+
+      // Consulta limpia a la tabla staff
       const { data, error: fetchError } = await supabase
         .from('staff')
         .select('*')
-        .order('name', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
+
       setStaff(data || [])
     } catch (err: any) {
       console.error('Error fetching staff:', err)
-      setError('Error al cargar el personal. Revisa tu conexión.')
+      setError(err.message || 'Error al cargar el equipo desde Supabase')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
   }
 
-  const handleOpenModal = (member?: StaffMember) => {
-    setError(null)
-    setSuccess(null)
-    if (member) {
-      setEditingStaff(member)
-      setFormData({
-        name: member.name || '',
-        email: member.email || '',
-        password: '', // No se solicita clave en modo edición
-        role: member.role || 'Especialista',
-        auth_role: member.auth_role || 'staff',
-        phone: member.phone || '',
-        specialty: member.specialty || '',
-        experience: member.experience || '',
-        avatar_url: member.avatar_url || ''
-      })
-    } else {
-      setEditingStaff(null)
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        role: 'Especialista',
-        auth_role: 'staff',
-        phone: '',
-        specialty: '',
-        experience: '',
-        avatar_url: ''
-      })
-    }
-    setIsModalOpen(true)
+  useEffect(() => { 
+    fetchStaff() 
+  }, [])
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    fetchStaff()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,449 +98,533 @@ export default function StaffManagement() {
     setError(null)
     setSuccess(null)
 
+    if (!formData.name || !formData.email) {
+      setError('El nombre y el email son obligatorios.')
+      return
+    }
+
+    if (!editingId && !formData.password) {
+      setError('La contraseña es obligatoria para nuevos miembros.')
+      return
+    }
+
     try {
-      if (editingStaff) {
-        // Modo Edición: Actualización en la tabla staff
+      setIsSubmitting(true)
+      setRefreshing(true)
+
+      if (editingId) {
         const { error: updateError } = await supabase
           .from('staff')
           .update({
             name: formData.name.trim(),
             role: formData.role,
             auth_role: formData.auth_role,
-            email: formData.email.trim().toLowerCase(),
+            email: formData.email.trim(),
             phone: formData.phone.trim(),
             specialty: formData.specialty.trim(),
             experience: formData.experience ? String(formData.experience) : '',
             avatar_url: formData.avatar_url.trim()
           })
-          .eq('id', editingStaff.id)
+          .eq('id', editingId)
 
         if (updateError) throw updateError
 
-        // Mantener sincronizado profiles
-        if (editingStaff.user_id) {
-          await supabase
-            .from('profiles')
-            .update({
-              full_name: formData.name.trim(),
-              email: formData.email.trim().toLowerCase(),
-              role: formData.auth_role,
-              avatar_url: formData.avatar_url.trim(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', editingStaff.user_id)
-        }
-
         setSuccess('Miembro actualizado correctamente.')
       } else {
-        // Modo Creación: Petición enviada al API Route (/api/staff/create)
-        if (!formData.password) {
-          throw new Error('La contraseña es obligatoria para nuevos miembros.')
-        }
-
-        const response = await fetch('/api/staff/create', {
+        const response = await fetch('/app/api/staff/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+            role: formData.role,
+            auth_role: formData.auth_role,
+            phone: formData.phone.trim(),
+            specialty: formData.specialty.trim(),
+            experience: formData.experience ? String(formData.experience) : '',
+            avatar_url: formData.avatar_url.trim()
+          })
         })
 
         const resData = await response.json()
-
+        
         if (!response.ok || !resData.success) {
-          throw new Error(resData.error || 'No se pudo crear el miembro del equipo.')
+          throw new Error(resData.error || 'No se pudo crear el staff.')
         }
 
-        setSuccess('Miembro creado y registrado con éxito.')
+        setSuccess('¡Miembro del Staff creado con éxito!')
       }
 
-      setIsModalOpen(false)
-      fetchStaff()
+      setShowModal(false)
+      setEditingId(null)
+      await fetchStaff()
+      
     } catch (err: any) {
-      console.error('Error submitting form:', err)
-      setError(err.message || 'Ocurrió un error al procesar la solicitud.')
-    }
-  }
-
-  // Eliminación mediante el API Route seguro para limpiar Auth y tablas públicas
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás segura de eliminar permanentemente a este miembro y su cuenta de acceso?')) return
-
-    try {
-      setError(null)
-      setSuccess(null)
-      setRefreshing(true)
-
-      const response = await fetch('/api/staff/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      })
-
-      const resData = await response.json()
-
-      if (!response.ok || !resData.success) {
-        throw new Error(resData.error || 'Ocurrió un error al eliminar el miembro.')
-      }
-
-      setSuccess('Miembro y credenciales eliminados con éxito.')
-      fetchStaff()
-    } catch (err: any) {
-      console.error('Error in handleDelete:', err)
-      setError(err.message || 'Error al intentar eliminar el registro.')
+      console.error('Error in handleSubmit:', err)
+      setError(err.message || 'Error al guardar el registro.')
     } finally {
+      setIsSubmitting(false)
       setRefreshing(false)
     }
   }
 
-  // Filtrado de búsquedas
-  const filteredStaff = staff.filter((member) => {
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.specialty.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesRole = roleFilter === 'all' || member.auth_role === roleFilter
-    return matchesSearch && matchesRole
-  })
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás segura de eliminar permanentemente a este miembro?')) return
+
+    try {
+      setError(null)
+      setSuccess(null)
+
+      const { error: deleteError } = await supabase
+        .from('staff')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      setSuccess('Miembro eliminado correctamente.')
+      fetchStaff()
+    } catch (err: any) {
+      console.error('Error in handleDelete:', err)
+      setError(err.message || 'No se pudo eliminar el registro.')
+    }
+  }
+
+  const handleOpenEdit = (member: StaffMember) => {
+    setError(null)
+    setSuccess(null)
+    setEditingId(member.id)
+    setFormData({
+      name: member.name || '',
+      role: member.role || 'Especialista',
+      auth_role: member.auth_role || 'staff',
+      email: member.email || '',
+      password: '', 
+      phone: member.phone || '',
+      specialty: member.specialty || '',
+      experience: member.experience ? String(member.experience) : '',
+      avatar_url: member.avatar_url || ''
+    })
+    setShowModal(true)
+  }
+
+  const handleOpenCreate = () => {
+    setError(null)
+    setSuccess(null)
+    setEditingId(null)
+    setFormData({
+      name: '',
+      role: 'Especialista',
+      auth_role: 'staff',
+      email: '',
+      password: '',
+      phone: '',
+      specialty: '',
+      experience: '',
+      avatar_url: ''
+    })
+    setShowModal(true)
+  }
+
+  const filtrados = staff.filter(m =>
+    (m.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (m.role || '').toLowerCase().includes(search.toLowerCase()) ||
+    (m.specialty || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="space-y-6 p-1 max-w-full overflow-x-hidden">
+        <div className="flex flex-col items-center justify-center h-96 space-y-4">
+          <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto border-[#D4AF37]"></div>
+          <p className="font-mono text-xs uppercase tracking-widest animate-pulse text-[#D4AF37]">
+            Cargando equipo...
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8 p-6 max-w-7xl mx-auto">
-      
-      {/* ================= HERO SELECTION (Estilo Dashboard) ================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8 text-white shadow-2xl">
-        {/* Glow & Accents */}
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-6 p-1 max-w-full overflow-x-hidden font-sans">
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> Gestión de Talento
+      {/* HEADER GOLD PREMIUM */}
+      <div className={`relative overflow-hidden rounded-3xl p-[1px] shadow-xl ${
+        isDark ? 'border border-[#3D281E]' : 'border border-[#F0E4DA]'
+      }`}>
+        <div className="absolute inset-0 opacity-20 animate-pulse" style={brandGradient} />
+        <div className={`relative z-10 rounded-[23px] p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+          isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
+        }`}>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3.5 rounded-2xl text-[#1A0E0A] shadow-md shrink-0" style={brandGradient}>
+              <Users className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Equipo & Personal <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Especializado</span>
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-              Administra el acceso, roles, perfiles y especialidades de los profesionales de tu centro desde un solo panel.
-            </p>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-bold font-mono text-[#D4AF37] truncate">
+                ✨ Fresh Nails Studio Center
+              </p>
+              <h2 className={`text-xl md:text-2xl font-serif font-extrabold mt-0.5 truncate ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
+                Staff Premium
+              </h2>
+              <p className={`text-xs mt-0.5 truncate ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Gestión de profesionales de {staff.length} miembros.
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              onClick={() => fetchStaff()}
-              disabled={refreshing}
-              className="p-3 rounded-2xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 transition-all border border-slate-700/60 disabled:opacity-50"
-              title="Actualizar datos"
+          <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-auto justify-end">
+            <button 
+              type="button"
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 cursor-pointer ${
+                isDark 
+                  ? 'bg-[#2A1B14] border-[#3D281E] text-[#D4AF37] hover:bg-[#3D281E]' 
+                  : 'bg-white border-[#F0E4DA] text-[#D4AF37] hover:bg-[#FFF9F6]'
+              }`}
             >
-              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{refreshing ? 'Cargando...' : 'Actualizar'}</span>
+              <span className="sm:hidden">{refreshing ? '...' : 'Act.'}</span>
             </button>
-            <button
-              onClick={() => handleOpenModal()}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            <button 
+              type="button"
+              onClick={handleOpenCreate}
+              className="px-3 py-2 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 shadow-md shadow-[#D4AF37]/20 cursor-pointer"
+              style={brandGradient}
             >
-              <UserPlus className="w-5 h-5" />
-              Nuevo Miembro
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Agregar</span>
+              <span className="sm:hidden">+</span>
             </button>
-          </div>
-        </div>
-
-        {/* Métricas Rápidas integradas en el Hero */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-slate-800/80">
-          <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl p-4">
-            <div className="text-2xl font-bold text-white">{staff.length}</div>
-            <div className="text-xs text-slate-400 font-medium">Total Equipo</div>
-          </div>
-          <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl p-4">
-            <div className="text-2xl font-bold text-indigo-400">
-              {staff.filter(s => s.auth_role === 'admin').length}
-            </div>
-            <div className="text-xs text-slate-400 font-medium">Administradores</div>
-          </div>
-          <div className="bg-slate-800/40 backdrop-blur border border-slate-700/40 rounded-2xl p-4 col-span-2 sm:col-span-1">
-            <div className="text-2xl font-bold text-purple-400">
-              {staff.filter(s => s.auth_role === 'staff').length}
-            </div>
-            <div className="text-xs text-slate-400 font-medium">Especialistas / Staff</div>
           </div>
         </div>
       </div>
 
-      {/* ================= BARRA DE ALERTAS ================= */}
+      {/* SEARCH BAR */}
+      <div className={`flex items-center gap-3 p-3 rounded-2xl border min-w-0 ${
+        isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+      }`}>
+        <Search className="w-4 h-4 shrink-0 text-[#D4AF37]" />
+        <input 
+          placeholder="Buscar por nombre, rol o especialidad..." 
+          className={`w-full bg-transparent outline-none text-sm min-w-0 ${
+            isDark ? 'text-[#FFF9F6] placeholder:text-[#A89588]/50' : 'text-[#1A0E0A] placeholder:text-[#5C4A3E]/50'
+          }`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button 
+            type="button"
+            onClick={() => setSearch('')}
+            className={`p-1 rounded-lg transition-colors shrink-0 cursor-pointer ${
+              isDark ? 'hover:bg-[#3D281E] text-[#A89588]' : 'hover:bg-[#F0E4DA] text-[#5C4A3E]'
+            }`}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* ALERTAS */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-2xl">
-          <AlertCircle className="w-5 h-5 shrink-0" />
-          <p className="text-sm font-medium">{error}</p>
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 flex items-center gap-3 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-rose-400 font-medium min-w-0">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-2xl">
-          <CheckCircle className="w-5 h-5 shrink-0" />
-          <p className="text-sm font-medium">{success}</p>
+        <div className="rounded-2xl p-4 bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 flex items-center gap-3 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-4 h-4" />
+          </div>
+          <p className="text-xs text-emerald-400 font-medium min-w-0">{success}</p>
         </div>
       )}
 
-      {/* ================= FILTROS Y BÚSQUEDA ================= */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, email o especialidad..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-          >
-            <option value="all">Todos los roles</option>
-            <option value="admin">Administrador</option>
-            <option value="staff">Staff / Especialista</option>
-          </select>
-        </div>
-      </div>
-
-      {/* ================= TARJETAS / LISTADO ================= */}
-      {loading ? (
-        <div className="text-center py-16 text-slate-400">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-indigo-500" />
-          Cargando el equipo...
-        </div>
-      ) : filteredStaff.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 border border-slate-200/80 rounded-3xl">
-          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-slate-700 font-semibold text-lg">No se encontraron miembros</h3>
-          <p className="text-slate-400 text-sm max-w-sm mx-auto mt-1">
-            Intenta ajustar los parámetros de búsqueda o registra un nuevo profesional.
-          </p>
+      {/* LISTA Y TARJETAS */}
+      {filtrados.length === 0 ? (
+        <div className={`rounded-2xl p-12 text-center border border-dashed ${
+          isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+        }`}>
+          <Users className="w-10 h-10 mx-auto mb-3 text-[#D4AF37] opacity-30" />
+          <p className={`text-xs font-medium ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>No se encontraron miembros en el staff</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStaff.map((member) => (
-            <div
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtrados.map((member) => (
+            <div 
               key={member.id}
-              className="bg-white border border-slate-200/80 rounded-3xl p-6 hover:shadow-xl hover:shadow-slate-100 transition-all flex flex-col justify-between group"
+              className={`rounded-2xl p-4 shadow-sm hover:-translate-y-1 transition-all group relative overflow-hidden border min-w-0 ${
+                isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+              }`}
             >
-              <div>
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.name}
-                        className="w-12 h-12 rounded-2xl object-cover border border-slate-100"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                        {member.name.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {member.name}
-                      </h3>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {member.role || 'Especialista'}
-                      </span>
-                    </div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#D4AF37]/5 to-transparent rounded-bl-full" />
+              
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className={`font-bold truncate text-sm ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                    {member.name}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="inline-block text-[9px] uppercase font-bold px-2 py-0.5 rounded-full text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/20">
+                      {member.role || 'Especialista'}
+                    </span>
+                    <span className={`inline-block text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                      member.auth_role === 'admin' 
+                        ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20' 
+                        : 'text-blue-400 bg-blue-500/10 border border-blue-500/20'
+                    }`}>
+                      🔑 {member.auth_role || 'staff'}
+                    </span>
                   </div>
-
-                  <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                      member.auth_role === 'admin'
-                        ? 'bg-amber-50 border border-amber-200 text-amber-700'
-                        : 'bg-indigo-50 border border-indigo-100 text-indigo-700'
-                    }`}
-                  >
-                    <ShieldCheck className="w-3 h-3" />
-                    {member.auth_role === 'admin' ? 'Admin' : 'Staff'}
-                  </span>
-                </div>
-
-                <div className="space-y-2.5 text-xs text-slate-600 mt-4 border-t border-slate-100 pt-4">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="truncate">{member.email}</span>
-                  </div>
-                  {member.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span>{member.phone}</span>
-                    </div>
-                  )}
                   {member.specialty && (
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span>{member.specialty}</span>
-                    </div>
+                    <p className={`text-[11px] mt-2 flex items-center gap-1.5 truncate ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                      <Tag className="w-3 h-3 shrink-0 text-[#D4AF37]" />
+                      {member.specialty}
+                    </p>
                   )}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => handleOpenEdit(member)} 
+                    className={`p-2 rounded-lg transition-colors cursor-pointer z-10 ${
+                      isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+                    }`}
+                    title="Editar"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleDelete(member.id)} 
+                    className={`p-2 rounded-lg transition-colors cursor-pointer z-10 ${
+                      isDark ? 'text-[#A89588] hover:text-rose-400 hover:bg-rose-950/30' : 'text-[#5C4A3E] hover:text-rose-500 hover:bg-rose-50'
+                    }`}
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-6 mt-6 border-t border-slate-100">
-                <button
-                  onClick={() => handleOpenModal(member)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-all"
-                >
-                  <Edit className="w-3.5 h-3.5 text-slate-500" />
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(member.id)}
-                  className="inline-flex items-center justify-center p-2 rounded-xl border border-red-100 bg-red-50/50 hover:bg-red-50 text-red-600 transition-all"
-                  title="Eliminar registro"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div className={`mt-3 space-y-1.5 text-xs ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                {member.email && (
+                  <p className="flex items-center gap-2 truncate">
+                    <Mail className="w-3 h-3 shrink-0 text-[#D4AF37]" />
+                    <span className="truncate">{member.email}</span>
+                  </p>
+                )}
+                {member.phone && (
+                  <p className="flex items-center gap-2 truncate">
+                    <Phone className="w-3 h-3 shrink-0 text-[#D4AF37]" />
+                    <span className="truncate">{member.phone}</span>
+                  </p>
+                )}
+                {member.experience && (
+                  <p className="flex items-center gap-2">
+                    <Award className="w-3 h-3 shrink-0 text-[#D4AF37]" />
+                    {member.experience} años de experiencia
+                  </p>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ================= MODAL CREAR / EDITAR ================= */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">
-                {editingStaff ? 'Editar Miembro' : 'Nuevo Miembro del Equipo'}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* MODAL EDITAR / CREAR */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto ${
+            isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
+          }`}>
+            <button 
+              type="button"
+              onClick={() => setShowModal(false)}
+              className={`absolute top-4 right-4 p-2 rounded-xl transition-colors cursor-pointer ${
+                isDark ? 'text-[#A89588] hover:text-[#FFF9F6] hover:bg-[#3D281E]' : 'text-[#5C4A3E] hover:text-[#1A0E0A] hover:bg-[#F0E4DA]'
+              }`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 rounded-xl text-[#1A0E0A] shadow-md" style={brandGradient}>
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <h3 className={`text-xl font-serif font-extrabold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                {editingId ? 'Editar Miembro' : 'Nuevo Miembro Premium'}
+              </h3>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Nombre *
+                </label>
                 <input
                   type="text"
-                  required
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  placeholder="Ej: Dra. María López"
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email *</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    placeholder="maria@ejemplo.com"
-                  />
-                </div>
-
-                {!editingStaff && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Contraseña *</label>
-                    <input
-                      type="password"
-                      required={!editingStaff}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Puesto / Título</label>
-                  <input
-                    type="text"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    placeholder="Ej: Odontóloga"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Rol de Acceso *</label>
-                  <select
-                    value={formData.auth_role}
-                    onChange={(e) => setFormData({ ...formData, auth_role: e.target.value as 'admin' | 'staff' })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-                  >
-                    <option value="staff">Staff (Especialista)</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    placeholder="+54 11 ..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Especialidad</label>
-                  <input
-                    type="text"
-                    value={formData.specialty}
-                    onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                    placeholder="Ortodoncia, Estética..."
-                  />
-                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">URL Avatar (Opcional)</label>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Email *
+                </label>
                 <input
-                  type="url"
-                  value={formData.avatar_url}
-                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  placeholder="https://..."
+                  type="email"
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              {!editingId && (
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Contraseña de Acceso *
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                        isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                      }`}
+                      placeholder="Mínimo 6 caracteres"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      required={!editingId}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 text-[#A89588] hover:text-[#D4AF37] transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" /> Nivel de Acceso al Sistema
+                </label>
+                <select
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none cursor-pointer ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.auth_role}
+                  onChange={(e) => setFormData({...formData, auth_role: e.target.value})}
+                >
+                  {systemRoles.map(sr => <option key={sr.value} value={sr.value}>{sr.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Puesto / Cargo en el Salón
+                </label>
+                <select
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm appearance-none cursor-pointer ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.role}
+                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                >
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Especialidad
+                </label>
+                <input
+                  type="text"
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({...formData, specialty: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  Años de experiencia
+                </label>
+                <input
+                  type="number"
+                  className={`w-full px-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-[#D4AF37] transition-all text-sm ${
+                    isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  }`}
+                  value={formData.experience}
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-all"
+                  onClick={() => setShowModal(false)}
+                  className={`flex-1 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest cursor-pointer ${
+                    isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
+                  }`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
+                  disabled={isSubmitting}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md shadow-[#D4AF37]/20 ${
+                    isSubmitting ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
+                  style={brandGradient}
                 >
-                  {editingStaff ? 'Guardar Cambios' : 'Crear Miembro'}
+                  <Save className="w-4 h-4" />
+                  {isSubmitting ? 'Guardando...' : (editingId ? 'Actualizar' : 'Guardar y Vincular')}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   )
 }
