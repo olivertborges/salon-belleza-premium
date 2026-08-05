@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { 
   Scissors, Heart, Crown, Calendar, 
   Menu, X, LogOut, Home, CalendarPlus,
-  Camera, Tag, Eye, Hand, Globe, Bug
+  Camera, Tag, Eye, Hand, Globe
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -23,28 +23,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [userName, setUserName] = useState('Usuario')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [imgStatus, setImgStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading')
-  
-  // LOGS VISUALES
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const [showDebug, setShowDebug] = useState(true)
 
   const isDark = theme === 'dark'
 
-  const addLog = (msg: string) => {
-    setDebugLogs(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`])
-  }
-
   const fetchAvatarDirect = useCallback(async () => {
-    addLog('Iniciando carga de avatar en Layout...')
-
-    if (!user?.id) {
-      addLog('⚠️ user es nulo o no tiene user.id')
-      setImgStatus('empty')
-      return
-    }
-
-    addLog(`User detectado. ID Auth: ${user.id} | Email: ${user.email}`)
+    if (!user?.id) return
 
     const initialName = user.user_metadata?.full_name || 
                         user.user_metadata?.name || 
@@ -53,21 +36,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setUserName(initialName)
 
     try {
-      setImgStatus('loading')
       let foundAvatar = null
 
-      // 1. Consulta en la tabla clients haciendo MATCH por auth_user_id (Igual que Perfil)
-      addLog('Buscando en "clients" por auth_user_id...')
-      let { data: clientData, error: clientError } = await supabase
+      // 1. Consulta por auth_user_id
+      let { data: clientData } = await supabase
         .from('clients')
         .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle()
 
-      // Respaldo por email si no lo halla por auth_user_id
+      // Respaldo por email
       if (!clientData && user.email) {
-        addLog('No hallado por auth_user_id. Buscando en "clients" por email...')
-        const { data: clientByEmail, error: emailErr } = await supabase
+        const { data: clientByEmail } = await supabase
           .from('clients')
           .select('*')
           .eq('email', user.email)
@@ -75,38 +55,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (clientByEmail) clientData = clientByEmail
       }
 
-      if (clientError) {
-        addLog(`🔴 Error Supabase en clients: ${clientError.message}`)
-      }
-
       if (clientData) {
-        addLog(`🟢 Cliente hallado. Nombre: "${clientData.name || clientData.full_name}", avatar_url: "${clientData.avatar_url}"`)
         const name = clientData.name || clientData.full_name || clientData.nombre
         if (name) setUserName(name)
 
         foundAvatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url || clientData.avatar
-      } else {
-        addLog('⚠️ No se encontró el registro en la tabla clients.')
       }
 
       // 2. Respaldo en Auth Metadata
       if (!foundAvatar && (user.user_metadata?.avatar_url || user.user_metadata?.picture)) {
-        addLog('Usando avatar de Auth Metadata...')
         foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
       }
 
       if (foundAvatar && typeof foundAvatar === 'string' && foundAvatar.trim().length > 5) {
         setAvatarUrl(foundAvatar)
-        setImgStatus('success')
-        addLog(`✅ Foto asignada con éxito: ${foundAvatar}`)
-      } else {
-        addLog('⚠️ No hay URL de foto válida. Mostrando iniciales.')
-        setImgStatus('empty')
       }
 
-    } catch (err: any) {
-      addLog(`🔴 Error imprevisto: ${err?.message || JSON.stringify(err)}`)
-      setImgStatus('error')
+    } catch (err) {
+      console.error('Error cargando avatar en layout:', err)
     }
   }, [user])
 
@@ -219,15 +185,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           <div className="flex items-center gap-3 ml-auto">
-            {/* BOTÓN DE DEBUG LOGS */}
-            <button 
-              onClick={() => setShowDebug(!showDebug)}
-              className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/30 text-xs font-bold flex items-center gap-1"
-            >
-              <Bug className="w-4 h-4" />
-              <span>{showDebug ? 'Ocultar Logs' : 'Ver Logs'}</span>
-            </button>
-
             <Link 
               href="/" 
               className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#3D281E] text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] transition-colors"
@@ -238,31 +195,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <ThemeToggle />
 
-            {/* INDICADOR VISUAL DE ESTADO */}
             <div className="text-right flex flex-col items-end">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${
-                  imgStatus === 'success' ? 'bg-green-500' :
-                  imgStatus === 'loading' ? 'bg-yellow-500 animate-pulse' :
-                  imgStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                }`} />
-                <p className="text-xs font-bold">{userName}</p>
-              </div>
-              <span className="text-[8px] font-black uppercase text-[#D4AF37]">
-                {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : imgStatus === 'error' ? 'ERROR DE RED' : 'SIN FOTO'}
-              </span>
+              <p className="text-xs font-bold">{userName}</p>
             </div>
             
             <Link href="/perfil" className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative shrink-0">
-              {imgStatus === 'success' && avatarUrl ? (
+              {avatarUrl ? (
                 <img 
                   src={avatarUrl} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
-                  onError={() => {
-                    addLog(`🔴 Error cargando la imagen <img src="${avatarUrl}"> en el navegador.`)
-                    setImgStatus('error')
-                  }}
                 />
               ) : (
                 <span>{inicialNombre}</span>
@@ -270,23 +212,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
         </header>
-
-        {/* RECUADRO DE LOGS VISUALES */}
-        {showDebug && (
-          <div className="bg-black/95 text-green-400 p-4 text-xs font-mono border-b border-amber-500/50 max-h-48 overflow-y-auto shrink-0 z-40">
-            <div className="flex justify-between items-center mb-2 pb-1 border-b border-gray-700">
-              <span className="font-bold text-amber-400">DEBUG LOGS (DASHBOARD LAYOUT)</span>
-              <button onClick={() => setDebugLogs([])} className="text-gray-400 hover:text-white underline">Limpiar</button>
-            </div>
-            {debugLogs.length === 0 ? (
-              <p className="text-gray-500">Cargando eventos...</p>
-            ) : (
-              debugLogs.map((log, idx) => (
-                <div key={idx} className="py-0.5 leading-relaxed">{log}</div>
-              ))
-            )}
-          </div>
-        )}
 
         <main className="flex-1 p-4 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
