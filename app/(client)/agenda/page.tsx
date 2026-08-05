@@ -60,7 +60,6 @@ interface ClientData {
   notes: string
 }
 
-// Mapeo visual de categorías
 const CATEGORIES = [
   { id: 'nails', label: 'Uñas & Manicuría', icon: Heart },
   { id: 'micropigmentation', label: 'Micropigmentación & Mirada', icon: Crown },
@@ -76,7 +75,7 @@ const DEFAULT_TIMES = [
 ]
 
 // ============================================================
-// COMPONENTE DE CARGA (CON TEMA)
+// COMPONENTE DE CARGA
 // ============================================================
 const BookingLoadingSpinner = ({ isDark }: { isDark: boolean }) => (
   <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
@@ -129,7 +128,6 @@ function AgendaContent() {
     name: '', phone: '', email: '', notes: '' 
   })
 
-  // Autofill del usuario autenticado
   useEffect(() => {
     if (user) {
       setClientData(prev => ({
@@ -140,7 +138,6 @@ function AgendaContent() {
     }
   }, [user])
 
-  // Obtener horarios base de trabajo
   const fetchWorkingHours = useCallback(async () => {
     try {
       const { data } = await supabase
@@ -156,7 +153,6 @@ function AgendaContent() {
     }
   }, [tenantId])
 
-  // Carga inicial de datos
   useEffect(() => {
     let isMounted = true
     const fetchData = async () => {
@@ -197,7 +193,6 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [fetchWorkingHours, urlProfessionalId])
 
-  // Cargar citas del profesional seleccionado
   useEffect(() => {
     if (!selectedProfessional?.id) return
     let isMounted = true
@@ -221,7 +216,6 @@ function AgendaContent() {
     return () => { isMounted = false }
   }, [selectedDate, selectedProfessional])
 
-  // Clasificador de categorías
   const getServiceCategory = useCallback((catName: string): string => {
     if (!catName) return 'others'
     const norm = catName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
@@ -233,7 +227,6 @@ function AgendaContent() {
     return 'others'
   }, [])
 
-  // Servicios por categoría
   const servicesByCategory = useMemo(() => {
     if (!selectedProfessional) return { nails: [], micropigmentation: [], hair: [], others: [] }
 
@@ -408,20 +401,17 @@ function AgendaContent() {
     <div className={`min-h-screen pb-32 transition-colors duration-500 antialiased ${
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
-      {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6 relative z-10">
 
-        {/* ============================================================ */}
-        {/* ENCABEZADO EDITORIAL */}
-        {/* ============================================================ */}
-        <div className={`p-8 rounded-2xl border transition-all duration-300 ${
+        {/* ENCABEZADO */}
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${
           isDark 
             ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
             : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
         }`}>
-          <span className={`text-[10px] font-bold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1`}>
+          <span className="text-[10px] font-bold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1">
             ✦ Panel de Reservas
           </span>
           <h1 className={`font-serif text-3xl font-light tracking-tight ${
@@ -436,23 +426,21 @@ function AgendaContent() {
           </p>
         </div>
 
-        {/* ============================================================ */}
-        {/* PASOS: CON ESTILO DASHBOARD */}
-        {/* ============================================================ */}
+        {/* STEPPER HOMOGÉNEO */}
         {step < 5 && (
-          <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+          <div className={`p-6 rounded-2xl border transition-all duration-300 ${
             isDark 
               ? 'bg-[#2A1B14]/40 border-[#3D281E]' 
               : 'bg-white border-[#F0E4DA] shadow-sm'
           }`}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full justify-items-stretch">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
               {[1, 2, 3, 4].map((num) => {
                 const isActive = step === num
                 const isCompleted = step > num
                 return (
                   <div 
                     key={num} 
-                    className={`flex items-center gap-2 p-2 rounded-xl transition-all ${
+                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
                       isActive 
                         ? isDark ? 'bg-[#3D281E] border border-[#D4AF37]/40' : 'bg-[#FFF9F6] border border-[#D4AF37]/30'
                         : ''
@@ -467,9 +455,9 @@ function AgendaContent() {
                     }`}>
                       {isCompleted ? <Check className="w-3 h-3" /> : num}
                     </div>
-                    <span className={`text-[10px] tracking-wide transition-all ${
+                    <span className={`text-[11px] tracking-wide transition-all ${
                       isActive 
-                        ? `font-bold ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`
+                        ? 'font-bold text-[#D4AF37]'
                         : isDark ? 'text-[#FFF9F6]/60' : 'text-[#5C4A3E]'
                     }`}>
                       {['1. Perfil', '2. Servicios', '3. Horario', '4. Registrar'][num - 1]}
@@ -481,10 +469,9 @@ function AgendaContent() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* ERROR */}
             {error && (
               <div className={`p-4 rounded-xl text-xs font-medium flex items-center gap-2 ${
                 isDark ? 'bg-[#3D281E]/60 text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
@@ -494,9 +481,7 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 1: PROFESIONALES */}
-            {/* ============================================================ */}
+            {/* PASO 1 */}
             {step === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {staff.map((prof) => (
@@ -541,9 +526,7 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 2: SERVICIOS */}
-            {/* ============================================================ */}
+            {/* PASO 2 */}
             {step === 2 && selectedProfessional && (
               <div className="space-y-4">
                 <div className={`flex justify-between items-center pb-3 border-b ${
@@ -571,7 +554,6 @@ function AgendaContent() {
                   </button>
                 </div>
 
-                {/* Buscador */}
                 <div className="relative">
                   <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${
                     isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
@@ -589,7 +571,6 @@ function AgendaContent() {
                   />
                 </div>
 
-                {/* Categorías */}
                 <div className="space-y-3">
                   {CATEGORIES.map(cat => {
                     const categoryServices = servicesByCategory[cat.id] || []
@@ -608,16 +589,14 @@ function AgendaContent() {
                           }`}
                         >
                           <span className="flex items-center gap-2">
-                            <cat.icon className={`w-3.5 h-3.5 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`} />
+                            <cat.icon className="w-3.5 h-3.5 text-[#D4AF37]" />
                             {cat.label} ({categoryServices.length})
                           </span>
-                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''} ${
-                            isDark ? 'text-[#A89588]' : 'text-[#A89588]'
-                          }`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''} text-[#A89588]`} />
                         </button>
 
                         {isExpanded && (
-                          <div className={`p-3 grid grid-cols-1 md:grid-cols-2 gap-3 border-t ${
+                          <div className={`p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t ${
                             isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                           }`}>
                             {categoryServices.map(service => {
@@ -626,7 +605,7 @@ function AgendaContent() {
                                 <div 
                                   key={service.id}
                                   onClick={() => toggleServiceSelection(service)}
-                                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-300 flex flex-col justify-between relative hover:-translate-y-0.5 ${
+                                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 flex flex-col justify-between relative hover:-translate-y-0.5 ${
                                     isSelected 
                                       ? isDark 
                                         ? 'bg-[#3D281E] border-[#D4AF37]/60 shadow-[0_4px_15px_rgba(212,175,55,0.1)]' 
@@ -681,9 +660,7 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 3: CALENDARIO */}
-            {/* ============================================================ */}
+            {/* PASO 3 */}
             {step === 3 && (
               <div className="space-y-4">
                 <div className={`flex justify-between items-center pb-3 border-b ${
@@ -706,7 +683,7 @@ function AgendaContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   {/* Calendario */}
-                  <div className={`md:col-span-3 p-4 border rounded-2xl transition-all duration-300 space-y-3 ${
+                  <div className={`md:col-span-3 p-6 border rounded-2xl transition-all duration-300 space-y-4 ${
                     isDark 
                       ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
                       : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
@@ -721,7 +698,7 @@ function AgendaContent() {
                         <button 
                           type="button" 
                           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
-                          className={`p-1 rounded-lg border transition-colors ${
+                          className={`p-1.5 rounded-lg border transition-colors ${
                             isDark ? 'border-[#3D281E] hover:bg-[#3D281E]' : 'border-[#F0E4DA] hover:bg-[#FFF9F6]'
                           }`}
                         >
@@ -730,7 +707,7 @@ function AgendaContent() {
                         <button 
                           type="button" 
                           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
-                          className={`p-1 rounded-lg border transition-colors ${
+                          className={`p-1.5 rounded-lg border transition-colors ${
                             isDark ? 'border-[#3D281E] hover:bg-[#3D281E]' : 'border-[#F0E4DA] hover:bg-[#FFF9F6]'
                           }`}
                         >
@@ -772,7 +749,7 @@ function AgendaContent() {
                   </div>
 
                   {/* Horarios */}
-                  <div className={`md:col-span-2 p-4 border rounded-2xl transition-all duration-300 max-h-[300px] overflow-y-auto space-y-3 ${
+                  <div className={`md:col-span-2 p-6 border rounded-2xl transition-all duration-300 max-h-[340px] overflow-y-auto space-y-4 ${
                     isDark 
                       ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
                       : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
@@ -782,7 +759,7 @@ function AgendaContent() {
                     }`}>
                       Turnos
                     </span>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {availableTimes.map(t => {
                         const { available } = checkAvailability(t)
                         return (
@@ -791,7 +768,7 @@ function AgendaContent() {
                             type="button"
                             disabled={!available}
                             onClick={() => setSelectedTime(t)}
-                            className={`py-1.5 text-xs rounded-lg border font-medium transition-all duration-300 ${
+                            className={`py-2 text-xs rounded-lg border font-medium transition-all duration-300 ${
                               selectedTime === t 
                                 ? 'bg-[#D4AF37] text-[#1A0E0A] border-[#D4AF37] shadow-[0_2px_10px_rgba(212,175,55,0.3)]' 
                                 : available 
@@ -814,7 +791,7 @@ function AgendaContent() {
                 {selectedTime && (
                   <button 
                     onClick={() => setStep(4)} 
-                    className={`w-full py-3 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
+                    className={`w-full py-3.5 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
                       isDark 
                         ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
                         : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
@@ -826,9 +803,7 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 4: FORMULARIO */}
-            {/* ============================================================ */}
+            {/* PASO 4 */}
             {step === 4 && (
               <div className={`p-6 border rounded-2xl transition-all duration-300 space-y-4 ${
                 isDark 
@@ -853,7 +828,7 @@ function AgendaContent() {
                         required 
                         value={clientData.name} 
                         onChange={e => setClientData({...clientData, name: e.target.value})} 
-                        className={`w-full border rounded-xl px-3 py-2 text-xs transition-all duration-300 ${
+                        className={`w-full border rounded-xl px-3 py-2.5 text-xs transition-all duration-300 ${
                           isDark 
                             ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
                             : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
@@ -872,7 +847,7 @@ function AgendaContent() {
                         required 
                         value={clientData.phone} 
                         onChange={e => setClientData({...clientData, phone: e.target.value})} 
-                        className={`w-full border rounded-xl px-3 py-2 text-xs transition-all duration-300 ${
+                        className={`w-full border rounded-xl px-3 py-2.5 text-xs transition-all duration-300 ${
                           isDark 
                             ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder-[#A89588] focus:border-[#D4AF37]/60' 
                             : 'bg-white border-[#F0E4DA] text-[#1A0E0A] placeholder-[#A89588] focus:border-[#D4AF37]/60'
@@ -901,7 +876,7 @@ function AgendaContent() {
                   </div>
                   <button 
                     type="submit" 
-                    className={`w-full py-3 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
+                    className={`w-full py-3.5 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 shadow-md hover:shadow-lg ${
                       isDark 
                         ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
                         : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
@@ -913,9 +888,7 @@ function AgendaContent() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* PASO 5: ÉXITO */}
-            {/* ============================================================ */}
+            {/* PASO 5 */}
             {step === 5 && (
               <div className={`p-8 border rounded-2xl text-center transition-all duration-300 shadow-lg max-w-md mx-auto ${
                 isDark 
@@ -957,7 +930,7 @@ function AgendaContent() {
                 </div>
                 <button 
                   onClick={() => { setStep(1); setSelectedServices([]); setSelectedTime(''); }} 
-                  className={`mt-4 w-full py-2.5 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 ${
+                  className={`mt-4 w-full py-3 font-bold rounded-xl text-[10px] tracking-[0.3em] uppercase transition-all duration-300 ${
                     isDark 
                       ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
                       : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
@@ -970,11 +943,9 @@ function AgendaContent() {
 
           </div>
 
-          {/* ============================================================ */}
-          {/* SIDEBAR - RESUMEN */}
-          {/* ============================================================ */}
+          {/* SIDEBAR - RESUMEN CON BOTONES DE ESCRITORIO */}
           {step > 1 && step < 5 && (
-            <div className={`p-5 border rounded-2xl transition-all duration-300 space-y-4 lg:sticky lg:top-4 ${
+            <div className={`p-6 border rounded-2xl transition-all duration-300 space-y-4 lg:sticky lg:top-4 ${
               isDark 
                 ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
                 : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
@@ -1001,7 +972,7 @@ function AgendaContent() {
               )}
 
               {selectedServices.length > 0 && (
-                <div className={`space-y-1 text-xs pt-2 border-t ${
+                <div className={`space-y-1.5 text-xs pt-2 border-t ${
                   isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
                 }`}>
                   <span className={`block text-[9px] font-bold tracking-[0.2em] uppercase ${
@@ -1010,7 +981,7 @@ function AgendaContent() {
                     Tratamientos
                   </span>
                   {selectedServices.map(s => (
-                    <div key={s.id} className={`flex justify-between items-center p-1.5 rounded-lg text-[10px] transition-all ${
+                    <div key={s.id} className={`flex justify-between items-center p-2 rounded-lg text-[10px] transition-all ${
                       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
                     }`}>
                       <span className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
@@ -1018,7 +989,7 @@ function AgendaContent() {
                       </span>
                       <button 
                         onClick={() => toggleServiceSelection(s)} 
-                        className={isDark ? 'text-[#A89588] hover:text-[#D4AF37]' : 'text-[#A89588] hover:text-[#D4AF37]'}
+                        className="text-[#A89588] hover:text-[#D4AF37]"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1053,13 +1024,13 @@ function AgendaContent() {
                   }`}>
                     Monto Final:
                   </span>
-                  <span className={`font-serif text-lg ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+                  <span className="font-serif text-lg text-[#D4AF37]">
                     ${totalPrice.toLocaleString()}
                   </span>
                 </div>
               )}
 
-              {/* BOTÓN PARA ESCRITORIO / PANTALLAS GRANDES */}
+              {/* BOTONES DE AVANCE EN PANTALLA GRANDE (ESCRITORIO) */}
               {step === 2 && selectedServices.length > 0 && (
                 <button 
                   onClick={() => setStep(3)} 
@@ -1072,16 +1043,27 @@ function AgendaContent() {
                   Elegir Horario <ChevronRight className="w-4 h-4" />
                 </button>
               )}
+
+              {step === 3 && selectedTime && (
+                <button 
+                  onClick={() => setStep(4)} 
+                  className={`hidden lg:flex w-full mt-4 px-5 py-3 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md items-center justify-center gap-2 transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                  }`}
+                >
+                  Ir al Formulario <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
 
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/* FOOTER MÓVIL */}
-      {/* ============================================================ */}
-      {step === 2 && selectedServices.length > 0 && (
+      {/* FOOTER MÓVIL PARA PASO 2 Y PASO 3 */}
+      {((step === 2 && selectedServices.length > 0) || (step === 3 && selectedTime)) && (
         <div className={`fixed bottom-0 left-0 right-0 z-40 p-4 shadow-xl flex items-center justify-between lg:hidden transition-all duration-300 ${
           isDark ? 'bg-[#2A1B14] border-t border-[#3D281E]' : 'bg-white border-t border-[#F0E4DA]'
         }`}>
@@ -1091,26 +1073,37 @@ function AgendaContent() {
             }`}>
               Total
             </span>
-            <span className={`font-serif text-base font-bold ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+            <span className="font-serif text-base font-bold text-[#D4AF37]">
               ${totalPrice.toLocaleString()}
             </span>
           </div>
-          <button 
-            onClick={() => setStep(3)} 
-            className={`px-5 py-2.5 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md flex items-center gap-1 transition-all duration-300 ${
-              isDark 
-                ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
-            }`}
-          >
-            Elegir Horario <ChevronRight className="w-4 h-4" />
-          </button>
+          {step === 2 ? (
+            <button 
+              onClick={() => setStep(3)} 
+              className={`px-5 py-2.5 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md flex items-center gap-1 transition-all duration-300 ${
+                isDark 
+                  ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                  : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+              }`}
+            >
+              Elegir Horario <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button 
+              onClick={() => setStep(4)} 
+              className={`px-5 py-2.5 font-bold rounded-xl text-[10px] tracking-[0.25em] uppercase shadow-md flex items-center gap-1 transition-all duration-300 ${
+                isDark 
+                  ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                  : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+              }`}
+            >
+              Ir al Formulario <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       )}
 
-      {/* ============================================================ */}
       {/* MODAL DE CONFIRMACIÓN */}
-      {/* ============================================================ */}
       {showSummaryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A0E0A]/60 backdrop-blur-sm">
           <div className={`rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 transition-all duration-300 ${
@@ -1142,7 +1135,7 @@ function AgendaContent() {
                 <strong className={isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}>
                   Importe Total:
                 </strong>
-                <span className={`font-serif font-bold ml-1 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
+                <span className="font-serif font-bold ml-1 text-[#D4AF37]">
                   ${totalPrice.toLocaleString()}
                 </span>
               </div>
