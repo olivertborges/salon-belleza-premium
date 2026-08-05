@@ -29,6 +29,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
       return
     }
 
+    // Nombre inicial desde Metadatos o Email
     const initialName = user.user_metadata?.full_name || 
                         user.user_metadata?.name || 
                         user.email?.split('@')[0] || 
@@ -39,38 +40,38 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
       setImgStatus('loading')
       let foundAvatar = null
 
-      // 1. Prioridad: Auth Metadata
+      // 1. Auth Metadata
       if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
         foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
       }
 
-      // 2. Prioridad: Tabla clients (por ID o Email)
+      // 2. Tabla clients (Consultamos por Email o por ID)
       if (!foundAvatar) {
         let { data: clientData } = await supabase
           .from('clients')
-          .select('*')
-          .eq('id', user.id)
+          .select('full_name, avatar_url')
+          .eq('email', user.email)
           .maybeSingle()
 
-        if (!clientData && user.email) {
-          const { data: clientByEmail } = await supabase
+        if (!clientData && user.id) {
+          const { data: clientById } = await supabase
             .from('clients')
-            .select('*')
-            .eq('email', user.email)
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
             .maybeSingle()
-          if (clientByEmail) clientData = clientByEmail
+          if (clientById) clientData = clientById
         }
 
         if (clientData) {
-          const name = clientData.full_name || clientData.name || clientData.nombre
-          if (name) setUserName(name)
-
-          foundAvatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url || clientData.avatar
+          if (clientData.full_name) setUserName(clientData.full_name)
+          if (clientData.avatar_url && clientData.avatar_url.trim() !== '') {
+            foundAvatar = clientData.avatar_url
+          }
         }
       }
 
-      // 3. Prioridad: Tabla profiles
-      if (!foundAvatar) {
+      // 3. Tabla profiles (Respaldo)
+      if (!foundAvatar && user.id) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('avatar_url, full_name, name')
@@ -79,21 +80,25 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
         if (profileData) {
           if (profileData.full_name || profileData.name) setUserName(profileData.full_name || profileData.name)
-          if (profileData.avatar_url) foundAvatar = profileData.avatar_url
+          if (profileData.avatar_url && profileData.avatar_url.trim() !== '') {
+            foundAvatar = profileData.avatar_url
+          }
         }
       }
 
-      if (foundAvatar) {
-        const cleanUrl = foundAvatar.includes('?') ? `${foundAvatar}&t=${Date.now()}` : `${foundAvatar}?t=${Date.now()}`
-        setAvatarUrl(cleanUrl)
+      // Verificar si se encontró una URL de imagen válida
+      if (foundAvatar && typeof foundAvatar === 'string' && foundAvatar.length > 5) {
+        setAvatarUrl(foundAvatar)
         setImgStatus('success')
       } else {
+        setAvatarUrl(null)
         setImgStatus('empty')
       }
 
     } catch (err) {
-      console.error('Error cargando avatar en HeaderTop:', err)
-      setImgStatus('error')
+      console.error('Error al obtener el avatar:', err)
+      setAvatarUrl(null)
+      setImgStatus('empty')
     }
   }, [user])
 
@@ -126,33 +131,34 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
         <ThemeToggle />
 
-        {/* INDICADOR DE ESTADO E IDENTIFICACIÓN */}
+        {/* INDICADOR DE ESTADO DE LA FOTO */}
         <div className="text-right flex flex-col items-end">
           <div className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${
               imgStatus === 'success' ? 'bg-green-500' :
               imgStatus === 'loading' ? 'bg-yellow-500 animate-pulse' :
-              imgStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
+              'bg-gray-400'
             }`} />
             <p className="text-xs font-bold">{userName}</p>
           </div>
           <span className="text-[8px] font-black uppercase text-[#D4AF37]">
-            {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : 'SIN FOTO / ERROR'}
+            {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : 'SIN FOTO'}
           </span>
         </div>
         
+        {/* AVATAR: MUESTRA FOTO SI EXISTE, O LA INICIAL SI ESTÁ VACÍA */}
         <Link 
           href="/perfil" 
           className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative shrink-0"
         >
-          {avatarUrl && imgStatus !== 'error' ? (
+          {imgStatus === 'success' && avatarUrl ? (
             <img 
               src={avatarUrl} 
-              alt="Avatar" 
+              alt={userName} 
               className="w-full h-full object-cover"
               onError={() => {
-                console.error('Error al renderizar imagen:', avatarUrl)
-                setImgStatus('error')
+                setImgStatus('empty')
+                setAvatarUrl(null)
               }}
             />
           ) : (
