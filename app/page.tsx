@@ -56,10 +56,10 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
         <Link href="/" className="flex flex-col tracking-widest group">
           <span className="text-[#1A0E0A] font-serif text-xl md:text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-[#D4AF37]">
-            SALON FRESH
+            SALON FRESH NAILS
           </span>
           <span className="text-[9px] tracking-[0.4em] text-[#D4AF37] font-light uppercase mt-0.5">
-            NAILS & BEAUTY ATELIER
+            NAILS & BEAUTY
           </span>
         </Link>
 
@@ -176,7 +176,7 @@ const HeroSection = () => {
 
             <div className="grid grid-cols-3 gap-6 pt-12 border-t border-[#F0E4DA] max-w-md">
               <div>
-                <p className="font-serif text-3xl text-[#1A0E0A]">05+</p>
+                <p className="font-serif text-3xl text-[#1A0E0A]">25+</p>
                 <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Años Premium</p>
               </div>
               <div>
@@ -302,8 +302,8 @@ const StatsSection = () => {
   const isInView = useInView(ref, { once: true })
 
   const stats = [
-    { number: '05+', label: 'Años de Trayectoria' },
-    { number: '3K+', label: 'Clientes Premium' },
+    { number: '25+', label: 'Años de Trayectoria' },
+    { number: '3K+', label: 'Clientes Satisfechos },
     { number: '4.9', label: 'Calificación Global' },
     { number: '100%', label: 'Garantía de Satisfacción' }
   ]
@@ -735,15 +735,15 @@ const Footer = () => (
       
       <div className="space-y-4">
         <Link href="/" className="flex flex-col tracking-widest">
-          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH</span>
-          <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">ATELIER</span>
+          <span className="text-white font-serif text-xl tracking-[0.15em]">SALON FRESH NAILS</span>
+          <span className="text-[8px] tracking-[0.4em] text-[#D4AF37] font-medium uppercase mt-0.5">NAILS & BEATY</span>
         </Link>
         <p className="text-white/40 leading-relaxed max-w-xs pr-4">
           Un espacio donde el rigor metodológico y la finura estética convergen para esculpir tu versión más sublime y auténtica.
         </p>
         <div className="flex gap-3 pt-2">
           <a 
-            href="https://instagram.com" 
+            href="https://www.instagram.com/freshnails46?igsh=MXRudXF5MXhjMTM0Zg==" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="w-9 h-9 border border-white/10 flex items-center justify-center text-white/50 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
@@ -766,8 +766,8 @@ const Footer = () => (
       <div className="space-y-4">
         <h4 className="text-[10px] tracking-[0.25em] uppercase text-[#D4AF37] font-bold">Disponibilidad</h4>
         <ul className="space-y-2.5">
-          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Lunes a Viernes</span><span className="text-white">09:00 - 20:00</span></li>
-          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Sábados</span><span className="text-white">09:00 - 18:00</span></li>
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Martes a Viernes</span><span className="text-white">08:00 - 20:00</span></li>
+          <li className="flex justify-between border-b border-white/5 pb-2 pr-4"><span>Sábados</span><span className="text-white">08:00 - 18:00</span></li>
           <li className="flex justify-between pr-4"><span className="text-white/30">Domingos y Feriados</span><span className="text-[#D4AF37] font-medium">Cerrado</span></li>
         </ul>
       </div>
@@ -792,7 +792,7 @@ const Footer = () => (
             <FaPhoneAlt className="text-[#D4AF37] mt-0.5" />
             <div>
               <p className="text-[9px] uppercase tracking-wider text-white/30">Línea Directa</p>
-              <p className="text-white font-medium mt-0.5">099 123 456</p>
+              <p className="text-white font-medium mt-0.5">097 221 131</p>
             </div>
           </li>
           <li className="flex items-start gap-3">
