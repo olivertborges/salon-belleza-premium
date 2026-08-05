@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import React, { useState, useEffect } useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
