@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Calendar, Users, Sparkles, History,
   XCircle, ShoppingBag, Sliders, UsersRound, Crown,
   ChevronLeft, ChevronRight, Power, X,
-  Palette, Gift, UserCheck, ExternalLink
+  Palette, Gift, UserCheck, Globe
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -233,19 +233,19 @@ export default function AdminSidebar({ collapsed, setCollapsed, isOpen, onClose 
           </nav>
         </div>
 
-        {/* ACCESO AL PORTAL DE CLIENTE Y CERRAR SESIÓN */}
+        {/* ACCESO A LANDING PAGE Y CERRAR SESIÓN */}
         <div className={`p-3 border-t shrink-0 space-y-1 ${
           isDark ? 'border-[#3D281E] bg-[#1E120C]' : 'border-[#F0E4DA] bg-[#FFF9F6]'
         }`}>
           <button 
-            onClick={() => handleNavigation('/portal')}
-            title={collapsed ? 'Portal Cliente' : ''}
+            onClick={() => handleNavigation('/')}
+            title={collapsed ? 'Ver Landing Page' : ''}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#D4AF37] transition-all ${
               collapsed ? 'justify-center' : ''
             } ${isDark ? 'hover:bg-[#3D281E]/50' : 'hover:bg-[#F0E4DA]/50'}`}
           >
-            <ExternalLink className="w-4 h-4 shrink-0" />
-            {!collapsed && <span className="truncate">Portal Cliente</span>}
+            <Globe className="w-4 h-4 shrink-0" />
+            {!collapsed && <span className="truncate">Ver Landing Page</span>}
           </button>
 
           <button 
