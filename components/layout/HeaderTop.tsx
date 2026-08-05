@@ -27,68 +27,69 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
 
   const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  // Función reutilizable para obtener los datos de la tabla profiles
-  const fetchProfileData = useCallback(async () => {
-    if (!user?.id) return
+  // Consulta la tabla 'clients' usando el ID o el Email del usuario autenticado
+  const fetchClientProfile = useCallback(async () => {
+    if (!user) return
 
     try {
-      // 1. Prioridad: Tabla profiles (donde se guarda tras la subida)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name, name')
-        .eq('id', user.id)
+      // Buscar en la tabla 'clients' por id, user_id o email
+      const { data: clientData, error } = await supabase
+        .from('clients')
+        .select('*')
+        .or(`user_id.eq.${user.id},auth_id.eq.${user.id},id.eq.${user.id},email.eq.${user.email}`)
         .maybeSingle()
 
       if (error) {
-        console.error('Error leyendo profiles:', error)
+        console.error('Error buscando datos en tabla clients:', error)
       }
 
-      const nameFromProfile = profile?.full_name || profile?.name
-      const avatarFromProfile = profile?.avatar_url
+      if (clientData) {
+        // Asignar el nombre
+        const name = clientData.full_name || clientData.name || clientData.nombre
+        if (name) setDisplayName(name)
 
-      // Nombre
-      if (nameFromProfile) {
-        setDisplayName(nameFromProfile)
-      } else {
-        const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
-        setDisplayName(metaName || 'Usuario')
+        // Asignar la URL del avatar según la columna configurada
+        const avatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url
+        if (avatar) {
+          setAvatarUrl(avatar)
+          return
+        }
       }
 
-      // Avatar
-      if (avatarFromProfile) {
-        setAvatarUrl(avatarFromProfile)
-      } else {
-        // Fallback a metadata de auth
-        const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture
-        setAvatarUrl(metaAvatar || null)
-      }
+      // Fallback a metadatos de auth si no existe el registro en 'clients'
+      const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
+      if (metaName) setDisplayName(metaName)
+
+      const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture
+      if (metaAvatar) setAvatarUrl(metaAvatar)
+
     } catch (err) {
-      console.error('Error al cargar la foto de perfil:', err)
+      console.error('Error al obtener perfil en HeaderTop:', err)
     }
   }, [user])
 
   useEffect(() => {
-    fetchProfileData()
+    fetchClientProfile()
 
     if (!user?.id) return
 
-    // Escuchar cambios EN TIEMPO REAL en la tabla 'profiles' para este usuario
+    // Escuchar cambios en la tabla 'clients' en tiempo real
     const channel = supabase
-      .channel(`profile_changes_${user.id}`)
+      .channel(`clients_avatar_changes_${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`,
+          table: 'clients',
         },
         (payload) => {
-          if (payload.new?.avatar_url) {
-            setAvatarUrl(payload.new.avatar_url)
-          }
-          if (payload.new?.full_name || payload.new?.name) {
-            setDisplayName(payload.new.full_name || payload.new.name)
+          const updated = payload.new
+          if (updated) {
+            const newAvatar = updated.avatar_url || updated.foto || updated.image_url || updated.photo_url
+            const newName = updated.full_name || updated.name || updated.nombre
+            if (newAvatar) setAvatarUrl(newAvatar)
+            if (newName) setDisplayName(newName)
           }
         }
       )
@@ -97,7 +98,7 @@ export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, fetchProfileData])
+  }, [user, fetchClientProfile])
 
   const getInitials = () => {
     if (displayName) {
