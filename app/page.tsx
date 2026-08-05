@@ -125,7 +125,7 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO (CON LA FOTO NUEVA EN EL HERO Y ANEXIS CAMPO LEYVA)
+// HERO (CON LA FOTO NUEVA EN EL HERO Y ANY)
 // ============================================================
 const HeroSection = () => {
   return (
@@ -156,7 +156,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="text-[#5C4A3E] text-base md:text-lg font-light max-w-lg leading-relaxed">
-              Un santuario arquitectónico de relajación y vanguardia bajo la dirección de Ani Campo Leyva. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
+              Un santuario arquitectónico de relajación y vanguardia bajo la dirección de Any. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -206,7 +206,7 @@ const HeroSection = () => {
               
               <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-5 shadow-lg border-l-2 border-[#D4AF37]">
                 <p className="text-[9px] tracking-[0.25em] text-[#D4AF37] font-bold uppercase">Fundadora & Master Artist</p>
-                <p className="font-serif text-base text-[#1A0E0A] mt-1">Aniexis Campo Leyva (Ani)</p>
+                <p className="font-serif text-base text-[#1A0E0A] mt-1">Any</p>
               </div>
             </div>
           </motion.div>
@@ -257,17 +257,17 @@ const EsenciaSection = () => {
           >
             <p className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">NUESTRO MANIFIESTO</p>
             <h2 className="font-serif text-4xl md:text-5xl text-[#1A0E0A] font-light leading-tight">
-              Crear belleza bajo el sello de Aniexis Campo Leyva es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
+              Crear belleza bajo el sello de Any es <span className="italic font-normal text-[#D4AF37]">esculpir la identidad.</span>
             </h2>
             <p className="text-[#5C4A3E] font-light leading-relaxed text-base">
-              Nos distanciamos de lo genérico. Bajo la dirección de Ani, fusionamos técnicas exclusivas con el dominio milimétrico del arte moderno. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
+              Nos distanciamos de lo genérico. Bajo la dirección de Any, fusionamos técnicas exclusivas con el dominio milimétrico del arte moderno. Aquí, cada cita es un ritual de renovación privada diseñado exclusivamente para ti.
             </p>
-            
+
             <div className="bg-[#FFF9F6] border-l-2 border-[#D4AF37] p-6 my-6 shadow-sm">
               <p className="font-serif italic text-base text-[#1A0E0A] mb-2">
                 "La verdadera elegancia radica en la autenticidad de los detalles y el cuidado absoluto de cada faceta de tu belleza."
               </p>
-              <p className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">— Aniexis Campo Leyva (Ani)</p>
+              <p className="text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">— Any</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6 pt-2">
@@ -393,7 +393,7 @@ const CategoriesSection = () => {
 }
 
 // ============================================================
-// LAS ARTISTAS (ANI - ANY Y SILVANA CON URLS DE SUPABASE)
+// LAS ARTISTAS (ANY Y SILVANA CON URLS DE SUPABASE)
 // ============================================================
 const TeamSection = () => {
   const ref = useRef(null)
@@ -409,17 +409,17 @@ const TeamSection = () => {
         <div className="text-center max-w-2xl mx-auto mb-28 space-y-4">
           <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">EL ALMA DEL ATELIER</p>
           <h2 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] font-light leading-tight">
-            Nuestros Profesionales <br />bajo la firma de <span className="italic font-normal text-[#D4AF37]">Aniexis Campo Leyva</span>
+            Nuestros Profesionales <br />bajo la firma de <span className="italic font-normal text-[#D4AF37]">Any</span>
           </h2>
           <div className="w-16 h-[1px] bg-[#D4AF37] mx-auto mt-6" />
           <p className="text-sm text-[#5C4A3E] font-light max-w-md mx-auto pt-2 leading-relaxed">
-            Conoce a Ani (Any) y Silvana, las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
+            Conoce a Any y Silvana, las expertas certificadas que fusionan técnica avanzada y sensibilidad estética para esculpir tu versión más sublime.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
           
-          {/* PROFESIONAL 1: ANY / ANI */}
+          {/* PROFESIONAL 1: ANY */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -429,20 +429,20 @@ const TeamSection = () => {
             <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
               <img 
                 src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
-                alt="Ani (Any) - Especialista Principal" 
+                alt="Any - Especialista Principal" 
                 className="w-full h-full object-cover filter grayscale-[10%] group-hover:grayscale-0 transition-all duration-1000"
               />
               <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
               
               <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
                 <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Fundadora & Master</p>
-                <h3 className="font-serif text-2xl text-[#1A0E0A] mt-1 font-light tracking-wide">Ani (Any) Campo Leyva</h3>
+                <h3 className="font-serif text-2xl text-[#1A0E0A] mt-1 font-light tracking-wide">Any</h3>
               </div>
             </div>
 
             <div className="pt-6 space-y-4 max-w-md">
               <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
-                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Ani transforma cada sesión en un ritual personalizado de alta definición.
+                Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Any transforma cada sesión en un ritual personalizado de alta definición.
               </p>
               
               <div className="flex flex-wrap gap-2 pt-2">
