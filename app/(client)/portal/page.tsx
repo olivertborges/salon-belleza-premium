@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
-// Componentes del Ecosistema del Cliente
 import InsigniasLogros from '@/components/InsigniasLogros'
 import InstagramFeed from '@/components/InstagramFeed'
 import QRReferido from '@/components/QRReferido'
@@ -19,38 +18,9 @@ import AnunciosBanner from '@/components/AnunciosBanner'
 import PromocionesVolante from '@/components/PromocionesVolante'
 import FooterCliente from '@/components/FooterCliente'
 
-// ============================================================
-// PROTOCOLOS DE TIPADO (TypeScript)
-// ============================================================
-interface ServicioInfo {
-  name: string
-  price: number
-  duration: number
-}
-
-interface Cita {
-  id: string
-  date: string
-  time: string
-  status: string
-  service_id: string
-  client_id: string
-  services?: ServicioInfo
-}
-
-interface Cliente {
-  id: string
-  name: string
-  email: string
-  phone: string
-  points: number
-  referral_code: string
-  created_at: string
-}
-
-// ============================================================
-// MICRO-COMPONENTES
-// ============================================================
+interface ServicioInfo { name: string; price: number; duration: number }
+interface Cita { id: string; date: string; time: string; status: string; service_id: string; client_id: string; services?: ServicioInfo }
+interface Cliente { id: string; name: string; email: string; phone: string; points: number; referral_code: string; created_at: string }
 
 const LoadingSpinner = ({ isDark }: { isDark: boolean }) => (
   <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
@@ -163,9 +133,6 @@ const NextAppointmentCard = ({ cita, isDark }: { cita: Cita | undefined; isDark:
   )
 }
 
-// ============================================================
-// COMPONENTE PRINCIPAL
-// ============================================================
 export default function ClientDashboardIndex() {
   const { user, refreshUserData } = useAuth()
   const { theme } = useTheme()
@@ -183,13 +150,7 @@ export default function ClientDashboardIndex() {
   const [codigoReferido, setCodigoReferido] = useState('')
   const [clientId, setClientId] = useState<string | null>(null)
 
-  // Estados para saber si hay anuncios o promociones reales que mostrar
-  const [hasAnuncios, setHasAnuncios] = useState(false)
-  const [hasPromociones, setHasPromociones] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
   const isDark = theme === 'dark'
 
@@ -242,10 +203,7 @@ export default function ClientDashboardIndex() {
 
           const { data: citasData } = await supabase
             .from('appointments')
-            .select(`
-              *,
-              services:service_id (name, price, duration)
-            `)
+            .select(`*, services:service_id (name, price, duration)`)
             .eq('client_id', currentCliente.id)
             .order('date', { ascending: true })
 
@@ -268,26 +226,6 @@ export default function ClientDashboardIndex() {
             .select('id')
             .eq('referred_by_id', currentCliente.id)
           setReferidos(referidosData || [])
-
-          // Verificar si hay anuncios activos
-          const { data: anunciosData } = await supabase
-            .from('announcements') // o la tabla que use AnunciosBanner
-            .select('id')
-            .eq('is_active', true)
-            .limit(1)
-          if (anunciosData && anunciosData.length > 0) {
-            setHasAnuncios(true)
-          }
-
-          // Verificar si hay promociones activas
-          const { data: promosData } = await supabase
-            .from('promotions') // o la tabla que use PromocionesVolante
-            .select('id')
-            .eq('is_active', true)
-            .limit(1)
-          if (promosData && promosData.length > 0) {
-            setHasPromosiones(true)
-          }
         }
       } catch (error) {
         console.error('Error al cargar datos:', error)
@@ -296,9 +234,7 @@ export default function ClientDashboardIndex() {
       }
     }
 
-    if (mounted) {
-      loadDashboardData()
-    }
+    if (mounted) loadDashboardData()
   }, [user, mounted])
 
   if (!mounted) return null
@@ -310,19 +246,13 @@ export default function ClientDashboardIndex() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
       isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
-      
-      {/* Fondo Texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-2">
 
-        {/* ============================================================ */}
-        {/* CABECERA: FRESH NAILS SALÓN - ANIEXIS CAMPO LEYVA */}
-        {/* ============================================================ */}
+        {/* CABECERA */}
         <div className={`border p-5 sm:p-8 rounded-2xl transition-all duration-300 ${
-          isDark 
-            ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
-            : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
+          isDark ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' : 'bg-white border-[#F0E4DA] shadow-[0_15px_35px_rgba(240,228,218,0.6)]'
         }`}>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-4 min-w-0">
@@ -368,43 +298,21 @@ export default function ClientDashboardIndex() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* SECCIÓN DE PRÓXIMA CITA */}
-        {/* ============================================================ */}
+        {/* CITA */}
         <section className="space-y-3">
           <NextAppointmentCard cita={proximaCita} isDark={isDark} />
         </section>
 
-        {/* ============================================================ */}
-        {/* ANUNCIOS Y PROMOCIONES (Condicionales reales) */}
-        {/* ============================================================ */}
-        {(hasAnuncios || hasPromociones) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {hasAnuncios && (
-              <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-                isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-              }`}>
-                <AnunciosBanner position="hero" limit={2} />
-              </div>
-            )}
-            {hasPromociones && (
-              <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
-                isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
-              }`}>
-                <PromocionesVolante limit={3} />
-              </div>
-            )}
-          </div>
-        )}
+        {/* SECCIÓN DE ANUNCIOS Y PROMOCIONES (Sin divs envolventes fijos) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 empty:hidden">
+          <AnunciosBanner position="hero" limit={2} />
+          <PromocionesVolante limit={3} />
+        </div>
 
-        {/* ============================================================ */}
-        {/* ACTIVIDADES DENTRO DEL SALÓN (MISIONES) */}
-        {/* ============================================================ */}
+        {/* MISIONES */}
         <MisionesDiarias />
 
-        {/* ============================================================ */}
-        {/* PROGRAMA DE RECOMENDADOS E INSIGNIAS */}
-        {/* ============================================================ */}
+        {/* RECOMENDADOS E INSIGNIAS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className={`border p-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${
             isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
@@ -424,14 +332,10 @@ export default function ClientDashboardIndex() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* GALERÍA DE INSTAGRAM */}
-        {/* ============================================================ */}
         <div className={`pt-6 border-t ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`}>
           <InstagramFeed />
         </div>
 
-        {/* Pie de página */}
         <FooterCliente />
 
       </div>
