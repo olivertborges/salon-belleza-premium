@@ -73,14 +73,6 @@ export default function ServiciosPage() {
 
   const [currentPage, setCurrentPage] = useState<number>(1)
 
-  const gold = '#D4AF37'
-  const goldLight = '#E8D5A0'
-  const goldDark = '#C9A96E'
-
-  const headerGradient = {
-    backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
-  }
-
   useEffect(() => {
     setCurrentPage(1)
   }, [search, selectedCategory])
@@ -128,7 +120,6 @@ export default function ServiciosPage() {
     setTimeout(() => setSuccess(null), 2500)
   }
 
-  // MANEJO DE SELECCIÓN DE IMAGEN
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -141,7 +132,6 @@ export default function ServiciosPage() {
     }
   }
 
-  // SUBIDA DE LA IMAGEN AL BUCKET 'services'
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true)
@@ -180,7 +170,6 @@ export default function ServiciosPage() {
     try {
       let finalImageUrl = formData.image_url
 
-      // Si se seleccionó una nueva imagen local, subirla a Supabase Storage
       if (imageFile) {
         const uploadedUrl = await uploadImageToStorage(imageFile)
         if (uploadedUrl) {
@@ -299,7 +288,7 @@ export default function ServiciosPage() {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'}`}>
+      <div className={`flex items-center justify-center min-h-[70vh] transition-colors duration-500 ${isDark ? 'bg-[#150D08]' : 'bg-[#FDFBF9]'}`}>
         <div className="flex flex-col items-center gap-6">
           <div className="relative w-16 h-16">
             <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
@@ -314,50 +303,65 @@ export default function ServiciosPage() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-12 relative overflow-hidden ${isDark ? 'bg-[#150D08] text-[#FFF9F6]' : 'bg-[#FDFBF9] text-[#1A0E0A]'}`}>
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-[#EC4899]/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-15 mix-blend-overlay bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
 
-      <div className="max-w-6xl mx-auto px-4 space-y-6 relative z-10 pt-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 relative z-10 pt-4">
 
-        {/* CABECERA */}
-        <div 
-          className="relative overflow-hidden rounded-2xl p-6 md:p-8 shadow-2xl text-white border border-white/10"
-          style={headerGradient}
-        >
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-black/20 rounded-full blur-2xl pointer-events-none" />
+        {/* HEADER HERO BANNER (REDISEÑADO - EXECUTIVE LUXURY) */}
+        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
+          isDark 
+            ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
+            : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5] shadow-[0_25px_50px_-15px_rgba(225,208,195,0.4)]'
+        }`}>
+          <div className="absolute -top-40 -right-40 w-[350px] h-[350px] bg-gradient-to-br from-[#EC4899]/20 to-[#D4AF37]/20 rounded-full blur-[90px] pointer-events-none animate-pulse [animation-duration:6s]" />
+          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Catálogo Operativo
+          <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="relative group shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#3B82F6] rounded-2xl blur-md opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative p-4 rounded-2xl shadow-xl bg-neutral-950 text-white flex items-center justify-center border border-white/10">
+                  <Scissors className="w-7 h-7 text-[#D4AF37] animate-pulse" />
+                </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight drop-shadow-sm">
-                Servicios Fresh Nails
-              </h1>
-              <p className="text-xs md:text-sm text-white/80 font-medium max-w-md">
-                Administra y edita la oferta comercial de tus tratamientos integrales.
-              </p>
+
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[9px] font-black uppercase tracking-[0.25em] text-[#C9A96E]">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  ✦ Catálogo Operativo Sincronizado
+                </div>
+                <h2 className={`font-serif text-3xl md:text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                  Servicios <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#EC4899] to-[#C9A96E] font-serif italic font-normal">Fresh Nails</span>
+                </h2>
+                <p className={`text-sm font-light ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                  Administra la oferta comercial, precios, fotos y tiempos de tus tratamientos integrales.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0 border-t pt-5 md:pt-0 md:border-t-0 border-[#EADED5] dark:border-[#3D281E]">
               <button 
                 onClick={handleRefresh} 
                 disabled={refreshing} 
-                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+                className={`w-full sm:w-auto px-5 py-3 rounded-xl border font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-md shadow-xs active:scale-95 ${
+                  isDark 
+                    ? 'bg-[#1C120C]/80 border-[#3D281E] text-[#BCAEA5] hover:text-white hover:border-[#D4AF37]/50' 
+                    : 'bg-white/80 border-[#EADED5] text-[#5C4A3E] hover:text-[#1A0E0A] hover:border-[#D4AF37]/50'
+                }`}
                 title="Actualizar Catálogo"
               >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-[#D4AF37] ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Sincronizando' : 'Actualizar'}</span>
               </button>
 
               <button 
                 onClick={handleCreateNew}
-                className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-neutral-950 font-black text-xs uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 shadow-xl shadow-[#D4AF37]/10 hover:shadow-[#D4AF37]/20 hover:scale-[1.03] active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E]"
               >
-                <div className="p-1 rounded-md bg-[#D4AF37] text-white">
-                  <Plus className="w-3 h-3 stroke-[3]" />
-                </div>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Nuevo Servicio</span>
               </button>
             </div>
@@ -386,60 +390,60 @@ export default function ServiciosPage() {
         </div>
 
         {/* METRICS */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-                <Package className="w-4 h-4 text-[#D4AF37]" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className={`rounded-2xl p-5 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+            <div className="flex items-center gap-4 min-w-0">
+              <div className={`p-3 rounded-xl shrink-0 ${isDark ? 'bg-[#291A11]' : 'bg-[#FAF6F2]'}`}>
+                <Package className="w-5 h-5 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
-                <p className={`text-[8px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Servicios Totales</p>
-                <p className="text-lg font-black">{totalServicios}</p>
+                <p className={`text-[10px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Servicios Totales</p>
+                <p className="text-2xl font-black mt-0.5">{totalServicios}</p>
               </div>
             </div>
           </div>
 
-          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-                <DollarSign className="w-4 h-4 text-[#D4AF37]" />
+          <div className={`rounded-2xl p-5 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+            <div className="flex items-center gap-4 min-w-0">
+              <div className={`p-3 rounded-xl shrink-0 ${isDark ? 'bg-[#291A11]' : 'bg-[#FAF6F2]'}`}>
+                <DollarSign className="w-5 h-5 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
-                <p className={`text-[8px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Ticket Promedio</p>
-                <p className="text-lg font-black text-[#D4AF37]">${Math.round(promedioPrecio).toLocaleString()}</p>
+                <p className={`text-[10px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Ticket Promedio</p>
+                <p className="text-2xl font-black text-[#D4AF37] mt-0.5">${Math.round(promedioPrecio).toLocaleString()}</p>
               </div>
             </div>
           </div>
 
-          <div className={`rounded-2xl p-4 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={`p-2.5 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-                <Layers className="w-4 h-4 text-[#D4AF37]" />
+          <div className={`rounded-2xl p-5 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+            <div className="flex items-center gap-4 min-w-0">
+              <div className={`p-3 rounded-xl shrink-0 ${isDark ? 'bg-[#291A11]' : 'bg-[#FAF6F2]'}`}>
+                <Layers className="w-5 h-5 text-[#D4AF37]" />
               </div>
               <div className="min-w-0">
-                <p className={`text-[8px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>Categorías</p>
-                <p className="text-lg font-black text-[#D4AF37]">{totalCategorias}</p>
+                <p className={`text-[10px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Categorías</p>
+                <p className="text-2xl font-black text-[#D4AF37] mt-0.5">{totalCategorias}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* FILTROS Y BÚSQUEDA */}
-        <div className={`flex items-center gap-3 p-3 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-          <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+        <div className={`flex items-center gap-3 p-3.5 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+          <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`} />
           <input 
             type="text" 
             placeholder="Buscar por nombre o descripción..." 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            className={`bg-transparent border-none outline-none text-xs w-full font-medium ${isDark ? 'text-[#FFF9F6] placeholder:text-[#A89588]' : 'text-[#1A0E0A] placeholder:text-[#A89588]'}`}
+            className={`bg-transparent border-none outline-none text-xs w-full font-medium ${isDark ? 'text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'text-[#1A0E0A] placeholder:text-[#6E5A4D]'}`}
           />
           {search && (
             <button 
               onClick={() => setSearch('')}
-              className={`p-1 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'}`}
+              className={`p-1 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#EADED5]'}`}
             >
-              <X className={`w-4 h-4 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+              <X className={`w-4 h-4 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`} />
             </button>
           )}
         </div>
@@ -454,26 +458,26 @@ export default function ServiciosPage() {
               <button
                 key={cat.name}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`relative p-3 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border shadow-sm ${
+                className={`relative p-3.5 rounded-2xl flex flex-col items-center justify-center text-center gap-2 transition-all duration-300 border shadow-sm ${
                   esActivo 
                     ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_4px_15px_rgba(212,175,55,0.15)]' 
                     : isDark 
-                      ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' 
-                      : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
+                      ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/40' 
+                      : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/40'
                 }`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ${
                   esActivo 
                     ? 'bg-[#D4AF37] text-[#1A0E0A] scale-105' 
                     : isDark 
-                      ? 'bg-[#1E120C] border border-[#3D281E] text-[#A89588]' 
-                      : 'bg-[#FFF9F6] border border-[#F0E4DA] text-[#5C4A3E]'
+                      ? 'bg-[#150D08] border border-[#3D281E] text-[#BCAEA5]' 
+                      : 'bg-[#FDFBF9] border border-[#EADED5] text-[#6E5A4D]'
                 }`}>
                   <IconComponent className="w-3.5 h-3.5" />
                 </div>
 
-                <span className={`text-[9px] font-mono tracking-tight transition-colors ${
-                  esActivo ? 'text-[#D4AF37] font-bold' : isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                <span className={`text-[10px] font-mono tracking-tight transition-colors ${
+                  esActivo ? 'text-[#D4AF37] font-bold' : isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'
                 }`}>
                   {cat.name}
                 </span>
@@ -487,12 +491,12 @@ export default function ServiciosPage() {
         </div>
 
         {/* LISTADO CON IMÁGENES */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {serviciosPaginados.map((servicio: Servicio) => (
             <div 
               key={servicio.id} 
               className={`rounded-2xl border overflow-hidden flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group ${
-                isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
+                isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/40'
               }`}
             >
               {/* IMAGEN DEL SERVICIO */}
@@ -510,56 +514,56 @@ export default function ServiciosPage() {
                   </div>
                 )}
                 {servicio.badge && (
-                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-[#1A0E0A] bg-[#D4AF37] shadow-md">
+                  <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-[#1A0E0A] bg-[#D4AF37] shadow-md">
                     {servicio.badge.toUpperCase()}
                   </span>
                 )}
               </div>
 
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-2">
-                  <span className={`text-[9px] uppercase font-mono tracking-widest flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <span className={`text-[9px] uppercase font-mono tracking-widest flex items-center gap-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                     <Layers className="w-3 h-3 text-[#D4AF37]" /> 
                     {servicio.category || 'General'}
                   </span>
 
-                  <h3 className={`text-sm font-medium transition-colors ${isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'}`}>
+                  <h3 className={`text-base font-semibold transition-colors ${isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'}`}>
                     {servicio.name}
                   </h3>
 
-                  <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                     {servicio.description || 'Sin descripción detallada asignada.'}
                   </p>
                 </div>
 
                 <div>
-                  <div className={`pt-3 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
-                    <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <div className={`pt-3 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#EADED5]'}`}>
+                    <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       <Clock className="w-3.5 h-3.5" />
                       <span>{servicio.duration || 60} min</span>
                     </div>
-                    <div className="font-mono font-extrabold text-sm text-[#D4AF37]">
+                    <div className="font-mono font-extrabold text-base text-[#D4AF37]">
                       ${servicio.price?.toLocaleString()}
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-3">
+                  <div className="flex gap-2 pt-4">
                     <button 
                       onClick={() => handleEdit(servicio)} 
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
                         isDark 
-                          ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
-                          : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
+                          ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
+                          : 'bg-[#FDFBF9] border-[#EADED5] text-[#6E5A4D] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
                       }`}
                     >
                       <Edit className="w-3.5 h-3.5" /> Editar
                     </button>
                     <button 
                       onClick={() => handleDelete(servicio.id)} 
-                      className={`px-3 py-2 rounded-xl border transition-all ${
+                      className={`px-3 py-2.5 rounded-xl border transition-all ${
                         isDark 
-                          ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-red-500 hover:border-red-500/30' 
-                          : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-red-500 hover:border-red-500/30'
+                          ? 'bg-[#150D08] border-[#3D281E] text-[#BCAEA5] hover:text-red-500 hover:border-red-500/30' 
+                          : 'bg-[#FDFBF9] border-[#EADED5] text-[#6E5A4D] hover:text-red-500 hover:border-red-500/30'
                       }`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -572,7 +576,7 @@ export default function ServiciosPage() {
 
           {filtrados.length === 0 && (
             <div className={`col-span-full py-12 text-center font-mono text-xs border border-dashed rounded-2xl ${
-              isDark ? 'bg-[#2A1B14]/40 border-[#3D281E] text-[#A89588]' : 'bg-white border-[#F0E4DA] text-[#5C4A3E]'
+              isDark ? 'bg-[#1E120C]/40 border-[#3D281E] text-[#BCAEA5]' : 'bg-white border-[#EADED5] text-[#6E5A4D]'
             }`}>
               No se encontraron servicios que coincidan con los criterios.
             </div>
@@ -582,7 +586,7 @@ export default function ServiciosPage() {
         {/* PAGINACIÓN */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 font-mono text-xs">
-            <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>
+            <span className={isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}>
               Mostrando <span className="font-bold text-[#D4AF37]">{serviciosPaginados.length}</span> de <span className="font-bold">{filtrados.length}</span> resultados
             </span>
 
@@ -591,7 +595,7 @@ export default function ServiciosPage() {
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
-                  isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#EADED5] text-[#1A0E0A]'
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -607,8 +611,8 @@ export default function ServiciosPage() {
                       esPaginaActual
                         ? 'bg-[#D4AF37] border-[#D4AF37] text-[#1A0E0A]'
                         : isDark
-                          ? 'bg-[#2A1B14] border-[#3D281E] text-[#A89588] hover:border-[#D4AF37]/40'
-                          : 'bg-white border-[#F0E4DA] text-[#5C4A3E] hover:border-[#D4AF37]/40'
+                          ? 'bg-[#1E120C] border-[#3D281E] text-[#BCAEA5] hover:border-[#D4AF37]/40'
+                          : 'bg-white border-[#EADED5] text-[#6E5A4D] hover:border-[#D4AF37]/40'
                     }`}
                   >
                     {page}
@@ -620,7 +624,7 @@ export default function ServiciosPage() {
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className={`p-2.5 rounded-xl border transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none ${
-                  isDark ? 'bg-[#2A1B14] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#F0E4DA] text-[#1A0E0A]'
+                  isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-white border-[#EADED5] text-[#1A0E0A]'
                 }`}
               >
                 <ChevronRight className="w-4 h-4" />
@@ -633,13 +637,13 @@ export default function ServiciosPage() {
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto transition-all duration-300 ${
-              isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'
+              isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'
             }`}>
               <button 
                 onClick={() => setShowModal(false)}
                 className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${
-                  isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#F0E4DA]'
-                } text-[#A89588] hover:text-red-400`}
+                  isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#EADED5]'
+                } text-[#BCAEA5] hover:text-red-400`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -657,7 +661,7 @@ export default function ServiciosPage() {
                 
                 {/* CAMPO PARA SUBIR IMAGEN */}
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                     Fotografía del Servicio
                   </label>
                   
@@ -679,12 +683,12 @@ export default function ServiciosPage() {
                       </div>
                     ) : (
                       <label className={`flex flex-col items-center justify-center h-32 w-full rounded-xl border-2 border-dashed cursor-pointer transition-all ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50' : 'bg-[#FFF9F6] border-[#F0E4DA] hover:border-[#D4AF37]/50'
+                        isDark ? 'bg-[#150D08] border-[#3D281E] hover:border-[#D4AF37]/50' : 'bg-[#FDFBF9] border-[#EADED5] hover:border-[#D4AF37]/50'
                       }`}>
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-6 h-6 text-[#D4AF37] mb-1" />
                           <p className="text-xs font-semibold text-[#D4AF37]">Haz clic para subir imagen</p>
-                          <p className="text-[9px] text-[#A89588] mt-0.5">PNG, JPG o WEBP (Máx. 5MB)</p>
+                          <p className="text-[9px] text-[#BCAEA5] mt-0.5">PNG, JPG o WEBP (Máx. 5MB)</p>
                         </div>
                         <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                       </label>
@@ -693,7 +697,7 @@ export default function ServiciosPage() {
                 </div>
 
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                     Nombre del Servicio *
                   </label>
                   <input 
@@ -701,7 +705,7 @@ export default function ServiciosPage() {
                     value={formData.name} 
                     onChange={(e) => setFormData({...formData, name: e.target.value})} 
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                      isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
                     }`}
                     placeholder="Ej: Microblading Cejas"
                     required 
@@ -709,7 +713,7 @@ export default function ServiciosPage() {
                 </div>
 
                 <div>
-                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                     Descripción
                   </label>
                   <textarea 
@@ -717,7 +721,7 @@ export default function ServiciosPage() {
                     onChange={(e) => setFormData({...formData, description: e.target.value})} 
                     rows={3} 
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${
-                      isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                      isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
                     }`}
                     placeholder="Detalla el tratamiento..." 
                   />
@@ -725,7 +729,7 @@ export default function ServiciosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       Precio ($) *
                     </label>
                     <input 
@@ -733,14 +737,14 @@ export default function ServiciosPage() {
                       value={formData.price} 
                       onChange={(e) => setFormData({...formData, price: e.target.value})} 
                       className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
                       }`}
                       placeholder="0.00"
                       required 
                     />
                   </div>
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       Duración (Min) *
                     </label>
                     <input 
@@ -748,7 +752,7 @@ export default function ServiciosPage() {
                       value={formData.duration} 
                       onChange={(e) => setFormData({...formData, duration: e.target.value})} 
                       className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
                       }`}
                       placeholder="60"
                       required 
@@ -758,7 +762,7 @@ export default function ServiciosPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       Categoría *
                     </label>
                     <div className="relative w-full">
@@ -766,21 +770,21 @@ export default function ServiciosPage() {
                         value={formData.category} 
                         onChange={(e) => setFormData({...formData, category: e.target.value})} 
                         className={`w-full px-4 py-2.5 pr-10 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 appearance-none bg-transparent ${
-                          isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A]'
+                          isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A]'
                         }`}
                       >
-                        <option value="Uñas" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>💅 Uñas</option>
-                        <option value="Micropigmentación" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>👁️ Micropigmentación</option>
-                        <option value="Cejas" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>✨ Cejas</option>
-                        <option value="Peluquería" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>✂️ Peluquería</option>
-                        <option value="Depilación" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>💖 Depilación</option>
-                        <option value="Estética" className={isDark ? 'bg-[#2A1B14]' : 'bg-white'}>🌟 Estética</option>
+                        <option value="Uñas" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>💅 Uñas</option>
+                        <option value="Micropigmentación" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>👁️ Micropigmentación</option>
+                        <option value="Cejas" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>✨ Cejas</option>
+                        <option value="Peluquería" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>✂️ Peluquería</option>
+                        <option value="Depilación" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>💖 Depilación</option>
+                        <option value="Estética" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>🌟 Estética</option>
                       </select>
-                      <ChevronDown className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+                      <ChevronDown className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`} />
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
                       Etiqueta destacada
                     </label>
                     <input 
@@ -788,7 +792,7 @@ export default function ServiciosPage() {
                       value={formData.badge} 
                       onChange={(e) => setFormData({...formData, badge: e.target.value})} 
                       className={`w-full px-4 py-2.5 rounded-xl border text-sm uppercase transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
-                        isDark ? 'bg-[#1E120C] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#A89588]' : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#1A0E0A] placeholder:text-[#A89588]'
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
                       }`}
                       placeholder="Ej: TOP, NUEVO" 
                     />
@@ -801,7 +805,7 @@ export default function ServiciosPage() {
                     onClick={() => setShowModal(false)} 
                     disabled={uploadingImage}
                     className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-colors ${
-                      isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
+                      isDark ? 'border-[#3D281E] text-[#BCAEA5] hover:bg-[#3D281E]' : 'border-[#EADED5] text-[#6E5A4D] hover:bg-[#EADED5]'
                     }`}
                   >
                     Cancelar
@@ -809,7 +813,7 @@ export default function ServiciosPage() {
                   <button 
                     type="submit" 
                     disabled={uploadingImage}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0] disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E] disabled:opacity-50"
                   >
                     {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     <span>{uploadingImage ? 'Subiendo...' : 'Guardar'}</span>
