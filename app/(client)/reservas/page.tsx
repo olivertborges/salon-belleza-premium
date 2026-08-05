@@ -279,7 +279,8 @@ export default function MisReservasPage() {
       {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 space-y-8 relative z-10">
+      {/* Espacio superior corregido (pt-8 sm:pt-12 en lugar de pt-20 sm:pt-24) */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-12 space-y-8 relative z-10">
 
         {/* ============================================================ */}
         {/* HERO BANNER EDITORIAL */}
@@ -493,86 +494,76 @@ export default function MisReservasPage() {
         </div>
 
         {/* ============================================================ */}
-{/* MÉTRICAS INFERIORES - RESPONSIVE */}
-{/* ============================================================ */}
-{!error && citas.length > 0 && (
-  <div className={`pt-6 border-t ${
-    isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
-  }`}>
-    <div className={`border rounded-2xl p-4 sm:p-6 shadow-sm transition-all duration-300 ${
-      isDark 
-        ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
-        : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
-    }`}>
-      
-      {/* Grid responsive: 2 columnas en móvil, 4 en tablet, 5 en escritorio */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-2">
-        
-        {/* Total Reservas */}
-        <div className="text-center">
-          <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
-            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+        {/* MÉTRICAS INFERIORES - RESPONSIVE */}
+        {/* ============================================================ */}
+        {!error && citas.length > 0 && (
+          <div className={`pt-6 border-t ${
+            isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
           }`}>
-            Total
-          </p>
-          <p className={`font-serif text-2xl sm:text-3xl font-light ${
-            isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
-          }`}>
-            {citas.length}
-          </p>
-        </div>
+            <div className={`border rounded-2xl p-6 shadow-sm transition-all duration-300 ${
+              isDark 
+                ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_10px_30px_rgba(0,0,0,0.2)]' 
+                : 'bg-white border-[#F0E4DA] shadow-[0_10px_30px_rgba(240,228,218,0.5)]'
+            }`}>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[#D4AF37]/20">
+                
+                {/* Total Reservas */}
+                <div className="text-center pt-2 md:pt-0">
+                  <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Total
+                  </p>
+                  <p className={`font-serif text-2xl sm:text-3xl font-light mt-1 ${
+                    isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+                  }`}>
+                    {citas.length}
+                  </p>
+                </div>
 
-        {/* Separador visual (solo en desktop) */}
-        <div className="hidden lg:block" />
+                {/* Confirmadas */}
+                <div className="text-center pt-2 md:pt-0">
+                  <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Confirmadas
+                  </p>
+                  <p className="font-serif text-2xl sm:text-3xl font-light text-[#D4AF37] mt-1">
+                    {citas.filter(c => c.status === 'confirmed').length}
+                  </p>
+                </div>
 
-        {/* Confirmadas */}
-        <div className="text-center">
-          <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
-            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            Confirmadas
-          </p>
-          <p className="font-serif text-2xl sm:text-3xl font-light text-[#D4AF37]">
-            {citas.filter(c => c.status === 'confirmed').length}
-          </p>
-        </div>
+                {/* Pendientes */}
+                <div className="text-center pt-2 md:pt-0">
+                  <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Pendientes
+                  </p>
+                  <p className={`font-serif text-2xl sm:text-3xl font-light mt-1 ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    {citas.filter(c => c.status === 'pending').length}
+                  </p>
+                </div>
 
-        {/* Separador visual (solo en desktop) */}
-        <div className="hidden lg:block" />
+                {/* Canceladas */}
+                <div className="text-center pt-2 md:pt-0">
+                  <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
+                    isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+                  }`}>
+                    Canceladas
+                  </p>
+                  <p className="font-serif text-2xl sm:text-3xl font-light text-rose-500 mt-1">
+                    {citas.filter(c => c.status === 'cancelled').length}
+                  </p>
+                </div>
 
-        {/* Pendientes */}
-        <div className="text-center">
-          <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
-            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            Pendientes
-          </p>
-          <p className={`font-serif text-2xl sm:text-3xl font-light ${
-            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            {citas.filter(c => c.status === 'pending').length}
-          </p>
-        </div>
-
-        {/* Separador visual (solo en desktop) */}
-        <div className="hidden lg:block" />
-
-        {/* Canceladas */}
-        <div className="text-center">
-          <p className={`text-[8px] font-bold tracking-[0.2em] uppercase ${
-            isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
-          }`}>
-            Canceladas
-          </p>
-          <p className="font-serif text-2xl sm:text-3xl font-light text-rose-500">
-            {citas.filter(c => c.status === 'cancelled').length}
-          </p>
-        </div>
-
-      </div>
-    </div>
-  </div>
-)}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
