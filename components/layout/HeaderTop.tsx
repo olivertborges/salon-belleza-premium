@@ -1,211 +1,165 @@
 // @ts-nocheck
 'use client'
 
+import React, { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { Menu, Globe } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useSettings } from '@/contexts/SettingsContext'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { supabase } from '@/lib/supabase/client'
-import { Menu, Bell, Sun, Moon, AlertTriangle } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
 
 interface HeaderTopProps {
-  setIsSidebarOpen: (open: boolean) => void
+  setIsSidebarOpen?: (open: boolean) => void
 }
 
 export default function HeaderTop({ setIsSidebarOpen }: HeaderTopProps) {
   const { user } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const { settings } = useSettings()
+  const { theme } = useTheme()
   
+  const [userName, setUserName] = useState('Usuario')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [displayName, setDisplayName] = useState<string>('Usuario')
-  const [visualLog, setVisualLog] = useState<string | null>('Cargando...')
+  const [imgStatus, setImgStatus] = useState<'loading' | 'success' | 'error' | 'empty'>('loading')
 
   const isDark = theme === 'dark'
-  const primaryColor = settings?.primary_color || '#DB5B9A'
-  const secondaryColor = settings?.secondary_color || '#E5A46E'
-  const brandGradient = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
 
-  const fetchClientProfile = useCallback(async () => {
-    if (!user) {
-      setVisualLog('ERROR: No hay usuario autenticado')
+  const fetchAvatarDirect = useCallback(async () => {
+    if (!user?.id) {
+      setImgStatus('empty')
       return
     }
 
+    const initialName = user.user_metadata?.full_name || 
+                        user.user_metadata?.name || 
+                        user.email?.split('@')[0] || 
+                        'Usuario'
+    setUserName(initialName)
+
     try {
-      setVisualLog(`Buscando usuario...`)
+      setImgStatus('loading')
+      let foundAvatar = null
 
-      // 1. Buscar por ID de Auth en la tabla clients
-      let { data: client, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle()
+      // 1. Prioridad: Auth Metadata
+      if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
+        foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
+      }
 
-      // 2. Si no lo halla por ID, buscar por email como respaldo seguro
-      if (!client && user.email) {
-        const { data: clientByEmail, error: emailErr } = await supabase
+      // 2. Prioridad: Tabla clients (por ID o Email)
+      if (!foundAvatar) {
+        let { data: clientData } = await supabase
           .from('clients')
           .select('*')
-          .eq('email', user.email)
+          .eq('id', user.id)
           .maybeSingle()
 
-        if (!emailErr && clientByEmail) {
-          client = clientByEmail
+        if (!clientData && user.email) {
+          const { data: clientByEmail } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('email', user.email)
+            .maybeSingle()
+          if (clientByEmail) clientData = clientByEmail
+        }
+
+        if (clientData) {
+          const name = clientData.full_name || clientData.name || clientData.nombre
+          if (name) setUserName(name)
+
+          foundAvatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url || clientData.avatar
         }
       }
 
-      if (error) {
-        setVisualLog(`DB Error: ${error.message}`)
-        return
+      // 3. Prioridad: Tabla profiles
+      if (!foundAvatar) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('avatar_url, full_name, name')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profileData) {
+          if (profileData.full_name || profileData.name) setUserName(profileData.full_name || profileData.name)
+          if (profileData.avatar_url) foundAvatar = profileData.avatar_url
+        }
       }
 
-      if (client) {
-        const name = client.full_name || client.name || client.nombre
-        if (name) setDisplayName(name)
-
-        const rawUrl = client.avatar_url || client.foto || client.image_url || client.photo_url || client.avatar
-        
-        if (rawUrl) {
-          const cleanUrl = rawUrl.includes('?') ? `${rawUrl}&t=${Date.now()}` : `${rawUrl}?t=${Date.now()}`
-          setAvatarUrl(cleanUrl)
-          setVisualLog(null) // Carga exitosa sin errores
-          return
-        } else {
-          setVisualLog('AVISO: Registro encontrado pero sin URL de foto')
-        }
+      if (foundAvatar) {
+        const cleanUrl = foundAvatar.includes('?') ? `${foundAvatar}&t=${Date.now()}` : `${foundAvatar}?t=${Date.now()}`
+        setAvatarUrl(cleanUrl)
+        setImgStatus('success')
       } else {
-        setVisualLog('AVISO: Usuario no registrado en la tabla clients')
+        setImgStatus('empty')
       }
 
-      // Fallback a metadatos de sesión en Auth
-      const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]
-      if (metaName) setDisplayName(metaName)
-
-      const metaAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture
-      if (metaAvatar) {
-        setAvatarUrl(metaAvatar)
-        setVisualLog(null)
-      }
-
-    } catch (err: any) {
-      setVisualLog(`Error: ${err.message || 'Desconocido'}`)
+    } catch (err) {
+      console.error('Error cargando avatar en HeaderTop:', err)
+      setImgStatus('error')
     }
   }, [user])
 
   useEffect(() => {
-    fetchClientProfile()
+    fetchAvatarDirect()
+  }, [fetchAvatarDirect])
 
-    if (!user?.id) return
-
-    const channel = supabase
-      .channel('header_clients_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'clients' },
-        () => { fetchClientProfile() }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, fetchClientProfile])
-
-  const getInitials = () => {
-    if (displayName) {
-      return displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    }
-    return 'U'
-  }
+  const firstName = userName.split(' ')[0] || userName
+  const inicialNombre = firstName.charAt(0).toUpperCase()
 
   return (
-    <>
-      {/* Log visual interactivo para pantalla móvil */}
-      {visualLog && (
-        <div 
-          onClick={() => setVisualLog(null)}
-          className="bg-red-600 text-white text-[10px] p-2 px-3 font-mono flex items-center justify-between gap-2 shadow-lg z-50 relative cursor-pointer"
+    <header className={`sticky top-0 z-30 border-b px-4 h-20 flex items-center justify-between gap-4 shrink-0 transition-colors duration-500 ${
+      isDark ? 'bg-[#1E120C]/80 border-[#3D281E]' : 'bg-[#FFF9F6]/80 border-[#F0E4DA]'
+    }`}>
+      <button 
+        onClick={() => setIsSidebarOpen && setIsSidebarOpen(true)} 
+        className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      <div className="flex items-center gap-3 ml-auto">
+        <Link 
+          href="/" 
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#3D281E] text-xs font-semibold text-[#A89588] hover:text-[#FFF9F6] transition-colors"
         >
-          <div className="flex items-center gap-1.5 overflow-hidden">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span className="truncate"><strong>Debug:</strong> {visualLog}</span>
+          <Globe className="w-4 h-4" />
+          <span>Ver Web</span>
+        </Link>
+
+        <ThemeToggle />
+
+        {/* INDICADOR DE ESTADO E IDENTIFICACIÓN */}
+        <div className="text-right flex flex-col items-end">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${
+              imgStatus === 'success' ? 'bg-green-500' :
+              imgStatus === 'loading' ? 'bg-yellow-500 animate-pulse' :
+              imgStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
+            }`} />
+            <p className="text-xs font-bold">{userName}</p>
           </div>
-          <span className="text-[9px] underline shrink-0">[Ocultar]</span>
+          <span className="text-[8px] font-black uppercase text-[#D4AF37]">
+            {imgStatus === 'success' ? 'FOTO OK' : imgStatus === 'loading' ? 'CARGANDO...' : 'SIN FOTO / ERROR'}
+          </span>
         </div>
-      )}
-
-      <header className={`sticky top-0 z-30 transition-all duration-300 ${
-        isDark 
-          ? 'bg-[#0f0c1b]/90 backdrop-blur-md border-b border-fuchsia-950/30' 
-          : 'bg-white/80 backdrop-blur-md border-b border-pink-100/60'
-      }`}>
-        <div className="flex items-center justify-between px-4 md:px-6 h-14 md:h-16">
-          <div className="flex items-center gap-3">
-            {/* Botón Hamburguesa que abre el Menú Lateral */}
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className={`lg:hidden p-2 rounded-xl transition-all ${
-                isDark ? 'hover:bg-fuchsia-950/30 text-stone-400' : 'hover:bg-pink-50 text-stone-500'
-              }`}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            <div className="hidden lg:flex items-center gap-2">
-              <h1 className={`text-sm font-bold tracking-tight ${isDark ? 'text-white' : 'text-stone-900'}`}>
-                Fresh<span className="font-light" style={{ color: primaryColor }}>Nails</span>
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleTheme}
-              className="p-2 rounded-xl text-stone-400 hover:text-amber-400"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            <button className="p-2 rounded-xl text-stone-400">
-              <Bell className="w-4 h-4" />
-            </button>
-
-            {/* Perfil Exclusivo del Cliente */}
-            <div className="flex items-center gap-2 pl-2 border-l border-stone-200 dark:border-fuchsia-950/30">
-              <div className="text-right leading-tight">
-                <p className={`text-[11px] font-semibold truncate max-w-[110px] ${
-                  isDark ? 'text-white' : 'text-stone-800'
-                }`}>
-                  {displayName}
-                </p>
-                <p className="text-[8px] uppercase tracking-wider font-medium text-pink-500">
-                  Cliente
-                </p>
-              </div>
-              
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm overflow-hidden shrink-0"
-                style={{ background: avatarUrl ? 'transparent' : brandGradient }}
-              >
-                {avatarUrl ? (
-                  <img 
-                    src={avatarUrl} 
-                    alt="Avatar" 
-                    className="w-full h-full object-cover rounded-lg"
-                    onError={() => {
-                      setVisualLog('ERROR IMG LOAD: No se pudo renderizar la foto')
-                      setAvatarUrl(null)
-                    }}
-                  />
-                ) : (
-                  <span>{getInitials()}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-    </>
+        
+        <Link 
+          href="/perfil" 
+          className="w-10 h-10 rounded-xl border border-[#3D281E] overflow-hidden flex items-center justify-center text-sm font-black bg-[#2A1B14] text-[#D4AF37] relative shrink-0"
+        >
+          {avatarUrl && imgStatus !== 'error' ? (
+            <img 
+              src={avatarUrl} 
+              alt="Avatar" 
+              className="w-full h-full object-cover"
+              onError={() => {
+                console.error('Error al renderizar imagen:', avatarUrl)
+                setImgStatus('error')
+              }}
+            />
+          ) : (
+            <span>{inicialNombre}</span>
+          )}
+        </Link>
+      </div>
+    </header>
   )
 }
