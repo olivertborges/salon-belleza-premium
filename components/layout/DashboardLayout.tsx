@@ -26,6 +26,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
+  // 🔒 BLOQUEAR EL REBOTE GLOBAL SOLO MIENTRAS ESTÉ EN EL DASHBOARD
+  useEffect(() => {
+    // Guardamos los estilos originales del body
+    const originalStyle = window.getComputedStyle(document.body).overflow
+    const originalTouchAction = document.body.style.touchAction
+
+    // Bloqueamos el scroll del body del navegador
+    document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+
+    // Al desmontar el componente (salir del dashboard), restauramos todo como estaba
+    return () => {
+      document.body.style.overflow = originalStyle
+      document.body.style.touchAction = originalTouchAction
+    }
+  }, [])
+
   const fetchAvatarDirect = useCallback(async () => {
     if (!user?.id) return
 
@@ -38,14 +55,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     try {
       let foundAvatar = null
 
-      // 1. Consulta por auth_user_id
       let { data: clientData } = await supabase
         .from('clients')
         .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle()
 
-      // Respaldo por email
       if (!clientData && user.email) {
         const { data: clientByEmail } = await supabase
           .from('clients')
@@ -62,7 +77,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         foundAvatar = clientData.avatar_url || clientData.foto || clientData.image_url || clientData.photo_url || clientData.avatar
       }
 
-      // 2. Respaldo en Auth Metadata
       if (!foundAvatar && (user.user_metadata?.avatar_url || user.user_metadata?.picture)) {
         foundAvatar = user.user_metadata.avatar_url || user.user_metadata.picture
       }
@@ -83,7 +97,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const firstName = userName.split(' ')[0] || userName
   const inicialNombre = firstName.charAt(0).toUpperCase()
 
-  // Menú para clientes
   const menuItems = [
     { icon: Home, label: 'Inicio Portal', href: '/portal' },
     { icon: CalendarPlus, label: 'Reservar Turno', href: '/agenda' },
@@ -112,8 +125,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    /* 1. SE FIJA EL ALTO COMPLETO Y SE BLOQUEA CUALQUIER SCROLL EXTERNO */
-    <div className={`h-screen w-screen antialiased flex relative transition-colors duration-500 overflow-hidden ${
+    /* Usamos 'fixed inset-0' para anclar el dashboard al viewport sin afectar al CSS global */
+    <div className={`fixed inset-0 w-screen h-[100dvh] antialiased flex relative transition-colors duration-500 overflow-hidden select-none overscroll-none ${
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
@@ -181,9 +194,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ÁREA DERECHA (HEADER + MAIN) */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
 
-        {/* 2. HEADER COMPLETAMENTE RÍGIDO Y DESVINCULADO DEL EVENTO SCROLL
-            Se cambiaron las clases 'sticky top-0' por 'relative shrink-0 w-full' */}
-        <header className={`relative shrink-0 w-full z-30 border-b px-4 h-20 flex items-center justify-between gap-4 ${
+        {/* HEADER RIGIDO */}
+        <header className={`shrink-0 w-full z-30 border-b px-4 h-20 flex items-center justify-between gap-4 ${
           isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'
         }`}>
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl border border-[#3D281E] text-[#A89588]">
@@ -219,8 +231,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* 3. ÚNICO CONTENEDOR CON SCROLL DEL SISTEMA */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+        {/* ÁREA DE CONTENIDO CON SCROLL TOTALMENTE AISLADO */}
+        <main 
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 overscroll-y-contain"
+          style={{ touchAction: 'pan-y' }}
+        >
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
