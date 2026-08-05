@@ -11,7 +11,8 @@ import {
   Layers, Edit, Trash2, CheckCircle2, 
   X, Save, Tag, Scissors, Star, Heart,
   RefreshCw, Package, Eye, Hand,
-  AlertCircle, ChevronDown, ChevronLeft, ChevronRight
+  AlertCircle, ChevronDown, ChevronLeft, ChevronRight,
+  Image as ImageIcon, Upload, Loader2
 } from 'lucide-react'
 
 type Servicio = {
@@ -22,6 +23,7 @@ type Servicio = {
   duration: number
   badge: string
   category: string
+  image_url?: string
   is_active: boolean
   created_at: string
 }
@@ -42,10 +44,10 @@ const initialFormState = {
   price: '',
   duration: '',
   badge: '',
-  category: 'Uñas'
+  category: 'Uñas',
+  image_url: ''
 }
 
-// Configuración de paginación
 const ITEMS_PER_PAGE = 6
 
 export default function ServiciosPage() {
@@ -59,16 +61,16 @@ export default function ServiciosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
   const [loading, setLoading] = useState<boolean>(true)
   const [refreshing, setRefreshing] = useState<boolean>(false)
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showModal, setShowModal] = useState<boolean>(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState(initialFormState)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
-  // ============================================================
-  // ESTADOS DE PAGINACIÓN
-  // ============================================================
   const [currentPage, setCurrentPage] = useState<number>(1)
 
   const gold = '#D4AF37'
@@ -79,7 +81,6 @@ export default function ServiciosPage() {
     backgroundImage: `linear-gradient(135deg, ${gold} 0%, ${goldDark} 50%, ${goldLight} 100%)`
   }
 
-  // Reiniciar a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1)
   }, [search, selectedCategory])
@@ -127,6 +128,45 @@ export default function ServiciosPage() {
     setTimeout(() => setSuccess(null), 2500)
   }
 
+  // MANEJO DE SELECCIÓN DE IMAGEN
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('La imagen no debe superar los 5MB')
+        return
+      }
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
+  // SUBIDA DE LA IMAGEN AL BUCKET 'services'
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${tenantId}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('services')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('services')
+        .getPublicUrl(fileName)
+
+      return publicUrlData.publicUrl
+    } catch (err: any) {
+      console.error('Error subiendo imagen a Storage:', err)
+      throw new Error('No se pudo subir la imagen del servicio')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tenantId) {
@@ -137,18 +177,29 @@ export default function ServiciosPage() {
     setError(null)
     setSuccess(null)
 
-    const payload = {
-      tenant_id: tenantId,
-      name: formData.name.trim(),
-      description: formData.description.trim() || '',
-      price: parseFloat(formData.price) || 0,
-      duration: parseInt(formData.duration) || 60,
-      badge: formData.badge.trim().toLowerCase(),
-      category: formData.category,
-      is_active: true
-    }
-
     try {
+      let finalImageUrl = formData.image_url
+
+      // Si se seleccionó una nueva imagen local, subirla a Supabase Storage
+      if (imageFile) {
+        const uploadedUrl = await uploadImageToStorage(imageFile)
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl
+        }
+      }
+
+      const payload = {
+        tenant_id: tenantId,
+        name: formData.name.trim(),
+        description: formData.description.trim() || '',
+        price: parseFloat(formData.price) || 0,
+        duration: parseInt(formData.duration) || 60,
+        badge: formData.badge.trim().toLowerCase(),
+        category: formData.category,
+        image_url: finalImageUrl,
+        is_active: true
+      }
+
       if (editingId) {
         const { error: updateError } = await supabase
           .from('services')
@@ -167,6 +218,8 @@ export default function ServiciosPage() {
       setShowModal(false)
       setEditingId(null)
       setFormData(initialFormState)
+      setImageFile(null)
+      setImagePreview(null)
       fetchServicios(false)
     } catch (err: any) {
       console.error('Error guardando servicio:', err)
@@ -187,14 +240,19 @@ export default function ServiciosPage() {
       price: String(servicio.price),
       duration: String(servicio.duration),
       badge: servicio.badge || '',
-      category: servicio.category || 'Uñas'
+      category: servicio.category || 'Uñas',
+      image_url: servicio.image_url || ''
     })
+    setImageFile(null)
+    setImagePreview(servicio.image_url || null)
     setShowModal(true)
   }
 
   const handleCreateNew = () => {
     setEditingId(null)
     setFormData(initialFormState)
+    setImageFile(null)
+    setImagePreview(null)
     setShowModal(true)
   }
 
@@ -222,9 +280,6 @@ export default function ServiciosPage() {
     }
   }
 
-  // ============================================================
-  // LOGICA DE FILTRADO Y PROCESAMIENTO DE PAGINACIÓN
-  // ============================================================
   const filtrados = servicios.filter((s: Servicio) => {
     const matchSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || 
                         s.description?.toLowerCase().includes(search.toLowerCase())
@@ -233,8 +288,6 @@ export default function ServiciosPage() {
   })
 
   const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE)
-  
-  // Obtener sólo los servicios de la página actual
   const serviciosPaginados = filtrados.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -433,71 +486,85 @@ export default function ServiciosPage() {
           })}
         </div>
 
-        {/* ============================================================ */}
-        {/* LISTADO DE TRATAMIENTOS CON SEGMENTO PAGINADO */}
-        {/* ============================================================ */}
+        {/* LISTADO CON IMÁGENES */}
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300 ${refreshing ? 'opacity-50' : 'opacity-100'}`}>
           {serviciosPaginados.map((servicio: Servicio) => (
             <div 
               key={servicio.id} 
-              className={`rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group ${
+              className={`rounded-2xl border overflow-hidden flex flex-col justify-between shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group ${
                 isDark ? 'bg-[#2A1B14] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#F0E4DA] hover:border-[#D4AF37]/40'
               }`}
             >
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center">
+              {/* IMAGEN DEL SERVICIO */}
+              <div className="relative h-44 w-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                {servicio.image_url ? (
+                  <img 
+                    src={servicio.image_url} 
+                    alt={servicio.name} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center opacity-40 text-stone-500">
+                    <ImageIcon className="w-8 h-8 mb-1" />
+                    <span className="text-[10px] uppercase font-mono">Sin Imagen</span>
+                  </div>
+                )}
+                {servicio.badge && (
+                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-[#1A0E0A] bg-[#D4AF37] shadow-md">
+                    {servicio.badge.toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
                   <span className={`text-[9px] uppercase font-mono tracking-widest flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                     <Layers className="w-3 h-3 text-[#D4AF37]" /> 
                     {servicio.category || 'General'}
                   </span>
-                  {servicio.badge && (
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider text-[#1A0E0A] bg-[#D4AF37]">
-                      {servicio.badge.toUpperCase()}
-                    </span>
-                  )}
+
+                  <h3 className={`text-sm font-medium transition-colors ${isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'}`}>
+                    {servicio.name}
+                  </h3>
+
+                  <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    {servicio.description || 'Sin descripción detallada asignada.'}
+                  </p>
                 </div>
 
-                <h3 className={`text-sm font-medium transition-colors ${isDark ? 'text-[#FFF9F6] group-hover:text-[#D4AF37]' : 'text-[#1A0E0A] group-hover:text-[#D4AF37]'}`}>
-                  {servicio.name}
-                </h3>
-
-                <p className={`text-xs line-clamp-2 leading-relaxed min-h-[36px] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                  {servicio.description || 'Sin descripción detallada asignada.'}
-                </p>
-              </div>
-
-              <div>
-                <div className={`mt-4 pt-3.5 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
-                  <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{servicio.duration || 60} min</span>
+                <div>
+                  <div className={`pt-3 border-t flex justify-between items-center text-xs font-mono ${isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'}`}>
+                    <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{servicio.duration || 60} min</span>
+                    </div>
+                    <div className="font-mono font-extrabold text-sm text-[#D4AF37]">
+                      ${servicio.price?.toLocaleString()}
+                    </div>
                   </div>
-                  <div className="font-mono font-extrabold text-sm text-[#D4AF37]">
-                    ${servicio.price?.toLocaleString()}
-                  </div>
-                </div>
 
-                <div className="flex gap-2 pt-3.5 mt-1">
-                  <button 
-                    onClick={() => handleEdit(servicio)} 
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
-                      isDark 
-                        ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
-                        : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
-                    }`}
-                  >
-                    <Edit className="w-3.5 h-3.5" /> Editar
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(servicio.id)} 
-                    className={`px-3 py-2 rounded-xl border transition-all ${
-                      isDark 
-                        ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-red-500 hover:border-red-500/30' 
-                        : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-red-500 hover:border-red-500/30'
-                    }`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex gap-2 pt-3">
+                    <button 
+                      onClick={() => handleEdit(servicio)} 
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
+                        isDark 
+                          ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-[#D4AF37] hover:border-[#D4AF37]/40' 
+                          : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
+                      }`}
+                    >
+                      <Edit className="w-3.5 h-3.5" /> Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(servicio.id)} 
+                      className={`px-3 py-2 rounded-xl border transition-all ${
+                        isDark 
+                          ? 'bg-[#1E120C] border-[#3D281E] text-[#A89588] hover:text-red-500 hover:border-red-500/30' 
+                          : 'bg-[#FFF9F6] border-[#F0E4DA] text-[#5C4A3E] hover:text-red-500 hover:border-red-500/30'
+                      }`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -512,9 +579,7 @@ export default function ServiciosPage() {
           )}
         </div>
 
-        {/* ============================================================ */}
-        {/* BARRAS DE CONTROLES DE PAGINACIÓN */}
-        {/* ============================================================ */}
+        {/* PAGINACIÓN */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 font-mono text-xs">
             <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>
@@ -564,7 +629,7 @@ export default function ServiciosPage() {
           </div>
         )}
 
-        {/* DIÁLOGO MODAL */}
+        {/* DIÁLOGO MODAL CON SUBIDA DE FOTO */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 max-h-[90vh] overflow-y-auto transition-all duration-300 ${
@@ -589,6 +654,44 @@ export default function ServiciosPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                
+                {/* CAMPO PARA SUBIR IMAGEN */}
+                <div>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
+                    Fotografía del Servicio
+                  </label>
+                  
+                  <div className="space-y-3">
+                    {imagePreview ? (
+                      <div className="relative h-40 w-full rounded-xl overflow-hidden border border-[#D4AF37]/30 group">
+                        <img src={imagePreview} alt="Previsualización" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null)
+                            setImagePreview(null)
+                            setFormData({...formData, image_url: ''})
+                          }}
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-600 text-white shadow-lg hover:bg-red-700 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className={`flex flex-col items-center justify-center h-32 w-full rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                        isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/50' : 'bg-[#FFF9F6] border-[#F0E4DA] hover:border-[#D4AF37]/50'
+                      }`}>
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-6 h-6 text-[#D4AF37] mb-1" />
+                          <p className="text-xs font-semibold text-[#D4AF37]">Haz clic para subir imagen</p>
+                          <p className="text-[9px] text-[#A89588] mt-0.5">PNG, JPG o WEBP (Máx. 5MB)</p>
+                        </div>
+                        <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
                     Nombre del Servicio *
@@ -696,6 +799,7 @@ export default function ServiciosPage() {
                   <button 
                     type="button" 
                     onClick={() => setShowModal(false)} 
+                    disabled={uploadingImage}
                     className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-colors ${
                       isDark ? 'border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]' : 'border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
                     }`}
@@ -704,9 +808,11 @@ export default function ServiciosPage() {
                   </button>
                   <button 
                     type="submit" 
-                    className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0]"
+                    disabled={uploadingImage}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[#1A0E0A] hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md bg-[#D4AF37] hover:bg-[#E8D5A0] disabled:opacity-50"
                   >
-                    <Save className="w-4 h-4" /> Guardar
+                    {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{uploadingImage ? 'Subiendo...' : 'Guardar'}</span>
                   </button>
                 </div>
               </form>
