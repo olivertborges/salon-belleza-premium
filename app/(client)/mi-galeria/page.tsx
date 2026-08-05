@@ -64,6 +64,9 @@ export default function GaleriaPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // URL de la foto flash destacada para el Hero
+  const HERO_FLASH_IMAGE = "https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=1000&auto=format&fit=crop"
+
   // ============================================================
   // FUNCIÓN PARA OBTENER TENANT_ID
   // ============================================================
@@ -300,67 +303,97 @@ export default function GaleriaPage() {
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       {/* ============================================================ */}
-{/* HERO — VIDEO DE FONDO COMPLETO EN LA TARJETA HERO */}
-{/* ============================================================ */}
-<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-  <div className={`relative overflow-hidden rounded-3xl border shadow-2xl transition-all duration-500 ${
-    isDark ? 'border-[#3D281E] shadow-[0_20px_50px_rgba(0,0,0,0.8)]' : 'border-[#F0E4DA] shadow-[0_20px_50px_rgba(240,228,218,0.8)]'
-  }`}>
+      {/* HERO — ESTRUCTURA ORIGINAL RESTAURADA */}
+      {/* ============================================================ */}
+      <div className={`relative overflow-hidden min-h-[70vh] flex items-center justify-center border-b transition-all duration-300 py-12 ${
+        isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
+      }`}>
+        <div className={`absolute inset-0 ${
+          isDark 
+            ? 'bg-gradient-to-br from-[#1E120C] via-[#2A1B14] to-[#1E120C]' 
+            : 'bg-gradient-to-br from-[#FFF9F6] via-[#F5EDE8] to-[#FFF9F6]'
+        }`}>
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#D4AF37]/10 rounded-full blur-[150px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
+        </div>
 
-    {/* Video reproduciéndose en todo el fondo */}
-    <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
-      <video
-        src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/any.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="w-full h-full object-cover scale-105"
-      />
-      {/* Capa de opacidad y degradado para que el texto sea perfectamente legible */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/60" />
-    </div>
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Lado Izquierdo: Información Editorial */}
+            <div className="lg:col-span-6 text-center lg:text-left space-y-6">
+              <div className={`inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-sm border ${
+                isDark ? 'bg-[#D4AF37]/10 border-[#D4AF37]/20' : 'bg-[#D4AF37]/10 border-[#D4AF37]/20'
+              }`}>
+                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-[spin_4s_linear_infinite]" />
+                <span className="text-[8px] tracking-[0.3em] uppercase font-black text-[#D4AF37]">
+                  ✦ Galería de Arte & Tendencias ✦
+                </span>
+              </div>
 
-    {/* Contenido flotando encima del video */}
-    <div className="relative z-10 px-6 py-20 sm:py-28 md:py-36 max-w-3xl mx-auto text-center space-y-6">
-      
-      {/* Badge Flotante */}
-      <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/10 border border-white/20 text-[#D4AF37] shadow-lg">
-        <Sparkles className="w-3.5 h-3.5 animate-[spin_4s_linear_infinite]" />
-        <span className="text-[9px] tracking-[0.3em] uppercase font-black text-amber-200">
-          ✦ Galería & Experiencia Visual ✦
-        </span>
+              <h1 className={`text-4xl sm:text-6xl font-light font-serif tracking-wide leading-[1.1] ${
+                isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'
+              }`}>
+                Inspiración
+                <span className="block font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#D4AF37] bg-[length:200%_auto] animate-[gradient_4s_ease-in-out_infinite] mt-1">
+                  Visual
+                </span>
+              </h1>
+
+              <p className={`text-sm font-light max-w-md mx-auto lg:mx-0 ${
+                isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
+              }`}>
+                Descubre nuestros diseños destacados y explora la colección completa de acabados exclusivos para salón.
+              </p>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <button 
+                  onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                  className={`group inline-flex items-center gap-2 px-6 py-3 rounded-full text-[9px] tracking-[0.25em] uppercase font-bold transition-all duration-300 ${
+                    isDark 
+                      ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
+                      : 'bg-[#1A0E0A] text-[#FFF9F6] hover:bg-[#D4AF37]'
+                  }`}
+                >
+                  <span>Explorar Colección</span>
+                  <ArrowDown className="w-3.5 h-3.5 group-hover:translate-y-1 transition-transform duration-300" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lado Derecho: Tarjeta con Foto Flash Destacada */}
+            <div className="lg:col-span-6 flex justify-center items-center">
+              <div className={`relative w-full max-w-[320px] sm:max-w-[360px] aspect-[4/5] rounded-3xl p-2.5 border shadow-2xl overflow-hidden transition-all duration-300 ${
+                isDark 
+                  ? 'bg-[#2A1B14] border-[#3D281E] shadow-[0_20px_50px_rgba(0,0,0,0.6)]' 
+                  : 'bg-white border-[#F0E4DA] shadow-[0_20px_50px_rgba(240,228,218,0.8)]'
+              }`}>
+                <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#1E120C]">
+                  <img
+                    src={HERO_FLASH_IMAGE}
+                    alt="Diseño destacado de manicura"
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                  />
+                  
+                  {/* Sombra gradiente inferior */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                  {/* Detalle flotante en la tarjeta */}
+                  <div className="absolute bottom-5 left-5 right-5 text-white pointer-events-none space-y-1">
+                    <span className="inline-block text-[8px] uppercase tracking-[0.25em] font-black text-[#D4AF37] bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#D4AF37]/30">
+                      ✦ Tendencia
+                    </span>
+                    <h3 className="text-sm font-serif font-light text-white leading-snug">
+                      Nail Art & Estilo de Salón
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
-
-      {/* Título Principal */}
-      <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-light text-white tracking-wide leading-tight drop-shadow-md">
-        Inspiración{' '}
-        <span className="italic block font-serif text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#FFF5D0] to-[#D4AF37]">
-          Visual & Arte
-        </span>
-      </h1>
-
-      {/* Descripción */}
-      <p className="text-sm sm:text-base font-light text-white/80 max-w-xl mx-auto leading-relaxed drop-shadow-sm">
-        Explora nuestros acabados exclusivos y las tendencias más finas en un solo lugar.
-      </p>
-
-      {/* Botón de Acción */}
-      <div className="pt-4 flex items-center justify-center">
-        <button 
-          onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="group inline-flex items-center gap-3 px-8 py-3.5 rounded-full text-[10px] tracking-[0.25em] uppercase font-bold bg-[#D4AF37] text-[#1A0E0A] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_10px_25px_rgba(212,175,55,0.3)] hover:scale-105"
-        >
-          <span>Explorar Colección</span>
-          <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform duration-300" />
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 
       {/* ============================================================ */}
       {/* GALERÍA */}
