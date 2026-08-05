@@ -184,7 +184,7 @@ function AgendaContent() {
         }
       } catch (err) {
         setError('Error al conectar con el catálogo de Supabase.')
-      } font-lightally {
+      } finally {
         if (isMounted) setLoading(false)
       }
     }
