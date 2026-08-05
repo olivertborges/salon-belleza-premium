@@ -26,23 +26,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === 'dark'
 
-  // 🔒 BLOQUEAR EL REBOTE GLOBAL SOLO MIENTRAS ESTÉ EN EL DASHBOARD
-  useEffect(() => {
-    // Guardamos los estilos originales del body
-    const originalStyle = window.getComputedStyle(document.body).overflow
-    const originalTouchAction = document.body.style.touchAction
-
-    // Bloqueamos el scroll del body del navegador
-    document.body.style.overflow = 'hidden'
-    document.body.style.touchAction = 'none'
-
-    // Al desmontar el componente (salir del dashboard), restauramos todo como estaba
-    return () => {
-      document.body.style.overflow = originalStyle
-      document.body.style.touchAction = originalTouchAction
-    }
-  }, [])
-
   const fetchAvatarDirect = useCallback(async () => {
     if (!user?.id) return
 
@@ -125,8 +108,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    /* Usamos 'fixed inset-0' para anclar el dashboard al viewport sin afectar al CSS global */
-    <div className={`fixed inset-0 w-screen h-[100dvh] antialiased flex relative transition-colors duration-500 overflow-hidden select-none overscroll-none ${
+    /* Contenedor principal a pantalla completa sin bloquear el scroll del sistema */
+    <div className={`fixed inset-0 w-screen h-[100dvh] antialiased flex relative transition-colors duration-500 select-none ${
       isDark ? 'bg-[#1E120C]' : 'bg-[#FFF9F6]'
     }`}>
 
@@ -231,11 +214,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* ÁREA DE CONTENIDO CON SCROLL TOTALMENTE AISLADO */}
-        <main 
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 overscroll-y-contain"
-          style={{ touchAction: 'pan-y' }}
-        >
+        {/* ÁREA DE CONTENIDO CON SCROLL HABILITADO */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
