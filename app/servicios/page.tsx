@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FaClock, FaHeart, FaEye, FaGem, FaBars, FaTimes, FaRegStar,
-  FaArrowRight, FaUserTie, FaSparkles, FaQuoteLeft, FaAward
+  FaUserTie, FaAward
 } from 'react-icons/fa'
 import { 
   GiNails, GiSparkles, GiScissors, GiLipstick
@@ -62,7 +62,7 @@ const getProfesionalPorServicio = (category: string) => {
 }
 
 // ============================================================
-// ANIMACIONES Y VARIANTES
+// ANIMACIONES
 // ============================================================
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -75,7 +75,7 @@ const staggerContainer = {
 }
 
 // ============================================================
-// HEADER Y NAVEGACIÓN UNIFICADA
+// HEADER Y NAVEGACIÓN
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -166,86 +166,80 @@ const Header = () => {
 }
 
 // ============================================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL CON ESTRATEGIA DE FALLBACK EN SUPABASE
 // ============================================================
 export default function ServiciosPublicPage() {
   const [servicios, setServicios] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [activeService, setActiveService] = useState<any | null>(null)
-  const [galleryImages, setGalleryImages] = useState<any[]>([])
+  const [debugError, setDebugError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchServiciosRobust = async () => {
       try {
         setLoading(true)
-        
-        // 1. Intentar rescatar Tenant ID si existe sesión activa
+        setDebugError(null)
+
+        // 1. Obtener Tenant ID desde la sesión si está autenticado
         let tenantId = null
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user?.user_metadata?.tenant_id) tenantId = session.user.user_metadata.tenant_id
         if (!tenantId && session?.user?.app_metadata?.tenant_id) tenantId = session.user.app_metadata.tenant_id
 
-        // 2. Estrategia de rescate si es visitante anónimo
-        if (!tenantId) {
-          const { data: fallbackQuery } = await supabase
-            .from('services')
-            .select('tenant_id')
-            .limit(1)
-            .maybeSingle()
-          
-          if (fallbackQuery?.tenant_id) tenantId = fallbackQuery.tenant_id
-        }
+        // 2. INTENTO 1: Buscar servicios filtrando por tenant_id e is_active
+        let query1 = supabase.from('services').select('*')
+        if (tenantId) query1 = query1.eq('tenant_id', tenantId)
+        query1 = query1.eq('is_active', true)
 
-        // 3. Consulta de servicios activos
-        let query = supabase
-          .from('services')
-          .select('id, name, description, price, duration, category, badge, is_active, subcategory, image_url, tenant_id')
-          .eq('is_active', true)
+        let { data, error } = await query1
 
-        if (tenantId) {
-          query = query.eq('tenant_id', tenantId)
-        }
-
-        const { data: servicesData, error: servicesError } = await query
-          .order('category', { ascending: true })
-          .order('name', { ascending: true })
-
-        if (!servicesError && servicesData) {
-          setServicios(servicesData)
-
-          // 4. Intentar traer imágenes complementarias de la galería
-          const currentTenant = tenantId || servicesData[0]?.tenant_id
-          if (currentTenant) {
-            const { data: galleryData } = await supabase
-              .from('gallery')
-              .select('image_url')
-              .eq('tenant_id', currentTenant)
-              .eq('is_active', true)
-              .limit(6)
-
-            if (galleryData) setGalleryImages(galleryData)
+        // 3. INTENTO 2: Si no trajo datos o falló, buscar SIN el filtro de `is_active`
+        if (!error && (!data || data.length === 0)) {
+          let query2 = supabase.from('services').select('*')
+          if (tenantId) query2 = query2.eq('tenant_id', tenantId)
+          const res2 = await query2
+          if (res2.data && res2.data.length > 0) {
+            data = res2.data
           }
         }
-      } catch (error) {
-        console.error('Error al cargar datos:', error)
+
+        // 4. INTENTO 3: Fallback Total — Traer absolutamente todos los registros de `services`
+        if (!data || data.length === 0) {
+          const res3 = await supabase.from('services').select('*').limit(50)
+          if (res3.data && res3.data.length > 0) {
+            data = res3.data
+          } else if (res3.error) {
+            error = res3.error
+          }
+        }
+
+        if (error) {
+          console.error('Error Supabase:', error)
+          setDebugError(`Error al consultar Supabase: ${error.message}`)
+        } else if (data && data.length > 0) {
+          setServicios(data)
+        } else {
+          setDebugError('La tabla "services" se encuentra vacía en Supabase.')
+        }
+      } catch (err: any) {
+        console.error('Error imprevisto:', err)
+        setDebugError(`Excepción de red/código: ${err?.message || 'Error desconocido'}`)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
+    fetchServiciosRobust()
   }, [])
 
   const allCategories = ['Todos', ...new Set(servicios.map(s => s.category).filter(Boolean))]
   const filteredServicios = selectedCategory === 'Todos' ? servicios : servicios.filter(s => s.category === selectedCategory)
   const activeCategoriesList = selectedCategory === 'Todos' ? Array.from(new Set(servicios.map(s => s.category).filter(Boolean))) : [selectedCategory]
 
-  // Imagen por defecto con fallback editorial
   const getServiceImage = (servicio: any) => {
     if (servicio.image_url) return servicio.image_url
-    if (CATEGORY_IMAGES[servicio.category]) return CATEGORY_IMAGES[servicio.category]
-    if (galleryImages.length > 0) return galleryImages[Math.floor(Math.random() * galleryImages.length)].image_url
+    if (servicio.category && CATEGORY_IMAGES[servicio.category]) return CATEGORY_IMAGES[servicio.category]
     return CATEGORY_IMAGES.default
   }
 
@@ -254,7 +248,7 @@ export default function ServiciosPublicPage() {
       <main className="bg-[#FFF9F6] min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-t-2 border-[#D4AF37] border-r-2 border-transparent rounded-full animate-spin" />
-          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Cargando Menú de Autor</p>
+          <p className="text-[10px] text-[#A89588] tracking-[0.4em] uppercase font-bold">Cargando Servicios</p>
         </div>
       </main>
     )
@@ -264,7 +258,7 @@ export default function ServiciosPublicPage() {
     <div className="min-h-screen bg-[#FFF9F6] text-[#1A0E0A] antialiased relative selection:bg-[#D4AF37]/20">
       <Header />
 
-      {/* AMBIENTE EDITORIAL EN EL FONDO */}
+      {/* AMBIENTE DE FONDO */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 left-[-10%] w-[40vw] h-[40vw] bg-[#D4AF37]/5 rounded-full blur-[100px]" />
@@ -273,12 +267,12 @@ export default function ServiciosPublicPage() {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-40 pb-32 relative z-10">
         
-        {/* ENCABEZADO HEREDADO DE LA LANDING */}
+        {/* ENCABEZADO DE SECCIÓN */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center max-w-3xl mx-auto mb-20 space-y-6"
+          className="text-center max-w-3xl mx-auto mb-16 space-y-6"
         >
           <div className="flex items-center justify-center gap-4">
             <span className="h-[1px] w-12 bg-[#D4AF37]" />
@@ -292,7 +286,7 @@ export default function ServiciosPublicPage() {
           </h1>
           
           <p className="text-[#5C4A3E] font-light max-w-lg mx-auto text-base md:text-lg leading-relaxed">
-            Explora nuestras técnicas dermoestéticas y rituales de autor diseñados para realzar tu belleza natural con la máxima precisión artística.
+            Explora nuestras técnicas dermoestéticas y rituales de autor diseñados para realzar tu belleza natural.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 pt-2">
@@ -307,7 +301,14 @@ export default function ServiciosPublicPage() {
           </div>
         </motion.div>
 
-        {/* NAVEGACIÓN Y FILTROS TIPO LANDING */}
+        {/* MUESTRA INFORMACIÓN DE DEPURACIÓN EN CASO DE ERROR */}
+        {debugError && (
+          <div className="max-w-2xl mx-auto my-8 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center text-amber-800 text-xs font-mono">
+            ⚠️ <strong>Aviso de conexión:</strong> {debugError}
+          </div>
+        )}
+
+        {/* NAVEGACIÓN Y FILTROS POR CATEGORÍA */}
         {allCategories.length > 1 && (
           <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-20 border-b border-[#F0E4DA] pb-6 max-w-4xl mx-auto">
             {allCategories.map((cat) => (
@@ -327,10 +328,12 @@ export default function ServiciosPublicPage() {
           </div>
         )}
 
-        {/* VISTA Y TARJETAS DÉCOR */}
+        {/* VISTA Y TARJETAS DE SERVICIOS */}
         {filteredServicios.length === 0 ? (
-          <div className="text-center py-24 bg-white/60 backdrop-blur-sm border border-[#F0E4DA]">
-            <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">No se encontraron experiencias disponibles en esta categoría.</p>
+          <div className="text-center py-20 bg-white/60 backdrop-blur-sm border border-[#F0E4DA] max-w-2xl mx-auto">
+            <p className="text-xs uppercase tracking-[0.2em] text-[#5C4A3E] font-light">
+              No hay servicios registrados para mostrar.
+            </p>
           </div>
         ) : (
           <div className="space-y-24">
@@ -342,13 +345,13 @@ export default function ServiciosPublicPage() {
 
               return (
                 <div key={categoryName} className="space-y-10">
-                  {/* SEPARADOR Y CABECERA DE CATEGORÍA */}
+                  {/* ENCABEZADO DE CATEGORÍA */}
                   <div className="flex items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
                     <div className="p-2.5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-full">
                       <IconComponent className="text-[#D4AF37] text-lg" />
                     </div>
                     <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">
-                      {categoryName}
+                      {categoryName || 'General'}
                     </h2>
                     <span className="w-full h-[1px] bg-[#F0E4DA]" />
                     <span className="text-[9px] text-[#A89588] tracking-widest uppercase font-light whitespace-nowrap bg-white/80 px-3 py-1 border border-[#F0E4DA]">
@@ -356,7 +359,7 @@ export default function ServiciosPublicPage() {
                     </span>
                   </div>
 
-                  {/* GRID EDITORIAL CON ANIMACIÓN */}
+                  {/* GRID EDITORIAL */}
                   <motion.div 
                     initial="hidden" 
                     whileInView="visible" 
@@ -370,7 +373,7 @@ export default function ServiciosPublicPage() {
                       
                       return (
                         <motion.div
-                          key={servicio.id}
+                          key={servicio.id || servicio.name}
                           variants={fadeInUp}
                           onClick={() => setActiveService(servicio)}
                           className="group bg-white border border-[#F0E4DA] overflow-hidden cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:border-[#D4AF37]"
@@ -384,11 +387,13 @@ export default function ServiciosPublicPage() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/90 via-[#1A0E0A]/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
                             
-                            {/* BADGES EDITORIALES */}
+                            {/* BADGES */}
                             <div className="absolute top-4 left-4 flex gap-2">
-                              <span className="text-[7px] tracking-widest uppercase font-bold bg-white/90 backdrop-blur-sm text-[#1A0E0A] px-3 py-1.5 border border-[#D4AF37]/20">
-                                {servicio.category}
-                              </span>
+                              {servicio.category && (
+                                <span className="text-[7px] tracking-widest uppercase font-bold bg-white/90 backdrop-blur-sm text-[#1A0E0A] px-3 py-1.5 border border-[#D4AF37]/20">
+                                  {servicio.category}
+                                </span>
+                              )}
                               {servicio.badge && (
                                 <span className="text-[7px] tracking-widest uppercase font-bold bg-[#D4AF37] text-white px-3 py-1.5">
                                   {servicio.badge}
@@ -396,18 +401,22 @@ export default function ServiciosPublicPage() {
                               )}
                             </div>
 
-                            {/* INFORMACIÓN SOBRE LA IMAGEN */}
+                            {/* TEXTO EN TARJETA */}
                             <div className="absolute bottom-0 left-0 right-0 p-5 text-white flex justify-between items-end z-10">
                               <div className="space-y-1 max-w-[70%]">
                                 <h3 className="font-serif text-lg leading-tight font-light tracking-wide truncate">
                                   {servicio.name}
                                 </h3>
                                 <div className="flex items-center gap-3 text-[10px] text-white/70">
-                                  <span className="flex items-center gap-1">
-                                    <FaClock className="text-[#D4AF37]" /> {servicio.duration} min
-                                  </span>
-                                  <span>•</span>
-                                  <span className="font-serif text-white font-light">${servicio.price}</span>
+                                  {servicio.duration && (
+                                    <span className="flex items-center gap-1">
+                                      <FaClock className="text-[#D4AF37]" /> {servicio.duration} min
+                                    </span>
+                                  )}
+                                  {servicio.duration && servicio.price && <span>•</span>}
+                                  {servicio.price && (
+                                    <span className="font-serif text-white font-light">${servicio.price}</span>
+                                  )}
                                 </div>
                               </div>
 
@@ -417,7 +426,7 @@ export default function ServiciosPublicPage() {
                             </div>
                           </div>
 
-                          {/* FOOTER TARJETA: ARTISTA */}
+                          {/* PIE DE TARJETA */}
                           <div className="p-4 flex items-center justify-between border-t border-[#F0E4DA] bg-[#FFFCF8]">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full overflow-hidden border border-[#D4AF37]/40 flex-shrink-0">
@@ -442,7 +451,7 @@ export default function ServiciosPublicPage() {
           </div>
         )}
 
-        {/* PIE Y CTA FINAL */}
+        {/* CTA FINAL */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -470,7 +479,7 @@ export default function ServiciosPublicPage() {
 
       </div>
 
-      {/* MODAL DETALLES DE TRATAMIENTO */}
+      {/* POPUP DE DETALLES */}
       <AnimatePresence>
         {activeService && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
@@ -501,13 +510,12 @@ export default function ServiciosPublicPage() {
                   alt={activeService.name} 
                   className="w-full h-full object-cover" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/60 via-transparent to-transparent md:bg-gradient-to-r" />
               </div>
 
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
                   <span className="text-[9px] tracking-[0.3em] font-bold uppercase text-[#D4AF37] block">
-                    {activeService.category}
+                    {activeService.category || 'General'}
                   </span>
                   <h2 className="font-serif text-2xl md:text-3xl text-[#1A0E0A] font-light tracking-wide">
                     {activeService.name}
@@ -520,12 +528,12 @@ export default function ServiciosPublicPage() {
                 <div className="grid grid-cols-2 gap-4 border-y border-[#F0E4DA] py-4">
                   <div>
                     <span className="text-[8px] tracking-wider text-[#A89588] uppercase block font-bold">Inversión</span>
-                    <span className="font-serif text-3xl text-[#1A0E0A] font-light">${activeService.price}</span>
+                    <span className="font-serif text-3xl text-[#1A0E0A] font-light">${activeService.price || 0}</span>
                   </div>
                   <div>
                     <span className="text-[8px] tracking-wider text-[#A89588] uppercase block font-bold">Duración</span>
                     <span className="text-xs font-medium text-[#1A0E0A] flex items-center gap-2 mt-2">
-                      <FaClock className="text-[#D4AF37]" /> {activeService.duration} min
+                      <FaClock className="text-[#D4AF37]" /> {activeService.duration || '--'} min
                     </span>
                   </div>
                 </div>
