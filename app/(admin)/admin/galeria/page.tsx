@@ -14,7 +14,7 @@ import {
   Check, Eye, EyeOff, User,
   Layers, Search, RefreshCw,
   Info, CheckCircle2, AlertCircle,
-  Plus
+  Plus, Sparkles, Scissors
 } from 'lucide-react'
 
 type Photo = {
@@ -43,7 +43,6 @@ type Professional = {
 }
 
 const CATEGORIES = ['Todas', 'Uñas', 'Micropigmentacion', 'Peluquería', 'Cejas']
-const GOLD_PALETTE = { primary: '#D4AF37', light: '#E8D5A0', dark: '#C9A96E' }
 
 export default function GaleriaAdminPage() {
   const { settings } = useSettings()
@@ -88,11 +87,6 @@ export default function GaleriaAdminPage() {
     sort_order: 0,
     professional_id: ''
   })
-
-  // Estilos Dinámicos
-  const headerGradient = useMemo(() => ({
-    backgroundImage: `linear-gradient(135deg, ${GOLD_PALETTE.primary} 0%, ${GOLD_PALETTE.dark} 50%, ${GOLD_PALETTE.light} 100%)`
-  }), [])
 
   // Recuperar Tenant ID
   const getTenantId = useCallback(async (): Promise<string | null> => {
@@ -372,40 +366,69 @@ export default function GaleriaAdminPage() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 antialiased pb-8 relative overflow-x-hidden ${isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'}`}>
-      <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
+    <div className={`min-h-screen transition-colors duration-500 antialiased pb-12 relative overflow-hidden ${isDark ? 'bg-[#150D08] text-[#FFF9F6]' : 'bg-[#FDFBF9] text-[#1A0E0A]'}`}>
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-[#EC4899]/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-15 mix-blend-overlay bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
 
-      <div className="max-w-7xl mx-auto px-4 space-y-6 relative z-10 pt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 relative z-10 pt-4">
         
-        {/* Cabecera */}
-        <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 shadow-2xl text-white border border-white/10" style={headerGradient}>
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest text-white/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                Portafolio del Salón
+        {/* HEADER HERO BANNER (ESTILO EXECUTIVE LUXURY REDISEÑADO) */}
+        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${
+          isDark 
+            ? 'bg-gradient-to-br from-[#271810] via-[#1E120C] to-[#160E09] border-[#3D281E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]' 
+            : 'bg-gradient-to-br from-white via-[#FBF7F4] to-[#F5ECE5] border-[#EADED5] shadow-[0_25px_50px_-15px_rgba(225,208,195,0.4)]'
+        }`}>
+          {/* Efectos de luz flotante y línea inferior */}
+          <div className="absolute -top-40 -right-40 w-[350px] h-[350px] bg-gradient-to-br from-[#EC4899]/20 to-[#D4AF37]/20 rounded-full blur-[90px] pointer-events-none animate-pulse [animation-duration:6s]" />
+          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent" />
+
+          <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              {/* Ícono de sección con resplandor */}
+              <div className="relative group shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#D4AF37] via-[#EC4899] to-[#3B82F6] rounded-2xl blur-md opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative p-4 rounded-2xl shadow-xl bg-neutral-950 text-white flex items-center justify-center border border-white/10">
+                  <Camera className="w-7 h-7 text-[#D4AF37] animate-pulse" />
+                </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-serif font-black tracking-tight">Galería Fresh Nails</h1>
-              <p className="text-xs md:text-sm text-white/80 font-medium max-w-md">Administra el portafolio comercial del salón, organiza tus trabajos y destaca el arte de tu equipo.</p>
+
+              {/* Textos y Badge */}
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[9px] font-black uppercase tracking-[0.25em] text-[#C9A96E]">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  ✦ Portafolio Oficial del Salón
+                </div>
+                <h2 className={`font-serif text-3xl md:text-4xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1A0E0A]'}`}>
+                  Galería <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#EC4899] to-[#C9A96E] font-serif italic font-normal">Fresh Nails</span>
+                </h2>
+                <p className={`text-sm font-light ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>
+                  Administra el portafolio comercial, organiza tus obras y destaca el arte de tu equipo.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 self-start md:self-center shrink-0">
+            {/* Acciones del Hero */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0 border-t pt-5 md:pt-0 md:border-t-0 border-[#EADED5] dark:border-[#3D281E]">
               <button 
                 onClick={() => fetchPhotos(false)} 
                 disabled={refreshing} 
-                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white transition-all active:scale-95 shadow-lg"
+                className={`w-full sm:w-auto px-5 py-3 rounded-xl border font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-2.5 transition-all duration-300 backdrop-blur-md shadow-xs active:scale-95 ${
+                  isDark 
+                    ? 'bg-[#1C120C]/80 border-[#3D281E] text-[#BCAEA5] hover:text-white hover:border-[#D4AF37]/50' 
+                    : 'bg-white/80 border-[#EADED5] text-[#5C4A3E] hover:text-[#1A0E0A] hover:border-[#D4AF37]/50'
+                }`}
+                title="Sincronizar Galería"
               >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-[#D4AF37] ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Sincronizando' : 'Actualizar'}</span>
               </button>
 
               <button 
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white text-stone-900 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-[#F0E4DA] hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-neutral-950 font-black text-xs uppercase tracking-[0.15em] transition-all duration-300 flex items-center justify-center gap-2.5 shadow-xl shadow-[#D4AF37]/10 hover:shadow-[#D4AF37]/20 hover:scale-[1.03] active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E]"
               >
-                <div className="p-1 rounded-md bg-[#D4AF37] text-white">
-                  <Plus className="w-3 h-3 stroke-[3]" />
-                </div>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Nueva Foto</span>
               </button>
             </div>
@@ -413,36 +436,42 @@ export default function GaleriaAdminPage() {
         </div>
 
         {/* Notificaciones de Feedback */}
-        {error && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl animate-fade-in ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <AlertCircle className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-            <p className="text-sm font-light">{error}</p>
-          </div>
-        )}
+        <div className="space-y-2">
+          {error && (
+            <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+              <div className="p-2 rounded-xl shrink-0 bg-red-500/10">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+              </div>
+              <p className="text-sm font-light self-center">{error}</p>
+            </div>
+          )}
 
-        {success && (
-          <div className={`flex items-start gap-4 border p-4 rounded-2xl animate-fade-in ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-[#FFF9F6] border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
-            <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-            <p className="text-sm font-light">{success}</p>
-          </div>
-        )}
+          {success && (
+            <div className={`flex items-start gap-4 border p-4 rounded-2xl transition-all duration-300 ${isDark ? 'bg-[#3D281E]/40 border-[#D4AF37]/30 text-[#FFF9F6]' : 'bg-white border-[#D4AF37]/30 text-[#1A0E0A]'}`}>
+              <div className="p-2 rounded-xl shrink-0 bg-emerald-500/10">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-sm font-light self-center">{success}</p>
+            </div>
+          )}
+        </div>
 
         {/* Módulo de Estadísticas */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total', value: stats.total, icon: Layers },
-            { label: 'Salón', value: stats.adminCount, icon: Tag },
-            { label: 'Clientes', value: stats.clientCount, icon: Users },
-            { label: 'Visibles', value: stats.activeCount, icon: Eye }
+            { label: 'Total Registros', value: stats.total, icon: Layers },
+            { label: 'Portafolio Salón', value: stats.adminCount, icon: Tag },
+            { label: 'Fotos Clientes', value: stats.clientCount, icon: Users },
+            { label: 'Visibles Público', value: stats.activeCount, icon: Eye }
           ].map((stat, idx) => (
-            <div key={idx} className={`rounded-2xl p-3 shadow-sm border transition-all ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl shrink-0 ${isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'}`}>
-                  <stat.icon className="w-4 h-4 text-[#D4AF37]" />
+            <div key={idx} className={`rounded-2xl p-5 shadow-sm border transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
+              <div className="flex items-center gap-4 min-w-0">
+                <div className={`p-3 rounded-xl shrink-0 ${isDark ? 'bg-[#291A11]' : 'bg-[#FAF6F2]'}`}>
+                  <stat.icon className="w-5 h-5 text-[#D4AF37]" />
                 </div>
-                <div>
-                  <p className={`text-[9px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>{stat.label}</p>
-                  <h3 className={`text-sm sm:text-base font-mono font-black ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>{stat.value}</h3>
+                <div className="min-w-0">
+                  <p className={`text-[10px] font-mono uppercase tracking-wider font-black ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>{stat.label}</p>
+                  <p className="text-2xl font-black mt-0.5">{stat.value}</p>
                 </div>
               </div>
             </div>
@@ -450,28 +479,36 @@ export default function GaleriaAdminPage() {
         </div>
 
         {/* Barra de Filtros y Búsqueda */}
-        <div className={`flex flex-col md:flex-row gap-3 p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
+        <div className={`flex flex-col md:flex-row gap-3 p-4 rounded-2xl border shadow-sm transition-all duration-300 ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`}>
           <div className="flex-1 flex items-center gap-3 min-w-0">
-            <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
+            <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`} />
             <input 
               type="text" 
               placeholder="Buscar por título, descripción o cliente..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`bg-transparent border-none outline-none text-xs w-full font-medium ${isDark ? 'text-[#FFF9F6] placeholder:text-[#A89588]' : 'text-[#1A0E0A] placeholder:text-[#A89588]'}`}
+              className={`bg-transparent border-none outline-none text-xs w-full font-medium ${isDark ? 'text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'text-[#1A0E0A] placeholder:text-[#6E5A4D]'}`}
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className={`p-1 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#EADED5]'}`}
+              >
+                <X className={`w-4 h-4 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`} />
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all ${
+                className={`px-3.5 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${
                   categoryFilter === cat 
-                    ? 'bg-[#D4AF37] text-[#1A0E0A]' 
+                    ? 'bg-[#D4AF37] text-[#1A0E0A] shadow-md' 
                     : isDark 
-                      ? 'bg-[#1E120C] border border-[#3D281E] text-[#A89588] hover:bg-[#3D281E]'
-                      : 'bg-[#FFF9F6] border border-[#F0E4DA] text-[#5C4A3E] hover:bg-[#F0E4DA]'
+                      ? 'bg-[#150D08] border border-[#3D281E] text-[#BCAEA5] hover:border-[#D4AF37]/40'
+                      : 'bg-[#FDFBF9] border border-[#EADED5] text-[#6E5A4D] hover:border-[#D4AF37]/40'
                 }`}
               >
                 {cat}
@@ -482,14 +519,21 @@ export default function GaleriaAdminPage() {
 
         {/* Loader principal */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
-            <p className="text-xs tracking-widest font-mono text-stone-400 uppercase">Sincronizando Portafolio...</p>
+          <div className={`flex items-center justify-center min-h-[40vh] transition-colors duration-500`}>
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative w-16 h-16">
+                <div className={`absolute inset-0 rounded-full border ${isDark ? 'border-[#D4AF37]/10' : 'border-[#D4AF37]/20'}`} />
+                <div className="absolute inset-0 rounded-full border-t-2 border-[#D4AF37] animate-spin" />
+              </div>
+              <p className={`text-[10px] tracking-[0.4em] uppercase font-light animate-pulse ${isDark ? 'text-[#FFF9F6]/60' : 'text-[#1A0E0A]/60'}`}>
+                Sincronizando Portafolio...
+              </p>
+            </div>
           </div>
         ) : filteredPhotos.length === 0 ? (
-          <div className={`text-center py-20 border-2 border-dashed rounded-2xl ${isDark ? 'bg-[#2A1B14]/40 border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}>
-            <ImageIcon className={`w-10 h-10 mx-auto mb-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`} />
-            <p className="text-sm font-medium">No se encontraron fotos en la galería</p>
+          <div className={`text-center py-20 border border-dashed rounded-2xl font-mono text-xs ${isDark ? 'bg-[#1E120C]/40 border-[#3D281E] text-[#BCAEA5]' : 'bg-white border-[#EADED5] text-[#6E5A4D]'}`}>
+            <ImageIcon className="w-10 h-10 mx-auto mb-3 text-[#D4AF37]/60" />
+            <p className="font-semibold">No se encontraron fotografías que coincidan con la búsqueda.</p>
           </div>
         ) : (
           /* Grid de Fotos Comercial */
@@ -502,26 +546,26 @@ export default function GaleriaAdminPage() {
                   onClick={() => openLightbox(photo)}
                   onMouseEnter={() => setHoveredId(photo.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  className={`group relative rounded-2xl overflow-hidden cursor-pointer border shadow-md transition-all aspect-square transform hover:-translate-y-1 duration-300 ${
+                  className={`group relative rounded-2xl overflow-hidden cursor-pointer border shadow-sm transition-all duration-300 aspect-square hover:-translate-y-1 hover:shadow-xl ${
                     !photo.is_active ? 'opacity-50 grayscale-[40%]' : ''
-                  } ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`}
+                  } ${isDark ? 'bg-[#1E120C] border-[#3D281E] hover:border-[#D4AF37]/40' : 'bg-white border-[#EADED5] hover:border-[#D4AF37]/40'}`}
                 >
                   <img src={photo.image_url || ''} alt={photo.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   
                   {/* Tags flotantes superiores */}
                   <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[85%] z-20">
-                    <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md text-white bg-[#D4AF37] shadow-sm">
+                    <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full text-[#1A0E0A] bg-[#D4AF37] shadow-md">
                       {isClient ? `👤 ${photo.client_name}` : '👑 Studio'}
                     </span>
                     {!photo.is_active && (
-                      <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md text-white bg-rose-600 shadow-sm">
+                      <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full text-white bg-rose-600 shadow-md">
                         Oculto
                       </span>
                     )}
                   </div>
 
                   {/* Capa Overlay interactiva en Hover */}
-                  <div className={`absolute inset-0 bg-stone-950/80 p-4 flex flex-col justify-between text-white transition-opacity duration-300 ${hoveredId === photo.id ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className={`absolute inset-0 bg-neutral-950/80 p-4 flex flex-col justify-between text-white transition-opacity duration-300 ${hoveredId === photo.id ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => openLightbox(photo)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all">
                         <ZoomIn className="w-3.5 h-3.5" />
@@ -574,7 +618,7 @@ export default function GaleriaAdminPage() {
 
         {/* Modal Lightbox */}
         {showLightbox && selectedPhoto && (
-          <div className="fixed inset-0 z-[9999] bg-stone-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
+          <div className="fixed inset-0 z-[9999] bg-neutral-950/95 backdrop-blur-xl flex flex-col md:flex-row" onClick={closeLightbox}>
             <div className="relative flex-1 flex items-center justify-center p-6 h-[60vh] md:h-full" onClick={(e) => e.stopPropagation()}>
               <img src={selectedPhoto.image_url || ''} alt="" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
               {filteredPhotos.length > 1 && (
@@ -585,14 +629,14 @@ export default function GaleriaAdminPage() {
               )}
             </div>
             
-            <div className="w-full md:w-96 bg-stone-900 border-t md:border-t-0 md:border-l border-white/10 p-6 flex flex-col text-stone-200" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full md:w-96 bg-neutral-900 border-t md:border-t-0 md:border-l border-white/10 p-6 flex flex-col text-stone-200" onClick={(e) => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-[10px] font-mono tracking-widest text-[#D4AF37] font-black uppercase">Metadatos de Obra</span>
                 <button onClick={closeLightbox} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-stone-400 hover:text-white transition-all"><X className="w-4 h-4" /></button>
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto pr-1">
                 <div>
-                  <span className="px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] font-mono text-[9px] font-bold uppercase tracking-wider">{selectedPhoto.source === 'client' ? 'Aporte Cliente' : 'Administrador'}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] font-mono text-[9px] font-bold uppercase tracking-wider">{selectedPhoto.source === 'client' ? 'Aporte Cliente' : 'Administrador'}</span>
                   <h3 className="text-xl font-serif font-bold text-white mt-2">{selectedPhoto.title || 'Trabajo del Salón'}</h3>
                 </div>
                 <p className="text-xs text-stone-400 font-light leading-relaxed">{selectedPhoto.description || 'Sin descripción detallada por el momento.'}</p>
@@ -614,18 +658,27 @@ export default function GaleriaAdminPage() {
 
         {/* Modal Formulario Inserción/Edición */}
         {showModal && (
-          <div className="fixed inset-0 z-[9999] bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
-            <div className={`relative w-full max-w-xl rounded-3xl border p-6 shadow-2xl transition-all max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#2A1B14] border-[#3D281E]' : 'bg-white border-[#F0E4DA]'}`} onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setShowModal(false); resetForm(); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-all ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#FFF9F6]'}`}><X className="w-5 h-5" /></button>
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => { setShowModal(false); resetForm(); }}>
+            <div className={`relative w-full max-w-xl rounded-2xl border p-6 shadow-2xl transition-all max-h-[90vh] overflow-y-auto ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-white border-[#EADED5]'}`} onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setShowModal(false); resetForm(); }} className={`absolute top-4 right-4 p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-[#3D281E]' : 'hover:bg-[#EADED5]'} text-[#BCAEA5] hover:text-red-400`}><X className="w-5 h-5" /></button>
               
-              <div className="mb-5">
-                <h3 className="text-xl font-serif font-black tracking-tight">{editingPhoto ? 'Editar Registro de Galería' : 'Agregar Arte Comercial'}</h3>
-                <p className="text-xs text-stone-400 mt-0.5">Completa la ficha técnica para actualizar el portafolio público.</p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 rounded-xl text-neutral-950 shadow-md bg-[#D4AF37]">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className={`text-xl font-serif font-extrabold ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
+                    {editingPhoto ? 'Editar Registro de Galería' : 'Agregar Arte Comercial'}
+                  </h3>
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Completa la ficha técnica para actualizar el portafolio público.</p>
+                </div>
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Zona de Carga/Preview */}
-                <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] ${isDark ? 'border-[#3D281E] bg-[#1E120C]/50 hover:bg-[#3D281E]/30' : 'border-[#F0E4DA] bg-[#FFF9F6]/50 hover:bg-[#F0E4DA]/50'}`}>
+                <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] ${
+                  isDark ? 'bg-[#150D08] border-[#3D281E] hover:border-[#D4AF37]/50' : 'bg-[#FDFBF9] border-[#EADED5] hover:border-[#D4AF37]/50'
+                }`}>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                   {previewUrl || formData.image_url ? (
                     <div className="relative group">
@@ -636,8 +689,8 @@ export default function GaleriaAdminPage() {
                     <div className="space-y-2">
                       <UploadCloud className="w-8 h-8 text-[#D4AF37] mx-auto stroke-[1.5]" />
                       <div>
-                        <p className="text-xs font-bold">Haz clic para buscar o arrastra una imagen</p>
-                        <p className="text-[10px] text-stone-400 mt-0.5">Formatos soportados: JPG, PNG, WEBP</p>
+                        <p className="text-xs font-bold text-[#D4AF37]">Haz clic para buscar o arrastra una imagen</p>
+                        <p className="text-[10px] text-[#BCAEA5] mt-0.5">Formatos soportados: JPG, PNG, WEBP</p>
                       </div>
                     </div>
                   )}
@@ -646,49 +699,57 @@ export default function GaleriaAdminPage() {
                 {/* Título y Categoría */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Título Comercial</label>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Título Comercial</label>
                     <input 
                       type="text" 
                       placeholder="Ej. Uñas Acrílicas Gold Premium" 
                       value={formData.title} 
                       onChange={e => setFormData({...formData, title: e.target.value})}
-                      className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
+                      }`}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Línea de Servicio</label>
+                    <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Línea de Servicio</label>
                     <select 
                       value={formData.category} 
                       onChange={e => setFormData({...formData, category: e.target.value})}
-                      className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A]'
+                      }`}
                     >
-                      {CATEGORIES.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
+                      {CATEGORIES.filter(c => c !== 'Todas').map(c => <option key={c} value={c} className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>{c}</option>)}
                     </select>
                   </div>
                 </div>
 
                 {/* Profesional */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Artista / Profesional Asignado</label>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Artista / Profesional Asignado</label>
                   <select 
                     value={formData.professional_id} 
                     onChange={e => setFormData({...formData, professional_id: e.target.value})}
-                    className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 ${
+                      isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A]'
+                    }`}
                   >
-                    <option value="">Ninguno / Salón General</option>
-                    {professionals.map(p => <option key={p.id} value={p.id}>{p.full_name} {p.role ? `(${p.role})` : ''}</option>)}
+                    <option value="" className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>Ninguno / Salón General</option>
+                    {professionals.map(p => <option key={p.id} value={p.id} className={isDark ? 'bg-[#1E120C]' : 'bg-white'}>{p.full_name} {p.role ? `(${p.role})` : ''}</option>)}
                   </select>
                 </div>
 
                 {/* Descripción */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Descripción / Detalles del Diseño</label>
+                  <label className={`block text-[10px] uppercase tracking-widest font-bold mb-1.5 ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Descripción / Detalles del Diseño</label>
                   <textarea 
                     placeholder="Describe los materiales, el color o el tipo de técnica utilizada..." 
                     value={formData.description} 
                     onChange={e => setFormData({...formData, description: e.target.value})}
-                    className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:border-[#D4AF37] transition-all ${isDark ? 'bg-[#1E120C] border-[#3D281E] text-white' : 'bg-[#FFF9F6] border-[#F0E4DA] text-stone-900'}`}
                     rows={3}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 resize-none ${
+                      isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6] placeholder:text-[#BCAEA5]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A] placeholder:text-[#BCAEA5]'
+                    }`}
                   />
                 </div>
 
@@ -702,24 +763,39 @@ export default function GaleriaAdminPage() {
                       onChange={e => setFormData({...formData, is_active: e.target.checked})}
                       className="accent-[#D4AF37] w-4 h-4 cursor-pointer"
                     />
-                    <label htmlFor="is_active" className="text-xs font-medium cursor-pointer">Visible al público</label>
+                    <label htmlFor="is_active" className={`text-xs font-medium cursor-pointer ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>Visible al público</label>
                   </div>
                   <div className="flex items-center justify-end gap-2">
-                    <label className="text-[10px] font-mono uppercase tracking-wider font-bold">Prioridad:</label>
+                    <label className={`text-[10px] uppercase tracking-widest font-bold ${isDark ? 'text-[#BCAEA5]' : 'text-[#6E5A4D]'}`}>Prioridad:</label>
                     <input 
                       type="number"
                       value={formData.sort_order}
                       onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
-                      className={`w-20 px-2 py-1 text-center text-xs rounded-lg border outline-none ${isDark ? 'bg-[#1E120C] border-[#3D281E]' : 'bg-[#FFF9F6] border-[#F0E4DA]'}`}
+                      className={`w-20 px-3 py-1.5 text-center text-xs rounded-xl border font-mono outline-none ${
+                        isDark ? 'bg-[#150D08] border-[#3D281E] text-[#FFF9F6]' : 'bg-[#FDFBF9] border-[#EADED5] text-[#1A0E0A]'
+                      }`}
                     />
                   </div>
                 </div>
 
                 {/* Acciones */}
-                <div className="flex gap-3 pt-4 border-t border-stone-200/10">
-                  <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-black uppercase tracking-wider transition-all">Cancelar</button>
-                  <button type="submit" disabled={uploading} className="flex-1 py-3 bg-[#D4AF37] text-stone-900 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/10 hover:brightness-110 disabled:opacity-50">
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />} Guardar Cambios
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowModal(false); resetForm(); }} 
+                    className={`flex-1 px-4 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-colors ${
+                      isDark ? 'border-[#3D281E] text-[#BCAEA5] hover:bg-[#3D281E]' : 'border-[#EADED5] text-[#6E5A4D] hover:bg-[#EADED5]'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={uploading} 
+                    className="flex-1 px-4 py-2.5 rounded-xl text-neutral-950 hover:scale-105 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-md bg-gradient-to-r from-[#D4AF37] via-[#E8D5A0] to-[#C9A96E] disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
+                    <span>{uploading ? 'Guardando...' : 'Guardar Cambios'}</span>
                   </button>
                 </div>
               </form>
