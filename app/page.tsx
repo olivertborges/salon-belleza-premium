@@ -11,8 +11,11 @@ import {
   FaPalette, FaHandSparkles, FaAward, FaLeaf,
   FaCrown, FaRegStar, FaEye, FaHeart, FaClock, FaCheckCircle,
   FaSprayCan
-} from 'react-icons/fa'
+} from 'react-[#react-icons/fa]'
 import { GiNails, GiScissors, GiLipstick, GiSparkles } from 'react-icons/gi'
+
+// URL por defecto enviada para el Hero
+const DEFAULT_HERO_IMAGE = "https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/gallery/IMG-20260805-WA0002.jpg"
 
 // ============================================================
 // CONFIGURACIÓN DE ICONOS E IMÁGENES DE RESPALDO
@@ -125,31 +128,36 @@ const Header = () => {
 }
 
 // ============================================================
-// HERO (REDISEÑO ASIMÉTRICO DE ALTA COSTURA)
+// HERO (HERMOSO, ELEGANTE & DINÁMICO)
 // ============================================================
-const HeroSection = () => {
+const HeroSection = ({ heroImage }: { heroImage?: string }) => {
+  const imageUrl = heroImage || DEFAULT_HERO_IMAGE
+
   return (
-    <section className="relative min-h-screen flex items-center pt-24 overflow-hidden bg-[#FFF9F6]">
-      <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:40px_40px]" />
-      <div className="absolute top-1/4 right-[-10%] w-[50vw] h-[50vw] bg-[#F5D4E0]/30 rounded-full blur-[120px]" />
-      
-      <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 relative z-10 py-12">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
+    <section className="relative min-h-screen flex items-center pt-28 pb-16 overflow-hidden bg-[#FFF9F6]">
+      {/* Fondos decorativos de alta gama */}
+      <div className="absolute inset-0 z-0 opacity-30 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:36px_36px]" />
+      <div className="absolute top-1/4 right-[-5%] w-[45vw] h-[45vw] bg-[#F5D4E0]/30 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-10 left-[-5%] w-[35vw] h-[35vw] bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
+          {/* Lado Izquierdo: Textos y CTAs */}
           <motion.div 
             className="lg:col-span-7 space-y-8"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1 }}
           >
             <div className="flex items-center gap-3">
-              <span className="h-[1px] w-8 bg-[#D4AF37]" />
-              <span className="text-[10px] tracking-[0.4em] uppercase text-[#D4AF37] font-semibold">
+              <span className="h-[1px] w-12 bg-[#D4AF37]" />
+              <span className="text-[10px] tracking-[0.45em] uppercase text-[#D4AF37] font-semibold">
                 Haute Couture Beauty Atelier
               </span>
             </div>
 
-            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-[#1A0E0A] leading-[1.1] font-light">
+            <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-[#1A0E0A] leading-[1.08] font-light">
               Redefiniendo <br />
               <span className="font-normal italic text-[#D4AF37] tracking-normal">la estética</span> <br />
               como arte puro.
@@ -159,10 +167,10 @@ const HeroSection = () => {
               Un santuario arquitectónico de relajación y vanguardia. Elevamos el cuidado de tu imagen a una experiencia sensorial inigualable y personalizada.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Link 
                 href="/agenda"
-                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center"
+                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-10 py-5 text-xs font-semibold tracking-[0.3em] uppercase transition-all duration-300 text-center shadow-lg hover:shadow-xl"
               >
                 Agendar Experiencia
               </Link>
@@ -174,39 +182,47 @@ const HeroSection = () => {
               </Link>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 pt-12 border-t border-[#F0E4DA] max-w-md">
+            <div className="grid grid-cols-3 gap-6 pt-10 border-t border-[#F0E4DA] max-w-md">
               <div>
                 <p className="font-serif text-3xl text-[#1A0E0A]">05+</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Años Premium</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Años Premium</p>
               </div>
               <div>
                 <p className="font-serif text-3xl text-[#1A0E0A]">3K+</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Almas Felices</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Almas Felices</p>
               </div>
               <div>
                 <p className="font-serif text-3xl text-[#1A0E0A]">4.9</p>
-                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1">Reseñas Google</p>
+                <p className="text-[9px] tracking-[0.2em] text-[#A89588] uppercase mt-1 font-medium">Reseñas Google</p>
               </div>
             </div>
           </motion.div>
 
+          {/* Lado Derecho: Imagen Protagonista del Hero con Marco de Alta Costura */}
           <motion.div 
-            className="lg:col-span-5 relative flex justify-center"
+            className="lg:col-span-5 relative flex justify-center items-center"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, delay: 0.2 }}
           >
-            <div className="relative w-full max-w-md aspect-[3/4] bg-[#F0E4DA] overflow-hidden group">
-              <img 
-                src="https://images.unsplash.com/photo-1632661674596-d0b39ea5b87d?w=800&h=1000&fit=crop"
-                alt="Elegancia y Belleza"
-                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
+            <div className="relative w-full max-w-md">
+              {/* Marco Geométrico Dorado Trasero */}
+              <div className="absolute -inset-3 border border-[#D4AF37]/40 translate-x-3 translate-y-3 pointer-events-none" />
               
-              <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-sm p-5 shadow-lg border-l-2 border-[#D4AF37]">
-                <p className="text-[9px] tracking-[0.25em] text-[#D4AF37] font-bold uppercase">Atelier Destacado</p>
-                <p className="font-serif text-base text-[#1A0E0A] mt-1">Técnicas exclusivas internacionales</p>
+              <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-2.5 group">
+                <img 
+                  src={imageUrl}
+                  alt="Salon Fresh - Portada Principal"
+                  className="w-full h-full object-cover filter contrast-[1.03] group-hover:scale-105 transition-all duration-1000 ease-out"
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1A0E0A]/40 via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-700" />
+                
+                {/* Etiqueta Flotante de Lujo */}
+                <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md p-5 shadow-xl border-l-4 border-[#D4AF37]">
+                  <p className="text-[9px] tracking-[0.3em] text-[#D4AF37] font-bold uppercase">Atelier Destacado</p>
+                  <p className="font-serif text-base text-[#1A0E0A] mt-1 font-medium">Técnicas exclusivas e internacionales</p>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -394,13 +410,11 @@ const TeamSection = () => {
 
   return (
     <section id="equipo" ref={ref} className="py-36 bg-[#FFF9F6] border-y border-[#D4AF37]/10 relative overflow-hidden">
-      {/* Elementos decorativos sutiles de fondo */}
       <div className="absolute top-1/3 left-5 w-72 h-72 bg-[#F5D4E0]/20 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-5 w-80 h-80 bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         
-        {/* Encabezado Principal Impactante */}
         <div className="text-center max-w-2xl mx-auto mb-28 space-y-4">
           <p className="text-[10px] tracking-[0.5em] uppercase text-[#D4AF37] font-bold">EL ALMA DEL ATELIER</p>
           <h2 className="font-serif text-4xl md:text-6xl text-[#1A0E0A] font-light leading-tight">
@@ -412,17 +426,14 @@ const TeamSection = () => {
           </p>
         </div>
 
-        {/* Galería de Formato Grande Asimétrico */}
         <div className="grid md:grid-cols-2 gap-16 lg:gap-24 items-start">
           
-          {/* PROFESIONAL 1: ANY (Uñas, Micropigmentación, Cejas, Pestañas) */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.9, ease: "easeOut" }}
             className="space-y-8 group"
           >
-            {/* Contenedor de la Imagen con Marco de Lujo */}
             <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
               <img 
                 src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/any.png" 
@@ -431,20 +442,17 @@ const TeamSection = () => {
               />
               <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
               
-              {/* Etiqueta Flotante de Alta Costura */}
               <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
                 <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Nail & Derm Master</p>
                 <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Any</h3>
               </div>
             </div>
 
-            {/* Descripción y Especialidades */}
             <div className="pt-6 space-y-4 max-w-md">
               <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
                 Reconocida por su precisión milimétrica en arquitectura de mirada e ingeniería de uñas. Any transforma cada sesión en un ritual personalizado de alta definición.
               </p>
               
-              {/* Badges de Especialidad */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {['Manicura Rusa', 'Micropigmentación', 'Diseño de Cejas', 'Pestañas Premium'].map((tag) => (
                   <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
@@ -455,14 +463,12 @@ const TeamSection = () => {
             </div>
           </motion.div>
 
-          {/* PROFESIONAL 2: SIL (Peluquería, Depilación) */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
-            className="space-y-8 group md:mt-24" // El desfase vertical genera el dinamismo visual de revista
+            className="space-y-8 group md:mt-24"
           >
-            {/* Contenedor de la Imagen con Marco de Lujo */}
             <div className="relative aspect-[3/4] bg-[#F0E4DA] overflow-hidden shadow-2xl border border-[#F0E4DA] p-3 transition-transform duration-700 group-hover:scale-[1.01]">
               <img 
                 src="https://kzovcbefedfmpeucrofh.supabase.co/storage/v1/object/public/profesionals/sil.png" 
@@ -471,20 +477,17 @@ const TeamSection = () => {
               />
               <div className="absolute inset-0 bg-[#1A0E0A]/5 group-hover:bg-transparent transition-all duration-700" />
               
-              {/* Etiqueta Flotante de Alta Costura */}
               <div className="absolute -bottom-4 -right-4 md:right-6 bg-white p-6 shadow-xl border-l-4 border-[#D4AF37] max-w-xs transition-all duration-500 group-hover:translate-y-[-4px]">
                 <p className="text-[9px] tracking-[0.3em] uppercase text-[#D4AF37] font-bold">Hair & Body Expert</p>
                 <h3 className="font-serif text-3xl text-[#1A0E0A] mt-1 font-light tracking-wide">Sil</h3>
               </div>
             </div>
 
-            {/* Descripción y Especialidades */}
             <div className="pt-6 space-y-4 max-w-md">
               <p className="text-sm text-[#5C4A3E] font-light leading-relaxed">
                 Maestra del movimiento y el color. Sil diseña estilos capilares a medida analizando las facciones y la caída natural, garantizando un acabado elegante y orgánico.
               </p>
               
-              {/* Badges de Especialidad */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {['Alta Peluquería', 'Colorimetría Avanzada', 'Cortes de Autor', 'Depilación'].map((tag) => (
                   <span key={tag} className="text-[9px] tracking-widest uppercase font-medium text-[#1A0E0A] bg-white border border-[#F0E4DA] px-3 py-1.5">
@@ -501,9 +504,8 @@ const TeamSection = () => {
   )
 }
 
-
 // ============================================================
-// SERVICIOS (CON DATOS DE LA DB COMPATIBLE)
+// SERVICIOS
 // ============================================================
 const ServicesSection = ({ services }: { services: any[] }) => {
   const ref = useRef(null)
@@ -584,7 +586,7 @@ const ServicesSection = ({ services }: { services: any[] }) => {
 }
 
 // ============================================================
-// GALERÍA (ESTILO DIARIO VISUAL CONTINUO)
+// GALERÍA
 // ============================================================
 const GallerySection = ({ images }: { images: any[] }) => {
   const ref = useRef(null)
@@ -593,6 +595,7 @@ const GallerySection = ({ images }: { images: any[] }) => {
   const displayImages = images && images.length > 0 
     ? images 
     : [
+        DEFAULT_HERO_IMAGE,
         'https://images.unsplash.com/photo-1591926079847-8181980b0f09?w=600&fit=crop',
         'https://images.unsplash.com/photo-1641814250010-9887d86eedfd?w=600&fit=crop',
         'https://images.unsplash.com/photo-1720343409646-960f6dcccae3?w=600&fit=crop'
@@ -645,7 +648,7 @@ const GallerySection = ({ images }: { images: any[] }) => {
 }
 
 // ============================================================
-// TESTIMONIOS (DE GRAN IMPACTO TIPOGRÁFICO)
+// TESTIMONIOS
 // ============================================================
 const TestimonialsSection = () => {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -731,7 +734,7 @@ const CtaSection = () => {
 }
 
 // ============================================================
-// FOOTER (CORREGIDO Y SIN ANIDACIONES DE ENLACES)
+// FOOTER
 // ============================================================
 const Footer = () => (
   <footer className="bg-[#150B08] text-white/60 border-t border-white/5 text-xs font-light">
@@ -826,6 +829,7 @@ const Footer = () => (
 export default function Home() {
   const [services, setServices] = useState<any[]>([])
   const [galleryImages, setGalleryImages] = useState<any[]>([])
+  const [heroImage, setHeroImage] = useState<string>(DEFAULT_HERO_IMAGE)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -864,6 +868,7 @@ export default function Home() {
           return
         }
 
+        // 1. Obtener Servicios
         const { data: servicesData } = await supabase
           .from('services')
           .select('*')
@@ -874,6 +879,22 @@ export default function Home() {
 
         if (servicesData) setServices(servicesData)
 
+        // 2. Obtener Imagen Dinámica para el Hero si existe en el Admin
+        const { data: heroData } = await supabase
+          .from('gallery')
+          .select('image_url')
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .or('category.eq.hero,is_hero.eq.true')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle() as any
+
+        if (heroData?.image_url) {
+          setHeroImage(heroData.image_url)
+        }
+
+        // 3. Obtener Imágenes de la Galería
         let allImages: any[] = []
 
         const { data: adminPhotos } = await supabase
@@ -905,7 +926,7 @@ export default function Home() {
         }
 
         allImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        setGalleryImages(allImages.slice(0, 6))
+        setGalleryImages(allImages.slice(0, 8))
 
       } catch (error) {
         console.error('Error cargando datos:', error)
@@ -931,7 +952,7 @@ export default function Home() {
   return (
     <main className="bg-white text-[#1A0E0A] min-h-screen overflow-x-hidden antialiased selection:bg-[#D4AF37]/20">
       <Header />
-      <HeroSection />
+      <HeroSection heroImage={heroImage} />
       <EsenciaSection />
       <StatsSection />
       <CategoriesSection />
