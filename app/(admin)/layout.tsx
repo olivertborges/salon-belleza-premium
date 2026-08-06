@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter, usePathname } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client' // Hacemos la importación de Supabase
+import { supabase } from '@/lib/supabase/client'
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import AdminHeader from '@/components/layout/AdminHeader'
 
@@ -21,12 +21,9 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
-  // ✅ PROTEGER RUTAS DE ADMIN CON CONSULTA A BASE DE DATOS
   useEffect(() => {
-    // Si está cargando la autenticación inicial, esperamos
     if (loading) return
 
-    // Si ni siquiera hay un usuario logueado, directo al login
     if (!user) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
       setIsAuthorized(false)
@@ -35,13 +32,11 @@ export default function AdminLayout({
 
     const verificarAccesoReal = async () => {
       try {
-        // 1. Verificación rápida: Si el contexto ya dice que es apto, autorizamos
         if (role === 'admin' || role === 'staff' || role === 'owner') {
           setIsAuthorized(true)
           return
         }
 
-        // 2. Si el contexto no lo tiene (tu caso actual), buscamos en la verdad absoluta: la tabla 'staff'
         const { data: staffMember, error: dbError } = await supabase
           .from('staff')
           .select('auth_role')
@@ -50,7 +45,6 @@ export default function AdminLayout({
 
         if (dbError) throw dbError
 
-        // Si existe en la tabla y tiene un rol permitido, le damos acceso
         if (staffMember && staffMember.auth_role) {
           const rolLimpio = staffMember.auth_role.toLowerCase().trim()
           if (rolLimpio === 'admin' || rolLimpio === 'staff' || rolLimpio === 'owner') {
@@ -59,7 +53,6 @@ export default function AdminLayout({
           }
         }
 
-        // 3. Si no cumple ninguna condición, se va redirigido al portal
         router.push('/portal')
         setIsAuthorized(false)
 
@@ -73,7 +66,6 @@ export default function AdminLayout({
     verificarAccesoReal()
   }, [user, role, loading, router, pathname])
 
-  // ✅ Mostrar loader estético mientras verifica los permisos en la BD
   if (loading || isAuthorized === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0908]">
@@ -85,7 +77,6 @@ export default function AdminLayout({
     )
   }
 
-  // Si no está autorizado, no renderizamos nada mientras se ejecuta el redireccionamiento
   if (!isAuthorized) {
     return null
   }
@@ -105,8 +96,11 @@ export default function AdminLayout({
           onMenuClick={() => setSidebarOpen(true)} 
         />
 
-        <main className="flex-1 px-4 pb-20 lg:px-6 lg:pb-24 pt-0 overflow-y-auto w-full">
-          <div className="h-[20px] w-full block shrink-0 pointer-events-none" aria-hidden="true" />
+        {/* 
+          1. Cambiamos pt-0 por pt-16 (64px) en pantallas móviles y pt-20 (80px) en escritorio.
+          2. Eliminamos el div hack h-[20px].
+        */}
+        <main className="flex-1 px-4 pt-16 lg:pt-20 pb-20 lg:pb-24 overflow-y-auto w-full">
           {children}
         </main>
       </div>
