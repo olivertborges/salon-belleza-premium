@@ -9,26 +9,41 @@ import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
+  Scissors, 
   Clock, 
-  Star,
-  Sparkles,
-  Search,
-  Grid3x3,
-  LayoutList,
-  Quote,
-  Calendar,
-  Eye,
-  Camera,
-  StarHalf,
-  Send,
-  X,
+  Sparkles, 
+  Search, 
+  Filter, 
+  Grid3x3, 
+  LayoutList, 
+  AlertCircle, 
+  CheckCircle2, 
+  Calendar, 
+  Camera, 
+  Star, 
+  StarHalf, 
+  X, 
+  Send, 
   Loader2,
+  Palette,
   Droplets,
-  Feather,
+  Wind,
+  Quote,
   ZoomIn,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
+  Gem,
+  Crown,
+  ArrowRight,
+  Heart,
+  Flower2,
+  Compass,
+  Zap,
+  Shield,
+  User,
+  Eye,
+  Feather
 } from 'lucide-react'
 
 interface Servicio {
@@ -68,6 +83,14 @@ interface Review {
   is_approved: boolean
   created_at: string
   client_name?: string
+}
+
+const HAIR_IMAGES = {
+  hero: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=1200&h=600&fit=crop',
+  corte1: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=600&h=400&fit=crop',
+  corte2: 'https://images.unsplash.com/photo-1560869713-7d0a2943087e?w=600&h=400&fit=crop',
+  color: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=600&h=400&fit=crop',
+  tratamiento: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
 }
 
 const containerVariants = {
@@ -222,7 +245,6 @@ export default function MicropigmentacionPage() {
     if (!activeTenantId) return
     try {
       const reviewsMap: Record<string, Review[]> = {}
-      // Consulta limpia sin joins estrictos que puedan romper Supabase
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
@@ -293,7 +315,7 @@ export default function MicropigmentacionPage() {
 
   const handleSubmitReview = async () => {
     const activeTenantId = await getTenantId()
-    if (!user || !activeTenantId || rating === 0 || !comment.trim()) return
+    if (!user || !activeTenantId || rating === 0 || !comment.trim() || !selectedService) return
     setSubmitting(true)
     try {
       const { data, error } = await supabase
@@ -301,7 +323,7 @@ export default function MicropigmentacionPage() {
         .insert({
           tenant_id: activeTenantId,
           client_id: user.id,
-          service_id: selectedService!.id,
+          service_id: selectedService.id,
           professional_id: null,
           rating: rating,
           comment: comment.trim(),
@@ -318,7 +340,7 @@ export default function MicropigmentacionPage() {
         }
         setReviews(prev => ({
           ...prev,
-          [selectedService!.id]: [newReview, ...(prev[selectedService!.id] || [])]
+          [selectedService.id]: [newReview, ...(prev[selectedService.id] || [])]
         }))
       }
       setSuccessMessage('✅ ¡Gracias por tu calificación!')
@@ -665,7 +687,7 @@ export default function MicropigmentacionPage() {
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
                   isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <ImageIcon className="w-9 h-9 text-[#A89588]" />
+                  <ImageIcon className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
                 </div>
                 <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   No hay fotos de micropigmentación aún
@@ -738,7 +760,7 @@ export default function MicropigmentacionPage() {
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
                   isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <Quote className="w-9 h-9 text-[#A89588]" />
+                  <Quote className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
                 </div>
                 <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   Aún no hay testimonios registrados
@@ -771,7 +793,7 @@ export default function MicropigmentacionPage() {
                         <span className={`text-[10px] font-medium ${
                           isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                         }`}>
-                          {mounted && new Date(rev.created_at).toLocaleDateString('es-ES', { 
+                          {new Date(rev.created_at).toLocaleDateString('es-ES', { 
                             day: 'numeric', 
                             month: 'long', 
                             year: 'numeric' 
@@ -782,8 +804,12 @@ export default function MicropigmentacionPage() {
                     </div>
 
                     <div className="relative pl-4 border-l-2 border-[#D4AF37]">
-                      <Quote className="absolute -left-2 -top-1 w-4 h-4 text-[#D4AF37]/30" />
-                      <p className={`text-sm leading-relaxed pl-4 ${isDark ? 'text-[#FFF9F6]/80' : 'text-[#1A0E0A]/80'}`}>
+                      <Quote className={`absolute -left-2 -top-1 w-4 h-4 ${
+                        isDark ? 'text-[#D4AF37]/30' : 'text-[#D4AF37]/30'
+                      }`} />
+                      <p className={`text-sm leading-relaxed pl-4 ${
+                        isDark ? 'text-[#FFF9F6]/80' : 'text-[#1A0E0A]/80'
+                      }`}>
                         {rev.comment}
                       </p>
                     </div>
@@ -896,7 +922,7 @@ export default function MicropigmentacionPage() {
           )}
         </AnimatePresence>
 
-        {/* MODAL SERVICIO */}
+        {/* MODAL DE DETALLE DE SERVICIO */}
         <AnimatePresence>
           {isModalOpen && selectedService && (
             <motion.div 
@@ -938,7 +964,7 @@ export default function MicropigmentacionPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#D4AF37]">
-                      {selectedService.category || 'Micropigmentación'}
+                      {selectedService.category || 'Servicio'}
                     </span>
                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
                     <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
@@ -949,7 +975,7 @@ export default function MicropigmentacionPage() {
                     {selectedService.name}
                   </h3>
                   <p className={`text-xs leading-relaxed mt-2 ${isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}`}>
-                    {selectedService.description || 'Técnica avanzada de micropigmentación diseñada para realzar tu belleza natural.'}
+                    {selectedService.description || 'Experiencia de micropigmentación diseñada para resaltar tus rasgos naturales.'}
                   </p>
                 </div>
 
@@ -976,7 +1002,7 @@ export default function MicropigmentacionPage() {
             </motion.div>
           )}
 
-          {/* MODAL RESEÑA */}
+          {/* MODAL DE RESEÑA */}
           {showReviewModal && selectedService && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -1088,6 +1114,35 @@ export default function MicropigmentacionPage() {
         </AnimatePresence>
 
       </div>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.92); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shine {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(100%); }
+        }
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-shine {
+          animation: shine 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }
