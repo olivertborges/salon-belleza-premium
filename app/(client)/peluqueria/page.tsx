@@ -7,8 +7,8 @@ import {
   Scissors, Star, Eye, Image as ImageIcon, Sparkles, Filter, 
   Grid, List, Heart, MessageSquare, Plus, ChevronRight, X, ChevronLeft, ChevronRight as ChevronRightIcon 
 } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabaseClient'
 
 interface Service {
   id: string
@@ -160,7 +160,7 @@ export default function EsteticaCapilarPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  // CORRECCIÓN: Guardar Reseñas respetando esquema y tenant_id
+  // Guardar Reseñas respetando esquema y tenant_id
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newReviewComment.trim()) return
@@ -173,11 +173,10 @@ export default function EsteticaCapilarPage() {
         return
       }
 
-      // Preparar payload respetando campos UUID de Supabase
       const reviewPayload = {
         tenant_id: activeTenantId,
-        service_id: selectedServiceForReview || null, // NULL si no seleccionó un servicio específico
-        user_id: user?.id || null,                     // NULL si es usuario anónimo
+        service_id: selectedServiceForReview || null,
+        user_id: user?.id || null,
         rating: newReviewRating,
         comment: newReviewComment.trim(),
         user_name: user?.user_metadata?.full_name || user?.email || 'Cliente Anónimo'
@@ -228,7 +227,7 @@ export default function EsteticaCapilarPage() {
           <p className="text-slate-400 mt-1">Tratamientos especializados, cortes e imagen personal</p>
         </div>
 
-        {/* Pestanas de Navegación */}
+        {/* Pestañas de Navegación */}
         <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
           <button
             onClick={() => setActiveTab('servicios')}
