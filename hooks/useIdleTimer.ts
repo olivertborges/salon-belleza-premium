@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation' // 👈 Importar useRouter
 import { supabase } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
-// Tiempo de inactividad en milisegundos (ejemplo: 15 minutos)
-const IDLE_TIMEOUT = 15 * 60 * 1000 
+const IDLE_TIMEOUT = 15 * 60 * 1000 // 15 minutos de inactividad
 
 export function useIdleTimer() {
-  const router = Router()
+  const router = useRouter() // 👈 Cambiar Router() por useRouter()
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleLogout = async () => {
@@ -22,13 +21,12 @@ export function useIdleTimer() {
   }
 
   useEffect(() => {
-    // Eventos que reinician el contador de actividad
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
 
     const handleActivity = () => resetTimer()
 
     events.forEach((event) => window.addEventListener(event, handleActivity))
-    resetTimer() // Iniciar temporizador al montar
+    resetTimer()
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
