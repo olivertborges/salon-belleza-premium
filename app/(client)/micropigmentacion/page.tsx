@@ -29,7 +29,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  ArrowRight,
 } from 'lucide-react'
 
 interface Servicio {
@@ -101,6 +100,7 @@ export default function MicropigmentacionPage() {
   const { settings } = useSettings()
   const isDark = theme === 'dark'
 
+  const [mounted, setMounted] = useState(false)
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [filteredServicios, setFilteredServicios] = useState<Servicio[]>([])
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
@@ -123,6 +123,11 @@ export default function MicropigmentacionPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
+  // Evitar desajuste de hidratación en SSR
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const categories = [
     { id: 'all', label: 'Todos', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: 'Cejas', label: 'Cejas', icon: <Eye className="w-3.5 h-3.5" /> },
@@ -144,9 +149,9 @@ export default function MicropigmentacionPage() {
     return null
   }, [tenantId])
 
-  const loadServicios = async () => {
+  const loadServicios = useCallback(async () => {
     const activeTenantId = await getTenantId()
-    if (!activeTenantId) { setLoading(false); return }
+    if (!activeTenantId) return
     try {
       const { data, error } = await supabase
         .from('services')
@@ -161,9 +166,9 @@ export default function MicropigmentacionPage() {
     } catch (error) {
       console.error('Error cargando servicios:', error)
     }
-  }
+  }, [getTenantId])
 
-  const loadGallery = async () => {
+  const loadGallery = useCallback(async () => {
     const activeTenantId = await getTenantId()
     if (!activeTenantId) return
     try {
@@ -210,16 +215,17 @@ export default function MicropigmentacionPage() {
     } catch (error) {
       console.error('Error cargando galería:', error)
     }
-  }
+  }, [getTenantId])
 
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     const activeTenantId = await getTenantId()
     if (!activeTenantId) return
     try {
       const reviewsMap: Record<string, Review[]> = {}
+      // Consulta limpia sin joins estrictos que puedan romper Supabase
       const { data, error } = await supabase
         .from('reviews')
-        .select(`*, clients:client_id (name, avatar_url)`)
+        .select('*')
         .eq('tenant_id', activeTenantId)
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
@@ -230,7 +236,7 @@ export default function MicropigmentacionPage() {
           if (!reviewsMap[serviceId]) reviewsMap[serviceId] = []
           reviewsMap[serviceId].push({
             ...review,
-            client_name: review.clients?.name || 'Cliente'
+            client_name: review.client_name || 'Cliente'
           })
         })
       }
@@ -238,7 +244,7 @@ export default function MicropigmentacionPage() {
     } catch (error) {
       console.error('Error cargando reviews:', error)
     }
-  }
+  }, [getTenantId])
 
   useEffect(() => {
     const loadData = async () => {
@@ -247,7 +253,7 @@ export default function MicropigmentacionPage() {
       setLoading(false)
     }
     loadData()
-  }, [tenantId])
+  }, [tenantId, loadServicios, loadGallery, loadReviews])
 
   useEffect(() => {
     let filtered = servicios
@@ -374,7 +380,6 @@ export default function MicropigmentacionPage() {
     <div className={`min-h-screen transition-colors duration-500 antialiased pb-16 relative overflow-x-hidden ${
       isDark ? 'bg-[#1E120C] text-[#FFF9F6]' : 'bg-[#FFF9F6] text-[#1A0E0A]'
     }`}>
-      {/* Fondo texturizado */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:60px_60px]" />
 
       <div className="max-w-7xl mx-auto px-4 space-y-8 relative z-10">
@@ -391,9 +396,7 @@ export default function MicropigmentacionPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* HERO SECTION — CON FOTO DE ANY */}
-        {/* ============================================================ */}
+        {/* HERO SECTION */}
         <div className={`relative overflow-hidden rounded-2xl min-h-[440px] md:min-h-[500px] flex items-center shadow-lg mt-4 border transition-all duration-300 ${
           isDark 
             ? 'border-[#3D281E] shadow-[0_15px_35px_rgba(0,0,0,0.3)]' 
@@ -455,11 +458,7 @@ export default function MicropigmentacionPage() {
 
                 <button 
                   onClick={() => setActiveTab('galeria')} 
-                  className={`px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm ${
-                    isDark 
-                      ? 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20' 
-                      : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/20'
-                  }`}
+                  className="px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] backdrop-blur-sm bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
                 >
                   <Camera className="w-3.5 h-3.5" /> 
                   <span>Galería</span>
@@ -487,9 +486,7 @@ export default function MicropigmentacionPage() {
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* TABS — RESPONSIVE */}
-        {/* ============================================================ */}
+        {/* TABS */}
         <div className={`flex justify-center border-b pb-0 overflow-x-auto ${
           isDark ? 'border-[#3D281E]' : 'border-[#F0E4DA]'
         }`}>
@@ -517,9 +514,7 @@ export default function MicropigmentacionPage() {
           ))}
         </div>
 
-        {/* ============================================================ */}
         {/* TAB: SERVICIOS */}
-        {/* ============================================================ */}
         {activeTab === 'servicios' && (
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2 justify-center">
@@ -618,7 +613,7 @@ export default function MicropigmentacionPage() {
                         }`}>
                           {servicio.name}
                         </h3>
-                        <span className={`text-sm font-black font-mono text-[#D4AF37]`}>
+                        <span className="text-sm font-black font-mono text-[#D4AF37]">
                           ${servicio.price}
                         </span>
                       </div>
@@ -646,7 +641,7 @@ export default function MicropigmentacionPage() {
                       </div>
                       <button 
                         onClick={() => { setSelectedService(servicio); setShowReviewModal(true) }} 
-                        className={`text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 transition-all duration-300 hover:scale-105 text-[#D4AF37] hover:text-[#E8D5A0]`}
+                        className="text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5 transition-all duration-300 hover:scale-105 text-[#D4AF37] hover:text-[#E8D5A0]"
                       >
                         <Star className="w-3 h-3 fill-[#D4AF37]" /> Reseñar
                       </button>
@@ -658,9 +653,7 @@ export default function MicropigmentacionPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* TAB: GALERÍA */}
-        {/* ============================================================ */}
         {activeTab === 'galeria' && (
           <div>
             {galleryImages.length === 0 ? (
@@ -672,7 +665,7 @@ export default function MicropigmentacionPage() {
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
                   isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <ImageIcon className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
+                  <ImageIcon className="w-9 h-9 text-[#A89588]" />
                 </div>
                 <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   No hay fotos de micropigmentación aún
@@ -733,9 +726,7 @@ export default function MicropigmentacionPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* TAB: TESTIMONIOS */}
-        {/* ============================================================ */}
         {activeTab === 'testimonios' && (
           <div>
             {Object.values(reviews).flat().length === 0 ? (
@@ -747,7 +738,7 @@ export default function MicropigmentacionPage() {
                 <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5 ${
                   isDark ? 'bg-[#3D281E]' : 'bg-[#FFF9F6]'
                 }`}>
-                  <Quote className={`w-9 h-9 ${isDark ? 'text-[#A89588]' : 'text-[#A89588]'}`} />
+                  <Quote className="w-9 h-9 text-[#A89588]" />
                 </div>
                 <p className={`text-sm font-medium ${isDark ? 'text-[#FFF9F6]' : 'text-[#1A0E0A]'}`}>
                   Aún no hay testimonios registrados
@@ -780,7 +771,7 @@ export default function MicropigmentacionPage() {
                         <span className={`text-[10px] font-medium ${
                           isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'
                         }`}>
-                          {new Date(rev.created_at).toLocaleDateString('es-ES', { 
+                          {mounted && new Date(rev.created_at).toLocaleDateString('es-ES', { 
                             day: 'numeric', 
                             month: 'long', 
                             year: 'numeric' 
@@ -790,8 +781,8 @@ export default function MicropigmentacionPage() {
                       {renderStars(rev.rating, 'md')}
                     </div>
 
-                    <div className={`relative pl-4 border-l-2 border-[#D4AF37]`}>
-                      <Quote className={`absolute -left-2 -top-1 w-4 h-4 ${isDark ? 'text-[#D4AF37]/30' : 'text-[#D4AF37]/30'}`} />
+                    <div className="relative pl-4 border-l-2 border-[#D4AF37]">
+                      <Quote className="absolute -left-2 -top-1 w-4 h-4 text-[#D4AF37]/30" />
                       <p className={`text-sm leading-relaxed pl-4 ${isDark ? 'text-[#FFF9F6]/80' : 'text-[#1A0E0A]/80'}`}>
                         {rev.comment}
                       </p>
@@ -814,9 +805,7 @@ export default function MicropigmentacionPage() {
           </div>
         )}
 
-        {/* ============================================================ */}
         {/* LIGHTBOX */}
-        {/* ============================================================ */}
         <AnimatePresence>
           {isLightboxOpen && selectedImage && (
             <motion.div 
@@ -883,7 +872,7 @@ export default function MicropigmentacionPage() {
                 />
 
                 {(selectedImage.title || selectedImage.source) && (
-                  <div className={`absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-2xl`}>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-2xl">
                     {selectedImage.title && (
                       <p className="text-white text-lg font-light">{selectedImage.title}</p>
                     )}
@@ -907,9 +896,7 @@ export default function MicropigmentacionPage() {
           )}
         </AnimatePresence>
 
-        {/* ============================================================ */}
-        {/* MODAL DE DETALLE DE SERVICIO */}
-        {/* ============================================================ */}
+        {/* MODAL SERVICIO */}
         <AnimatePresence>
           {isModalOpen && selectedService && (
             <motion.div 
@@ -950,7 +937,7 @@ export default function MicropigmentacionPage() {
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] text-[#D4AF37]`}>
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#D4AF37]">
                       {selectedService.category || 'Micropigmentación'}
                     </span>
                     <span className={`w-1 h-1 rounded-full ${isDark ? 'bg-[#3D281E]' : 'bg-[#F0E4DA]'}`} />
@@ -989,9 +976,7 @@ export default function MicropigmentacionPage() {
             </motion.div>
           )}
 
-          {/* ============================================================ */}
-          {/* MODAL DE RESEÑA */}
-          {/* ============================================================ */}
+          {/* MODAL RESEÑA */}
           {showReviewModal && selectedService && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -1082,11 +1067,7 @@ export default function MicropigmentacionPage() {
                   <button 
                     onClick={handleSubmitReview} 
                     disabled={submitting || !rating || !comment.trim()} 
-                    className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed ${
-                      isDark 
-                        ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 
-                        : 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]'
-                    }`}
+                    className="flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]"
                   >
                     {submitting ? (
                       <>
@@ -1107,35 +1088,6 @@ export default function MicropigmentacionPage() {
         </AnimatePresence>
 
       </div>
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0.92); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes shine {
-          from { transform: translateX(-100%); }
-          to { transform: translateX(100%); }
-        }
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out forwards;
-        }
-        .animate-scaleIn {
-          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-shine {
-          animation: shine 1.5s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }
