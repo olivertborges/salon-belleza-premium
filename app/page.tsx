@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { 
   FaArrowRight, FaQuoteLeft, FaInstagram, FaWhatsapp, FaStar, FaGem,
@@ -35,17 +36,55 @@ const getCleanSlug = (text: string) => {
 }
 
 // ============================================================
-// HEADER (ELEGANTE & MINIMALISTA - SALON FRESH)
+// HEADER (ELEGANTE & MINIMALISTA - CON DETECCIÓN DE SESIÓN)
 // ============================================================
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setCurrentUser(session.user)
+        const role = session.user.user_metadata?.role || session.user.app_metadata?.role || 'client'
+        setUserRole(role)
+      }
+    }
+    checkUser()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user || null)
+      if (session?.user) {
+        const role = session.user.user_metadata?.role || session.user.app_metadata?.role || 'client'
+        setUserRole(role)
+      } else {
+        setUserRole(null)
+      }
+    })
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setCurrentUser(null)
+    setUserRole(null)
+    router.refresh()
+  }
+
+  const isStaff = ['admin', 'staff', 'owner'].includes(userRole?.toLowerCase() || '')
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -63,7 +102,7 @@ const Header = () => {
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-10">
+        <nav className="hidden lg:flex items-center gap-8">
           {['Esencia', 'Categorías', 'Equipo', 'Servicios', 'Galería', 'Testimonios'].map((item) => (
             <Link 
               key={item}
@@ -73,12 +112,32 @@ const Header = () => {
               {item}
             </Link>
           ))}
-          <Link 
-            href="/agenda"
-            className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all duration-300 rounded-none"
-          >
-            Reservar Cita
-          </Link>
+
+          {currentUser ? (
+            <div className="flex items-center gap-4 pl-4 border-l border-[#D4AF37]/20">
+              <Link
+                href={isStaff ? "/dashboard" : "/portal"}
+                className="bg-[#1A0E0A] text-white hover:bg-[#D4AF37] px-5 py-2.5 text-[10px] font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+              >
+                {isStaff ? 'Ir a Panel' : 'Mi Portal'}
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="border border-red-800/30 text-red-700 hover:bg-red-700 hover:text-white px-4 py-2.5 text-[10px] font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+                title="Cerrar sesión"
+              >
+                Salir
+              </button>
+            </div>
+          ) : (
+            <Link 
+              href="/agenda"
+              className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white px-7 py-3 text-[11px] font-medium tracking-[0.25em] uppercase transition-all duration-300"
+            >
+              Reservar Cita
+            </Link>
+          )}
         </nav>
 
         <button 
@@ -109,13 +168,38 @@ const Header = () => {
                   {item}
                 </Link>
               ))}
-              <Link 
-                href="/agenda"
-                className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2"
-                onClick={() => setIsOpen(false)}
-              >
-                Reservar Cita
-              </Link>
+
+              {currentUser ? (
+                <div className="pt-4 border-t border-[#F0E4DA] flex flex-col gap-2">
+                  <p className="text-[10px] text-[#A89588] truncate">
+                    Sesión: <span className="text-[#1A0E0A] font-medium">{currentUser.email}</span>
+                  </p>
+                  <Link 
+                    href={isStaff ? "/dashboard" : "/portal"}
+                    className="block text-center bg-[#1A0E0A] text-white py-3 text-[11px] font-medium tracking-[0.2em] uppercase"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {isStaff ? 'Ir a Panel Admin' : 'Mi Portal'}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setIsOpen(false)
+                    }}
+                    className="w-full text-center border border-red-800/30 text-red-700 py-2.5 text-[11px] font-medium tracking-[0.2em] uppercase mt-1"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              ) : (
+                <Link 
+                  href="/agenda"
+                  className="block text-center border border-[#D4AF37] text-[#D4AF37] py-3 text-[11px] font-medium tracking-[0.25em] uppercase mt-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Reservar Cita
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
