@@ -21,6 +21,7 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
+  // ✅ 1. VERIFICACIÓN DE PERMISOS
   useEffect(() => {
     if (loading) return
 
@@ -53,6 +54,7 @@ export default function AdminLayout({
           }
         }
 
+        // Si no es admin/staff, redirigir al portal de cliente
         router.push('/portal')
         setIsAuthorized(false)
 
@@ -66,6 +68,7 @@ export default function AdminLayout({
     verificarAccesoReal()
   }, [user, role, loading, router, pathname])
 
+  // Loader mientras valida credenciales
   if (loading || isAuthorized === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0908]">
@@ -97,8 +100,10 @@ export default function AdminLayout({
         />
 
         {/* 
-          1. Cambiamos pt-0 por pt-16 (64px) en pantallas móviles y pt-20 (80px) en escritorio.
-          2. Eliminamos el div hack h-[20px].
+          ✅ SOLUCIÓN AL PROBLEMA DEL HERO/HEADER:
+          1. Se remueve el div invisible h-[20px].
+          2. Se asigna un pt-16 (móvil) y pt-20 (escritorio) real al <main>
+             para compensar el header flotante/fijo sin empujar de más en scroll.
         */}
         <main className="flex-1 px-4 pt-16 lg:pt-20 pb-20 lg:pb-24 overflow-y-auto w-full">
           {children}
