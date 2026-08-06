@@ -28,7 +28,7 @@ export default function ClientLayout({
     // Si la cuenta activa es de administración, se redirige a su panel correspondiente
     const rolLimpio = role ? role.toLowerCase().trim() : ''
     if (['admin', 'staff', 'owner'].includes(rolLimpio)) {
-      router.push('/admin') // O la ruta principal de tu admin (ej. /admin/dashboard)
+      router.push('/dashboard') // O la ruta principal de tu admin (ej. /admin/dashboard)
     }
   }, [user, role, loading, router, pathname])
 
