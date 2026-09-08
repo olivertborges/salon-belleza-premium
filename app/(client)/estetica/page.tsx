@@ -335,7 +335,7 @@ export default function EsteticaPage() {
           tenant_id: tenantId,
           client_id: user.id,
           service_id: selectedService!.id,
-          professional_id: null,
+          staff_id: null,
           rating: rating,
           comment: comment.trim(),
           images: [],

@@ -69,7 +69,7 @@ export default function HistorialPage() {
       const [citasRes, clientesRes] = await Promise.all([
         supabase
           .from('appointments')
-          .select(`id, total_price, date, time, status, clients:client_id (name), services:service_id (name)`)
+          .select(`id, price, date, time, status, clients:client_id (name), services:service_id (name)`)
           .eq('tenant_id', tenantId)
           .order('date', { ascending: false })
           .limit(100),
@@ -93,7 +93,7 @@ export default function HistorialPage() {
             title: `Cita: ${c.clients?.name || 'Cliente'}`,
             description: `${c.services?.name || 'Servicio'} — ${c.time?.slice(0,5) || '--:--'}`,
             date: `${c.date}T12:00:00`,
-            amount: c.total_price || 0,
+            amount: c.price || 0,
             status: statusMap[c.status] || c.status || 'Pendiente'
           })
         })

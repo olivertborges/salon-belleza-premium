@@ -35,12 +35,12 @@ type ViewMode = 'day' | 'week' | 'month'
 interface Cita {
   id: string
   client_id: string
-  professional_id: string | null
+  staff_id: string | null
   service_id: string
   date: string
   time: string
   status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'blocked'
-  total_price: number
+  price: number
   notes: string | null
   clients?: { id: string; name: string } | null
   services?: { id: string; name: string; price: number } | null
@@ -227,7 +227,7 @@ export default function AdminAgendaPage() {
       }
 
       if (filtroStaff !== 'todos') {
-        query = query.eq('professional_id', filtroStaff)
+        query = query.eq('staff_id', filtroStaff)
       }
 
       const { data: citasData, error: citasError } = await query.order('time', { ascending: true })
@@ -244,7 +244,7 @@ export default function AdminAgendaPage() {
         ...cita,
         clients: clientsRes.data?.find(c => c.id === cita.client_id) || null,
         services: servicesRes.data?.find(s => s.id === cita.service_id) || null,
-        staff: staffRes.data?.find(s => s.id === cita.professional_id) || null
+        staff: staffRes.data?.find(s => s.id === cita.staff_id) || null
       }))
 
       setCitas(citasConRelaciones)
@@ -393,12 +393,12 @@ export default function AdminAgendaPage() {
     try {
       const updateData = {
         client_id: selectedCita.clients?.id || selectedCita.client_id,
-        professional_id: selectedCita.staff?.id || selectedCita.professional_id,
+        staff_id: selectedCita.staff?.id || selectedCita.staff_id,
         service_id: selectedCita.services?.id || selectedCita.service_id,
         date: selectedCita.date,
         time: selectedCita.time,
         notes: selectedCita.notes,
-        total_price: selectedCita.total_price
+        price: selectedCita.price
       }
 
       const { error } = await supabase
@@ -430,12 +430,12 @@ export default function AdminAgendaPage() {
     try {
       const appointmentData = {
         client_id: newCita.clientId,
-        professional_id: newCita.staffId || null,
+        staff_id: newCita.staffId || null,
         service_id: newCita.serviceId,
         date: newCita.date,
         time: newCita.time,
         status: 'pending' as const,
-        total_price: services.find(s => s.id === newCita.serviceId)?.price || 0,
+        price: services.find(s => s.id === newCita.serviceId)?.price || 0,
         notes: newCita.notes
       }
 
@@ -1107,7 +1107,7 @@ export default function AdminAgendaPage() {
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-stone-500 dark:text-stone-400">Total</span>
-                <span className="font-bold text-stone-900 dark:text-pink-100">${Number(selectedCita.total_price || 0).toLocaleString()}</span>
+                <span className="font-bold text-stone-900 dark:text-pink-100">${Number(selectedCita.price || 0).toLocaleString()}</span>
               </div>
             </div>
 

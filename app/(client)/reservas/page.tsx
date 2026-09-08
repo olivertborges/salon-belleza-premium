@@ -46,7 +46,7 @@ interface Appointment {
   time: string
   status: string
   client_id: string
-  professional_id: string | null
+  staff_id: string | null
   service_id: string
   clients: ClientProfile | null
   services: Service | null
@@ -149,7 +149,7 @@ export default function MisReservasPage() {
             time,
             status,
             client_id,
-            professional_id,
+            staff_id,
             service_id,
             clients:client_id (id, name, phone, email),
             services:service_id (id, name, price, duration)
@@ -163,7 +163,7 @@ export default function MisReservasPage() {
           const rawAppointments = appointmentsData as any[]
 
           const staffIds = rawAppointments
-            .map((c) => c.professional_id)
+            .map((c) => c.staff_id)
             .filter((id): id is string => !!id)
 
           let staffMap: Record<string, Staff> = {}
@@ -187,7 +187,7 @@ export default function MisReservasPage() {
             time: cita.time,
             status: cita.status,
             client_id: cita.client_id,
-            professional_id: cita.professional_id,
+            staff_id: cita.staff_id,
             service_id: cita.service_id,
             clients: cita.clients ? {
               id: cita.clients.id,
@@ -201,7 +201,7 @@ export default function MisReservasPage() {
               price: Number(cita.services.price),
               duration: Number(cita.services.duration)
             } : null,
-            staff: cita.professional_id ? staffMap[cita.professional_id] : null
+            staff: cita.staff_id ? staffMap[cita.staff_id] : null
           }))
 
           setCitas(citasConStaff)

@@ -101,6 +101,7 @@ function AgendaContent() {
   // Estados
   const [staff, setStaff] = useState<Staff[]>([])
   const [services, setServices] = useState<Service[]>([])
+  const [staffServiceIds, setStaffServiceIds] = useState<Record<string, string[]>>({})
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -140,18 +141,46 @@ function AgendaContent() {
 
   const fetchWorkingHours = useCallback(async () => {
     try {
+      const selectedDayOfWeek = new Date(`${selectedDate}T12:00:00`).getDay()
+
       const { data } = await supabase
         .from('working_hours')
-        .select('start_time')
+        .select('start_time, end_time')
         .eq('tenant_id', tenantId)
+        .eq('day_of_week', selectedDayOfWeek)
         .eq('is_active', true)
         .order('start_time', { ascending: true })
 
-      return data && data.length > 0 ? data.map((h: any) => h.start_time.substring(0, 5)) : DEFAULT_TIMES
-    } catch {
-      return DEFAULT_TIMES
+      if (!data || data.length === 0) {
+        return []
+      }
+
+      const times: string[] = []
+
+    for (const h of data) {
+      const [startHour, startMinute] = h.start_time.substring(0, 5).split(':').map(Number)
+      const [endHour, endMinute] = h.end_time.substring(0, 5).split(':').map(Number)
+
+      let currentMinutes = startHour * 60 + startMinute
+      const endMinutes = endHour * 60 + endMinute
+
+      while (currentMinutes < endMinutes) {
+        const hour = Math.floor(currentMinutes / 60)
+        const minute = currentMinutes % 60
+
+        times.push(
+          `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+        )
+
+        currentMinutes += 30
+      }
     }
-  }, [tenantId])
+
+    return times
+    } catch {
+      return []
+    }
+  }, [tenantId, selectedDate])
 
   useEffect(() => {
     let isMounted = true
@@ -160,19 +189,49 @@ function AgendaContent() {
         setLoading(true)
         setError(null)
 
-        const [staffRes, servicesRes, hours] = await Promise.all([
-          supabase.from('staff').select('*').eq('is_active', true),
-          supabase.from('services').select('*').eq('is_active', true),
+        const [staffRes, staffServicesRes, hours] = await Promise.all([
+          supabase
+            .from('staff')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .eq('is_active', true),
+
+          supabase
+            .from('staff_services')
+            .select(`
+              staff_id,
+              services:service_id (*)
+            `)
+            .eq('tenant_id', tenantId),
+
           fetchWorkingHours()
         ])
+
+        const staffServiceRows = staffServicesRes.data || []
+
+        const servicesData = staffServiceRows
+          .map((row: any) => row.services)
+          .filter((service: any) => service && service.is_active)
+
+        const serviceIdsByStaff: Record<string, string[]> = {}
+
+        for (const row of staffServiceRows) {
+          if (!row.staff_id || !row.services?.id) continue
+
+          if (!serviceIdsByStaff[row.staff_id]) {
+            serviceIdsByStaff[row.staff_id] = []
+          }
+
+          serviceIdsByStaff[row.staff_id].push(row.services.id)
+        }
 
         if (!isMounted) return
 
         const staffData = staffRes.data || []
-        const servicesData = servicesRes.data || []
 
         setStaff(staffData)
         setServices(servicesData)
+        setStaffServiceIds(serviceIdsByStaff)
         setAvailableTimes(hours)
 
         if (urlProfessionalId) {
@@ -201,8 +260,9 @@ function AgendaContent() {
       try {
         const { data } = await supabase
           .from('appointments')
-          .select('time, status, service_id, services:service_id(duration)')
-          .eq('professional_id', selectedProfessional.id)
+          .select('time, end_time, status, service_id, services:service_id(duration)')
+          .eq('staff_id', selectedProfessional.id)
+          .eq('tenant_id', tenantId)
           .eq('date', selectedDate)
           .neq('status', 'cancelled')
 
@@ -214,7 +274,7 @@ function AgendaContent() {
 
     fetchAppointments()
     return () => { isMounted = false }
-  }, [selectedDate, selectedProfessional])
+  }, [selectedDate, selectedProfessional, tenantId])
 
   const getServiceCategory = useCallback((catName: string): string => {
     if (!catName) return 'others'
@@ -228,55 +288,63 @@ function AgendaContent() {
   }, [])
 
   const servicesByCategory = useMemo(() => {
-    if (!selectedProfessional) return { nails: [], micropigmentation: [], hair: [], others: [] }
-
-    const specText = selectedProfessional.specialty?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-
-    let baseServices = services.filter(service => {
-      const sCat = service.category?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || ''
-
-      const targetsNails = specText.includes('una') || specText.includes('manicur') || specText.includes('mano') || specText.includes('pie')
-      const targetsMicro = specText.includes('micro') || specText.includes('ceja') || specText.includes('pestana') || specText.includes('labio')
-      const targetsHair = specText.includes('pelu') || specText.includes('corte') || specText.includes('color')
-
-      if (targetsNails && (sCat === 'unas' || sCat === 'manicuria' || sCat.includes('mano') || sCat.includes('pie'))) {
-        return true
+    if (!selectedProfessional?.id) {
+      return {
+        nails: [],
+        micropigmentation: [],
+        hair: [],
+        others: []
       }
-      if (targetsMicro && (sCat === 'cejas' || sCat === 'pestanas' || sCat === 'labios' || sCat.includes('micro'))) {
-        return true
-      }
-      if (targetsHair && (sCat === 'corte' || sCat === 'color' || sCat.includes('pelu'))) {
-        return true
-      }
-
-      const matchesCategory = (sCat === 'unas' || sCat === 'manicuria') && (specText.includes('una') || specText.includes('manic')) ||
-                              (sCat === 'cejas' || sCat === 'pestanas' || sCat === 'labios') && (specText.includes('ceja') || specText.includes('pestan') || specText.includes('labio') || specText.includes('micro')) ||
-                              (sCat === 'corte' || sCat === 'color') && (specText.includes('pelu') || specText.includes('corte') || specText.includes('color'))
-
-      return matchesCategory
-    })
-
-    if (baseServices.length === 0) {
-      baseServices = services
     }
 
-    const filtered = baseServices.filter(s => {
+    const assignedServiceIds = new Set(
+      staffServiceIds[selectedProfessional.id] || []
+    )
+
+    const professionalServices = services.filter(service =>
+      assignedServiceIds.has(service.id)
+    )
+
+    const filtered = professionalServices.filter(service => {
       if (!searchQuery) return true
-      const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      const nameNorm = s.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      const descNorm = (s.description || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+      const query = searchQuery
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+
+      const nameNorm = service.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+
+      const descNorm = (service.description || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+
       return nameNorm.includes(query) || descNorm.includes(query)
     })
 
-    const groups: Record<string, Service[]> = { nails: [], micropigmentation: [], hair: [], others: [] }
-    filtered.forEach(s => {
-      const catId = getServiceCategory(s.category)
-      if (groups[catId]) groups[catId].push(s)
-      else groups['others'].push(s)
+    const groups: Record<string, Service[]> = {
+      nails: [],
+      micropigmentation: [],
+      hair: [],
+      others: []
+    }
+
+    filtered.forEach(service => {
+      const categoryId = getServiceCategory(service.category)
+
+      if (groups[categoryId]) {
+        groups[categoryId].push(service)
+      } else {
+        groups.others.push(service)
+      }
     })
 
     return groups
-  }, [selectedProfessional, services, searchQuery, getServiceCategory])
+  }, [services, staffServiceIds, selectedProfessional, searchQuery, getServiceCategory])
 
   useEffect(() => {
     if (searchQuery) {
@@ -310,18 +378,39 @@ function AgendaContent() {
     const checkStart = h2 * 60 + m2
     const checkEnd = checkStart + totalDuration
 
+    const workingHours = availableTimes
+
+    if (workingHours.length > 0) {
+      const lastSlot = workingHours[workingHours.length - 1]
+      const [lastHour, lastMinute] = lastSlot.split(':').map(Number)
+      const lastSlotMinutes = lastHour * 60 + lastMinute
+
+      if (checkEnd > lastSlotMinutes + 30) {
+        return { available: false }
+      }
+    }
+
     for (const app of appointments) {
       if (!app.time) continue
+
       const [h1, m1] = app.time.substring(0, 5).split(':').map(Number)
       const start = h1 * 60 + m1
-      const end = start + (app.services?.duration || 30)
+
+      let end: number
+
+      if (app.end_time) {
+        const [hEnd, mEnd] = app.end_time.substring(0, 5).split(':').map(Number)
+        end = hEnd * 60 + mEnd
+      } else {
+        end = start + (app.services?.duration || 30)
+      }
 
       if (checkStart < end && checkEnd > start) {
         return { available: false }
       }
     }
     return { available: true }
-  }, [appointments, selectedDate, totalDuration])
+  }, [appointments, selectedDate, totalDuration, availableTimes])
 
   const daysInMonth = useMemo(() => eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -335,59 +424,117 @@ function AgendaContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('BOOKING: handleSubmit iniciado')
+
     if (!clientData.name || !clientData.phone) {
       setError('Nombre y WhatsApp requeridos.')
+      return
+    }
+
+    if (
+      !selectedProfessional?.id ||
+      !selectedTime ||
+      selectedServices.length === 0
+    ) {
+      setError('Completa profesional, servicios y horario antes de confirmar.')
+      return
+    }
+
+    const currentAvailability = checkAvailability(selectedTime)
+    console.log('BOOKING: disponibilidad', selectedTime, currentAvailability)
+
+    if (!currentAvailability.available) {
+      setError('Ese horario ya no está disponible. Selecciona otro turno.')
+      setSelectedTime('')
       return
     }
 
     try {
       setSubmitting(true)
       setError(null)
-      let clientId = null
 
-      if (user?.id) {
-        const { data: ec } = await supabase.from('clients').select('id').eq('auth_user_id', user.id).maybeSingle()
-        if (ec) clientId = ec.id
+      console.log('BOOKING: llamando RPC create_booking')
+
+      const { error: bookingError } = await supabase.rpc('create_booking', {
+        p_tenant_id: tenantId,
+        p_staff_id: selectedProfessional.id,
+        p_date: selectedDate,
+        p_start_time: selectedTime,
+        p_service_ids: selectedServices.map(service => service.id),
+        p_client_name: clientData.name.trim(),
+        p_client_phone: clientData.phone.trim(),
+        p_client_email: clientData.email.trim() || null,
+        p_client_notes: clientData.notes.trim() || null
+      })
+
+      console.log('BOOKING: respuesta RPC', bookingError)
+
+      if (bookingError) {
+        if (
+          bookingError.message?.includes(
+            'El horario seleccionado ya no está disponible'
+          )
+        ) {
+          setError('Ese horario acaba de ser reservado. Selecciona otro turno.')
+          setSelectedTime('')
+          return
+        }
+
+        if (
+          bookingError.message?.includes(
+            'Uno o más servicios no están disponibles'
+          )
+        ) {
+          setError(
+            'Uno de los servicios seleccionados ya no está disponible para este profesional.'
+          )
+          return
+        }
+
+        if (
+          bookingError.message?.includes(
+            'El profesional seleccionado no está disponible'
+          )
+        ) {
+          setError('El profesional seleccionado ya no está disponible.')
+          return
+        }
+
+        if (
+          bookingError.message?.includes(
+            'El salón está cerrado ese día'
+          )
+        ) {
+          setError('El salón está cerrado ese día.')
+          return
+        }
+
+        if (
+          bookingError.message?.includes(
+            'fuera del horario de atención'
+          )
+        ) {
+          setError('La reserva queda fuera del horario de atención.')
+          setSelectedTime('')
+          return
+        }
+
+        throw bookingError
       }
 
-      if (!clientId) {
-        const { data: pm } = await supabase.from('clients').select('id').eq('phone', clientData.phone.trim()).limit(1)
-        if (pm && pm.length > 0) clientId = pm[0].id
-      }
-
-      if (!clientId) {
-        const { data: nc, error: ce } = await supabase.from('clients').insert([{
-          name: clientData.name.trim(),
-          phone: clientData.phone.trim(),
-          email: clientData.email.trim() || null,
-          auth_user_id: user?.id || null,
-          tenant_id: tenantId,
-          points: 0,
-          is_active: true
-        }]).select('id')
-        if (ce) throw ce
-        clientId = nc?.[0]?.id
-      }
-
-      const appointmentsToInsert = selectedServices.map(service => ({
-        client_id: clientId,
-        professional_id: selectedProfessional?.id,
-        service_id: service.id,
-        date: selectedDate,
-        time: selectedTime,
-        status: 'pending',
-        total_price: Number(service.price || 0),
-        notes: clientData.notes.trim() || null,
-        tenant_id: tenantId
-      }))
-
-      const { error: ae } = await supabase.from('appointments').insert(appointmentsToInsert)
-      if (ae) throw ae
-
+      console.log('BOOKING: reserva creada correctamente')
       setShowSummaryModal(false)
       setStep(5)
-    } catch (err) {
-      setError('Problema al guardar la cita.')
+    } catch (err: any) {
+      console.error('Error al crear la reserva:', err)
+
+      const message =
+        err?.message ||
+        err?.error_description ||
+        err?.details ||
+        'Problema al guardar la cita. Inténtalo nuevamente.'
+
+      setError(message)
     } finally {
       setSubmitting(false)
     }
@@ -1155,8 +1302,8 @@ function AgendaContent() {
               </button>
               <button 
                 type="button" 
-                onClick={handleSubmit} 
-                disabled={submitting} 
+                  onPointerDown={() => { console.log("BOOKING: POINTER CONFIRMAR"); setError("TEST: toque detectado"); }}
+                  disabled={false}
                 className={`flex-1 py-2 font-bold rounded-xl text-[10px] tracking-[0.2em] uppercase transition-all duration-300 disabled:opacity-50 ${
                   isDark 
                     ? 'bg-[#D4AF37] text-[#1A0E0A] hover:bg-[#E8D5A0]' 

@@ -147,9 +147,9 @@ export default function AdminAgendaPage() {
       let query = supabase.from('appointments').select('*')
 
       if (isStaff && staffId) {
-        query = query.eq('professional_id', staffId)
+        query = query.eq('staff_id', staffId)
       } else if (filtroStaff !== 'todos' && !isStaff) {
-        query = query.eq('professional_id', filtroStaff)
+        query = query.eq('staff_id', filtroStaff)
       }
 
       if (viewMode === 'day') {
@@ -178,7 +178,7 @@ export default function AdminAgendaPage() {
         ...cita,
         clients: clientsRes.data?.find((c: any) => c.id === cita.client_id) || null,
         services: servicesRes.data?.find((s: any) => s.id === cita.service_id) || null,
-        staff: staffRes.data?.find((s: any) => s.id === cita.professional_id) || null
+        staff: staffRes.data?.find((s: any) => s.id === cita.staff_id) || null
       }))
 
       setCitas(citasConRelaciones)
@@ -322,12 +322,12 @@ export default function AdminAgendaPage() {
 
       const appointmentData = {
         client_id: newCita.clientId,
-        professional_id: selectedStaffId || null,
+        staff_id: selectedStaffId || null,
         service_id: newCita.serviceId,
         date: newCita.date,
         time: newCita.time,
         status: 'pending' as const,
-        total_price: services.find((s: any) => s.id === newCita.serviceId)?.price || 0,
+        price: services.find((s: any) => s.id === newCita.serviceId)?.price || 0,
         notes: newCita.notes,
         tenant_id: settings?.tenant_id || null
       }
@@ -1187,7 +1187,7 @@ export default function AdminAgendaPage() {
                 </div>
                 <div className="flex justify-between py-2">
                   <span className={isDark ? 'text-[#A89588]' : 'text-[#5C4A3E]'}>Total</span>
-                  <span className="font-bold text-[#D4AF37]">${Number(selectedCita.total_price || 0).toLocaleString()}</span>
+                  <span className="font-bold text-[#D4AF37]">${Number(selectedCita.price || 0).toLocaleString()}</span>
                 </div>
               </div>
 

@@ -177,8 +177,8 @@ export default function DashboardPage() {
         return cDate >= mesAtras
       }).length
 
-      const citasConPrecio = appointments.filter((a: any) => a.total_price > 0 || a.price > 0)
-      const totalIngresos = citasConPrecio.reduce((sum: number, a: any) => sum + Number(a.total_price || a.price || 0), 0)
+      const citasConPrecio = appointments.filter((a: any) => a.price > 0)
+      const totalIngresos = citasConPrecio.reduce((sum: number, a: any) => sum + Number(a.price || 0), 0)
 
       const pendientes = appointments.filter((c: any) => c.status === 'pending').length
       const confirmadas = appointments.filter((c: any) => c.status === 'confirmed').length
@@ -204,7 +204,7 @@ export default function DashboardPage() {
           ...cita,
           clienteNombre: cliente?.name || 'Cliente',
           servicioNombre: servicio?.name || 'Servicio',
-          precio: servicio?.price || cita.total_price || 0,
+          precio: servicio?.price || cita.price || 0,
         }
       })
 

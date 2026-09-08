@@ -16,13 +16,13 @@ import {
 interface CitaCancelada {
   id: string
   client_id: string
-  professional_id: string
+  staff_id: string
   service_id: string
   date: string
   time: string
   status: string
   notes: string
-  total_price: number
+  price: number
   cancelled_at: string
   clients: { name: string; email: string; phone: string }
   services: { name: string; price: number; duration: number }
@@ -73,7 +73,7 @@ export default function CancelacionesPage() {
 
       if (data && data.length > 0) {
         const staffIds = data
-          .map((c: any) => c.professional_id)
+          .map((c: any) => c.staff_id)
           .filter((id: any) => id)
 
         let staffMap: Record<string, { name: string }> = {}
@@ -90,7 +90,7 @@ export default function CancelacionesPage() {
 
         citasConStaff = data.map((cita: any) => ({
           ...cita,
-          staff: cita.professional_id ? staffMap[cita.professional_id] || null : null
+          staff: cita.staff_id ? staffMap[cita.staff_id] || null : null
         }))
       }
 
@@ -143,7 +143,7 @@ export default function CancelacionesPage() {
   })
 
   const totalCanceladas = citas.length
-  const totalPerdido = citas.reduce((sum, c) => sum + (c.total_price || 0), 0)
+  const totalPerdido = citas.reduce((sum, c) => sum + (c.price || 0), 0)
   const clientesAfectados = new Set(citas.map(c => c.client_id)).size
 
   if (loading) {
@@ -379,7 +379,7 @@ export default function CancelacionesPage() {
 
                   <div className="flex items-center gap-4 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#3D281E]/20 w-full md:w-auto justify-between md:justify-end">
                     <span className="text-sm font-mono font-bold text-rose-500">
-                      ${cita.total_price?.toLocaleString() || 0}
+                      ${cita.price?.toLocaleString() || 0}
                     </span>
                     <button 
                       onClick={() => eliminarCita(cita.id)}

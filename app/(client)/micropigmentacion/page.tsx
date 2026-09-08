@@ -76,7 +76,7 @@ interface Review {
   tenant_id: string
   client_id: string
   service_id: string
-  professional_id: string | null
+  staff_id: string | null
   rating: number
   comment: string
   images: string[]
@@ -324,7 +324,7 @@ export default function MicropigmentacionPage() {
           tenant_id: activeTenantId,
           client_id: user.id,
           service_id: selectedService.id,
-          professional_id: null,
+          staff_id: null,
           rating: rating,
           comment: comment.trim(),
           images: [],
