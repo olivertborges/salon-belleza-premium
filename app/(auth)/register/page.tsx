@@ -63,7 +63,8 @@ function RegisterContent() {
       return
     }
 
-    window.location.href = '/portal'
+    window.location.href =
+      `/registro-exitoso?name=${encodeURIComponent(formData.name.trim())}&phone=${encodeURIComponent(formData.phone.trim())}`
   }
 
   return (
