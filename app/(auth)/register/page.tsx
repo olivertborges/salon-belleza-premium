@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ArrowRight, Sparkles, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase/client'
 
 function RegisterContent() {
   const searchParams = useSearchParams()
@@ -20,6 +21,7 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const referralCode = searchParams.get('ref') || ''
+  const [referrerName, setReferrerName] = useState('')
 
   useEffect(() => {
     setFormData(prev => ({
@@ -27,7 +29,24 @@ function RegisterContent() {
       name: searchParams.get('name') || prev.name,
       phone: searchParams.get('phone') || prev.phone,
     }))
-  }, [searchParams])
+
+    if (!referralCode) {
+      setReferrerName('')
+      return
+    }
+
+    const loadReferrer = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('referral_code', referralCode)
+        .maybeSingle()
+
+      setReferrerName((data as { name?: string } | null)?.name || '')
+    }
+
+    loadReferrer()
+  }, [searchParams, referralCode])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,7 +123,9 @@ function RegisterContent() {
                 </span>
               </div>
               <p className="text-sm font-bold text-[#34262C]">
-                Has sido invitada a Salón Fresh Nails ✨
+                {referrerName
+                  ? `${referrerName} te ha invitado a Salón Fresh Nails ✨`
+                  : 'Has sido invitada a Salón Fresh Nails ✨'}
               </p>
               <p className="mt-1 text-xs leading-5 text-[#806B74]">
                 Tu registro está vinculado a una invitación. Al completar tu registro podrás participar de los beneficios GLOW.
