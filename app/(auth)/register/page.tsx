@@ -19,6 +19,7 @@ function RegisterContent() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const referralCode = searchParams.get('ref') || ''
 
   useEffect(() => {
     setFormData(prev => ({
@@ -53,7 +54,8 @@ function RegisterContent() {
       formData.email.trim().toLowerCase(),
       formData.password,
       formData.name.trim(),
-      formData.phone.trim()
+      formData.phone.trim(),
+      referralCode
     )
 
     setLoading(false)
@@ -92,6 +94,23 @@ function RegisterContent() {
               Reserva tus citas y disfruta de tu experiencia Fresh Nails.
             </p>
           </div>
+
+          {referralCode && (
+            <div className="mb-6 rounded-[22px] border border-[#B88A3B]/30 bg-[#FFF9F0]/80 p-4 text-center shadow-[0_8px_24px_rgba(184,138,59,0.10)]">
+              <div className="mb-2 flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#B88A3B]" />
+                <span className="text-[10px] font-black tracking-[1.8px] text-[#B88A3B]">
+                  INVITACIÓN ESPECIAL
+                </span>
+              </div>
+              <p className="text-sm font-bold text-[#34262C]">
+                Has sido invitada a Salón Fresh Nails ✨
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[#806B74]">
+                Tu registro está vinculado a una invitación. Al completar tu registro podrás participar de los beneficios GLOW.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
 
